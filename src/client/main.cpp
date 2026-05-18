@@ -37,7 +37,7 @@ int main() {
 
     CacheReader reader;
 
-    if (!reader.open("/home/clizard34/zedprojects/cache-tool/cache")) {
+    if (!reader.open("cache")) {
         std::cerr << "Failed to open cache\n";
         return 1;
     }
