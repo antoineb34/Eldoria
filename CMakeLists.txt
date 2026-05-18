@@ -17,5 +17,6 @@ find_package(SDL3 REQUIRED CONFIG)
 find_package(OpenGL REQUIRED)
 
 add_subdirectory(src/core)
+add_subdirectory(src/platform)
 add_subdirectory(src/client)
 add_subdirectory(src/tool)
