@@ -49,13 +49,12 @@ void Renderer3D::EndFrame() {
 }
 
 Point2D Renderer3D::Project(const Vertex& v) const {
-
     float fov = 256.0f;
 
     Point2D p;
 
     p.x = (v.x * fov / v.z) + (screenWidth / 2.0f);
-    p.y = (-v.y * fov / v.z) + (screenHeight / 2.0f);
+    p.y = (v.y * fov / v.z) + (screenHeight / 2.0f);
 
     return p;
 }

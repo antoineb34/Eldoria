@@ -15,6 +15,8 @@ public:
 
     static Mat4 RotationY(float angle);
 
+    static Mat4 Scale(float x, float y, float z);
+
     Mat4 operator*(const Mat4& other) const;
 
     Vertex operator*(const Vertex& v) const;

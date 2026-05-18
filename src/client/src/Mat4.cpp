@@ -87,3 +87,14 @@ Vertex Mat4::operator*(const Vertex& v) const {
 
     return result;
 }
+
+Mat4 Mat4::Scale(float x, float y, float z) {
+
+    Mat4 mat = Identity();
+
+    mat.m[0][0] = x;
+    mat.m[1][1] = y;
+    mat.m[2][2] = z;
+
+    return mat;
+}

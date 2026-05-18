@@ -91,6 +91,7 @@ int main() {
     bool running = true;
     SDL_Event event;
     float angle = 0.0f;
+    float modelScale = 1.0f;
 
     uint64_t lastTicks = SDL_GetTicks();
 
@@ -109,6 +110,18 @@ int main() {
                     loadModel(currentModelId - 1);
                 }
             }
+
+            if (event.key.key == SDLK_UP) {
+                modelScale += 0.1f;
+            }
+
+            if (event.key.key == SDLK_DOWN) {
+                modelScale -= 0.1f;
+
+                if (modelScale < 0.1f) {
+                    modelScale = 0.1f;
+                }
+            }
         }
 
         uint64_t currentTicks = SDL_GetTicks();
@@ -117,9 +130,11 @@ int main() {
 
         angle += dt * 0.5f;
 
+        Mat4 scale = Mat4::Scale(modelScale, modelScale, modelScale);
         Mat4 rotation = Mat4::RotationY(angle);
         Mat4 translation = Mat4::Translation(0.0f, 0.0f, 500.0f);
-        Mat4 transform = translation * rotation;
+
+        Mat4 transform = translation * rotation * scale;
 
         renderer3D.BeginFrame();
         renderer3D.Submit(mesh, transform);
