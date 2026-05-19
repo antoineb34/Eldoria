@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vertex.h"
+#include "render/Vertex.h"
 
 class Mat4 {
 public:

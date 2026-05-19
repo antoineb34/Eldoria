@@ -3,11 +3,11 @@
 #include <vector>
 #include <SDL3/SDL.h>
 
-#include "Renderable.h"
-#include "Point2D.h"
-#include "Vertex.h"
-#include "Mesh.h"
-#include "Mat4.h"
+#include "render/Renderable.h"
+#include "render/Point2D.h"
+#include "render/Vertex.h"
+#include "render/Mesh.h"
+#include "math/Mat4.h"
 
 class Renderer3D {
 public:

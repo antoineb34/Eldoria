@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "Vertex.h"
-#include "ModelDef.h"
+#include "render/Vertex.h"
+#include "assets/model/ModelDef.h"
 
 struct Mesh {
     std::vector<Vertex> vertices;

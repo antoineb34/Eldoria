@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Buffer.h"
+#include "io/Buffer.h"
 
 struct Archive {
     // sub-files indexed by name hash -> decompressed bytes (stored as Buffer!)

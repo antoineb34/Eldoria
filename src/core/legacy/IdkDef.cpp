@@ -1,6 +1,6 @@
 #include "IdkDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 IdkDef IdkDef::parse(Buffer& buf) {
     IdkDef def;

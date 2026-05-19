@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "Buffer.h"
+#include "io/Buffer.h"
 
 struct LocDef {
     // identity

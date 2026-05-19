@@ -1,5 +1,5 @@
-#include "CacheReader.h"
-#include "Buffer.h"
+#include "filestore/FileStore.h"
+#include "io/Buffer.h"
 
 #include <zlib.h>
 #include <bzlib.h>
@@ -59,11 +59,11 @@ static std::vector<uint8_t> decompressGzip(const uint8_t* src, uint32_t srcLen) 
     return (ret == Z_STREAM_END) ? out : std::vector<uint8_t>{};
 }
 
-CacheReader::~CacheReader() {
+FileStore::~FileStore() {
     close();
 }
 
-void CacheReader::close() {
+void FileStore::close() {
     // Clean up .dat mmap
     if (useMmap && datMmap != nullptr && datMmap != MAP_FAILED) {
         munmap(datMmap, datSize);
@@ -103,7 +103,7 @@ void CacheReader::close() {
     datSize = 0;
 }
 
-bool CacheReader::open(const std::filesystem::path& cachePath) {
+bool FileStore::open(const std::filesystem::path& cachePath) {
     // Ensure clean state
     close();
 
@@ -177,7 +177,7 @@ bool CacheReader::open(const std::filesystem::path& cachePath) {
     return true;
 }
 
-IndexEntry CacheReader::readIndex(int archiveId, int fileId) const {
+IndexEntry FileStore::readIndex(int archiveId, int fileId) const {
     if (archiveId < 0 || archiveId > 4) return {};
 
     if (useIdxMmap && idxMmap[archiveId].data != nullptr) {
@@ -206,7 +206,7 @@ IndexEntry CacheReader::readIndex(int archiveId, int fileId) const {
     }
 }
 
-Buffer CacheReader::readFile(int archiveId, int fileId) {
+Buffer FileStore::readFile(int archiveId, int fileId) {
     IndexEntry entry = readIndex(archiveId, fileId);
 
     if (entry.size == 0 || entry.firstSector == 0) return Buffer(std::vector<uint8_t>{});
@@ -225,7 +225,7 @@ Buffer CacheReader::readFile(int archiveId, int fileId) {
 
         // Verify sector offset is within .dat bounds
         if (sectorOffset + 520 > datSize) {
-            throw std::runtime_error("CacheReader: sector out of bounds (sector=" + std::to_string(currentSector) +
+            throw std::runtime_error("FileStore: sector out of bounds (sector=" + std::to_string(currentSector) +
                                    ", offset=" + std::to_string(sectorOffset) +
                                    ", datSize=" + std::to_string(datSize) + ")");
         }
@@ -238,7 +238,7 @@ Buffer CacheReader::readFile(int archiveId, int fileId) {
             datFallback.seekg(sectorOffset);
             datFallback.read(reinterpret_cast<char*>(header.data()), 8);
             if (!datFallback) {
-                throw std::runtime_error("CacheReader: failed to read sector header (sector=" + std::to_string(currentSector) + ")");
+                throw std::runtime_error("FileStore: failed to read sector header (sector=" + std::to_string(currentSector) + ")");
             }
         }
 
@@ -250,18 +250,18 @@ Buffer CacheReader::readFile(int archiveId, int fileId) {
 
         // Validate header fields
         if (sectorFileId != static_cast<uint16_t>(fileId)) {
-            throw std::runtime_error("CacheReader: sector fileId mismatch (expected=" + std::to_string(fileId) +
+            throw std::runtime_error("FileStore: sector fileId mismatch (expected=" + std::to_string(fileId) +
                                    ", got=" + std::to_string(sectorFileId) +
                                    ", sector=" + std::to_string(currentSector) + ")");
         }
         if (sectorChunk != chunkIndex) {
-            throw std::runtime_error("CacheReader: sector chunk mismatch (expected=" + std::to_string(chunkIndex) +
+            throw std::runtime_error("FileStore: sector chunk mismatch (expected=" + std::to_string(chunkIndex) +
                                    ", got=" + std::to_string(sectorChunk) +
                                    ", sector=" + std::to_string(currentSector) + ")");
         }
         // NOTE: sector header archive id is 1-based (idx0=1, idx1=2, etc.)
         if (sectorArchiveId != static_cast<uint8_t>(archiveId + 1)) {
-            throw std::runtime_error("CacheReader: sector archiveId mismatch (expected=" + std::to_string(archiveId + 1) +
+            throw std::runtime_error("FileStore: sector archiveId mismatch (expected=" + std::to_string(archiveId + 1) +
                                    ", got=" + std::to_string(sectorArchiveId) +
                                    ", sector=" + std::to_string(currentSector) + ")");
         }
@@ -276,7 +276,7 @@ Buffer CacheReader::readFile(int archiveId, int fileId) {
             buffer.resize(prevSize + toCopy);
             datFallback.read(reinterpret_cast<char*>(buffer.data() + prevSize), toCopy);
             if (!datFallback) {
-                throw std::runtime_error("CacheReader: failed to read sector data (sector=" + std::to_string(currentSector) + ")");
+                throw std::runtime_error("FileStore: failed to read sector data (sector=" + std::to_string(currentSector) + ")");
             }
         }
 
@@ -287,7 +287,7 @@ Buffer CacheReader::readFile(int archiveId, int fileId) {
 
     // If we exited the loop with fewer bytes than expected, the chain was broken
     if (bytesCopied < entry.size) {
-        throw std::runtime_error("CacheReader: truncated file (copied=" + std::to_string(bytesCopied) +
+        throw std::runtime_error("FileStore: truncated file (copied=" + std::to_string(bytesCopied) +
                                ", expected=" + std::to_string(entry.size) +
                                ", fileId=" + std::to_string(fileId) +
                                ", archiveId=" + std::to_string(archiveId) + ")");
@@ -296,7 +296,7 @@ Buffer CacheReader::readFile(int archiveId, int fileId) {
     return Buffer(std::move(buffer));
 }
 
-Buffer CacheReader::readGzippedFile(int archiveId, int fileId) {
+Buffer FileStore::readGzippedFile(int archiveId, int fileId) {
     Buffer rawBuf = readFile(archiveId, fileId);
     if (rawBuf.empty()) return Buffer(std::vector<uint8_t>{});
 
@@ -306,7 +306,7 @@ Buffer CacheReader::readGzippedFile(int archiveId, int fileId) {
     return Buffer(std::move(decompressed));
 }
 
-std::shared_ptr<Archive> CacheReader::readArchive(int archiveId, int fileId) {
+std::shared_ptr<Archive> FileStore::readArchive(int archiveId, int fileId) {
     // Check cache first
     std::pair<int, int> key = {archiveId, fileId};
     auto it = archiveCache.find(key);
@@ -353,7 +353,7 @@ std::shared_ptr<Archive> CacheReader::readArchive(int archiveId, int fileId) {
         // Validate entry payload does not exceed archive data bounds
         int remaining = static_cast<int>(data.size()) - dataBuf.position();
         if (entry.compressedSize > static_cast<uint32_t>(remaining)) {
-            throw std::runtime_error("CacheReader: archive entry payload exceeds archive bounds (entry compressedSize=" +
+            throw std::runtime_error("FileStore: archive entry payload exceeds archive bounds (entry compressedSize=" +
                                    std::to_string(entry.compressedSize) + ", remaining=" + std::to_string(remaining) + ")");
         }
 
@@ -377,7 +377,7 @@ std::shared_ptr<Archive> CacheReader::readArchive(int archiveId, int fileId) {
     return archivePtr;
 }
 
-int CacheReader::getFileCount(int archiveId) const {
+int FileStore::getFileCount(int archiveId) const {
     if (archiveId < 0 || archiveId >= 5) return 0;
 
     if (useIdxMmap && idxMmap[archiveId].data != nullptr) {
@@ -391,7 +391,7 @@ int CacheReader::getFileCount(int archiveId) const {
     }
 }
 
-bool CacheReader::hasFile(int archiveId, int fileId) const {
+bool FileStore::hasFile(int archiveId, int fileId) const {
     if (archiveId < 0 || archiveId >= 5) return false;
 
     if (useIdxMmap && idxMmap[archiveId].data != nullptr) {

@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <vector>
-#include "Buffer.h"
+#include "io/Buffer.h"
 
 struct TextureDef {
     int id = -1;

@@ -1,6 +1,6 @@
 #include "MesDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 // TODO: MesDef parse is a stub — format not yet documented.
 // Currently throws on any non-zero opcode.

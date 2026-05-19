@@ -1,9 +1,9 @@
-#include "VersionList.h"
+#include "filestore/VersionList.h"
 
 #include <stdexcept>
 #include <string>
 
-#include "Buffer.h"
+#include "io/Buffer.h"
 
 VersionList VersionList::parse(const Archive& archive) {
     VersionList versionList;

@@ -4,8 +4,8 @@
 #include <stdexcept>
 #include <string>
 
-#include "ArchiveNames.h"
-#include "Buffer.h"
+#include "filestore/ArchiveNames.h"
+#include "io/Buffer.h"
 
 // generic loader — works for any def type that has a static parse(Buffer&) and an int id field
 template<typename T>

@@ -1,6 +1,6 @@
 #include "LocDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 LocDef LocDef::parse(Buffer& buf) {
     LocDef def;

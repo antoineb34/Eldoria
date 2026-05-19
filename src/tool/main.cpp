@@ -5,13 +5,13 @@
 #include <map>
 #include <string>
 
-#include "CacheReader.h"
-#include "DefinitionsLoader.h"
-#include "ModelDef.h"
-#include "TextureDef.h"
-#include "VersionList.h"
-#include "MapRegion.h"
-#include "RegionRenderer2D.h"
+#include "filestore/FileStore.h"
+#include "legacy/DefinitionsLoader.h"
+#include "assets/model/ModelDef.h"
+#include "legacy/TextureDef.h"
+#include "filestore/VersionList.h"
+#include "legacy/MapRegion.h"
+#include "legacy/RegionRenderer2D.h"
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    CacheReader reader;
+    FileStore reader;
     if (!reader.open(argv[1])) {
         std::cerr << "Failed to open cache at: " << argv[1] << std::endl;
         return 1;
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
 
             // parse footer: last 18 bytes
             Buffer footerBuf(data.slice(size - 18, size));
-            
+
             auto readU16 = [&]() -> uint16_t {
                 return footerBuf.readUShort();
             };

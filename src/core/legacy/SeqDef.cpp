@@ -1,6 +1,6 @@
 #include "SeqDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 SeqDef SeqDef::parse(Buffer& buf) {
     SeqDef def;

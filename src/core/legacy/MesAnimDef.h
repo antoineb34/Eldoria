@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Buffer.h"
+#include "io/Buffer.h"
 
 struct MesAnimDef {
     int id = -1;

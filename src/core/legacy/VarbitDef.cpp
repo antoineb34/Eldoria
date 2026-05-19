@@ -1,6 +1,6 @@
 #include "VarbitDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 VarbitDef VarbitDef::parse(Buffer& buf) {
     VarbitDef def;

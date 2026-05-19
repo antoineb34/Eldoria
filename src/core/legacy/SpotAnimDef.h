@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "Buffer.h"
+#include "io/Buffer.h"
 
 struct SpotAnimDef {
     int id = -1;

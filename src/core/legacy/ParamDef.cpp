@@ -1,6 +1,6 @@
 #include "ParamDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 ParamDef ParamDef::parse(Buffer& buf) {
     ParamDef def;

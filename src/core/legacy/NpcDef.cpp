@@ -1,6 +1,6 @@
 #include "NpcDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 NpcDef NpcDef::parse(Buffer& buf) {
     NpcDef def;

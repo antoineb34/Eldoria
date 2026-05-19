@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Mesh.h"
-#include "Mat4.h"
+#include "render/Mesh.h"
+#include "math/Mat4.h"
 
 struct Renderable {
     const Mesh* mesh;

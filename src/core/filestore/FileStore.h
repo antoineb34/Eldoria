@@ -13,8 +13,8 @@
 #include <unistd.h>
 #endif
 
-#include "Archive.h"
-#include "Buffer.h"
+#include "filestore/Archive.h"
+#include "io/Buffer.h"
 
 struct IndexEntry {
     uint32_t size;        // total size of the file in bytes (3-byte value in cache)
@@ -27,23 +27,23 @@ struct ArchiveEntry {
     uint32_t compressedSize;
 };
 
-// CacheReader reads the RS317 cache format and provides clean access to data.
+// FileStore reads the RS317 cache format and provides clean access to data.
 // It hides the ugly details (sectors, indices, BZIP2) and returns:
 //   - Buffer (owns data) for raw files
 //   - Archive (contains Buffers) for JAG sub-archives
 //
 // Usage:
-//   CacheReader reader;
+//   FileStore reader;
 //   reader.open("cache/");
 //   Buffer modelBuf = reader.readFile(1, 12345);       // model from archive 1
 //   Archive texArchive = reader.readArchive(0, 6);     // textures from archive 0 file 6
-class CacheReader {
+class FileStore {
 public:
     // Opens the cache: main_file_cache.dat + idx0 through idx4
     bool open(const std::filesystem::path& cachePath);
 
     // Destructor: clean up resources
-    ~CacheReader();
+    ~FileStore();
 
     // Closes all open handles (mmap, ifstream)
     void close();

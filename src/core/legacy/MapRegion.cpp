@@ -3,9 +3,9 @@
 #include <stdexcept>
 #include <string>
 
-#include "Buffer.h"
+#include "io/Buffer.h"
 
-MapRegion MapRegion::load(CacheReader& reader, const VersionList& versionList, int regionId) {
+MapRegion MapRegion::load(FileStore& reader, const VersionList& versionList, int regionId) {
     const MapIndexEntry* entry = versionList.findMapRegion(regionId);
     if (entry == nullptr)
         throw std::runtime_error("Map region not found in map_index: " + std::to_string(regionId));

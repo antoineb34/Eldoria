@@ -2,14 +2,14 @@
 
 #include <cstddef>
 
-#include "CacheReader.h"
+#include "filestore/FileStore.h"
 #include "MapObjects.h"
 #include "MapTerrain.h"
-#include "VersionList.h"
+#include "filestore/VersionList.h"
 
 class MapRegion {
 public:
-    static MapRegion load(CacheReader& reader, const VersionList& versionList, int regionId);
+    static MapRegion load(FileStore& reader, const VersionList& versionList, int regionId);
 
     int regionId() const;
     int terrainFileId() const;

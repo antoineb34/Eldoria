@@ -1,11 +1,11 @@
 #include <SDL3/SDL.h>
 #include <iostream>
 
-#include "CacheReader.h"
-#include "ModelDef.h"
-#include "Mesh.h"
+#include "filestore/FileStore.h"
+#include "assets/model/ModelDef.h"
+#include "render/Mesh.h"
 #include "Renderer3D.h"
-#include "Mat4.h"
+#include "math/Mat4.h"
 
 constexpr int SCREEN_WIDTH = 800;
 constexpr int SCREEN_HEIGHT = 600;
@@ -35,7 +35,7 @@ int main() {
         return 1;
     }
 
-    CacheReader reader;
+    FileStore reader;
 
     if (!reader.open("cache")) {
         std::cerr << "Failed to open cache\n";

@@ -1,6 +1,6 @@
 #include "ItemDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 ItemDef ItemDef::parse(Buffer& buf) {
     ItemDef def;
@@ -8,9 +8,9 @@ ItemDef ItemDef::parse(Buffer& buf) {
     while (true) {
         // Read opcode once
         int opcode = buf.readByte();
-        
+
         if (opcode == 0) break;
-        
+
         switch (opcode) {
             case 1:  def.modelId     = buf.readUShort(); break;
             case 2:  def.name        = buf.readString(); break;

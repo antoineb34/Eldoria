@@ -1,6 +1,6 @@
 #include "SpotAnimDef.h"
-#include "Buffer.h"
-#include "Utils.h"
+#include "io/Buffer.h"
+#include "util/Utils.h"
 
 SpotAnimDef SpotAnimDef::parse(Buffer& buf) {
     SpotAnimDef def;

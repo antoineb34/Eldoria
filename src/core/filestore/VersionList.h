@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Archive.h"
+#include "filestore/Archive.h"
 
 struct MapIndexEntry {
     int regionId = -1;
