@@ -3,23 +3,24 @@
 namespace rf::io {
 
 ByteBuffer::ByteBuffer(
-    const std::vector<uint8_t>& data
+    const std::vector<char>& data
 )
     : data_(data)
 {
 }
 
 uint8_t ByteBuffer::readU8() {
-    return data_[position_++];
+
+    return static_cast<uint8_t>(
+        data_[position_++]
+    );
 }
 
 uint16_t ByteBuffer::readU16() {
 
     uint16_t value =
-        (data_[position_] << 8) |
-        (data_[position_ + 1]);
-
-    position_ += 2;
+        (readU8() << 8) |
+        readU8();
 
     return value;
 }
@@ -27,21 +28,21 @@ uint16_t ByteBuffer::readU16() {
 uint32_t ByteBuffer::readU24() {
 
     uint32_t value =
-        (data_[position_] << 16) |
-        (data_[position_ + 1] << 8) |
-        (data_[position_ + 2]);
-
-    position_ += 3;
+        (readU8() << 16) |
+        (readU8() << 8) |
+        readU8();
 
     return value;
 }
 
 int ByteBuffer::readSmart() {
 
-    uint8_t peek =
-        data_[position_];
+    uint8_t first =
+        static_cast<uint8_t>(
+            data_[position_]
+        );
 
-    if (peek < 128) {
+    if (first < 128) {
         return readU8() - 64;
     }
 
@@ -49,14 +50,17 @@ int ByteBuffer::readSmart() {
 }
 
 void ByteBuffer::skip(int bytes) {
+
     position_ += bytes;
 }
 
 int ByteBuffer::position() const {
+
     return position_;
 }
 
 void ByteBuffer::setPosition(int position) {
+
     position_ = position;
 }
 

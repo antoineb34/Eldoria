@@ -8,8 +8,8 @@ namespace rf::io {
 class ByteBuffer {
 public:
 
-    ByteBuffer(
-        const std::vector<uint8_t>& data
+    explicit ByteBuffer(
+        const std::vector<char>& data
     );
 
     uint8_t readU8();
@@ -28,7 +28,7 @@ public:
 
 private:
 
-    const std::vector<uint8_t>& data_;
+    const std::vector<char>& data_;
 
     int position_ = 0;
 };

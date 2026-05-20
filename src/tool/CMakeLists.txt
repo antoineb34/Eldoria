@@ -16,6 +16,7 @@ add_executable(tool
 
     ../core/cache/CacheStore.cpp
     ../core/io/ByteBuffer.cpp
+    ../core/io/Compression.cpp
 )
 
 target_include_directories(tool PRIVATE
