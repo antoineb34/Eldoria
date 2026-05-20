@@ -1,8 +1,8 @@
-#include "ModelViewerTool.h"
+#include "ToolApplication.h"
 
 int main() {
 
-    rf::tool::ModelViewerTool tool;
+    rf::tool::ToolApplication app;
 
-    return tool.run();
+    return app.run();
 }

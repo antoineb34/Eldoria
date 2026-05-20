@@ -9,6 +9,15 @@ std::vector<Face> decodeFaces(
     const ModelLayout& layout
 ) {
 
+    rf::io::ByteBuffer textureBuffer(payload);
+
+    if (footer.textureFlag == 1) {
+
+        textureBuffer.setPosition(
+            layout.texturePointersOffset
+        );
+    }
+
     rf::io::ByteBuffer priorityBuffer(payload);
 
     rf::io::ByteBuffer alphaBuffer(payload);
@@ -139,13 +148,26 @@ std::vector<Face> decodeFaces(
             alpha = alphaBuffer.readU8();
         }
 
+        int textureFlag = -1;
+
+        if (footer.textureFlag == 1) {
+
+            uint8_t value =
+                textureBuffer.readU8();
+
+            if (value != 255) {
+                textureFlag = value;
+            }
+        }
+
         faces.push_back({
             lastA,
             lastB,
             lastC,
             color,
             priority,
-            alpha
+            alpha,
+            textureFlag
         });
     }
 

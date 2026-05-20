@@ -16,7 +16,8 @@ void drawWireframeModel(
     bool showWireframe,
     bool showVertices,
     bool fillTriangles,
-    bool useAlpha
+    bool useAlpha,
+    bool highlightTexturedFaces
 ) {
     SDL_SetRenderDrawColor(
         renderer,
@@ -134,6 +135,17 @@ void drawWireframeModel(
         if (useAlpha && face.alpha > 0) {
             drawAlpha =
                 255 - face.alpha;
+        }
+
+        if (
+            highlightTexturedFaces &&
+            face.textureFlag != -1
+        ) {
+            color = {
+                255,
+                0,
+                255
+            };
         }
 
         SDL_SetRenderDrawColor(
