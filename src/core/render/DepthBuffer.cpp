@@ -23,7 +23,7 @@ void DepthBuffer::clear() {
     std::fill(
         values_.begin(),
         values_.end(),
-        std::numeric_limits<float>::infinity()
+        -std::numeric_limits<float>::infinity()
     );
 }
 
@@ -40,7 +40,7 @@ bool DepthBuffer::testAndSet(int x, int y, float depth) {
     int index =
         y * width_ + x;
 
-    if (depth >= values_[index]) {
+    if (depth <= values_[index]) {
         return false;
     }
 
