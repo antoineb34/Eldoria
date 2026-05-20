@@ -1,8 +1,28 @@
 #include "TriangleRasterizer.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace rf::render {
+
+static void drawScanline(
+    SDL_Renderer* renderer,
+    float x1,
+    float x2,
+    int y
+) {
+    if (x1 > x2) {
+        std::swap(x1, x2);
+    }
+
+    SDL_RenderLine(
+        renderer,
+        x1,
+        static_cast<float>(y),
+        x2,
+        static_cast<float>(y)
+    );
+}
 
 static void drawFlatBottomTriangle(
     SDL_Renderer* renderer,
@@ -10,6 +30,13 @@ static void drawFlatBottomTriangle(
     ScreenPoint left,
     ScreenPoint right
 ) {
+    if (
+        std::abs(left.y - top.y) < 0.0001f ||
+        std::abs(right.y - top.y) < 0.0001f
+    ) {
+        return;
+    }
+
     float invSlopeLeft =
         (left.x - top.x) /
         (left.y - top.y);
@@ -18,23 +45,21 @@ static void drawFlatBottomTriangle(
         (right.x - top.x) /
         (right.y - top.y);
 
-    float currentLeftX =
-        top.x;
+    float currentLeftX = top.x;
+    float currentRightX = top.x;
 
-    float currentRightX =
-        top.x;
+    int startY =
+        static_cast<int>(std::ceil(top.y));
 
-    for (
-        int y = static_cast<int>(top.y);
-        y <= static_cast<int>(left.y);
-        y++
-    ) {
-        SDL_RenderLine(
+    int endY =
+        static_cast<int>(std::floor(left.y));
+
+    for (int y = startY; y <= endY; y++) {
+        drawScanline(
             renderer,
             currentLeftX,
-            static_cast<float>(y),
             currentRightX,
-            static_cast<float>(y)
+            y
         );
 
         currentLeftX += invSlopeLeft;
@@ -48,6 +73,13 @@ static void drawFlatTopTriangle(
     ScreenPoint right,
     ScreenPoint bottom
 ) {
+    if (
+        std::abs(bottom.y - left.y) < 0.0001f ||
+        std::abs(bottom.y - right.y) < 0.0001f
+    ) {
+        return;
+    }
+
     float invSlopeLeft =
         (bottom.x - left.x) /
         (bottom.y - left.y);
@@ -56,23 +88,21 @@ static void drawFlatTopTriangle(
         (bottom.x - right.x) /
         (bottom.y - right.y);
 
-    float currentLeftX =
-        bottom.x;
+    float currentLeftX = bottom.x;
+    float currentRightX = bottom.x;
 
-    float currentRightX =
-        bottom.x;
+    int startY =
+        static_cast<int>(std::floor(bottom.y));
 
-    for (
-        int y = static_cast<int>(bottom.y);
-        y > static_cast<int>(left.y);
-        y--
-    ) {
-        SDL_RenderLine(
+    int endY =
+        static_cast<int>(std::ceil(left.y));
+
+    for (int y = startY; y > endY; y--) {
+        drawScanline(
             renderer,
             currentLeftX,
-            static_cast<float>(y),
             currentRightX,
-            static_cast<float>(y)
+            y
         );
 
         currentLeftX -= invSlopeLeft;
@@ -102,7 +132,11 @@ void fillTriangle(
         std::swap(v1, v2);
     }
 
-    if (v1.y == v2.y) {
+    if (std::abs(v2.y - v0.y) < 0.0001f) {
+        return;
+    }
+
+    if (std::abs(v1.y - v2.y) < 0.0001f) {
         drawFlatBottomTriangle(
             renderer,
             v0,
@@ -113,7 +147,7 @@ void fillTriangle(
         return;
     }
 
-    if (v0.y == v1.y) {
+    if (std::abs(v0.y - v1.y) < 0.0001f) {
         drawFlatTopTriangle(
             renderer,
             v0,

@@ -200,6 +200,10 @@ int ModelViewerTool::run() {
     float renderAngle = 0.0f;
     float scale = 4.0f;
 
+    bool showWireframe = true;
+    bool showVertices = true;
+    bool fillTriangles = true;
+
     bool running = true;
 
     printStep(9, "EVENT LOOP");
@@ -278,6 +282,30 @@ int ModelViewerTool::run() {
 
                     loadModel(modelId);
                 }
+
+                if (
+                    event.key.key ==
+                    SDLK_1
+                ) {
+                    showWireframe =
+                        !showWireframe;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_2
+                ) {
+                    showVertices =
+                        !showVertices;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_3
+                ) {
+                    fillTriangles =
+                        !fillTriangles;
+                }
             }
         }
 
@@ -313,7 +341,10 @@ int ModelViewerTool::run() {
             renderer,
             vertices,
             faces,
-            camera
+            camera,
+            showWireframe,
+            showVertices,
+            fillTriangles
         );
 
         SDL_RenderPresent(

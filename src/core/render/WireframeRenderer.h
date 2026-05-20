@@ -14,7 +14,10 @@ void drawWireframeModel(
     SDL_Renderer* renderer,
     const std::vector<rf::model::Vertex>& vertices,
     const std::vector<rf::model::Face>& faces,
-    const Camera& camera
+    const Camera& camera,
+    bool showWireframe,
+    bool showVertices,
+    bool fillTriangles
 );
 
 }
