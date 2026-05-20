@@ -14,6 +14,7 @@ struct Face {
 
     uint16_t color = 0;
     uint8_t priority = 0;
+    uint8_t alpha = 0;
 };
 
 std::vector<Face> decodeFaces(

@@ -11,6 +11,14 @@ std::vector<Face> decodeFaces(
 
     rf::io::ByteBuffer priorityBuffer(payload);
 
+    rf::io::ByteBuffer alphaBuffer(payload);
+
+    if (footer.alphaFlag == 1) {
+        alphaBuffer.setPosition(
+            layout.triangleAlphasOffset
+        );
+    }
+
     if (footer.priorityFlag == 255) {
 
         priorityBuffer.setPosition(
@@ -125,12 +133,19 @@ std::vector<Face> decodeFaces(
             priority = footer.priorityFlag;
         }
 
+        uint8_t alpha = 0;
+
+        if (footer.alphaFlag == 1) {
+            alpha = alphaBuffer.readU8();
+        }
+
         faces.push_back({
             lastA,
             lastB,
             lastC,
             color,
-            priority
+            priority,
+            alpha
         });
     }
 

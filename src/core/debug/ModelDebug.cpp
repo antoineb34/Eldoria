@@ -270,7 +270,13 @@ void dumpDecodedFaces(
             << faces[i].b
             << ", "
             << faces[i].c
-            << "\n";
+            << " (color:"
+            << faces[i].color
+            << " priority:"
+            << (int)faces[i].priority
+            << " alpha:"
+            << (int)faces[i].alpha
+            << ")\n";
     }
 }
 

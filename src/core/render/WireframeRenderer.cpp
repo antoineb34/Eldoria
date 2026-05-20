@@ -15,7 +15,8 @@ void drawWireframeModel(
     const Camera& camera,
     bool showWireframe,
     bool showVertices,
-    bool fillTriangles
+    bool fillTriangles,
+    bool useAlpha
 ) {
     SDL_SetRenderDrawColor(
         renderer,
@@ -128,12 +129,19 @@ void drawWireframeModel(
                 face.color
             );
 
+        uint8_t drawAlpha = 255;
+
+        if (useAlpha && face.alpha > 0) {
+            drawAlpha =
+                255 - face.alpha;
+        }
+
         SDL_SetRenderDrawColor(
             renderer,
             color.r,
             color.g,
             color.b,
-            255
+            drawAlpha
         );
 
         if (fillTriangles) {

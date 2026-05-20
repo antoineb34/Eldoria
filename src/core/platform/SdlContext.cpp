@@ -61,6 +61,11 @@ SdlContext::SdlContext(
 
         return;
     }
+
+    SDL_SetRenderDrawBlendMode(
+        renderer_,
+        SDL_BLENDMODE_BLEND
+    );
 }
 
 SdlContext::~SdlContext() {

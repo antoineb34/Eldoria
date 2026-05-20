@@ -19,7 +19,8 @@ void drawWireframeModel(
     const Camera& camera,
     bool showWireframe,
     bool showVertices,
-    bool fillTriangles
+    bool fillTriangles,
+    bool useAlpha
 );
 
 }

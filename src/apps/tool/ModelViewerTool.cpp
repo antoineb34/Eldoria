@@ -175,6 +175,48 @@ int ModelViewerTool::run() {
             return true;
         };
 
+    auto hasAlpha =
+        [&](uint32_t id) -> bool {
+
+            rf::cache::CacheArchive archive =
+                cache.readArchive(id);
+
+            if (archive.payload.empty()) {
+                return false;
+            }
+
+            std::vector<char> fullPayload;
+
+            fullPayload.reserve(
+                archive.payload.size()
+            );
+
+            for (uint8_t byte : archive.payload) {
+                fullPayload.push_back(
+                    static_cast<char>(byte)
+                );
+            }
+
+            if (
+                rf::io::detectCompression(fullPayload) !=
+                rf::io::CompressionType::Gzip
+            ) {
+                return false;
+            }
+
+            std::vector<char> decompressedPayload =
+                rf::io::decompressGzip(
+                    fullPayload
+                );
+
+            rf::model::ModelFooter footer =
+                rf::model::readModelFooter(
+                    decompressedPayload
+                );
+
+            return footer.alphaFlag == 1;
+        };
+
     if (!loadModel(modelId)) {
         return 1;
     }
@@ -206,6 +248,7 @@ int ModelViewerTool::run() {
     bool showWireframe = true;
     bool showVertices = true;
     bool fillTriangles = true;
+    bool useAlpha = true;
 
     bool running = true;
 
@@ -309,6 +352,41 @@ int ModelViewerTool::run() {
                     fillTriangles =
                         !fillTriangles;
                 }
+                if (
+                    event.key.key ==
+                    SDLK_4
+                ) {
+                    useAlpha =
+                        !useAlpha;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_A
+                ) {
+                    uint32_t searchId =
+                        modelId + 1;
+
+                    while (searchId < 100000) {
+
+                        if (hasAlpha(searchId)) {
+
+                            modelId =
+                                searchId;
+
+                            std::cout
+                                << "\nfound alpha model "
+                                << modelId
+                                << "\n";
+
+                            loadModel(modelId);
+
+                            break;
+                        }
+
+                        searchId++;
+                    }
+                }
             }
         }
 
@@ -360,7 +438,8 @@ int ModelViewerTool::run() {
             camera,
             showWireframe,
             showVertices,
-            fillTriangles
+            fillTriangles,
+            useAlpha
         );
 
         SDL_RenderPresent(
