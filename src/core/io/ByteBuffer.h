@@ -18,6 +18,8 @@ public:
 
     uint32_t readU24();
 
+    uint32_t readU32();
+
     int readSmart();
 
     void skip(int bytes);

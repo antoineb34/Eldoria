@@ -2,7 +2,7 @@
 
 namespace rf::tool {
 
-class ModelViewerTool {
+class ToolApplication {
 public:
 
     int run();

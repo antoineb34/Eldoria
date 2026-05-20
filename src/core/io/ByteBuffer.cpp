@@ -35,6 +35,17 @@ uint32_t ByteBuffer::readU24() {
     return value;
 }
 
+uint32_t ByteBuffer::readU32() {
+
+    uint32_t value =
+        (readU8() << 24) |
+        (readU8() << 16) |
+        (readU8() << 8) |
+        readU8();
+
+    return value;
+}
+
 int ByteBuffer::readSmart() {
 
     uint8_t first =

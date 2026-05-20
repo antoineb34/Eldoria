@@ -20,7 +20,8 @@ void drawWireframeModel(
     bool showWireframe,
     bool showVertices,
     bool fillTriangles,
-    bool useAlpha
+    bool useAlpha,
+    bool highlightTexturedFaces
 );
 
 }

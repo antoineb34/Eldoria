@@ -1,6 +1,7 @@
 add_executable(tool
     main.cpp
-    ModelViewerTool.cpp
+    ToolApplication.cpp
+    modes/ModelViewerMode.cpp
 
     ../../core/cache/CacheStore.cpp
 
@@ -20,11 +21,18 @@ add_executable(tool
     ../../core/render/Color.cpp
     ../../core/render/TriangleRasterizer.cpp
     ../../core/render/DepthBuffer.cpp
+
+    ../../core/cache/ArchiveDecoder.cpp
+    ../../core/cache/ArchiveFileTable.cpp
+    ../../core/cache/NameHash.cpp
+    ../../core/cache/ArchiveFileExtractor.cpp
+    ../../core/cache/ConfigArchiveLoader.cpp
 )
 
 target_link_libraries(tool PRIVATE
     SDL3::SDL3
     z
+    BZip2::BZip2
 )
 
 set_target_properties(tool PROPERTIES
