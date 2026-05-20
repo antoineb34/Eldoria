@@ -20,9 +20,9 @@ void drawWireframeModel(
 ) {
     SDL_SetRenderDrawColor(
         renderer,
-        12,
-        12,
-        16,
+        185,
+        212,
+        177,
         255
     );
 

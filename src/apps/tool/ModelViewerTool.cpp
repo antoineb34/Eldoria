@@ -24,9 +24,7 @@
 
 #include "../../core/render/Projection.h"
 #include "../../core/render/WireframeRenderer.h"
-
 #include "../../core/render/DepthBuffer.h"
-
 
 namespace rf::tool {
 
@@ -51,7 +49,7 @@ int ModelViewerTool::run() {
         "cache/main_file_cache.idx1"
     );
 
-    uint32_t modelId = 1000;
+    uint32_t modelId = 0;
 
     std::vector<rf::model::Vertex> vertices;
     std::vector<rf::model::Face> faces;
@@ -99,6 +97,7 @@ int ModelViewerTool::run() {
                     << "\ncompression: GZIP\n";
             }
             else {
+
                 std::cout
                     << "\ncompression: unknown\n";
 
@@ -192,13 +191,16 @@ int ModelViewerTool::run() {
             );
 
             for (uint8_t byte : archive.payload) {
+
                 fullPayload.push_back(
                     static_cast<char>(byte)
                 );
             }
 
             if (
-                rf::io::detectCompression(fullPayload) !=
+                rf::io::detectCompression(
+                    fullPayload
+                ) !=
                 rf::io::CompressionType::Gzip
             ) {
                 return false;
@@ -245,6 +247,9 @@ int ModelViewerTool::run() {
     float renderAngle = 0.0f;
     float scale = 4.0f;
 
+    float cameraOffsetX = 0.0f;
+    float cameraOffsetY = 0.0f;
+
     bool showWireframe = true;
     bool showVertices = true;
     bool fillTriangles = true;
@@ -279,6 +284,42 @@ int ModelViewerTool::run() {
                     running = false;
                 }
 
+                // =========================================
+                // CAMERA MOVEMENT
+                // =========================================
+
+                if (
+                    event.key.key ==
+                    SDLK_W
+                ) {
+                    cameraOffsetY -= 20.0f;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_S
+                ) {
+                    cameraOffsetY += 20.0f;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_A
+                ) {
+                    cameraOffsetX -= 20.0f;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_D
+                ) {
+                    cameraOffsetX += 20.0f;
+                }
+
+                // =========================================
+                // SCALE
+                // =========================================
+
                 if (
                     event.key.key ==
                     SDLK_UP
@@ -298,10 +339,15 @@ int ModelViewerTool::run() {
                     }
                 }
 
+                // =========================================
+                // MODEL NAVIGATION
+                // =========================================
+
                 if (
                     event.key.key ==
                     SDLK_RIGHT
                 ) {
+
                     modelId++;
 
                     std::cout
@@ -329,6 +375,10 @@ int ModelViewerTool::run() {
                     loadModel(modelId);
                 }
 
+                // =========================================
+                // RENDER TOGGLES
+                // =========================================
+
                 if (
                     event.key.key ==
                     SDLK_1
@@ -352,6 +402,7 @@ int ModelViewerTool::run() {
                     fillTriangles =
                         !fillTriangles;
                 }
+
                 if (
                     event.key.key ==
                     SDLK_4
@@ -360,10 +411,15 @@ int ModelViewerTool::run() {
                         !useAlpha;
                 }
 
+                // =========================================
+                // FIND NEXT ALPHA MODEL
+                // =========================================
+
                 if (
                     event.key.key ==
-                    SDLK_A
+                    SDLK_F
                 ) {
+
                     uint32_t searchId =
                         modelId + 1;
 
@@ -414,10 +470,12 @@ int ModelViewerTool::run() {
         rf::render::Camera camera {};
 
         camera.centerX =
-            windowWidth * 0.5f;
+            windowWidth * 0.5f +
+            cameraOffsetX;
 
         camera.centerY =
-            windowHeight * 0.5f;
+            windowHeight * 0.5f +
+            cameraOffsetY;
 
         camera.angleY =
             renderAngle;
