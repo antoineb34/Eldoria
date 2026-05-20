@@ -2,6 +2,7 @@ add_executable(tool
     main.cpp
     ToolApplication.cpp
     modes/ModelViewerMode.cpp
+    modes/CacheExplorerMode.cpp
 
     ../../core/cache/CacheStore.cpp
 
