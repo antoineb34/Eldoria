@@ -5,6 +5,10 @@
 
 #include <SDL3/SDL.h>
 
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
+
 #include "../../core/platform/SdlContext.h"
 #include "../../core/render/DepthBuffer.h"
 
@@ -33,6 +37,26 @@ int ToolApplication::run() {
     if (!window || !renderer) {
         return 1;
     }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+
+    ImGuiIO& io =
+        ImGui::GetIO();
+
+    io.ConfigFlags |=
+        ImGuiConfigFlags_NavEnableKeyboard;
+
+    ImGui::StyleColorsDark();
+
+    ImGui_ImplSDL3_InitForSDLRenderer(
+        window,
+        renderer
+    );
+
+    ImGui_ImplSDLRenderer3_Init(
+        renderer
+    );
 
     ModelViewerMode modelViewer;
     CacheExplorerMode cacheExplorer;
@@ -67,6 +91,10 @@ int ToolApplication::run() {
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
+
+            ImGui_ImplSDL3_ProcessEvent(
+                &event
+            );
 
             if (
                 event.type ==
@@ -108,6 +136,10 @@ int ToolApplication::run() {
             );
         }
 
+        ImGui_ImplSDLRenderer3_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+
         int windowWidth = 0;
         int windowHeight = 0;
 
@@ -133,12 +165,46 @@ int ToolApplication::run() {
             windowHeight
         );
 
+        ImGui::Begin("RuneForge");
+
+        if (ImGui::Button("Model Viewer")) {
+            activeModeIndex = 0;
+            activeMode = modes[activeModeIndex];
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cache Explorer")) {
+            activeModeIndex = 1;
+            activeMode = modes[activeModeIndex];
+        }
+
+        ImGui::Text(
+            "Active mode: %d",
+            activeModeIndex
+        );
+
+        ImGui::End();
+
+        activeMode->renderUi();
+
+        ImGui::Render();
+
+        ImGui_ImplSDLRenderer3_RenderDrawData(
+            ImGui::GetDrawData(),
+            renderer
+        );
+
         SDL_RenderPresent(
             renderer
         );
 
         SDL_Delay(16);
     }
+
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
 
     return 0;
 }

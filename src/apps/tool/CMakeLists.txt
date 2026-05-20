@@ -28,12 +28,24 @@ add_executable(tool
     ../../core/cache/NameHash.cpp
     ../../core/cache/ArchiveFileExtractor.cpp
     ../../core/cache/ConfigArchiveLoader.cpp
+
+    ../../../libs/imgui/imgui.cpp
+    ../../../libs/imgui/imgui_draw.cpp
+    ../../../libs/imgui/imgui_tables.cpp
+    ../../../libs/imgui/imgui_widgets.cpp
+    ../../../libs/imgui/backends/imgui_impl_sdl3.cpp
+    ../../../libs/imgui/backends/imgui_impl_sdlrenderer3.cpp
 )
 
 target_link_libraries(tool PRIVATE
     SDL3::SDL3
     z
     BZip2::BZip2
+)
+
+target_include_directories(tool PRIVATE
+    ../../../libs/imgui
+    ../../../libs/imgui/backends
 )
 
 set_target_properties(tool PROPERTIES

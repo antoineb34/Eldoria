@@ -10,6 +10,7 @@
 
 #include "../../../core/model/FaceDecoder.h"
 #include "../../../core/model/VertexDecoder.h"
+#include <imgui.h>
 
 namespace rf::tool {
 
@@ -24,6 +25,8 @@ public:
     ) override;
 
     void update() override;
+
+    void renderUi() override;
 
     void render(
         SDL_Renderer* renderer,

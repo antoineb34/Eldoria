@@ -23,9 +23,128 @@ CacheExplorerMode::CacheExplorerMode()
 {
 }
 
+void CacheExplorerMode::buildRawCacheTree() {
+
+    rootNode_ = {
+        "Raw Cache",
+        "RuneForge cache filesystem",
+        {}
+    };
+
+    CacheTreeNode idx0Node {
+        "idx0",
+        "configs / media / archives",
+        {}
+    };
+
+    for (uint32_t archiveId = 0; archiveId < 20; archiveId++) {
+
+        rf::cache::CacheArchive archive =
+            configCache_.readArchive(archiveId);
+
+        if (
+            archive.entry.size == 0 ||
+            archive.payload.empty()
+        ) {
+            continue;
+        }
+
+        rf::cache::DecodedArchive decoded =
+            rf::cache::decodeArchiveContainer(
+                archive.payload
+            );
+
+        rf::cache::ArchiveFileTable table =
+            rf::cache::readArchiveFileTable(
+                decoded.payload
+            );
+
+        CacheTreeNode archiveNode {
+            "archive " + std::to_string(archiveId),
+            "files: " + std::to_string(table.fileCount),
+            {}
+        };
+
+        for (int i = 0; i < table.files.size(); i++) {
+
+            const auto& file =
+                table.files[i];
+
+            std::string name =
+                "";
+
+            for (const std::string& knownName : rf::cache::KNOWN_ARCHIVES) {
+
+                if (
+                    rf::cache::hashName(knownName) ==
+                    file.hash
+                ) {
+                    name = knownName;
+                    break;
+                }
+            }
+
+            std::string label =
+                name.empty()
+                    ? "file " + std::to_string(i)
+                    : name;
+
+            CacheTreeNode fileNode {
+                label,
+                "hash: " + std::to_string(file.hash) +
+                " size: " + std::to_string(file.uncompressedSize),
+                {}
+            };
+
+            archiveNode.children.push_back(
+                fileNode
+            );
+        }
+
+        idx0Node.children.push_back(
+            archiveNode
+        );
+    }
+
+    rootNode_.children.push_back(
+        idx0Node
+    );
+}
+
+void CacheExplorerMode::printTree(
+    const CacheTreeNode& node,
+    int depth
+) {
+    for (int i = 0; i < depth; i++) {
+        std::cout << "  ";
+    }
+
+    std::cout
+        << "- "
+        << node.label;
+
+    if (!node.detail.empty()) {
+        std::cout
+            << " ("
+            << node.detail
+            << ")";
+    }
+
+    std::cout << "\n";
+
+    for (const CacheTreeNode& child : node.children) {
+        printTree(
+            child,
+            depth + 1
+        );
+    }
+}
+
 bool CacheExplorerMode::initialize() {
 
     inspectIndex0();
+    buildRawCacheTree();
+    printTree(rootNode_, 0);
 
     std::vector<char> npcDat =
         configLoader_.loadFile(
@@ -85,6 +204,12 @@ void CacheExplorerMode::render(
         renderer,
         &panel
     );
+}
+
+void CacheExplorerMode::renderUi() {
+    ImGui::Begin("Cache Explorer");
+    ImGui::Text("Raw cache browser coming here");
+    ImGui::End();
 }
 
 void CacheExplorerMode::inspectIndex0() {

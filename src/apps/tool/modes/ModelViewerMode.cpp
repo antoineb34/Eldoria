@@ -212,6 +212,43 @@ void ModelViewerMode::render(
     );
 }
 
+void ModelViewerMode::renderUi() {
+
+    ImGui::Begin("Model Viewer");
+
+    ImGui::Text(
+        "Model ID: %u",
+        modelId_
+    );
+
+    ImGui::Checkbox(
+        "Wireframe",
+        &showWireframe_
+    );
+
+    ImGui::Checkbox(
+        "Vertices",
+        &showVertices_
+    );
+
+    ImGui::Checkbox(
+        "Fill triangles",
+        &fillTriangles_
+    );
+
+    ImGui::Checkbox(
+        "Use alpha",
+        &useAlpha_
+    );
+
+    ImGui::Checkbox(
+        "Highlight textured faces",
+        &highlightTexturedFaces_
+    );
+
+    ImGui::End();
+}
+
 bool ModelViewerMode::loadModel(
     uint32_t id
 ) {

@@ -18,6 +18,8 @@ public:
 
     virtual void update() = 0;
 
+    virtual void renderUi() = 0;
+
     virtual void render(
         SDL_Renderer* renderer,
         rf::render::DepthBuffer& depthBuffer,
