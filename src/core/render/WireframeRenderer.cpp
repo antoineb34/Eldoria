@@ -2,10 +2,14 @@
 #include "Color.h"
 #include "TriangleRasterizer.h"
 
+#include <algorithm>
+#include <vector>
+
 namespace rf::render {
 
 void drawWireframeModel(
     SDL_Renderer* renderer,
+    DepthBuffer& depthBuffer,
     const std::vector<rf::model::Vertex>& vertices,
     const std::vector<rf::model::Face>& faces,
     const Camera& camera,
@@ -22,6 +26,16 @@ void drawWireframeModel(
     );
 
     SDL_RenderClear(renderer);
+
+    struct RenderFace {
+        rf::model::Face face;
+        ScreenPoint a;
+        ScreenPoint b;
+        ScreenPoint c;
+        float depth = 0.0f;
+    };
+
+    std::vector<RenderFace> renderFaces;
 
     for (const rf::model::Face& face : faces) {
 
@@ -54,8 +68,65 @@ void drawWireframeModel(
                 camera
             );
 
+        float area =
+            (b.x - a.x) * (c.y - a.y) -
+            (b.y - a.y) * (c.x - a.x);
+
+        if (area <= 0.0f) {
+            continue;
+        }
+
+        float depth =
+            (a.z + b.z + c.z) / 3.0f;
+
+        renderFaces.push_back({
+            face,
+            a,
+            b,
+            c,
+            depth
+        });
+    }
+
+    std::sort(
+        renderFaces.begin(),
+        renderFaces.end(),
+        [](const RenderFace& a,
+           const RenderFace& b) {
+
+            if (
+                a.face.priority !=
+                b.face.priority
+            ) {
+                return
+                    a.face.priority <
+                    b.face.priority;
+            }
+
+            return
+                a.depth <
+                b.depth;
+        }
+    );
+
+    for (const RenderFace& renderFace : renderFaces) {
+
+        const rf::model::Face& face =
+            renderFace.face;
+
+        ScreenPoint a =
+            renderFace.a;
+
+        ScreenPoint b =
+            renderFace.b;
+
+        ScreenPoint c =
+            renderFace.c;
+
         RgbColor color =
-            rsColorToRgb(face.color);
+            rsColorToRgb(
+                face.color
+            );
 
         SDL_SetRenderDrawColor(
             renderer,
@@ -68,6 +139,7 @@ void drawWireframeModel(
         if (fillTriangles) {
             fillTriangle(
                 renderer,
+                depthBuffer,
                 a,
                 b,
                 c

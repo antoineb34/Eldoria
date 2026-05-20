@@ -115,50 +115,113 @@ void dumpModelChunks(
     const rf::model::ModelFooter& footer,
     const rf::model::ModelLayout& layout
 ) {
-    dumpChunk(
-        payload,
+    auto dumpMaybe =
+        [&](const char* name, int start, int length) {
+
+            if (length <= 0) {
+                std::cout
+                    << "\n\n=== "
+                    << name
+                    << " ==="
+                    << "\noffset: "
+                    << start
+                    << "\nlength: 0 bytes"
+                    << "\nempty / not present\n";
+
+                return;
+            }
+
+            dumpChunk(
+                payload,
+                name,
+                start,
+                length
+            );
+        };
+
+    dumpMaybe(
         "vertex flags",
         layout.vertexFlagsOffset,
         footer.vertexCount
     );
 
-    dumpChunk(
-        payload,
+    dumpMaybe(
         "triangle types",
         layout.triangleTypesOffset,
         footer.triangleCount
     );
 
-    dumpChunk(
-        payload,
+    dumpMaybe(
+        "triangle priorities",
+        layout.trianglePrioritiesOffset,
+        footer.priorityFlag == 255
+            ? footer.triangleCount
+            : 0
+    );
+
+    dumpMaybe(
+        "triangle skins",
+        layout.triangleSkinsOffset,
+        footer.triangleSkinFlag == 1
+            ? footer.triangleCount
+            : 0
+    );
+
+    dumpMaybe(
+        "texture pointers",
+        layout.texturePointersOffset,
+        footer.textureFlag == 1
+            ? footer.triangleCount
+            : 0
+    );
+
+    dumpMaybe(
+        "vertex skins",
+        layout.vertexSkinsOffset,
+        footer.vertexSkinFlag == 1
+            ? footer.vertexCount
+            : 0
+    );
+
+    dumpMaybe(
+        "triangle alphas",
+        layout.triangleAlphasOffset,
+        footer.alphaFlag == 1
+            ? footer.triangleCount
+            : 0
+    );
+
+    dumpMaybe(
         "triangle data",
         layout.triangleDataOffset,
         footer.triangleDataLength
     );
 
-    dumpChunk(
-        payload,
+    dumpMaybe(
         "triangle colors",
         layout.triangleColorsOffset,
         footer.triangleCount * 2
     );
 
-    dumpChunk(
-        payload,
+    dumpMaybe(
+        "texture data",
+        layout.textureDataOffset,
+        footer.textureTriangleCount * 6
+    );
+
+    dumpMaybe(
         "x data",
         layout.xDataOffset,
         footer.xDataLength
     );
 
-    dumpChunk(
-        payload,
+    dumpMaybe(
         "y data",
         layout.yDataOffset,
         footer.yDataLength
     );
 
-    dumpChunk(
-        payload,
+    dumpMaybe(
         "z data",
         layout.zDataOffset,
         footer.zDataLength

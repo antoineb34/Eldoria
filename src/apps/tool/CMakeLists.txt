@@ -19,6 +19,7 @@ add_executable(tool
     ../../core/debug/ModelDebug.cpp
     ../../core/render/Color.cpp
     ../../core/render/TriangleRasterizer.cpp
+    ../../core/render/DepthBuffer.cpp
 )
 
 target_link_libraries(tool PRIVATE

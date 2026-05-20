@@ -25,6 +25,9 @@
 #include "../../core/render/Projection.h"
 #include "../../core/render/WireframeRenderer.h"
 
+#include "../../core/render/DepthBuffer.h"
+
+
 namespace rf::tool {
 
 int ModelViewerTool::run() {
@@ -318,6 +321,18 @@ int ModelViewerTool::run() {
             &windowHeight
         );
 
+        static rf::render::DepthBuffer depthBuffer(
+            WINDOW_WIDTH,
+            WINDOW_HEIGHT
+        );
+
+        depthBuffer.resize(
+            windowWidth,
+            windowHeight
+        );
+
+        depthBuffer.clear();
+
         rf::render::Camera camera {};
 
         camera.centerX =
@@ -339,6 +354,7 @@ int ModelViewerTool::run() {
 
         rf::render::drawWireframeModel(
             renderer,
+            depthBuffer,
             vertices,
             faces,
             camera,

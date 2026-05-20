@@ -5,191 +5,116 @@
 
 namespace rf::render {
 
-static void drawScanline(
-    SDL_Renderer* renderer,
-    float x1,
-    float x2,
-    int y
+static float edge(
+    const ScreenPoint& a,
+    const ScreenPoint& b,
+    float x,
+    float y
 ) {
-    if (x1 > x2) {
-        std::swap(x1, x2);
-    }
-
-    SDL_RenderLine(
-        renderer,
-        x1,
-        static_cast<float>(y),
-        x2,
-        static_cast<float>(y)
-    );
-}
-
-static void drawFlatBottomTriangle(
-    SDL_Renderer* renderer,
-    ScreenPoint top,
-    ScreenPoint left,
-    ScreenPoint right
-) {
-    if (
-        std::abs(left.y - top.y) < 0.0001f ||
-        std::abs(right.y - top.y) < 0.0001f
-    ) {
-        return;
-    }
-
-    float invSlopeLeft =
-        (left.x - top.x) /
-        (left.y - top.y);
-
-    float invSlopeRight =
-        (right.x - top.x) /
-        (right.y - top.y);
-
-    float currentLeftX = top.x;
-    float currentRightX = top.x;
-
-    int startY =
-        static_cast<int>(std::ceil(top.y));
-
-    int endY =
-        static_cast<int>(std::floor(left.y));
-
-    for (int y = startY; y <= endY; y++) {
-        drawScanline(
-            renderer,
-            currentLeftX,
-            currentRightX,
-            y
-        );
-
-        currentLeftX += invSlopeLeft;
-        currentRightX += invSlopeRight;
-    }
-}
-
-static void drawFlatTopTriangle(
-    SDL_Renderer* renderer,
-    ScreenPoint left,
-    ScreenPoint right,
-    ScreenPoint bottom
-) {
-    if (
-        std::abs(bottom.y - left.y) < 0.0001f ||
-        std::abs(bottom.y - right.y) < 0.0001f
-    ) {
-        return;
-    }
-
-    float invSlopeLeft =
-        (bottom.x - left.x) /
-        (bottom.y - left.y);
-
-    float invSlopeRight =
-        (bottom.x - right.x) /
-        (bottom.y - right.y);
-
-    float currentLeftX = bottom.x;
-    float currentRightX = bottom.x;
-
-    int startY =
-        static_cast<int>(std::floor(bottom.y));
-
-    int endY =
-        static_cast<int>(std::ceil(left.y));
-
-    for (int y = startY; y > endY; y--) {
-        drawScanline(
-            renderer,
-            currentLeftX,
-            currentRightX,
-            y
-        );
-
-        currentLeftX -= invSlopeLeft;
-        currentRightX -= invSlopeRight;
-    }
+    return
+        (x - a.x) * (b.y - a.y) -
+        (y - a.y) * (b.x - a.x);
 }
 
 void fillTriangle(
     SDL_Renderer* renderer,
+    DepthBuffer& depthBuffer,
     const ScreenPoint& a,
     const ScreenPoint& b,
     const ScreenPoint& c
 ) {
-    ScreenPoint v0 = a;
-    ScreenPoint v1 = b;
-    ScreenPoint v2 = c;
-
-    if (v1.y < v0.y) {
-        std::swap(v0, v1);
-    }
-
-    if (v2.y < v0.y) {
-        std::swap(v0, v2);
-    }
-
-    if (v2.y < v1.y) {
-        std::swap(v1, v2);
-    }
-
-    if (std::abs(v2.y - v0.y) < 0.0001f) {
-        return;
-    }
-
-    if (std::abs(v1.y - v2.y) < 0.0001f) {
-        drawFlatBottomTriangle(
-            renderer,
-            v0,
-            v1,
-            v2
+    float minX =
+        std::floor(
+            std::min({ a.x, b.x, c.x })
         );
 
-        return;
-    }
-
-    if (std::abs(v0.y - v1.y) < 0.0001f) {
-        drawFlatTopTriangle(
-            renderer,
-            v0,
-            v1,
-            v2
+    float maxX =
+        std::ceil(
+            std::max({ a.x, b.x, c.x })
         );
 
+    float minY =
+        std::floor(
+            std::min({ a.y, b.y, c.y })
+        );
+
+    float maxY =
+        std::ceil(
+            std::max({ a.y, b.y, c.y })
+        );
+
+    float area =
+        edge(a, b, c.x, c.y);
+
+    if (std::abs(area) < 0.0001f) {
         return;
     }
 
-    float splitFactor =
-        (v1.y - v0.y) /
-        (v2.y - v0.y);
+    for (
+        int y = static_cast<int>(minY);
+        y <= static_cast<int>(maxY);
+        y++
+    ) {
+        for (
+            int x = static_cast<int>(minX);
+            x <= static_cast<int>(maxX);
+            x++
+        ) {
+            float px =
+                static_cast<float>(x) + 0.5f;
 
-    ScreenPoint split {};
+            float py =
+                static_cast<float>(y) + 0.5f;
 
-    split.x =
-        v0.x +
-        (v2.x - v0.x) *
-        splitFactor;
+            float w0 =
+                edge(b, c, px, py);
 
-    split.y =
-        v1.y;
+            float w1 =
+                edge(c, a, px, py);
 
-    split.z =
-        v0.z +
-        (v2.z - v0.z) *
-        splitFactor;
+            float w2 =
+                edge(a, b, px, py);
 
-    drawFlatBottomTriangle(
-        renderer,
-        v0,
-        v1,
-        split
-    );
+            bool inside =
+                (
+                    w0 >= 0.0f &&
+                    w1 >= 0.0f &&
+                    w2 >= 0.0f
+                ) ||
+                (
+                    w0 <= 0.0f &&
+                    w1 <= 0.0f &&
+                    w2 <= 0.0f
+                );
 
-    drawFlatTopTriangle(
-        renderer,
-        v1,
-        split,
-        v2
-    );
+            if (!inside) {
+                continue;
+            }
+
+            w0 /= area;
+            w1 /= area;
+            w2 /= area;
+
+            float depth =
+                a.z * w0 +
+                b.z * w1 +
+                c.z * w2;
+
+            if (
+                depthBuffer.testAndSet(
+                    x,
+                    y,
+                    depth
+                )
+            ) {
+                SDL_RenderPoint(
+                    renderer,
+                    static_cast<float>(x),
+                    static_cast<float>(y)
+                );
+            }
+        }
+    }
 }
 
 }
