@@ -2,11 +2,11 @@
 
 #include <vector>
 #include "render/Vertex.h"
-#include "assets/model/ModelDef.h"
+#include "assets/model/Model.h"
 
 struct Mesh {
     std::vector<Vertex> vertices;
     std::vector<uint16_t> indices;
 
-    static Mesh FromModelDef(const ModelDef& def);
+    static Mesh fromModel(const Model& model);
 };

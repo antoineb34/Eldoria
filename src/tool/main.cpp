@@ -1,289 +1,988 @@
+
 #include <algorithm>
+#include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <map>
-#include <string>
+#include <vector>
 
-#include "filestore/FileStore.h"
-#include "legacy/DefinitionsLoader.h"
-#include "assets/model/ModelDef.h"
-#include "legacy/TextureDef.h"
-#include "filestore/VersionList.h"
-#include "legacy/MapRegion.h"
-#include "legacy/RegionRenderer2D.h"
+#include <zlib.h>
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        std::cerr << "Usage: tool <path to cache folder> [region id] [object filter]\n"
-                  << "       tool <path to cache folder> <region id> render2d [output.ppm] [plane] [scale] [all|terrain|objects]\n"
-                  << "       tool <path to cache folder> <region id> tile <worldX> <worldY> [plane]\n"
-                  << "       tool <path to cache folder> dump_model <model id>\n";
+#include <cmath>
+#include <chrono>
+#include <thread>
+
+#include <SDL3/SDL.h>
+
+#include "../core/cache/CacheStore.h"
+#include "../core/cache/CacheTypes.h"
+
+
+int main() {
+
+    rf::cache::CacheStore cache(
+        "cache/main_file_cache.dat",
+        "cache/main_file_cache.idx1"
+    );
+
+    rf::cache::CacheArchive archive =
+        cache.readArchive(2635);
+
+    uint32_t size =
+        archive.entry.size;
+
+    uint32_t sector =
+        archive.entry.firstSector;
+
+    std::vector<char> fullPayload;
+
+    fullPayload.reserve(
+        archive.payload.size()
+    );
+
+    for (uint8_t byte : archive.payload) {
+        fullPayload.push_back(
+            static_cast<char>(byte)
+        );
+    }
+
+    std::cout
+        << "\nidx entry:"
+        << "\nsize: "
+        << size
+
+        << "\nfirst sector: "
+        << sector
+
+        << "\n";
+
+    std::cout
+        << "\nfinished:"
+        << "\nexpected size: "
+        << size
+
+        << "\nactual payload size: "
+        << fullPayload.size()
+
+        << "\n";
+
+    std::cout << "\nfinished:"
+              << "\nexpected size: " << size
+              << "\nactual payload size: " << fullPayload.size()
+              << "\n";
+
+    std::cout << "\nfull payload bytes:\n";
+
+    for (int i = 0; i < fullPayload.size(); i++) {
+
+        if (i % 16 == 0) {
+            std::cout << "\n";
+            }
+
+        std::cout
+            << std::hex
+            << std::setw(2)
+            << std::setfill('0')
+            << (int)(unsigned char)fullPayload[i]
+            << " ";
+    }
+
+    std::cout << std::dec << "\n";
+
+    std::cout << "\nfull payload bytes:\n";
+
+    for (int i = 0; i < fullPayload.size(); i++) {
+
+        if (i % 16 == 0) {
+            std::cout << "\n";
+        }
+
+        std::cout
+            << std::hex
+            << std::setw(2)
+            << std::setfill('0')
+            << (int)(unsigned char)fullPayload[i]
+            << " ";
+    }
+
+    std::cout << std::dec << "\n";
+
+    if (fullPayload.size() >= 3) {
+
+        unsigned char b0 = fullPayload[0];
+        unsigned char b1 = fullPayload[1];
+        unsigned char b2 = fullPayload[2];
+
+        // gzip magic:
+        // 1F 8B 08
+
+        if (b0 == 0x1F &&
+            b1 == 0x8B &&
+            b2 == 0x08) {
+
+            std::cout << "\ncompression: GZIP\n";
+        }
+        else {
+
+            std::cout << "\ncompression: unknown\n";
+        }
+    }
+
+    // =========================
+    // DECOMPRESS GZIP INLINE
+    // =========================
+
+    z_stream stream{};
+    stream.next_in = reinterpret_cast<Bytef*>(fullPayload.data());
+    stream.avail_in = fullPayload.size();
+
+    // 16 + MAX_WBITS means: expect gzip header
+    int inflateResult = inflateInit2(&stream, 16 + MAX_WBITS);
+
+    if (inflateResult != Z_OK) {
+        std::cerr << "inflateInit2 failed: "
+                  << inflateResult
+                  << "\n";
         return 1;
     }
 
-    FileStore reader;
-    if (!reader.open(argv[1])) {
-        std::cerr << "Failed to open cache at: " << argv[1] << std::endl;
+    std::vector<char> decompressedPayload;
+
+    char decompressBuffer[4096];
+
+    do {
+        stream.next_out =
+            reinterpret_cast<Bytef*>(decompressBuffer);
+
+        stream.avail_out =
+            sizeof(decompressBuffer);
+
+        inflateResult =
+            inflate(&stream, Z_NO_FLUSH);
+
+        if (inflateResult != Z_OK &&
+            inflateResult != Z_STREAM_END) {
+
+            std::cerr << "inflate failed: "
+                      << inflateResult
+                      << "\n";
+
+            inflateEnd(&stream);
+            return 1;
+        }
+
+        int bytesProduced =
+            sizeof(decompressBuffer) - stream.avail_out;
+
+        decompressedPayload.insert(
+            decompressedPayload.end(),
+            decompressBuffer,
+            decompressBuffer + bytesProduced
+        );
+
+    } while (inflateResult != Z_STREAM_END);
+
+    inflateEnd(&stream);
+
+    std::cout << "\ndecompressed size: "
+              << decompressedPayload.size()
+              << " bytes\n";
+
+    std::cout << "\ndecompressed first bytes:\n";
+
+    for (int i = 0; i < decompressedPayload.size(); i++) {
+
+        if (i % 16 == 0) {
+            std::cout << "\n";
+        }
+
+        std::cout
+            << std::hex
+            << std::setw(2)
+            << std::setfill('0')
+            << (int)(unsigned char)decompressedPayload[i]
+            << " ";
+    }
+
+    std::cout << std::dec << "\n";
+
+    // =========================
+    // READ MODEL FOOTER
+    // =========================
+
+    constexpr int MODEL_FOOTER_SIZE = 18;
+
+    if (decompressedPayload.size() < MODEL_FOOTER_SIZE) {
+        std::cerr << "Decompressed payload too small for model footer\n";
         return 1;
     }
 
-    try {
-        // dump_textures: list all files in the textures JAG archive and probe naming patterns
-        if (argc >= 3 && std::string(argv[2]) == "dump_textures") {
-            auto texArchivePtr = reader.readArchive(0, 6);
-            if (!texArchivePtr) { std::cerr << "Failed to read textures archive\n"; return 1; }
-            Archive& texArchive = *texArchivePtr;
-            std::cout << "Textures archive: " << texArchive.size() << " files\n\n";
+    int footerStart =
+        decompressedPayload.size() - MODEL_FOOTER_SIZE;
 
-            // list every file by hash and size
-            std::cout << "All files (hash -> size):\n";
-            std::map<uint32_t,int> sorted;
-            for (auto& [hash, data] : texArchive.files)
-                sorted[hash] = (int)data.size();
-            for (auto& [hash, size] : sorted)
-                std::cout << "  0x" << std::hex << std::setw(8) << std::setfill('0') << hash
-                          << "  " << std::dec << size << " bytes\n";
+    std::cout << "\nmodel footer bytes:\n";
 
-            // probe common naming patterns to identify how textures are named
-            std::cout << "\nProbing naming patterns (id 0..4):\n";
-            for (int i = 0; i < 5; i++) {
-                for (const std::string& name : {
-                    std::to_string(i) + ".dat",
-                    std::to_string(i),
-                    "texture" + std::to_string(i) + ".dat"
-                }) {
-                    if (texArchive.hasFile(name)) {
-                        const Buffer& d = texArchive.getFile(name);
-                        std::cout << "  FOUND \"" << name << "\" -> " << d.size() << " bytes\n";
-                    }
-                }
-            }
-            return 0;
+    for (int i = footerStart; i < decompressedPayload.size(); i++) {
+
+        std::cout
+            << std::hex
+            << std::setw(2)
+            << std::setfill('0')
+            << (int)(unsigned char)decompressedPayload[i]
+            << " ";
+    }
+
+    std::cout << std::dec << "\n";
+
+    // =========================
+    // DECODE MODEL FOOTER
+    // =========================
+
+    int modelFooterStart =
+        decompressedPayload.size() - MODEL_FOOTER_SIZE;
+
+    // footer format:
+    //
+    // 0-1   vertex count
+    // 2-3   triangle count
+    // 4     texture triangle count
+    // 5     texture flag
+    // 6     priority flag
+    // 7     alpha flag
+    // 8     triangle skin flag
+    // 9     vertex skin flag
+    // 10-11 x data length
+    // 12-13 y data length
+    // 14-15 z data length
+    // 16-17 triangle data length
+
+    uint32_t vertexCount =
+        ((unsigned char)decompressedPayload[modelFooterStart + 0] << 8) |
+        ((unsigned char)decompressedPayload[modelFooterStart + 1]);
+
+    uint32_t triangleCount =
+        ((unsigned char)decompressedPayload[modelFooterStart + 2] << 8) |
+        ((unsigned char)decompressedPayload[modelFooterStart + 3]);
+
+    uint32_t textureTriangleCount =
+        (unsigned char)decompressedPayload[modelFooterStart + 4];
+
+    uint32_t textureFlag =
+        (unsigned char)decompressedPayload[modelFooterStart + 5];
+
+    uint32_t priorityFlag =
+        (unsigned char)decompressedPayload[modelFooterStart + 6];
+
+    uint32_t alphaFlag =
+        (unsigned char)decompressedPayload[modelFooterStart + 7];
+
+    uint32_t triangleSkinFlag =
+        (unsigned char)decompressedPayload[modelFooterStart + 8];
+
+    uint32_t vertexSkinFlag =
+        (unsigned char)decompressedPayload[modelFooterStart + 9];
+
+    uint32_t xDataLength =
+        ((unsigned char)decompressedPayload[modelFooterStart + 10] << 8) |
+        ((unsigned char)decompressedPayload[modelFooterStart + 11]);
+
+    uint32_t yDataLength =
+        ((unsigned char)decompressedPayload[modelFooterStart + 12] << 8) |
+        ((unsigned char)decompressedPayload[modelFooterStart + 13]);
+
+    uint32_t zDataLength =
+        ((unsigned char)decompressedPayload[modelFooterStart + 14] << 8) |
+        ((unsigned char)decompressedPayload[modelFooterStart + 15]);
+
+    uint32_t triangleDataLength =
+        ((unsigned char)decompressedPayload[modelFooterStart + 16] << 8) |
+        ((unsigned char)decompressedPayload[modelFooterStart + 17]);
+
+    std::cout
+        << "\nmodel footer decoded:"
+        << "\nvertex count: "
+        << vertexCount
+        << " vertices"
+
+        << "\ntriangle count: "
+        << triangleCount
+        << " triangles"
+
+        << "\ntexture triangle count: "
+        << textureTriangleCount
+        << " textured triangles"
+
+        << "\ntexture flag: "
+        << textureFlag
+        << " (0 = no texture info, 1 = texture data present)"
+
+        << "\npriority flag: "
+        << priorityFlag
+        << " (255 = per-face priorities, otherwise shared priority)"
+
+        << "\nalpha flag: "
+        << alphaFlag
+        << " (0 = no alpha/transparency, 1 = alpha data present)"
+
+        << "\ntriangle skin flag: "
+        << triangleSkinFlag
+        << " (0 = no triangle skinning, 1 = triangle skin groups present)"
+
+        << "\nvertex skin flag: "
+        << vertexSkinFlag
+        << " (0 = no vertex skinning, 1 = vertex skin groups present)"
+
+        << "\nx data length: "
+        << xDataLength
+        << " bytes"
+
+        << "\ny data length: "
+        << yDataLength
+        << " bytes"
+
+        << "\nz data length: "
+        << zDataLength
+        << " bytes"
+
+        << "\ntriangle data length: "
+        << triangleDataLength
+        << " bytes"
+
+        << "\n";
+
+        // =========================
+        // CALCULATE MODEL CHUNK OFFSETS
+        // =========================
+
+        int offset = 0;
+
+        int vertexFlagsOffset = offset;
+        offset += vertexCount;
+
+        int triangleTypesOffset = offset;
+        offset += triangleCount;
+
+        int trianglePrioritiesOffset = offset;
+
+        if (priorityFlag == 255) {
+            offset += triangleCount;
         }
 
-        // dump_texture <id>: use TextureDef to decode and render as PPM
-        if (argc >= 3 && std::string(argv[2]) == "dump_texture") {
-            int texId = argc >= 4 ? std::stoi(argv[3]) : 0;
-            auto texArchivePtr = reader.readArchive(0, 6);
-            if (!texArchivePtr) { std::cerr << "Failed to read textures archive\n"; return 1; }
-            Archive& texArchive = *texArchivePtr;
+        int triangleSkinsOffset = offset;
 
-            // Get palette from index.dat
-            const Buffer& indexData = texArchive.getFile("index.dat");
-            if (indexData.empty()) {
-                std::cerr << "index.dat not found in textures archive\n";
-                return 1;
-            }
-
-            // Get texture file
-            std::string name = std::to_string(texId) + ".dat";
-            const Buffer& texData = texArchive.getFile(name);
-            if (texData.empty()) {
-                std::cerr << "Texture " << texId << " not found\n";
-                return 1;
-            }
-
-            // Parse using TextureDef
-            Buffer dataCopy(texData.slice(0, texData.size()));
-            Buffer paletteCopy(indexData.slice(0, indexData.size()));
-            TextureDef tex = TextureDef::parse(texId, dataCopy, paletteCopy);
-
-            std::cout << "Texture " << texId << ": " << tex.width << "x" << tex.height
-                      << ", " << tex.pixels.size() << " pixels, "
-                      << tex.palette.size() / 3 << " palette colors\n";
-
-            // Render as PPM
-            std::string ppmPath = "texture_" + std::to_string(texId) + ".ppm";
-            std::ofstream ppm(ppmPath, std::ios::binary);
-            ppm << "P6\n" << tex.width << " " << tex.height << "\n255\n";
-            for (int y = 0; y < tex.height; y++) {
-                for (int x = 0; x < tex.width; x++) {
-                    uint32_t rgb = tex.getPixelRGB(x, y);
-                    ppm.put((rgb >> 16) & 0xFF);
-                    ppm.put((rgb >> 8) & 0xFF);
-                    ppm.put(rgb & 0xFF);
-                }
-            }
-            std::cout << "Wrote " << ppmPath << "\n";
-            return 0;
+        if (triangleSkinFlag == 1) {
+            offset += triangleCount;
         }
 
-        // dump_model: extract and inspect raw bytes of a single model entry
-        if (argc >= 3 && std::string(argv[2]) == "dump_model") {
-            int modelId = argc >= 4 ? std::stoi(argv[3]) : 0;
+        int texturePointersOffset = offset;
 
-            if (!reader.hasFile(1, modelId)) {
-                std::cerr << "Model " << modelId << " does not exist in archive 1\n";
-                return 1;
+        if (textureFlag == 1) {
+            offset += triangleCount;
+        }
+
+        int vertexSkinsOffset = offset;
+
+        if (vertexSkinFlag == 1) {
+            offset += vertexCount;
+        }
+
+        int triangleAlphasOffset = offset;
+
+        if (alphaFlag == 1) {
+            offset += triangleCount;
+        }
+
+        int triangleDataOffset = offset;
+        offset += triangleDataLength;
+
+        int triangleColorsOffset = offset;
+        offset += triangleCount * 2;
+
+        int textureDataOffset = offset;
+        offset += textureTriangleCount * 6;
+
+        int xDataOffset = offset;
+        offset += xDataLength;
+
+        int yDataOffset = offset;
+        offset += yDataLength;
+
+        int zDataOffset = offset;
+        offset += zDataLength;
+
+        // =========================
+        // PRINT MODEL CHUNKS
+        // =========================
+
+        auto printChunk = [&](const char* name, int start, int length) {
+
+            std::cout
+                << "\n\n=== "
+                << name
+                << " ==="
+
+                << "\noffset: "
+                << start
+
+                << "\nlength: "
+                << length
+                << " bytes\n";
+
+            for (int i = 0; i < length; i++) {
+
+                if (i % 16 == 0) {
+                    std::cout << "\n";
+                }
+
+                std::cout
+                    << std::hex
+                    << std::setw(2)
+                    << std::setfill('0')
+                    << (int)(unsigned char)
+                       decompressedPayload[start + i]
+                    << " ";
             }
 
-            Buffer data = reader.readGzippedFile(1, modelId);
-            if (data.empty()) {
-                std::cerr << "Failed to read/decompress model " << modelId << "\n";
-                return 1;
-            }
-            int size = (int)data.size();
-
-            std::cout << "Model " << modelId << " — decompressed size: " << size << " bytes\n\n";
-
-            // hex dump of first 64 bytes
-            int dumpLen = std::min(64, size);
-            std::cout << "First " << dumpLen << " bytes:\n";
-            for (int i = 0; i < dumpLen; i++) {
-                if (i % 16 == 0)
-                    std::cout << std::hex << std::setw(4) << std::setfill('0') << i << ":  ";
-                std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)data.peekByte() << " ";
-                data.readByte(); // advance
-                if (i % 16 == 15) std::cout << "\n";
-            }
             std::cout << std::dec << "\n";
+        };
 
-            if (size < 18) {
-                std::cerr << "Model too small to have a valid footer (need 18 bytes)\n";
-                return 1;
+        printChunk(
+            "vertex flags",
+            vertexFlagsOffset,
+            vertexCount
+        );
+
+        printChunk(
+            "triangle types",
+            triangleTypesOffset,
+            triangleCount
+        );
+
+        if (priorityFlag == 255) {
+
+            printChunk(
+                "triangle priorities",
+                trianglePrioritiesOffset,
+                triangleCount
+            );
+        }
+
+        if (triangleSkinFlag == 1) {
+
+            printChunk(
+                "triangle skins",
+                triangleSkinsOffset,
+                triangleCount
+            );
+        }
+
+        if (textureFlag == 1) {
+
+            printChunk(
+                "texture pointers",
+                texturePointersOffset,
+                triangleCount
+            );
+        }
+
+        if (vertexSkinFlag == 1) {
+
+            printChunk(
+                "vertex skins",
+                vertexSkinsOffset,
+                vertexCount
+            );
+        }
+
+        if (alphaFlag == 1) {
+
+            printChunk(
+                "triangle alphas",
+                triangleAlphasOffset,
+                triangleCount
+            );
+        }
+
+        printChunk(
+            "triangle data",
+            triangleDataOffset,
+            triangleDataLength
+        );
+
+        printChunk(
+            "triangle colors",
+            triangleColorsOffset,
+            triangleCount * 2
+        );
+
+        if (textureTriangleCount > 0) {
+
+            printChunk(
+                "texture data",
+                textureDataOffset,
+                textureTriangleCount * 6
+            );
+        }
+
+        printChunk(
+            "x data",
+            xDataOffset,
+            xDataLength
+        );
+
+        printChunk(
+            "y data",
+            yDataOffset,
+            yDataLength
+        );
+
+        printChunk(
+            "z data",
+            zDataOffset,
+            zDataLength
+        );
+
+        printChunk(
+            "footer",
+            modelFooterStart,
+            MODEL_FOOTER_SIZE
+        );
+
+
+
+        // =========================
+        // DECODE VERTICES
+        // =========================
+
+        struct DecodedVertex {
+            int x;
+            int y;
+            int z;
+        };
+
+        auto readSmart = [&](int& cursor) -> int {
+            unsigned char first =
+                (unsigned char)decompressedPayload[cursor];
+
+            if (first < 128) {
+                cursor += 1;
+                return (int)first - 64;
             }
 
-            // parse footer: last 18 bytes
-            Buffer footerBuf(data.slice(size - 18, size));
+            int value =
+                (((unsigned char)decompressedPayload[cursor] << 8) |
+                 ((unsigned char)decompressedPayload[cursor + 1]))
+                - 49152;
 
-            auto readU16 = [&]() -> uint16_t {
-                return footerBuf.readUShort();
-            };
+            cursor += 2;
 
-            uint16_t vertexCount          = readU16();
-            uint16_t triangleCount        = readU16();
-            uint8_t  texTriangleCount     = footerBuf.readByte();
-            uint8_t  hasFaceRenderTypes   = footerBuf.readByte();
-            uint8_t  priorityFlag         = footerBuf.readByte();
-            uint8_t  hasFaceAlpha         = footerBuf.readByte();
-            uint8_t  hasFaceSkins         = footerBuf.readByte();
-            uint8_t  hasVertexSkins       = footerBuf.readByte();
-            uint16_t vertexXLen           = readU16();
-            uint16_t vertexYLen           = readU16();
-            uint16_t vertexZLen           = readU16();
-            uint16_t triIndexLen          = readU16();
+            return value;
+        };
 
-            std::cout << "--- Footer (last 18 bytes) ---\n";
-            std::cout << "  vertexCount:             " << vertexCount          << "\n";
-            std::cout << "  triangleCount:           " << triangleCount        << "\n";
-            std::cout << "  texTriangleCount:        " << (int)texTriangleCount    << "\n";
-            std::cout << "  hasFaceRenderTypes:      " << (int)hasFaceRenderTypes  << "\n";
-            std::cout << "  priorityFlag:            " << (int)priorityFlag
-                      << (priorityFlag == 255 ? "  (per-face)" : "  (shared)") << "\n";
-            std::cout << "  hasFaceAlpha:            " << (int)hasFaceAlpha    << "\n";
-            std::cout << "  hasFaceSkins:            " << (int)hasFaceSkins    << "\n";
-            std::cout << "  hasVertexSkins:          " << (int)hasVertexSkins  << "\n";
-            std::cout << "  vertexXDataLength:       " << vertexXLen           << "\n";
-            std::cout << "  vertexYDataLength:       " << vertexYLen           << "\n";
-            std::cout << "  vertexZDataLength:       " << vertexZLen           << "\n";
-            std::cout << "  triIndexDataLength:      " << triIndexLen          << "\n";
+        std::vector<DecodedVertex> vertices;
+        vertices.reserve(vertexCount);
 
-            // verify: compute expected size from footer and compare to actual
-            int expected = vertexCount                                          // vertexFlags
-                         + triangleCount                                        // triangleOpcodes
-                         + (priorityFlag == 255  ? triangleCount : 0)          // facePriority
-                         + (hasFaceSkins         ? triangleCount : 0)          // faceSkin
-                         + (hasFaceRenderTypes   ? triangleCount : 0)          // faceRenderType
-                         + (hasVertexSkins       ? vertexCount   : 0)          // vertexSkin
-                         + (hasFaceAlpha         ? triangleCount : 0)          // faceAlpha
-                         + triIndexLen                                          // triangleIndexData
-                         + triangleCount * 2                                    // faceColor (ushort each)
-                         + texTriangleCount * 6                                 // textureTriangle (3 ushorts)
-                         + vertexXLen + vertexYLen + vertexZLen                 // vertex coord data
-                         + 18;                                                  // footer itself
+        int currentX = 0;
+        int currentY = 0;
+        int currentZ = 0;
 
-            std::cout << "\nExpected size from footer: " << expected << " bytes\n";
-            std::cout << "Actual size:               " << size      << " bytes\n";
-            std::cout << (expected == size ? "[OK] sizes match — format confirmed\n"
-                                          : "[MISMATCH] format doc may be wrong or model is unusual\n");
+        int xCursor = xDataOffset;
+        int yCursor = yDataOffset;
+        int zCursor = zDataOffset;
 
-            // parse and print decoded summary
-            std::cout << "\n--- Parsed ModelDef ---\n";
-            Buffer modelBuf(data.slice(0, data.size()));
-            ModelDef def = ModelDef::parse(modelId, modelBuf);
-            std::cout << "  vertices:  " << def.vertexX.size() << "\n";
-            std::cout << "  triangles: " << def.triA.size()    << "\n";
-            std::cout << "  texTris:   " << def.texP.size()    << "\n";
-            if (!def.vertexX.empty()) {
-                std::cout << "  vertex[0]: ("
-                    << def.vertexX[0] << ", "
-                    << def.vertexY[0] << ", "
-                    << def.vertexZ[0] << ")\n";
-            }
-            if (!def.triA.empty()) {
-                std::cout << "  tri[0]:    ("
-                    << def.triA[0] << ", "
-                    << def.triB[0] << ", "
-                    << def.triC[0] << ")  color=0x"
-                    << std::hex << def.triColor[0] << std::dec << "\n";
+        for (int i = 0; i < vertexCount; i++) {
+
+            unsigned char flag =
+                (unsigned char)decompressedPayload[vertexFlagsOffset + i];
+
+            int dx = 0;
+            int dy = 0;
+            int dz = 0;
+
+            // bit 0 = X delta exists
+            if (flag & 1) {
+                dx = readSmart(xCursor);
             }
 
-            // render type breakdown
-            if (!def.triRenderType.empty()) {
-                std::map<int,int> typeCounts;
-                for (uint8_t t : def.triRenderType) typeCounts[t]++;
-                std::cout << "\n  Render type distribution:\n";
-                for (auto& [type, count] : typeCounts)
-                    std::cout << "    type " << type << ": " << count << " faces\n";
+            // bit 1 = Y delta exists
+            if (flag & 2) {
+                dy = readSmart(yCursor);
+            }
 
-                std::cout << "\n  First 10 triangles (type | color | indices):\n";
-                for (int i = 0; i < std::min(10,(int)def.triA.size()); i++) {
-                    std::cout << "    [" << i << "] type=" << (int)def.triRenderType[i]
-                              << "  color=0x" << std::hex << def.triColor[i] << std::dec
-                              << "  (" << def.triA[i] << "," << def.triB[i] << "," << def.triC[i] << ")\n";
+            // bit 2 = Z delta exists
+            if (flag & 4) {
+                dz = readSmart(zCursor);
+            }
+
+            currentX += dx;
+            currentY += dy;
+            currentZ += dz;
+
+            vertices.push_back({
+                currentX,
+                currentY,
+                currentZ
+            });
+        }
+
+        std::cout
+            << "\n\n=== decoded vertices ==="
+            << "\nvertex count: "
+            << vertices.size()
+            << "\n";
+
+        for (int i = 0; i < vertices.size(); i++) {
+
+            std::cout
+                << "vertex "
+                << (i + 1)
+                << ": x="
+                << vertices[i].x
+                << " y="
+                << vertices[i].y
+                << " z="
+                << vertices[i].z
+                << "\n";
+        }
+
+        std::cout
+            << "\nvertex stream cursors after decode:"
+            << "\nx cursor: "
+            << xCursor
+            << " / expected end: "
+            << (xDataOffset + xDataLength)
+
+            << "\ny cursor: "
+            << yCursor
+            << " / expected end: "
+            << (yDataOffset + yDataLength)
+
+            << "\nz cursor: "
+            << zCursor
+            << " / expected end: "
+            << (zDataOffset + zDataLength)
+            << "\n";
+
+            // =========================
+            // RENDERING MOVED TO SDL3
+            // =========================
+            // We wait until faces are decoded, then open an SDL3 window
+            // and draw the model as real 2D lines instead of ASCII.
+
+                // =========================
+                // DECODE TRIANGLES / FACES
+                // =========================
+
+                struct DecodedFace {
+                    int a;
+                    int b;
+                    int c;
+                };
+
+                std::vector<DecodedFace> faces;
+                faces.reserve(triangleCount);
+
+                int triangleDataCursor = triangleDataOffset;
+
+                int lastA = 0;
+                int lastB = 0;
+                int lastC = 0;
+                int lastIndex = 0;
+
+                for (int i = 0; i < triangleCount; i++) {
+
+                    unsigned char type =
+                        (unsigned char)
+                        decompressedPayload[triangleTypesOffset + i];
+
+                    if (type == 1) {
+
+                        lastA =
+                            readSmart(triangleDataCursor)
+                            + lastIndex;
+
+                        lastIndex = lastA;
+
+                        lastB =
+                            readSmart(triangleDataCursor)
+                            + lastIndex;
+
+                        lastIndex = lastB;
+
+                        lastC =
+                            readSmart(triangleDataCursor)
+                            + lastIndex;
+
+                        lastIndex = lastC;
+                    }
+
+                    else if (type == 2) {
+
+                        lastB = lastC;
+
+                        lastC =
+                            readSmart(triangleDataCursor)
+                            + lastIndex;
+
+                        lastIndex = lastC;
+                    }
+
+                    else if (type == 3) {
+
+                        lastA = lastC;
+
+                        lastC =
+                            readSmart(triangleDataCursor)
+                            + lastIndex;
+
+                        lastIndex = lastC;
+                    }
+
+                    else if (type == 4) {
+
+                        int oldA = lastA;
+
+                        lastA = lastB;
+                        lastB = oldA;
+
+                        lastC =
+                            readSmart(triangleDataCursor)
+                            + lastIndex;
+
+                        lastIndex = lastC;
+                    }
+
+                    else {
+
+                        std::cerr
+                            << "Unknown triangle type: "
+                            << (int)type
+                            << " at triangle "
+                            << i
+                            << "\n";
+
+                        return 1;
+                    }
+
+                    faces.push_back({
+                        lastA,
+                        lastB,
+                        lastC
+                    });
                 }
-            }
-            return 0;
-        }
 
-        auto defsArchivePtr = reader.readArchive(0, 2);
-        if (!defsArchivePtr) { std::cerr << "Failed to read definitions archive\n"; return 1; }
-        Archive& defsArchive = *defsArchivePtr;
-        DefinitionsLoader loader;
-        loader.loadLocs(defsArchive);
-        loader.loadFlos(defsArchive);
+                std::cout
+                    << "\n\n=== decoded faces ==="
+                    << "\nface count: "
+                    << faces.size()
+                    << "\n";
 
-        auto vArchivePtr = reader.readArchive(0, 5);
-        if (!vArchivePtr) { std::cerr << "Failed to read version archive\n"; return 1; }
-        Archive& vArchive = *vArchivePtr;
-        VersionList vList = VersionList::parse(vArchive);
-        int regionId = 12850;
-        if (argc >= 3)
-            regionId = std::stoi(argv[2]);
-        std::string objectFilter;
-        if (argc >= 4)
-            objectFilter = argv[3];
+                for (int i = 0;
+                     i < faces.size();
+                     i++) {
 
-        MapRegion region = MapRegion::load(reader, vList, regionId);
-        int baseX = (region.regionId() >> 8) * 64;
-        int baseY = (region.regionId() & 0xff) * 64;
+                    std::cout
+                        << "face "
+                        << (i + 1)
+                        << ": "
+                        << faces[i].a
+                        << ", "
+                        << faces[i].b
+                        << ", "
+                        << faces[i].c
+                        << "\n";
+                }
 
-        if (objectFilter == "render2d") {
-            std::string outputPath = "region_" + std::to_string(regionId) + ".ppm";
-            if (argc >= 5)
-                outputPath = argv[4];
-            int plane = argc >= 6 ? std::stoi(argv[5]) : 0;
-            int scale = argc >= 7 ? std::stoi(argv[6]) : 8;
-            RenderLayer layer = argc >= 8 ? RegionRenderer2D::parseLayer(argv[7]) : RenderLayer::All;
+                std::cout
+                    << "\ntriangle data cursor after decode: "
+                    << triangleDataCursor
+                    << " / expected end: "
+                    << (triangleDataOffset + triangleDataLength)
+                    << "\n";
 
-            RegionImage image = RegionRenderer2D::render(region, loader, plane, scale, layer);
-            image.savePpm(outputPath);
+                    // =========================
+                    // SDL3 WIREFRAME RENDERER
+                    // =========================
 
-            std::cout << "Rendered region " << regionId << " plane " << plane << "\n";
-            std::cout << "  output: " << outputPath << "\n";
-            return 0;
-        }
+                    constexpr int WINDOW_WIDTH = 960;
+                    constexpr int WINDOW_HEIGHT = 640;
 
-        std::cout << "Region " << region.regionId() << " map decode\n";
-        std::cout << "  base world coord: (" << baseX << "," << baseY << ")\n";
-        std::cout << "  terrain tiles: 16384 (64x64x4)\n";
-        std::cout << "  object placements: " << region.objects().getObjects().size() << "\n";
+                    if (!SDL_Init(SDL_INIT_VIDEO)) {
+                        std::cerr << "SDL_Init failed: "
+                                  << SDL_GetError()
+                                  << "\n";
+                        return 1;
+                    }
 
-    } catch (const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << std::endl;
-        return 1;
-    }
+                    SDL_Window* window = SDL_CreateWindow(
+                        "RuneForge SDL3 wireframe",
+                        WINDOW_WIDTH,
+                        WINDOW_HEIGHT,
+                        SDL_WINDOW_RESIZABLE
+                    );
+
+                    if (!window) {
+                        std::cerr << "SDL_CreateWindow failed: "
+                                  << SDL_GetError()
+                                  << "\n";
+                        SDL_Quit();
+                        return 1;
+                    }
+
+                    SDL_Renderer* renderer = SDL_CreateRenderer(
+                        window,
+                        nullptr
+                    );
+
+                    if (!renderer) {
+                        std::cerr << "SDL_CreateRenderer failed: "
+                                  << SDL_GetError()
+                                  << "\n";
+                        SDL_DestroyWindow(window);
+                        SDL_Quit();
+                        return 1;
+                    }
+
+                    float renderAngle = 0.0f;
+                    float scale = 4.0f;
+                    bool running = true;
+
+                    while (running) {
+                        SDL_Event event;
+
+                        while (SDL_PollEvent(&event)) {
+                            if (event.type == SDL_EVENT_QUIT) {
+                                running = false;
+                            }
+
+                            if (event.type == SDL_EVENT_KEY_DOWN) {
+                                if (event.key.key == SDLK_ESCAPE) {
+                                    running = false;
+                                }
+
+                                if (event.key.key == SDLK_UP) {
+                                    scale += 0.25f;
+                                }
+
+                                if (event.key.key == SDLK_DOWN) {
+                                    scale -= 0.25f;
+                                    if (scale < 0.25f) {
+                                        scale = 0.25f;
+                                    }
+                                }
+                            }
+                        }
+
+                        int windowWidth = 0;
+                        int windowHeight = 0;
+                        SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+
+                        float centerX = windowWidth * 0.5f;
+                        float centerY = windowHeight * 0.5f;
+
+                        float angleY = renderAngle;
+                        float angleX =
+                            0.45f +
+                            std::sin(renderAngle * 0.7f) * 0.15f;
+
+                        float cosY = std::cos(angleY);
+                        float sinY = std::sin(angleY);
+                        float cosX = std::cos(angleX);
+                        float sinX = std::sin(angleX);
+
+                        auto projectVertex =
+                            [&](const DecodedVertex& vertex,
+                                float& outX,
+                                float& outY,
+                                float& outZ) {
+
+                                float x = (float)vertex.x;
+                                float y = -(float)vertex.y; // RuneScape-style Y flip
+                                float z = (float)vertex.z;
+
+                                // rotate around Y
+                                float x1 = x * cosY + z * sinY;
+                                float z1 = -x * sinY + z * cosY;
+
+                                // rotate around X
+                                float y2 = y * cosX - z1 * sinX;
+                                float z2 = y * sinX + z1 * cosX;
+
+                                outX = centerX + x1 * scale;
+                                outY = centerY - y2 * scale;
+                                outZ = z2;
+                            };
+
+                        SDL_SetRenderDrawColor(renderer, 12, 12, 16, 255);
+                        SDL_RenderClear(renderer);
+
+                        // Draw triangle edges.
+                        for (int i = 0; i < faces.size(); i++) {
+                            DecodedFace face = faces[i];
+
+                            if (face.a < 0 || face.a >= vertices.size() ||
+                                face.b < 0 || face.b >= vertices.size() ||
+                                face.c < 0 || face.c >= vertices.size()) {
+                                continue;
+                            }
+
+                            float ax, ay, az;
+                            float bx, by, bz;
+                            float cx, cy, cz;
+
+                            projectVertex(vertices[face.a], ax, ay, az);
+                            projectVertex(vertices[face.b], bx, by, bz);
+                            projectVertex(vertices[face.c], cx, cy, cz);
+
+                            float avgZ = (az + bz + cz) / 3.0f;
+
+                            // Simple depth tint.
+                            if (avgZ > 40) {
+                                SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255);
+                            }
+                            else if (avgZ > 20) {
+                                SDL_SetRenderDrawColor(renderer, 180, 220, 255, 255);
+                            }
+                            else if (avgZ > 0) {
+                                SDL_SetRenderDrawColor(renderer, 120, 200, 180, 255);
+                            }
+                            else {
+                                SDL_SetRenderDrawColor(renderer, 80, 120, 120, 255);
+                            }
+
+                            SDL_RenderLine(renderer, ax, ay, bx, by);
+                            SDL_RenderLine(renderer, bx, by, cx, cy);
+                            SDL_RenderLine(renderer, cx, cy, ax, ay);
+                        }
+
+                        // Draw vertices as small points.
+                        SDL_SetRenderDrawColor(renderer, 255, 120, 80, 255);
+
+                        for (int i = 0; i < vertices.size(); i++) {
+                            float vx, vy, vz;
+                            projectVertex(vertices[i], vx, vy, vz);
+
+                            SDL_FRect point {
+                                vx - 2.0f,
+                                vy - 2.0f,
+                                4.0f,
+                                4.0f
+                            };
+
+                            SDL_RenderFillRect(renderer, &point);
+                        }
+
+                        SDL_RenderPresent(renderer);
+
+                        renderAngle += 0.02f;
+
+                        SDL_Delay(16);
+                    }
+
+                    SDL_DestroyRenderer(renderer);
+                    SDL_DestroyWindow(window);
+                    SDL_Quit();
 
     return 0;
 }

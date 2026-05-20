@@ -2,7 +2,8 @@
 #include <iostream>
 
 #include "filestore/FileStore.h"
-#include "assets/model/ModelDef.h"
+#include "assets/Assets.h"
+#include "assets/model/Model.h"
 #include "render/Mesh.h"
 #include "Renderer3D.h"
 #include "math/Mat4.h"
@@ -22,60 +23,42 @@ int main() {
         SCREEN_HEIGHT,
         SDL_WINDOW_RESIZABLE
     );
-
     if (!window) {
         std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
         return 1;
     }
 
     SDL_Renderer* sdlRenderer = SDL_CreateRenderer(window, nullptr);
-
     if (!sdlRenderer) {
         std::cerr << "SDL_CreateRenderer failed: " << SDL_GetError() << "\n";
         return 1;
     }
 
-    FileStore reader;
-
-    if (!reader.open("cache")) {
+    FileStore store;
+    if (!store.open("cache")) {
         std::cerr << "Failed to open cache\n";
         return 1;
     }
 
-    int currentModelId = 2;
+    Assets assets(store);
 
-    ModelDef modelDef;
+    int currentModelId = 2;
     Mesh mesh;
 
     auto loadModel = [&](int modelId) {
-
-        if (!reader.hasFile(1, modelId)) {
+        if (!store.hasFile(1, modelId)) {
             std::cout << "Model " << modelId << " does not exist\n";
             return;
         }
 
-        Buffer modelBuffer = reader.readGzippedFile(1, modelId);
-
-        if (modelBuffer.empty()) {
-            std::cout << "Model buffer is empty\n";
-            return;
-        }
-
         try {
-
-            modelDef = ModelDef::parse(modelId, modelBuffer);
-
-            mesh = Mesh::FromModelDef(modelDef);
-
+            const Model& model = assets.getModel(modelId);
+            mesh = Mesh::fromModel(model);    // rename FromModelDef → fromModel later
             currentModelId = modelId;
-
             std::cout << "Loaded model: " << currentModelId << "\n";
-
             std::cout << "Vertices: " << mesh.vertices.size() << "\n";
             std::cout << "Indices: " << mesh.indices.size() << "\n";
-
         } catch (const std::exception& e) {
-
             std::cout << "Failed loading model "
                       << modelId
                       << ": "
@@ -92,7 +75,6 @@ int main() {
     SDL_Event event;
     float angle = 0.0f;
     float modelScale = 1.0f;
-
     uint64_t lastTicks = SDL_GetTicks();
 
     while (running) {
@@ -100,24 +82,19 @@ int main() {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
-
             if (event.type == SDL_EVENT_KEY_DOWN) {
                 if (event.key.key == SDLK_M) {
                     loadModel(currentModelId + 1);
                 }
-
                 if (event.key.key == SDLK_N) {
                     loadModel(currentModelId - 1);
                 }
             }
-
             if (event.key.key == SDLK_UP) {
                 modelScale += 0.1f;
             }
-
             if (event.key.key == SDLK_DOWN) {
                 modelScale -= 0.1f;
-
                 if (modelScale < 0.1f) {
                     modelScale = 0.1f;
                 }
@@ -133,7 +110,6 @@ int main() {
         Mat4 scale = Mat4::Scale(modelScale, modelScale, modelScale);
         Mat4 rotation = Mat4::RotationY(angle);
         Mat4 translation = Mat4::Translation(0.0f, 0.0f, 500.0f);
-
         Mat4 transform = translation * rotation * scale;
 
         renderer3D.BeginFrame();
@@ -145,6 +121,5 @@ int main() {
     SDL_DestroyRenderer(sdlRenderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
     return 0;
 }
