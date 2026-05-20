@@ -17,6 +17,13 @@ add_executable(tool
     ../core/cache/CacheStore.cpp
     ../core/io/ByteBuffer.cpp
     ../core/io/Compression.cpp
+    ../core/model/ModelFooter.cpp
+    ../core/model/ModelLayout.cpp
+    ../core/model/VertexDecoder.cpp
+    ../core/model/FaceDecoder.cpp
+    ../core/platform/SdlContext.cpp
+    ../core/render/Projection.cpp
+    ../core/render/WireframeRenderer.cpp
 )
 
 target_include_directories(tool PRIVATE

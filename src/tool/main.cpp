@@ -21,6 +21,11 @@
 #include "../core/model/VertexDecoder.h"
 #include "../core/model/FaceDecoder.h"
 
+#include "../core/platform/SdlContext.h"
+
+#include "../core/render/WireframeRenderer.h"
+#include "../core/render/Projection.h"
+
 int main() {
 
     auto printStep =
@@ -340,65 +345,35 @@ int main() {
             << faces.size()
             << "\n";
 
-    printStep(12, "SDL INITIALIZATION");
+            printStep(12, "SDL INITIALIZATION");
 
-    // ============================================================
-    // STEP 12 — SDL INITIALIZATION
-    // ============================================================
+            // ============================================================
+            // STEP 12 — SDL INITIALIZATION
+            // ============================================================
 
-    constexpr int WINDOW_WIDTH = 960;
-    constexpr int WINDOW_HEIGHT = 640;
+            constexpr int WINDOW_WIDTH = 960;
+            constexpr int WINDOW_HEIGHT = 640;
 
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
+            rf::platform::SdlContext sdl(
+                "RuneForge SDL3 wireframe",
+                WINDOW_WIDTH,
+                WINDOW_HEIGHT
+            );
 
-        std::cerr
-            << "SDL_Init failed: "
-            << SDL_GetError()
-            << "\n";
+            SDL_Window* window =
+                sdl.window();
 
-        return 1;
-    }
+            SDL_Renderer* renderer =
+                sdl.renderer();
 
-    SDL_Window* window =
-        SDL_CreateWindow(
-            "RuneForge SDL3 wireframe",
-            WINDOW_WIDTH,
-            WINDOW_HEIGHT,
-            SDL_WINDOW_RESIZABLE
-        );
+            if (!window || !renderer) {
+                return 1;
+            }
 
-    if (!window) {
+            float renderAngle = 0.0f;
+            float scale = 4.0f;
 
-        std::cerr
-            << "SDL_CreateWindow failed: "
-            << SDL_GetError()
-            << "\n";
-
-        SDL_Quit();
-        return 1;
-    }
-
-    SDL_Renderer* renderer =
-        SDL_CreateRenderer(
-            window,
-            nullptr
-        );
-
-    if (!renderer) {
-
-        std::cerr
-            << "SDL_CreateRenderer failed: "
-            << SDL_GetError()
-            << "\n";
-
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 1;
-    }
-
-    float renderAngle = 0.0f;
-    float scale = 4.0f;
-    bool running = true;
+            bool running = true;
 
     printStep(13, "EVENT LOOP");
 
@@ -450,173 +425,35 @@ int main() {
             &windowHeight
         );
 
-        float centerX =
+        rf::render::Camera camera {};
+
+        camera.centerX =
             windowWidth * 0.5f;
 
-        float centerY =
+        camera.centerY =
             windowHeight * 0.5f;
 
-        float angleY =
+        camera.angleY =
             renderAngle;
 
-        float angleX =
+        camera.angleX =
             0.45f +
             std::sin(renderAngle * 0.7f) *
             0.15f;
 
-        float cosY = std::cos(angleY);
-        float sinY = std::sin(angleY);
-
-        float cosX = std::cos(angleX);
-        float sinX = std::sin(angleX);
-
-        auto projectVertex =
-            [&](const DecodedVertex& vertex,
-                float& outX,
-                float& outY,
-                float& outZ) {
-
-                float x = (float)vertex.x;
-                float y = -(float)vertex.y;
-                float z = (float)vertex.z;
-
-                float x1 =
-                    x * cosY +
-                    z * sinY;
-
-                float z1 =
-                    -x * sinY +
-                    z * cosY;
-
-                float y2 =
-                    y * cosX -
-                    z1 * sinX;
-
-                float z2 =
-                    y * sinX +
-                    z1 * cosX;
-
-                outX =
-                    centerX +
-                    x1 * scale;
-
-                outY =
-                    centerY -
-                    y2 * scale;
-
-                outZ =
-                    z2;
-            };
+        camera.scale =
+            scale;
 
         // ============================================================
         // STEP 15 — WIREFRAME RENDERING
         // ============================================================
 
-        SDL_SetRenderDrawColor(
+        rf::render::drawWireframeModel(
             renderer,
-            12,
-            12,
-            16,
-            255
+            vertices,
+            faces,
+            camera
         );
-
-        SDL_RenderClear(renderer);
-
-        for (int i = 0; i < faces.size(); i++) {
-
-            DecodedFace face =
-                faces[i];
-
-            if (
-                face.a < 0 ||
-                face.a >= vertices.size() ||
-                face.b < 0 ||
-                face.b >= vertices.size() ||
-                face.c < 0 ||
-                face.c >= vertices.size()
-            ) {
-                continue;
-            }
-
-            float ax, ay, az;
-            float bx, by, bz;
-            float cx, cy, cz;
-
-            projectVertex(
-                vertices[face.a],
-                ax, ay, az
-            );
-
-            projectVertex(
-                vertices[face.b],
-                bx, by, bz
-            );
-
-            projectVertex(
-                vertices[face.c],
-                cx, cy, cz
-            );
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                220,
-                220,
-                220,
-                255
-            );
-
-            SDL_RenderLine(
-                renderer,
-                ax, ay,
-                bx, by
-            );
-
-            SDL_RenderLine(
-                renderer,
-                bx, by,
-                cx, cy
-            );
-
-            SDL_RenderLine(
-                renderer,
-                cx, cy,
-                ax, ay
-            );
-        }
-
-        // ============================================================
-        // STEP 16 — VERTEX POINT RENDERING
-        // ============================================================
-
-        SDL_SetRenderDrawColor(
-            renderer,
-            255,
-            120,
-            80,
-            255
-        );
-
-        for (int i = 0; i < vertices.size(); i++) {
-
-            float vx, vy, vz;
-
-            projectVertex(
-                vertices[i],
-                vx, vy, vz
-            );
-
-            SDL_FRect point {
-                vx - 2.0f,
-                vy - 2.0f,
-                4.0f,
-                4.0f
-            };
-
-            SDL_RenderFillRect(
-                renderer,
-                &point
-            );
-        }
 
         // ============================================================
         // STEP 17 — FRAME PRESENTATION
