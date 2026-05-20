@@ -1,4 +1,6 @@
 #include "WireframeRenderer.h"
+#include "Color.h"
+#include "TriangleRasterizer.h"
 
 namespace rf::render {
 
@@ -49,11 +51,29 @@ void drawWireframeModel(
                 camera
             );
 
+        RgbColor color =
+            rsColorToRgb(face.color);
+
         SDL_SetRenderDrawColor(
             renderer,
-            220,
-            220,
-            220,
+            color.r,
+            color.g,
+            color.b,
+            255
+        );
+
+        fillTriangle(
+            renderer,
+            a,
+            b,
+            c
+        );
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            255,
+            255,
+            255,
             255
         );
 

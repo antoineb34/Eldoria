@@ -11,13 +11,14 @@
 #include "../../core/cache/CacheStore.h"
 #include "../../core/cache/CacheTypes.h"
 
+#include "../../core/debug/ModelDebug.h"
+
 #include "../../core/io/Compression.h"
 
+#include "../../core/model/FaceDecoder.h"
 #include "../../core/model/ModelFooter.h"
 #include "../../core/model/ModelLayout.h"
-
 #include "../../core/model/VertexDecoder.h"
-#include "../../core/model/FaceDecoder.h"
 
 #include "../../core/platform/SdlContext.h"
 
@@ -42,106 +43,138 @@ int ModelViewerTool::run() {
                 << "====================================================\n";
         };
 
-    printStep(1, "CACHE LOADING");
-
     rf::cache::CacheStore cache(
         "cache/main_file_cache.dat",
         "cache/main_file_cache.idx1"
     );
 
-    rf::cache::CacheArchive archive =
-        cache.readArchive(2635);
+    uint32_t modelId = 1000;
 
-    std::vector<char> fullPayload;
+    std::vector<rf::model::Vertex> vertices;
+    std::vector<rf::model::Face> faces;
 
-    fullPayload.reserve(
-        archive.payload.size()
-    );
+    auto loadModel =
+        [&](uint32_t id) -> bool {
 
-    for (uint8_t byte : archive.payload) {
+            printStep(1, "CACHE LOADING");
 
-        fullPayload.push_back(
-            static_cast<char>(byte)
-        );
+            rf::cache::CacheArchive archive =
+                cache.readArchive(id);
+
+            std::vector<char> fullPayload;
+
+            fullPayload.reserve(
+                archive.payload.size()
+            );
+
+            for (uint8_t byte : archive.payload) {
+
+                fullPayload.push_back(
+                    static_cast<char>(byte)
+                );
+            }
+
+            std::cout
+                << "\nmodel id: "
+                << id
+                << "\narchive size: "
+                << archive.entry.size
+                << "\n";
+
+            printStep(2, "COMPRESSION DETECTION");
+
+            rf::io::CompressionType compressionType =
+                rf::io::detectCompression(
+                    fullPayload
+                );
+
+            if (
+                compressionType ==
+                rf::io::CompressionType::Gzip
+            ) {
+                std::cout
+                    << "\ncompression: GZIP\n";
+            }
+            else {
+                std::cout
+                    << "\ncompression: unknown\n";
+
+                return false;
+            }
+
+            printStep(3, "GZIP DECOMPRESSION");
+
+            std::vector<char> decompressedPayload =
+                rf::io::decompressGzip(
+                    fullPayload
+                );
+
+            std::cout
+                << "\ndecompressed size: "
+                << decompressedPayload.size()
+                << " bytes\n";
+
+            rf::debug::dumpBytes(
+                decompressedPayload,
+                "decompressed payload"
+            );
+
+            printStep(4, "MODEL FOOTER");
+
+            rf::model::ModelFooter footer =
+                rf::model::readModelFooter(
+                    decompressedPayload
+                );
+
+            rf::debug::dumpModelFooter(
+                footer
+            );
+
+            printStep(5, "MODEL LAYOUT");
+
+            rf::model::ModelLayout layout =
+                rf::model::calculateModelLayout(
+                    footer
+                );
+
+            rf::debug::dumpModelChunks(
+                decompressedPayload,
+                footer,
+                layout
+            );
+
+            printStep(6, "VERTEX DECODING");
+
+            vertices =
+                rf::model::decodeVertices(
+                    decompressedPayload,
+                    footer,
+                    layout
+                );
+
+            rf::debug::dumpDecodedVertices(
+                vertices
+            );
+
+            printStep(7, "FACE DECODING");
+
+            faces =
+                rf::model::decodeFaces(
+                    decompressedPayload,
+                    footer,
+                    layout
+                );
+
+            rf::debug::dumpDecodedFaces(
+                faces
+            );
+
+            return true;
+        };
+
+    if (!loadModel(modelId)) {
+        return 1;
     }
-
-    std::cout
-        << "\narchive size: "
-        << archive.entry.size
-        << "\n";
-
-    printStep(2, "COMPRESSION DETECTION");
-
-    rf::io::CompressionType compressionType =
-        rf::io::detectCompression(
-            fullPayload
-        );
-
-    if (
-        compressionType ==
-        rf::io::CompressionType::Gzip
-    ) {
-        std::cout
-            << "\ncompression: GZIP\n";
-    }
-    else {
-        std::cout
-            << "\ncompression: unknown\n";
-    }
-
-    printStep(3, "GZIP DECOMPRESSION");
-
-    std::vector<char> decompressedPayload =
-        rf::io::decompressGzip(
-            fullPayload
-        );
-
-    std::cout
-        << "\ndecompressed size: "
-        << decompressedPayload.size()
-        << " bytes\n";
-
-    printStep(4, "MODEL FOOTER");
-
-    rf::model::ModelFooter footer =
-        rf::model::readModelFooter(
-            decompressedPayload
-        );
-
-    printStep(5, "MODEL LAYOUT");
-
-    rf::model::ModelLayout layout =
-        rf::model::calculateModelLayout(
-            footer
-        );
-
-    printStep(6, "VERTEX DECODING");
-
-    std::vector<rf::model::Vertex> vertices =
-        rf::model::decodeVertices(
-            decompressedPayload,
-            footer,
-            layout
-        );
-
-    std::cout
-        << "\nvertex count: "
-        << vertices.size()
-        << "\n";
-
-    printStep(7, "FACE DECODING");
-
-    std::vector<rf::model::Face> faces =
-        rf::model::decodeFaces(
-            decompressedPayload,
-            footer,
-            layout
-        );
-
-    std::cout
-        << "\nface count: "
-        << faces.size()
-        << "\n";
 
     printStep(8, "SDL INITIALIZATION");
 
@@ -213,6 +246,37 @@ int ModelViewerTool::run() {
                     if (scale < 0.25f) {
                         scale = 0.25f;
                     }
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_RIGHT
+                ) {
+                    modelId++;
+
+                    std::cout
+                        << "\nloading model "
+                        << modelId
+                        << "\n";
+
+                    loadModel(modelId);
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_LEFT
+                ) {
+
+                    if (modelId > 0) {
+                        modelId--;
+                    }
+
+                    std::cout
+                        << "\nloading model "
+                        << modelId
+                        << "\n";
+
+                    loadModel(modelId);
                 }
             }
         }

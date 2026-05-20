@@ -9,6 +9,12 @@ std::vector<Face> decodeFaces(
     const ModelLayout& layout
 ) {
 
+    rf::io::ByteBuffer colorBuffer(payload);
+
+    colorBuffer.setPosition(
+        layout.triangleColorsOffset
+    );
+
     rf::io::ByteBuffer triangleDataBuffer(
         payload
     );
@@ -98,10 +104,14 @@ std::vector<Face> decodeFaces(
             lastIndex = lastC;
         }
 
+        uint16_t color =
+            colorBuffer.readU16();
+
         faces.push_back({
             lastA,
             lastB,
-            lastC
+            lastC,
+            color
         });
     }
 

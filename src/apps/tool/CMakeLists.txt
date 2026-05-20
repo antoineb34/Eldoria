@@ -16,6 +16,9 @@ add_executable(tool
 
     ../../core/render/Projection.cpp
     ../../core/render/WireframeRenderer.cpp
+    ../../core/debug/ModelDebug.cpp
+    ../../core/render/Color.cpp
+    ../../core/render/TriangleRasterizer.cpp
 )
 
 target_link_libraries(tool PRIVATE
