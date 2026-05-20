@@ -11,18 +11,20 @@
 #include "../../core/cache/CacheStore.h"
 #include "../../core/cache/CacheTypes.h"
 
+#include "../../core/debug/ModelDebug.h"
+
 #include "../../core/io/Compression.h"
 
+#include "../../core/model/FaceDecoder.h"
 #include "../../core/model/ModelFooter.h"
 #include "../../core/model/ModelLayout.h"
-
 #include "../../core/model/VertexDecoder.h"
-#include "../../core/model/FaceDecoder.h"
 
 #include "../../core/platform/SdlContext.h"
 
 #include "../../core/render/Projection.h"
 #include "../../core/render/WireframeRenderer.h"
+#include "../../core/render/DepthBuffer.h"
 
 namespace rf::tool {
 
@@ -42,106 +44,184 @@ int ModelViewerTool::run() {
                 << "====================================================\n";
         };
 
-    printStep(1, "CACHE LOADING");
-
     rf::cache::CacheStore cache(
         "cache/main_file_cache.dat",
         "cache/main_file_cache.idx1"
     );
 
-    rf::cache::CacheArchive archive =
-        cache.readArchive(2635);
+    uint32_t modelId = 0;
 
-    std::vector<char> fullPayload;
+    std::vector<rf::model::Vertex> vertices;
+    std::vector<rf::model::Face> faces;
 
-    fullPayload.reserve(
-        archive.payload.size()
-    );
+    auto loadModel =
+        [&](uint32_t id) -> bool {
 
-    for (uint8_t byte : archive.payload) {
+            printStep(1, "CACHE LOADING");
 
-        fullPayload.push_back(
-            static_cast<char>(byte)
-        );
+            rf::cache::CacheArchive archive =
+                cache.readArchive(id);
+
+            std::vector<char> fullPayload;
+
+            fullPayload.reserve(
+                archive.payload.size()
+            );
+
+            for (uint8_t byte : archive.payload) {
+
+                fullPayload.push_back(
+                    static_cast<char>(byte)
+                );
+            }
+
+            std::cout
+                << "\nmodel id: "
+                << id
+                << "\narchive size: "
+                << archive.entry.size
+                << "\n";
+
+            printStep(2, "COMPRESSION DETECTION");
+
+            rf::io::CompressionType compressionType =
+                rf::io::detectCompression(
+                    fullPayload
+                );
+
+            if (
+                compressionType ==
+                rf::io::CompressionType::Gzip
+            ) {
+                std::cout
+                    << "\ncompression: GZIP\n";
+            }
+            else {
+
+                std::cout
+                    << "\ncompression: unknown\n";
+
+                return false;
+            }
+
+            printStep(3, "GZIP DECOMPRESSION");
+
+            std::vector<char> decompressedPayload =
+                rf::io::decompressGzip(
+                    fullPayload
+                );
+
+            std::cout
+                << "\ndecompressed size: "
+                << decompressedPayload.size()
+                << " bytes\n";
+
+            rf::debug::dumpBytes(
+                decompressedPayload,
+                "decompressed payload"
+            );
+
+            printStep(4, "MODEL FOOTER");
+
+            rf::model::ModelFooter footer =
+                rf::model::readModelFooter(
+                    decompressedPayload
+                );
+
+            rf::debug::dumpModelFooter(
+                footer
+            );
+
+            printStep(5, "MODEL LAYOUT");
+
+            rf::model::ModelLayout layout =
+                rf::model::calculateModelLayout(
+                    footer
+                );
+
+            rf::debug::dumpModelChunks(
+                decompressedPayload,
+                footer,
+                layout
+            );
+
+            printStep(6, "VERTEX DECODING");
+
+            vertices =
+                rf::model::decodeVertices(
+                    decompressedPayload,
+                    footer,
+                    layout
+                );
+
+            rf::debug::dumpDecodedVertices(
+                vertices
+            );
+
+            printStep(7, "FACE DECODING");
+
+            faces =
+                rf::model::decodeFaces(
+                    decompressedPayload,
+                    footer,
+                    layout
+                );
+
+            rf::debug::dumpDecodedFaces(
+                faces
+            );
+
+            return true;
+        };
+
+    auto hasAlpha =
+        [&](uint32_t id) -> bool {
+
+            rf::cache::CacheArchive archive =
+                cache.readArchive(id);
+
+            if (archive.payload.empty()) {
+                return false;
+            }
+
+            std::vector<char> fullPayload;
+
+            fullPayload.reserve(
+                archive.payload.size()
+            );
+
+            for (uint8_t byte : archive.payload) {
+
+                fullPayload.push_back(
+                    static_cast<char>(byte)
+                );
+            }
+
+            if (
+                rf::io::detectCompression(
+                    fullPayload
+                ) !=
+                rf::io::CompressionType::Gzip
+            ) {
+                return false;
+            }
+
+            std::vector<char> decompressedPayload =
+                rf::io::decompressGzip(
+                    fullPayload
+                );
+
+            rf::model::ModelFooter footer =
+                rf::model::readModelFooter(
+                    decompressedPayload
+                );
+
+            return footer.alphaFlag == 1;
+        };
+
+    if (!loadModel(modelId)) {
+        return 1;
     }
-
-    std::cout
-        << "\narchive size: "
-        << archive.entry.size
-        << "\n";
-
-    printStep(2, "COMPRESSION DETECTION");
-
-    rf::io::CompressionType compressionType =
-        rf::io::detectCompression(
-            fullPayload
-        );
-
-    if (
-        compressionType ==
-        rf::io::CompressionType::Gzip
-    ) {
-        std::cout
-            << "\ncompression: GZIP\n";
-    }
-    else {
-        std::cout
-            << "\ncompression: unknown\n";
-    }
-
-    printStep(3, "GZIP DECOMPRESSION");
-
-    std::vector<char> decompressedPayload =
-        rf::io::decompressGzip(
-            fullPayload
-        );
-
-    std::cout
-        << "\ndecompressed size: "
-        << decompressedPayload.size()
-        << " bytes\n";
-
-    printStep(4, "MODEL FOOTER");
-
-    rf::model::ModelFooter footer =
-        rf::model::readModelFooter(
-            decompressedPayload
-        );
-
-    printStep(5, "MODEL LAYOUT");
-
-    rf::model::ModelLayout layout =
-        rf::model::calculateModelLayout(
-            footer
-        );
-
-    printStep(6, "VERTEX DECODING");
-
-    std::vector<rf::model::Vertex> vertices =
-        rf::model::decodeVertices(
-            decompressedPayload,
-            footer,
-            layout
-        );
-
-    std::cout
-        << "\nvertex count: "
-        << vertices.size()
-        << "\n";
-
-    printStep(7, "FACE DECODING");
-
-    std::vector<rf::model::Face> faces =
-        rf::model::decodeFaces(
-            decompressedPayload,
-            footer,
-            layout
-        );
-
-    std::cout
-        << "\nface count: "
-        << faces.size()
-        << "\n";
 
     printStep(8, "SDL INITIALIZATION");
 
@@ -166,6 +246,14 @@ int ModelViewerTool::run() {
 
     float renderAngle = 0.0f;
     float scale = 4.0f;
+
+    float cameraOffsetX = 0.0f;
+    float cameraOffsetY = 0.0f;
+
+    bool showWireframe = true;
+    bool showVertices = true;
+    bool fillTriangles = true;
+    bool useAlpha = true;
 
     bool running = true;
 
@@ -196,6 +284,42 @@ int ModelViewerTool::run() {
                     running = false;
                 }
 
+                // =========================================
+                // CAMERA MOVEMENT
+                // =========================================
+
+                if (
+                    event.key.key ==
+                    SDLK_W
+                ) {
+                    cameraOffsetY -= 20.0f;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_S
+                ) {
+                    cameraOffsetY += 20.0f;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_A
+                ) {
+                    cameraOffsetX -= 20.0f;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_D
+                ) {
+                    cameraOffsetX += 20.0f;
+                }
+
+                // =========================================
+                // SCALE
+                // =========================================
+
                 if (
                     event.key.key ==
                     SDLK_UP
@@ -214,6 +338,111 @@ int ModelViewerTool::run() {
                         scale = 0.25f;
                     }
                 }
+
+                // =========================================
+                // MODEL NAVIGATION
+                // =========================================
+
+                if (
+                    event.key.key ==
+                    SDLK_RIGHT
+                ) {
+
+                    modelId++;
+
+                    std::cout
+                        << "\nloading model "
+                        << modelId
+                        << "\n";
+
+                    loadModel(modelId);
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_LEFT
+                ) {
+
+                    if (modelId > 0) {
+                        modelId--;
+                    }
+
+                    std::cout
+                        << "\nloading model "
+                        << modelId
+                        << "\n";
+
+                    loadModel(modelId);
+                }
+
+                // =========================================
+                // RENDER TOGGLES
+                // =========================================
+
+                if (
+                    event.key.key ==
+                    SDLK_1
+                ) {
+                    showWireframe =
+                        !showWireframe;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_2
+                ) {
+                    showVertices =
+                        !showVertices;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_3
+                ) {
+                    fillTriangles =
+                        !fillTriangles;
+                }
+
+                if (
+                    event.key.key ==
+                    SDLK_4
+                ) {
+                    useAlpha =
+                        !useAlpha;
+                }
+
+                // =========================================
+                // FIND NEXT ALPHA MODEL
+                // =========================================
+
+                if (
+                    event.key.key ==
+                    SDLK_F
+                ) {
+
+                    uint32_t searchId =
+                        modelId + 1;
+
+                    while (searchId < 100000) {
+
+                        if (hasAlpha(searchId)) {
+
+                            modelId =
+                                searchId;
+
+                            std::cout
+                                << "\nfound alpha model "
+                                << modelId
+                                << "\n";
+
+                            loadModel(modelId);
+
+                            break;
+                        }
+
+                        searchId++;
+                    }
+                }
             }
         }
 
@@ -226,13 +455,27 @@ int ModelViewerTool::run() {
             &windowHeight
         );
 
+        static rf::render::DepthBuffer depthBuffer(
+            WINDOW_WIDTH,
+            WINDOW_HEIGHT
+        );
+
+        depthBuffer.resize(
+            windowWidth,
+            windowHeight
+        );
+
+        depthBuffer.clear();
+
         rf::render::Camera camera {};
 
         camera.centerX =
-            windowWidth * 0.5f;
+            windowWidth * 0.5f +
+            cameraOffsetX;
 
         camera.centerY =
-            windowHeight * 0.5f;
+            windowHeight * 0.5f +
+            cameraOffsetY;
 
         camera.angleY =
             renderAngle;
@@ -247,9 +490,14 @@ int ModelViewerTool::run() {
 
         rf::render::drawWireframeModel(
             renderer,
+            depthBuffer,
             vertices,
             faces,
-            camera
+            camera,
+            showWireframe,
+            showVertices,
+            fillTriangles,
+            useAlpha
         );
 
         SDL_RenderPresent(
