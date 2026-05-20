@@ -1,11 +1,15 @@
 #include "ToolApplication.h"
 
+#include <array>
+#include <iostream>
+
 #include <SDL3/SDL.h>
 
 #include "../../core/platform/SdlContext.h"
 #include "../../core/render/DepthBuffer.h"
 
 #include "modes/ModelViewerMode.h"
+#include "modes/CacheExplorerMode.h"
 
 namespace rf::tool {
 
@@ -31,10 +35,25 @@ int ToolApplication::run() {
     }
 
     ModelViewerMode modelViewer;
+    CacheExplorerMode cacheExplorer;
 
     if (!modelViewer.initialize()) {
         return 1;
     }
+
+    if (!cacheExplorer.initialize()) {
+        return 1;
+    }
+
+    std::array<ToolMode*, 2> modes {
+        &modelViewer,
+        &cacheExplorer
+    };
+
+    int activeModeIndex = 0;
+
+    ToolMode* activeMode =
+        modes[activeModeIndex];
 
     rf::render::DepthBuffer depthBuffer(
         WINDOW_WIDTH,
@@ -65,7 +84,26 @@ int ToolApplication::run() {
                 running = false;
             }
 
-            modelViewer.handleEvent(
+            if (
+                event.type ==
+                SDL_EVENT_KEY_DOWN &&
+                event.key.key ==
+                SDLK_TAB
+            ) {
+                activeModeIndex =
+                    (activeModeIndex + 1) %
+                    modes.size();
+
+                activeMode =
+                    modes[activeModeIndex];
+
+                std::cout
+                    << "\nSwitched mode: "
+                    << activeModeIndex
+                    << "\n";
+            }
+
+            activeMode->handleEvent(
                 event
             );
         }
@@ -86,9 +124,9 @@ int ToolApplication::run() {
 
         depthBuffer.clear();
 
-        modelViewer.update();
+        activeMode->update();
 
-        modelViewer.render(
+        activeMode->render(
             renderer,
             depthBuffer,
             windowWidth,
