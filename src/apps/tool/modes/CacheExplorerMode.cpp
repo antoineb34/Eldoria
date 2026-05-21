@@ -1,40 +1,42 @@
 #include "CacheExplorerMode.h"
 
-#include <iomanip>
+#include <imgui.h>
 #include <iostream>
 #include <string>
 
 #include "../../../core/cache/ArchiveDecoder.h"
 #include "../../../core/cache/ArchiveFileTable.h"
 #include "../../../core/cache/KnownArchives.h"
-#include "../../../core/cache/NameHash.h"
+
+#include "../../../core/texture/TextureDecoder.h"
+#include "../../../core/texture/TextureIndex.h"
 
 namespace rf::tool {
 
 CacheExplorerMode::CacheExplorerMode()
-    : configCache_(
-          "cache/main_file_cache.dat",
-          "cache/main_file_cache.idx0"
-      ),
-      configLoader_(
-          "cache/main_file_cache.dat",
-          "cache/main_file_cache.idx0"
-      )
+: configCache_(
+    "cache/main_file_cache.dat",
+    "cache/main_file_cache.idx0"
+),
+configLoader_(
+    "cache/main_file_cache.dat",
+    "cache/main_file_cache.idx0"
+)
 {
 }
 
 bool CacheExplorerMode::initialize() {
+    buildRawCacheTree();
 
-    inspectIndex0();
-
-    std::vector<char> npcDat =
-        configLoader_.loadFile(
-            "npc.dat"
+    std::vector<char> textureIndex =
+        configLoader_.loadFileFromArchive(
+            6,
+            "index.dat"
         );
 
     std::cout
-        << "\nEXTRACTED npc.dat: "
-        << npcDat.size()
+        << "\ntexture archive index.dat size: "
+        << textureIndex.size()
         << " bytes\n";
 
     return true;
@@ -43,6 +45,7 @@ bool CacheExplorerMode::initialize() {
 void CacheExplorerMode::handleEvent(
     const SDL_Event& event
 ) {
+    (void)event;
 }
 
 void CacheExplorerMode::update() {
@@ -55,6 +58,8 @@ void CacheExplorerMode::render(
     int windowHeight
 ) {
     (void)depthBuffer;
+    (void)windowWidth;
+    (void)windowHeight;
 
     SDL_SetRenderDrawColor(
         renderer,
@@ -64,56 +69,65 @@ void CacheExplorerMode::render(
         255
     );
 
-    SDL_RenderClear(renderer);
-
-    SDL_FRect panel {
-        40.0f,
-        40.0f,
-        static_cast<float>(windowWidth) - 80.0f,
-        static_cast<float>(windowHeight) - 80.0f
-    };
-
-    SDL_SetRenderDrawColor(
-        renderer,
-        220,
-        240,
-        230,
-        255
+    SDL_RenderClear(
+        renderer
     );
 
-    SDL_RenderRect(
-        renderer,
-        &panel
+    uploadPreviewTexture(
+        renderer
     );
 }
 
-void CacheExplorerMode::inspectIndex0() {
+void CacheExplorerMode::renderUi() {
+    ImGui::Text("Cache Explorer");
+    ImGui::Separator();
 
-    const auto& knownNames =
-        rf::cache::KNOWN_ARCHIVES;
+    ImGui::BeginChild(
+        "CacheTreePanel",
+        ImVec2(320.0f, 0.0f),
+        true
+    );
 
-    auto findKnownName =
-        [&](uint32_t hash) -> std::string {
+    ImGui::Text("Raw Cache");
+    ImGui::Separator();
 
-            for (const std::string& name : knownNames) {
+    renderTreeNode(
+        rootNode_
+    );
 
-                if (rf::cache::hashName(name) == hash) {
-                    return name;
-                }
-            }
+    ImGui::EndChild();
 
-            return "";
-        };
+    ImGui::SameLine();
 
-    std::cout
-        << "\n\n====================================================\n"
-        << "CACHE EXPLORER — IDX0 ARCHIVE INSPECTION\n"
-        << "====================================================\n";
+    ImGui::BeginChild(
+        "CacheDetailsPanel",
+        ImVec2(0.0f, 0.0f),
+        true
+    );
+
+    renderInspector();
+
+    ImGui::EndChild();
+}
+
+void CacheExplorerMode::buildRawCacheTree() {
+    rootNode_ = {
+        "Raw Cache",
+        "RuneForge cache filesystem",
+        CacheNodeType::Root
+    };
+
+    CacheTreeNode idx0Node {
+        "idx0",
+        "configs / media / archives",
+        CacheNodeType::Index
+    };
 
     for (uint32_t archiveId = 0; archiveId < 20; archiveId++) {
-
         rf::cache::CacheArchive archive =
-            configCache_.readArchive(archiveId);
+            configCache_.readArchive(
+                archiveId
+            );
 
         if (
             archive.entry.size == 0 ||
@@ -132,65 +146,403 @@ void CacheExplorerMode::inspectIndex0() {
                 decoded.payload
             );
 
-        std::cout
-            << "\n----------------------------------------------------\n"
-            << "archive "
-            << archiveId
-            << "\n"
-            << "----------------------------------------------------\n"
-            << "size: "
-            << archive.entry.size
-            << "\n"
-            << "first sector: "
-            << archive.entry.firstSector
-            << "\n"
-            << "compressed: "
-            << (decoded.compressed ? "yes" : "no")
-            << "\n"
-            << "compressed size: "
-            << decoded.compressedSize
-            << "\n"
-            << "uncompressed size: "
-            << decoded.uncompressedSize
-            << "\n"
-            << "decoded payload: "
-            << decoded.payload.size()
-            << "\n"
-            << "file count: "
-            << table.fileCount
-            << "\n";
+        CacheTreeNode archiveNode {
+            "archive " + std::to_string(archiveId),
+            "files: " + std::to_string(table.fileCount),
+            CacheNodeType::Archive
+        };
 
-        for (int i = 0; i < table.files.size(); i++) {
+        archiveNode.archiveId = archiveId;
+        archiveNode.compressedSize = decoded.compressedSize;
+        archiveNode.uncompressedSize = decoded.uncompressedSize;
 
+        for (
+            int fileIndex = 0;
+            fileIndex < static_cast<int>(table.files.size());
+            fileIndex++
+        ) {
             const auto& file =
-                table.files[i];
+                table.files[fileIndex];
 
-            std::string knownName =
-                findKnownName(file.hash);
+            CacheTreeNode fileNode =
+                makeFileNode(
+                    archiveId,
+                    fileIndex,
+                    file
+                );
 
-            std::cout
-                << "  file "
-                << std::setw(2)
-                << i
-                << " | hash="
-                << file.hash;
+            archiveNode.children.push_back(
+                fileNode
+            );
+        }
 
-            if (!knownName.empty()) {
-                std::cout
-                    << " | name="
-                    << knownName;
-            }
+        idx0Node.children.push_back(
+            archiveNode
+        );
+    }
 
-            std::cout
-                << " | uncompressed="
-                << file.uncompressedSize
-                << " | compressed="
-                << file.compressedSize
-                << " | offset="
-                << file.offset
-                << "\n";
+    rootNode_.children.push_back(
+        idx0Node
+    );
+}
+
+CacheTreeNode CacheExplorerMode::makeFileNode(
+    uint32_t archiveId,
+    int fileIndex,
+    const rf::cache::ArchiveFileEntry& file
+) const {
+    std::string knownName =
+        std::string(
+            rf::cache::findKnownArchiveName(
+                file.hash
+            )
+        );
+
+    std::string label =
+        knownName.empty()
+            ? "file " + std::to_string(fileIndex)
+            : knownName;
+
+    CacheTreeNode fileNode {
+        label,
+        "hash: " + std::to_string(file.hash) +
+        " size: " + std::to_string(file.uncompressedSize),
+        CacheNodeType::File
+    };
+
+    fileNode.archiveId = archiveId;
+    fileNode.fileIndex = fileIndex;
+    fileNode.hash = file.hash;
+    fileNode.compressedSize = file.compressedSize;
+    fileNode.uncompressedSize = file.uncompressedSize;
+    fileNode.offset = file.offset;
+
+    return fileNode;
+}
+
+void CacheExplorerMode::renderTreeNode(
+    const CacheTreeNode& node
+) {
+    ImGuiTreeNodeFlags flags =
+        ImGuiTreeNodeFlags_OpenOnArrow |
+        ImGuiTreeNodeFlags_SpanAvailWidth;
+
+    if (node.children.empty()) {
+        flags |=
+            ImGuiTreeNodeFlags_Leaf |
+            ImGuiTreeNodeFlags_NoTreePushOnOpen;
+    }
+
+    bool open =
+        ImGui::TreeNodeEx(
+            node.label.c_str(),
+            flags
+        );
+
+    if (ImGui::IsItemClicked()) {
+        selectedNode_ = node;
+        hasSelection_ = true;
+
+        if (selectedNode_.type == CacheNodeType::Archive) {
+            inspectSelectedArchive();
+        }
+
+        if (selectedNode_.type == CacheNodeType::File) {
+            inspectSelectedFile();
         }
     }
+
+    if (
+        ImGui::IsItemHovered() &&
+        !node.detail.empty()
+    ) {
+        ImGui::SetTooltip(
+            "%s",
+            node.detail.c_str()
+        );
+    }
+
+    if (
+        open &&
+        !node.children.empty()
+    ) {
+        for (const CacheTreeNode& child : node.children) {
+            renderTreeNode(
+                child
+            );
+        }
+
+        ImGui::TreePop();
+    }
+}
+
+void CacheExplorerMode::renderInspector() {
+    ImGui::Text("Inspector");
+    ImGui::Separator();
+
+    if (!hasSelection_) {
+        ImGui::Text("Select an archive or file from the tree.");
+        return;
+    }
+
+    ImGui::Text(
+        "Label: %s",
+        selectedNode_.label.c_str()
+    );
+
+    ImGui::Text(
+        "Detail: %s",
+        selectedNode_.detail.c_str()
+    );
+
+    ImGui::Text(
+        "Node type: %d",
+        static_cast<int>(selectedNode_.type)
+    );
+
+    ImGui::Separator();
+
+    ImGui::Text(
+        "Archive ID: %u",
+        selectedNode_.archiveId
+    );
+
+    if (selectedNode_.type == CacheNodeType::File) {
+        ImGui::Text(
+            "File index: %d",
+            selectedNode_.fileIndex
+        );
+
+        ImGui::Text(
+            "Hash: %u",
+            selectedNode_.hash
+        );
+
+        ImGui::Text(
+            "Compressed size: %u",
+            selectedNode_.compressedSize
+        );
+
+        ImGui::Text(
+            "Uncompressed size: %u",
+            selectedNode_.uncompressedSize
+        );
+
+        ImGui::Text(
+            "Offset: %u",
+            selectedNode_.offset
+        );
+    }
+
+    if (previewTexture_ != nullptr) {
+        ImGui::Separator();
+
+        ImGui::Text("Texture Preview");
+
+        ImGui::Image(
+            reinterpret_cast<ImTextureID>(previewTexture_),
+            ImVec2(256.0f, 256.0f)
+        );
+    }
+}
+
+void CacheExplorerMode::uploadPreviewTexture(
+    SDL_Renderer* renderer
+) {
+    if (previewTextureData_.pixels.empty()) {
+        return;
+    }
+
+    if (previewTexture_ != nullptr) {
+        return;
+    }
+
+    previewTexture_ = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_ABGR8888,
+        SDL_TEXTUREACCESS_STATIC,
+        previewTextureData_.width,
+        previewTextureData_.height
+    );
+
+    if (previewTexture_ == nullptr) {
+        std::cout
+            << "Failed to create SDL texture: "
+            << SDL_GetError()
+            << "\n";
+
+        return;
+    }
+
+    SDL_UpdateTexture(
+        previewTexture_,
+        nullptr,
+        previewTextureData_.pixels.data(),
+        previewTextureData_.width * 4
+    );
+}
+
+std::vector<std::uint8_t> CacheExplorerMode::toBytes(
+    const std::vector<char>& data
+) const {
+    std::vector<std::uint8_t> bytes;
+    bytes.reserve(data.size());
+
+    for (char value : data) {
+        bytes.push_back(
+            static_cast<std::uint8_t>(value)
+        );
+    }
+
+    return bytes;
+}
+
+void CacheExplorerMode::inspectSelectedArchive() {
+    if (selectedNode_.archiveId != 6) {
+        return;
+    }
+
+    std::vector<char> rawIndex =
+        configLoader_.loadFileFromArchive(
+            6,
+            "index.dat"
+        );
+
+    rf::texture::TextureIndex textureIndex =
+        rf::texture::TextureIndexParser::parse(
+            toBytes(rawIndex)
+        );
+
+    std::cout
+        << "\n===== texture archive =====\n"
+        << "index.dat size: "
+        << rawIndex.size()
+        << " bytes\n"
+        << "canvas: "
+        << textureIndex.canvasWidth
+        << "x"
+        << textureIndex.canvasHeight
+        << "\n"
+        << "palette entries: "
+        << textureIndex.palette.size()
+        << "\n"
+        << "texture metadata entries: "
+        << textureIndex.textures.size()
+        << "\n";
+
+    if (!textureIndex.textures.empty()) {
+        const auto& meta =
+            textureIndex.textures[0];
+
+        std::cout
+            << "texture 0: "
+            << meta.width
+            << "x"
+            << meta.height
+            << " type="
+            << meta.type
+            << "\n";
+    }
+
+    for (
+        std::size_t i = 0;
+        i < textureIndex.textures.size();
+        i++
+    ) {
+        const auto& meta =
+            textureIndex.textures[i];
+
+        std::cout
+            << "texture metadata ["
+            << i
+            << "] "
+            << "xOff="
+            << meta.xOffset
+            << " yOff="
+            << meta.yOffset
+            << " width="
+            << meta.width
+            << " height="
+            << meta.height
+            << " type="
+            << meta.type
+            << "\n";
+    }
+}
+
+void CacheExplorerMode::inspectSelectedFile() {
+    if (previewTexture_ != nullptr) {
+        SDL_DestroyTexture(
+            previewTexture_
+        );
+
+        previewTexture_ = nullptr;
+    }
+
+    previewTextureData_ = {};
+
+    std::vector<char> rawFile =
+        configLoader_.loadFileByIndexFromArchive(
+            selectedNode_.archiveId,
+            selectedNode_.fileIndex
+        );
+
+    std::cout
+        << "\n===== file payload =====\n"
+        << "file: "
+        << selectedNode_.label
+        << "\n"
+        << "size: "
+        << rawFile.size()
+        << " bytes\n";
+
+    if (
+        selectedNode_.archiveId != 6 ||
+        selectedNode_.label == "index.dat"
+    ) {
+        return;
+    }
+
+    std::vector<char> rawIndex =
+        configLoader_.loadFileFromArchive(
+            6,
+            "index.dat"
+        );
+
+    rf::texture::TextureIndex textureIndex =
+        rf::texture::TextureIndexParser::parse(
+            toBytes(rawIndex)
+        );
+
+    auto bytes =
+        toBytes(rawFile);
+
+    std::uint16_t metaIndex =
+        (bytes[0] << 8) |
+        bytes[1];
+
+    std::cout
+        << "metadata index: "
+        << metaIndex
+        << "\n";
+
+    previewTextureData_ =
+        rf::texture::TextureDecoder::decode(
+            textureIndex,
+            toBytes(rawFile),
+            selectedNode_.fileIndex
+        );
+
+    std::cout
+        << "\n===== decoded texture =====\n"
+        << "size: "
+        << previewTextureData_.width
+        << "x"
+        << previewTextureData_.height
+        << "\n"
+        << "rgba bytes: "
+        << previewTextureData_.pixels.size()
+        << "\n";
 }
 
 }

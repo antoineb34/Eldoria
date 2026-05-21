@@ -4,15 +4,35 @@ add_library(core STATIC
     filestore/VersionList.cpp
 
     io/Buffer.cpp
+    io/ByteBuffer.cpp
+    io/Compression.cpp
 
-    assets/model/ModelDef.cpp     # real, compiles
+    cache/CacheStore.cpp
+    cache/ArchiveDecoder.cpp
+    cache/ArchiveFileTable.cpp
+    cache/NameHash.cpp
+    cache/ArchiveFileExtractor.cpp
+    cache/ConfigArchiveLoader.cpp
 
-    # assets/model/ModelCodec.cpp   # stub — uncomment when ported
-    # assets/item/ItemCodec.cpp     # stub — uncomment when ported
-    # assets/Assets.cpp             # stub — uncomment when ready
+    model/ModelFooter.cpp
+    model/ModelLayout.cpp
+    model/VertexDecoder.cpp
+    model/FaceDecoder.cpp
+
+    platform/SdlContext.cpp
+
+    render/Projection.cpp
+    render/WireframeRenderer.cpp
+    render/Color.cpp
+    render/TriangleRasterizer.cpp
+    render/DepthBuffer.cpp
+    render/Mesh.cpp
+
+    debug/ModelDebug.cpp
+
+    assets/model/ModelDef.cpp
 
     math/Mat4.cpp
-    render/Mesh.cpp
 
     legacy/DefinitionsLoader.cpp
     legacy/FloDef.cpp
@@ -32,6 +52,9 @@ add_library(core STATIC
     legacy/TextureDef.cpp
     legacy/VarbitDef.cpp
     legacy/VarpDef.cpp
+
+    texture/TextureDecoder.cpp
+    texture/TextureIndex.cpp
 )
 
 target_include_directories(core PUBLIC
@@ -41,4 +64,5 @@ target_include_directories(core PUBLIC
 target_link_libraries(core PUBLIC
     BZip2::BZip2
     ZLIB::ZLIB
+    SDL3::SDL3
 )

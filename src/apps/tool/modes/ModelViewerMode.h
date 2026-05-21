@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "../../../core/cache/CacheStore.h"
-#include "../../../core/cache/ConfigArchiveLoader.h"
 
 #include "../../../core/model/FaceDecoder.h"
 #include "../../../core/model/VertexDecoder.h"
@@ -18,6 +17,8 @@ public:
     ModelViewerMode();
 
     bool initialize() override;
+
+    void onEnter() override;
 
     void handleEvent(
         const SDL_Event& event
@@ -32,6 +33,8 @@ public:
         int windowHeight
     ) override;
 
+    void renderUi() override;
+
 private:
     bool loadModel(
         uint32_t id
@@ -41,12 +44,10 @@ private:
         uint32_t id
     );
 
-    void inspectIndex0();
+    void findNextAlphaModel();
 
 private:
     rf::cache::CacheStore modelCache_;
-    rf::cache::CacheStore configCache_;
-    rf::cache::ConfigArchiveLoader configLoader_;
 
     uint32_t modelId_ = 0;
 
@@ -64,6 +65,9 @@ private:
     bool fillTriangles_ = true;
     bool useAlpha_ = true;
     bool highlightTexturedFaces_ = false;
+
+    bool loaded_ = false;
+    std::vector<rf::model::TextureTriangle> textureTriangles_;
 };
 
 }

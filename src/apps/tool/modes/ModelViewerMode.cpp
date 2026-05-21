@@ -1,14 +1,9 @@
 #include "ModelViewerMode.h"
 
 #include <cmath>
-#include <iomanip>
 #include <iostream>
-#include <string>
 
-#include "../../../core/cache/ArchiveDecoder.h"
-#include "../../../core/cache/ArchiveFileTable.h"
-#include "../../../core/cache/KnownArchives.h"
-#include "../../../core/cache/NameHash.h"
+#include <imgui.h>
 
 #include "../../../core/debug/ModelDebug.h"
 
@@ -17,7 +12,6 @@
 #include "../../../core/model/ModelFooter.h"
 #include "../../../core/model/ModelLayout.h"
 
-#include "../../../core/render/Projection.h"
 #include "../../../core/render/WireframeRenderer.h"
 
 namespace rf::tool {
@@ -26,27 +20,25 @@ ModelViewerMode::ModelViewerMode()
     : modelCache_(
           "cache/main_file_cache.dat",
           "cache/main_file_cache.idx1"
-      ),
-      configCache_(
-          "cache/main_file_cache.dat",
-          "cache/main_file_cache.idx0"
-      ),
-      configLoader_(
-          "cache/main_file_cache.dat",
-          "cache/main_file_cache.idx0"
       )
 {
 }
 
 bool ModelViewerMode::initialize() {
 
-    if (!loadModel(modelId_)) {
-        return false;
+    return true;
+}
+
+void ModelViewerMode::onEnter() {
+
+    if (loaded_) {
+        return;
     }
 
-    inspectIndex0();
-
-    return true;
+    loaded_ =
+        loadModel(
+            modelId_
+        );
 }
 
 void ModelViewerMode::handleEvent(
@@ -97,7 +89,9 @@ void ModelViewerMode::handleEvent(
             << modelId_
             << "\n";
 
-        loadModel(modelId_);
+        loadModel(
+            modelId_
+        );
     }
 
     if (event.key.key == SDLK_LEFT) {
@@ -111,7 +105,9 @@ void ModelViewerMode::handleEvent(
             << modelId_
             << "\n";
 
-        loadModel(modelId_);
+        loadModel(
+            modelId_
+        );
     }
 
     if (event.key.key == SDLK_1) {
@@ -140,29 +136,7 @@ void ModelViewerMode::handleEvent(
     }
 
     if (event.key.key == SDLK_F) {
-
-        uint32_t searchId =
-            modelId_ + 1;
-
-        while (searchId < 100000) {
-
-            if (hasAlpha(searchId)) {
-
-                modelId_ =
-                    searchId;
-
-                std::cout
-                    << "\nfound alpha model "
-                    << modelId_
-                    << "\n";
-
-                loadModel(modelId_);
-
-                break;
-            }
-
-            searchId++;
-        }
+        findNextAlphaModel();
     }
 }
 
@@ -212,6 +186,67 @@ void ModelViewerMode::render(
     );
 }
 
+void ModelViewerMode::renderUi() {
+
+    ImGui::Text(
+        "Model Viewer"
+    );
+
+    ImGui::Separator();
+
+    ImGui::Text(
+        "Model ID: %u",
+        modelId_
+    );
+
+    ImGui::Checkbox(
+        "Wireframe",
+        &showWireframe_
+    );
+
+    ImGui::Checkbox(
+        "Vertices",
+        &showVertices_
+    );
+
+    ImGui::Checkbox(
+        "Fill triangles",
+        &fillTriangles_
+    );
+
+    ImGui::Checkbox(
+        "Use alpha",
+        &useAlpha_
+    );
+
+    ImGui::Checkbox(
+        "Highlight textured faces",
+        &highlightTexturedFaces_
+    );
+
+    ImGui::Separator();
+
+    ImGui::Text(
+        "Controls"
+    );
+
+    ImGui::Text(
+        "Left / Right: change model"
+    );
+
+    ImGui::Text(
+        "Up / Down: scale"
+    );
+
+    ImGui::Text(
+        "WASD: move camera"
+    );
+
+    ImGui::Text(
+        "F: find next alpha model"
+    );
+}
+
 bool ModelViewerMode::loadModel(
     uint32_t id
 ) {
@@ -221,7 +256,9 @@ bool ModelViewerMode::loadModel(
         << "====================================================\n";
 
     rf::cache::CacheArchive archive =
-        modelCache_.readArchive(id);
+        modelCache_.readArchive(
+            id
+        );
 
     std::vector<char> fullPayload;
 
@@ -230,9 +267,10 @@ bool ModelViewerMode::loadModel(
     );
 
     for (uint8_t byte : archive.payload) {
-
         fullPayload.push_back(
-            static_cast<char>(byte)
+            static_cast<char>(
+                byte
+            )
         );
     }
 
@@ -305,6 +343,38 @@ bool ModelViewerMode::loadModel(
             layout
         );
 
+    textureTriangles_ =
+        rf::model::decodeTextureTriangles(
+            decompressedPayload,
+            footer,
+            layout
+        );
+
+    std::cout
+        << "\ntexture triangles decoded: "
+        << textureTriangles_.size()
+        << "\n";
+
+    for (
+        std::size_t i = 0;
+        i < textureTriangles_.size();
+        i++
+    ) {
+        const auto& tri =
+            textureTriangles_[i];
+
+        std::cout
+            << "texture triangle "
+            << i
+            << ": "
+            << tri.a
+            << ", "
+            << tri.b
+            << ", "
+            << tri.c
+            << "\n";
+    }
+
     rf::debug::dumpDecodedVertices(
         vertices_
     );
@@ -320,7 +390,9 @@ bool ModelViewerMode::hasAlpha(
     uint32_t id
 ) {
     rf::cache::CacheArchive archive =
-        modelCache_.readArchive(id);
+        modelCache_.readArchive(
+            id
+        );
 
     if (archive.payload.empty()) {
         return false;
@@ -333,9 +405,10 @@ bool ModelViewerMode::hasAlpha(
     );
 
     for (uint8_t byte : archive.payload) {
-
         fullPayload.push_back(
-            static_cast<char>(byte)
+            static_cast<char>(
+                byte
+            )
         );
     }
 
@@ -361,120 +434,35 @@ bool ModelViewerMode::hasAlpha(
     return footer.alphaFlag == 1;
 }
 
-void ModelViewerMode::inspectIndex0() {
+void ModelViewerMode::findNextAlphaModel() {
 
-    const auto& knownNames =
-        rf::cache::KNOWN_ARCHIVES;
+    uint32_t searchId =
+        modelId_ + 1;
 
-    auto findKnownName =
-        [&](uint32_t hash) -> std::string {
+    while (searchId < 100000) {
 
-            for (const std::string& name : knownNames) {
+        if (hasAlpha(searchId)) {
 
-                if (rf::cache::hashName(name) == hash) {
-                    return name;
-                }
-            }
-
-            return "";
-        };
-
-    std::cout
-        << "\n\n====================================================\n"
-        << "IDX0 ARCHIVE INSPECTION\n"
-        << "====================================================\n";
-
-    for (uint32_t archiveId = 0; archiveId < 20; archiveId++) {
-
-        rf::cache::CacheArchive archive =
-            configCache_.readArchive(archiveId);
-
-        if (
-            archive.entry.size == 0 ||
-            archive.payload.empty()
-        ) {
-            continue;
-        }
-
-        rf::cache::DecodedArchive decoded =
-            rf::cache::decodeArchiveContainer(
-                archive.payload
-            );
-
-        rf::cache::ArchiveFileTable table =
-            rf::cache::readArchiveFileTable(
-                decoded.payload
-            );
-
-        std::cout
-            << "\n----------------------------------------------------\n"
-            << "archive "
-            << archiveId
-            << "\n"
-            << "----------------------------------------------------\n"
-            << "size: "
-            << archive.entry.size
-            << "\n"
-            << "first sector: "
-            << archive.entry.firstSector
-            << "\n"
-            << "compressed: "
-            << (decoded.compressed ? "yes" : "no")
-            << "\n"
-            << "compressed size: "
-            << decoded.compressedSize
-            << "\n"
-            << "uncompressed size: "
-            << decoded.uncompressedSize
-            << "\n"
-            << "decoded payload: "
-            << decoded.payload.size()
-            << "\n"
-            << "file count: "
-            << table.fileCount
-            << "\n";
-
-        for (int i = 0; i < table.files.size(); i++) {
-
-            const auto& file =
-                table.files[i];
-
-            std::string knownName =
-                findKnownName(file.hash);
+            modelId_ =
+                searchId;
 
             std::cout
-                << "  file "
-                << std::setw(2)
-                << i
-                << " | hash="
-                << file.hash;
-
-            if (!knownName.empty()) {
-                std::cout
-                    << " | name="
-                    << knownName;
-            }
-
-            std::cout
-                << " | uncompressed="
-                << file.uncompressedSize
-                << " | compressed="
-                << file.compressedSize
-                << " | offset="
-                << file.offset
+                << "\nfound alpha model "
+                << modelId_
                 << "\n";
+
+            loadModel(
+                modelId_
+            );
+
+            return;
         }
+
+        searchId++;
     }
 
-    std::vector<char> npcDat =
-        configLoader_.loadFile(
-            "npc.dat"
-        );
-
     std::cout
-        << "\nEXTRACTED npc.dat: "
-        << npcDat.size()
-        << " bytes\n";
+        << "\nno alpha model found\n";
 }
 
 }
