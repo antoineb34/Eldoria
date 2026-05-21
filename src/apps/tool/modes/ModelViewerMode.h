@@ -6,11 +6,9 @@
 #include <vector>
 
 #include "../../../core/cache/CacheStore.h"
-#include "../../../core/cache/ConfigArchiveLoader.h"
 
 #include "../../../core/model/FaceDecoder.h"
 #include "../../../core/model/VertexDecoder.h"
-#include <imgui.h>
 
 namespace rf::tool {
 
@@ -26,14 +24,14 @@ public:
 
     void update() override;
 
-    void renderUi() override;
-
     void render(
         SDL_Renderer* renderer,
         rf::render::DepthBuffer& depthBuffer,
         int windowWidth,
         int windowHeight
     ) override;
+
+    void renderUi() override;
 
 private:
     bool loadModel(
@@ -44,12 +42,10 @@ private:
         uint32_t id
     );
 
-    void inspectIndex0();
+    void findNextAlphaModel();
 
 private:
     rf::cache::CacheStore modelCache_;
-    rf::cache::CacheStore configCache_;
-    rf::cache::ConfigArchiveLoader configLoader_;
 
     uint32_t modelId_ = 0;
 

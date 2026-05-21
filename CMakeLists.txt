@@ -17,6 +17,7 @@ find_package(SDL3 REQUIRED CONFIG)
 find_package(BZip2 REQUIRED)
 
 add_subdirectory(src/core)
+add_subdirectory(src/ui)
 add_subdirectory(src/apps/tool)
 
 # Later:

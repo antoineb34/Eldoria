@@ -2,8 +2,9 @@
 
 #include "ToolMode.h"
 
-#include <imgui.h>
+#include <cstdint>
 
+#include "../../../core/cache/ArchiveFileTable.h"
 #include "../../../core/cache/CacheStore.h"
 #include "../../../core/cache/ConfigArchiveLoader.h"
 
@@ -23,8 +24,6 @@ public:
 
     void update() override;
 
-    void renderUi() override;
-
     void render(
         SDL_Renderer* renderer,
         rf::render::DepthBuffer& depthBuffer,
@@ -32,19 +31,31 @@ public:
         int windowHeight
     ) override;
 
-private:
-    void inspectIndex0();
+    void renderUi() override;
 
+private:
+    void buildRawCacheTree();
+
+    CacheTreeNode makeFileNode(
+        uint32_t archiveId,
+        int fileIndex,
+        const rf::cache::ArchiveFileEntry& file
+    ) const;
+
+    void renderTreeNode(
+        const CacheTreeNode& node
+    );
+
+    void renderInspector();
+
+private:
     rf::cache::CacheStore configCache_;
     rf::cache::ConfigArchiveLoader configLoader_;
 
     CacheTreeNode rootNode_;
 
-    void buildRawCacheTree();
-    void printTree(
-        const CacheTreeNode& node,
-        int depth
-    );
+    CacheTreeNode selectedNode_;
+    bool hasSelection_ = false;
 };
 
 }

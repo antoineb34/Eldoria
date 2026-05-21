@@ -14,6 +14,7 @@
 
 #include "modes/ModelViewerMode.h"
 #include "modes/CacheExplorerMode.h"
+#include "../../ui/ImGuiTheme.h"
 
 namespace rf::tool {
 
@@ -47,7 +48,14 @@ int ToolApplication::run() {
     io.ConfigFlags |=
         ImGuiConfigFlags_NavEnableKeyboard;
 
+    ImFont* font =
+        io.Fonts->AddFontFromFileTTF(
+            "/usr/share/fonts/jetbrains-mono-fonts/JetBrainsMono-Regular.otf",
+            18.0f
+        );
+
     ImGui::StyleColorsDark();
+    rf::ui::applyImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(
         window,
@@ -165,28 +173,64 @@ int ToolApplication::run() {
             windowHeight
         );
 
-        ImGui::Begin("RuneForge");
+        ImGuiViewport* viewport =
+            ImGui::GetMainViewport();
 
-        if (ImGui::Button("Model Viewer")) {
+        ImGui::SetNextWindowPos(
+            viewport->WorkPos
+        );
+
+        ImGui::SetNextWindowSize(
+            viewport->WorkSize
+        );
+
+        ImGuiWindowFlags shellFlags =
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+        ImGui::Begin(
+            "RuneForgeShell",
+            nullptr,
+            shellFlags
+        );
+
+        ImGui::BeginChild(
+            "Sidebar",
+            ImVec2(220.0f, 0.0f),
+            true
+        );
+
+        ImGui::Text("RuneForge");
+        ImGui::Separator();
+
+        if (ImGui::Button("Model Viewer", ImVec2(-1.0f, 36.0f))) {
             activeModeIndex = 0;
             activeMode = modes[activeModeIndex];
         }
 
-        ImGui::SameLine();
-
-        if (ImGui::Button("Cache Explorer")) {
+        if (ImGui::Button("Cache Explorer", ImVec2(-1.0f, 36.0f))) {
             activeModeIndex = 1;
             activeMode = modes[activeModeIndex];
         }
 
-        ImGui::Text(
-            "Active mode: %d",
-            activeModeIndex
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+
+        ImGui::BeginChild(
+            "MainPanel",
+            ImVec2(0.0f, 0.0f),
+            true
         );
 
-        ImGui::End();
-
         activeMode->renderUi();
+
+        ImGui::EndChild();
+
+        ImGui::End();
 
         ImGui::Render();
 
