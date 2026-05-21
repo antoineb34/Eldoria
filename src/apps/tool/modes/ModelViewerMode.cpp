@@ -343,6 +343,38 @@ bool ModelViewerMode::loadModel(
             layout
         );
 
+    textureTriangles_ =
+        rf::model::decodeTextureTriangles(
+            decompressedPayload,
+            footer,
+            layout
+        );
+
+    std::cout
+        << "\ntexture triangles decoded: "
+        << textureTriangles_.size()
+        << "\n";
+
+    for (
+        std::size_t i = 0;
+        i < textureTriangles_.size();
+        i++
+    ) {
+        const auto& tri =
+            textureTriangles_[i];
+
+        std::cout
+            << "texture triangle "
+            << i
+            << ": "
+            << tri.a
+            << ", "
+            << tri.b
+            << ", "
+            << tri.c
+            << "\n";
+    }
+
     rf::debug::dumpDecodedVertices(
         vertices_
     );

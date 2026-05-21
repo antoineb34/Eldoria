@@ -67,6 +67,7 @@ private:
     bool highlightTexturedFaces_ = false;
 
     bool loaded_ = false;
+    std::vector<rf::model::TextureTriangle> textureTriangles_;
 };
 
 }

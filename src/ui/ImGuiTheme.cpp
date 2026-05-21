@@ -26,10 +26,10 @@ namespace rf::ui {
             ImVec4(0.55f, 0.58f, 0.60f, 1.00f);
 
         colors[ImGuiCol_WindowBg] =
-            ImVec4(0.12f, 0.13f, 0.14f, 1.00f);
+            ImVec4(0.12f, 0.13f, 0.14f, 0.30f);
 
         colors[ImGuiCol_ChildBg] =
-            ImVec4(0.15f, 0.16f, 0.18f, 1.00f);
+            ImVec4(0.15f, 0.16f, 0.18f, 0.30f);
 
         colors[ImGuiCol_PopupBg] =
             ImVec4(0.12f, 0.13f, 0.14f, 1.00f);
