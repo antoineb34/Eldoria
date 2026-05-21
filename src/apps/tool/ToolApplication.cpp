@@ -18,6 +18,15 @@
 
 namespace rf::tool {
 
+void clearTerminal() {
+
+#ifdef _WIN32
+    std::system("cls");
+#else
+    std::system("clear");
+#endif
+}
+
 int ToolApplication::run() {
 
     constexpr int WINDOW_WIDTH = 960;
@@ -87,6 +96,8 @@ int ToolApplication::run() {
     ToolMode* activeMode =
         modes[activeModeIndex];
 
+    activeMode->onEnter();
+
     rf::render::DepthBuffer depthBuffer(
         WINDOW_WIDTH,
         WINDOW_HEIGHT
@@ -132,6 +143,8 @@ int ToolApplication::run() {
 
                 activeMode =
                     modes[activeModeIndex];
+
+                activeMode->onEnter();
 
                 std::cout
                     << "\nSwitched mode: "
@@ -206,14 +219,24 @@ int ToolApplication::run() {
         ImGui::Text("RuneForge");
         ImGui::Separator();
 
-        if (ImGui::Button("Model Viewer", ImVec2(-1.0f, 36.0f))) {
+        if (ImGui::Button("Model Viewer")) {
+
             activeModeIndex = 0;
             activeMode = modes[activeModeIndex];
+
+            clearTerminal();
+
+            activeMode->onEnter();
         }
 
-        if (ImGui::Button("Cache Explorer", ImVec2(-1.0f, 36.0f))) {
+        if (ImGui::Button("Cache Explorer")) {
+
             activeModeIndex = 1;
             activeMode = modes[activeModeIndex];
+
+            clearTerminal();
+
+            activeMode->onEnter();
         }
 
         ImGui::EndChild();

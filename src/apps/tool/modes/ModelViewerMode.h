@@ -18,6 +18,8 @@ public:
 
     bool initialize() override;
 
+    void onEnter() override;
+
     void handleEvent(
         const SDL_Event& event
     ) override;
@@ -63,6 +65,8 @@ private:
     bool fillTriangles_ = true;
     bool useAlpha_ = true;
     bool highlightTexturedFaces_ = false;
+
+    bool loaded_ = false;
 };
 
 }

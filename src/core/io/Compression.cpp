@@ -27,6 +27,60 @@ CompressionType detectCompression(
     return CompressionType::Unknown;
 }
 
+std::vector<char> decompressBzip2(
+    const std::vector<char>& payload,
+    size_t expectedSize
+) {
+    std::vector<char> output(
+        expectedSize
+    );
+
+    unsigned int outputSize =
+        static_cast<unsigned int>(
+            output.size()
+        );
+
+    std::vector<char> bzipPayload;
+
+    bzipPayload.push_back('B');
+    bzipPayload.push_back('Z');
+    bzipPayload.push_back('h');
+    bzipPayload.push_back('1');
+
+    bzipPayload.insert(
+        bzipPayload.end(),
+        payload.begin(),
+        payload.end()
+    );
+
+    int result =
+        BZ2_bzBuffToBuffDecompress(
+            output.data(),
+            &outputSize,
+            bzipPayload.data(),
+            static_cast<unsigned int>(
+                bzipPayload.size()
+            ),
+            0,
+            0
+        );
+
+    if (result != BZ_OK) {
+        std::cerr
+            << "BZip2 decompress failed: "
+            << result
+            << "\n";
+
+        return {};
+    }
+
+    output.resize(
+        outputSize
+    );
+
+    return output;
+}
+
 std::vector<char> decompressGzip(
     const std::vector<char>& payload
 ) {

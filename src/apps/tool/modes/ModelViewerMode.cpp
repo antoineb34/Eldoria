@@ -26,9 +26,19 @@ ModelViewerMode::ModelViewerMode()
 
 bool ModelViewerMode::initialize() {
 
-    return loadModel(
-        modelId_
-    );
+    return true;
+}
+
+void ModelViewerMode::onEnter() {
+
+    if (loaded_) {
+        return;
+    }
+
+    loaded_ =
+        loadModel(
+            modelId_
+        );
 }
 
 void ModelViewerMode::handleEvent(

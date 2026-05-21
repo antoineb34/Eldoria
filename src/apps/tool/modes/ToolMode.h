@@ -12,6 +12,9 @@ public:
 
     virtual bool initialize() = 0;
 
+    virtual void onEnter() {
+    }
+
     virtual void handleEvent(
         const SDL_Event& event
     ) = 0;
