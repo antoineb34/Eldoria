@@ -52,6 +52,9 @@ add_library(core STATIC
     legacy/TextureDef.cpp
     legacy/VarbitDef.cpp
     legacy/VarpDef.cpp
+
+    texture/TextureDecoder.cpp
+    texture/TextureIndex.cpp
 )
 
 target_include_directories(core PUBLIC
