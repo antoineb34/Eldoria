@@ -1,8 +1,10 @@
 #include "WireframeRenderer.h"
+
 #include "Color.h"
 #include "TriangleRasterizer.h"
 
 #include <algorithm>
+#include <unordered_map>
 #include <vector>
 
 namespace rf::render {
@@ -12,6 +14,7 @@ void drawWireframeModel(
     DepthBuffer& depthBuffer,
     const std::vector<rf::model::Vertex>& vertices,
     const std::vector<rf::model::Face>& faces,
+    const std::unordered_map<int, rf::texture::DecodedTexture>& textures,
     const Camera& camera,
     bool showWireframe,
     bool showVertices,
@@ -40,14 +43,13 @@ void drawWireframeModel(
     std::vector<RenderFace> renderFaces;
 
     for (const rf::model::Face& face : faces) {
-
         if (
             face.a < 0 ||
-            face.a >= vertices.size() ||
+            face.a >= static_cast<int>(vertices.size()) ||
             face.b < 0 ||
-            face.b >= vertices.size() ||
+            face.b >= static_cast<int>(vertices.size()) ||
             face.c < 0 ||
-            face.c >= vertices.size()
+            face.c >= static_cast<int>(vertices.size())
         ) {
             continue;
         }
@@ -95,7 +97,6 @@ void drawWireframeModel(
         renderFaces.end(),
         [](const RenderFace& a,
            const RenderFace& b) {
-
             if (
                 a.face.priority !=
                 b.face.priority
@@ -112,7 +113,6 @@ void drawWireframeModel(
     );
 
     for (const RenderFace& renderFace : renderFaces) {
-
         const rf::model::Face& face =
             renderFace.face;
 
@@ -139,7 +139,7 @@ void drawWireframeModel(
 
         if (
             highlightTexturedFaces &&
-            face.textureFlag != -1
+            face.textureInfo >= 0
         ) {
             color = {
                 255,
@@ -157,17 +157,41 @@ void drawWireframeModel(
         );
 
         if (fillTriangles) {
-            fillTriangle(
-                renderer,
-                depthBuffer,
-                a,
-                b,
-                c
-            );
+            auto textureIt =
+                textures.find(
+                    face.color
+                );
+
+            bool textured =
+                face.textureInfo >= 0 &&
+                (
+                    face.renderType == 2 ||
+                    face.renderType == 3
+                ) &&
+                textureIt != textures.end();
+
+            if (textured) {
+                fillTexturedTriangle(
+                    renderer,
+                    depthBuffer,
+                    a,
+                    b,
+                    c,
+                    textureIt->second
+                );
+            }
+            else {
+                fillTriangle(
+                    renderer,
+                    depthBuffer,
+                    a,
+                    b,
+                    c
+                );
+            }
         }
 
         if (showWireframe) {
-
             SDL_SetRenderDrawColor(
                 renderer,
                 255,
@@ -178,26 +202,31 @@ void drawWireframeModel(
 
             SDL_RenderLine(
                 renderer,
-                a.x, a.y,
-                b.x, b.y
+                a.x,
+                a.y,
+                b.x,
+                b.y
             );
 
             SDL_RenderLine(
                 renderer,
-                b.x, b.y,
-                c.x, c.y
+                b.x,
+                b.y,
+                c.x,
+                c.y
             );
 
             SDL_RenderLine(
                 renderer,
-                c.x, c.y,
-                a.x, a.y
+                c.x,
+                c.y,
+                a.x,
+                a.y
             );
         }
     }
 
     if (showVertices) {
-
         SDL_SetRenderDrawColor(
             renderer,
             255,
@@ -207,7 +236,6 @@ void drawWireframeModel(
         );
 
         for (const rf::model::Vertex& vertex : vertices) {
-
             ScreenPoint point =
                 projectVertex(
                     vertex,
