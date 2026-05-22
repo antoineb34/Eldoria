@@ -277,7 +277,7 @@ void dumpDecodedFaces(
             << " alpha:"
             << (int)faces[i].alpha
             << " texture:"
-            << faces[i].textureFlag
+            << (int)faces[i].textureInfo
             << ")\n";
     }
 }

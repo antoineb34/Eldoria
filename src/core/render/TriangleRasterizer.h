@@ -4,6 +4,7 @@
 
 #include "Projection.h"
 #include "DepthBuffer.h"
+#include "texture/Texture.h"
 
 namespace rf::render {
 
@@ -13,6 +14,15 @@ void fillTriangle(
     const ScreenPoint& a,
     const ScreenPoint& b,
     const ScreenPoint& c
+);
+
+void fillTexturedTriangle(
+    SDL_Renderer* renderer,
+    DepthBuffer& depthBuffer,
+    const ScreenPoint& a,
+    const ScreenPoint& b,
+    const ScreenPoint& c,
+    const rf::texture::DecodedTexture& texture
 );
 
 }

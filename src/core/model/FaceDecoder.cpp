@@ -1,4 +1,5 @@
 #include "FaceDecoder.h"
+
 #include "../io/ByteBuffer.h"
 
 namespace rf::model {
@@ -8,17 +9,21 @@ std::vector<Face> decodeFaces(
     const ModelFooter& footer,
     const ModelLayout& layout
 ) {
-
     rf::io::ByteBuffer textureBuffer(payload);
 
     if (footer.textureFlag == 1) {
-
         textureBuffer.setPosition(
             layout.texturePointersOffset
         );
     }
 
     rf::io::ByteBuffer priorityBuffer(payload);
+
+    if (footer.priorityFlag == 255) {
+        priorityBuffer.setPosition(
+            layout.trianglePrioritiesOffset
+        );
+    }
 
     rf::io::ByteBuffer alphaBuffer(payload);
 
@@ -28,22 +33,13 @@ std::vector<Face> decodeFaces(
         );
     }
 
-    if (footer.priorityFlag == 255) {
-
-        priorityBuffer.setPosition(
-            layout.trianglePrioritiesOffset
-        );
-    }
-
     rf::io::ByteBuffer colorBuffer(payload);
 
     colorBuffer.setPosition(
         layout.triangleColorsOffset
     );
 
-    rf::io::ByteBuffer triangleDataBuffer(
-        payload
-    );
+    rf::io::ByteBuffer triangleDataBuffer(payload);
 
     triangleDataBuffer.setPosition(
         layout.triangleDataOffset
@@ -60,21 +56,15 @@ std::vector<Face> decodeFaces(
     int lastC = 0;
     int lastIndex = 0;
 
-    for (
-        int i = 0;
-        i < footer.triangleCount;
-        i++
-    ) {
-
-        unsigned char type =
-            static_cast<unsigned char>(
+    for (uint32_t i = 0; i < footer.triangleCount; i++) {
+        uint8_t triangleType =
+            static_cast<uint8_t>(
                 payload[
                     layout.triangleTypesOffset + i
                 ]
             );
 
-        if (type == 1) {
-
+        if (triangleType == 1) {
             lastA =
                 triangleDataBuffer.readSmart() +
                 lastIndex;
@@ -93,21 +83,9 @@ std::vector<Face> decodeFaces(
 
             lastIndex = lastC;
         }
-
-        else if (type == 2) {
-
-            lastB = lastC;
-
-            lastC =
-                triangleDataBuffer.readSmart() +
-                lastIndex;
-
-            lastIndex = lastC;
-        }
-
-        else if (type == 3) {
-
-            lastA = lastC;
+        else if (triangleType == 2) {
+            lastB =
+                lastC;
 
             lastC =
                 triangleDataBuffer.readSmart() +
@@ -115,13 +93,25 @@ std::vector<Face> decodeFaces(
 
             lastIndex = lastC;
         }
+        else if (triangleType == 3) {
+            lastA =
+                lastC;
 
-        else if (type == 4) {
+            lastC =
+                triangleDataBuffer.readSmart() +
+                lastIndex;
 
-            int oldA = lastA;
+            lastIndex = lastC;
+        }
+        else if (triangleType == 4) {
+            int oldA =
+                lastA;
 
-            lastA = lastB;
-            lastB = oldA;
+            lastA =
+                lastB;
+
+            lastB =
+                oldA;
 
             lastC =
                 triangleDataBuffer.readSmart() +
@@ -136,27 +126,40 @@ std::vector<Face> decodeFaces(
         uint8_t priority = 0;
 
         if (footer.priorityFlag == 255) {
-            priority = priorityBuffer.readU8();
+            priority =
+                priorityBuffer.readU8();
         }
         else {
-            priority = footer.priorityFlag;
+            priority =
+                static_cast<uint8_t>(
+                    footer.priorityFlag
+                );
         }
 
         uint8_t alpha = 0;
 
         if (footer.alphaFlag == 1) {
-            alpha = alphaBuffer.readU8();
+            alpha =
+                alphaBuffer.readU8();
         }
 
-        int textureFlag = -1;
+        int textureInfo = -1;
+        uint8_t renderType = 0;
+        int textureTriangleIndex = -1;
 
         if (footer.textureFlag == 1) {
-
             uint8_t value =
                 textureBuffer.readU8();
 
-            if (value != 255) {
-                textureFlag = value;
+            if (value != 0 && value != 255) {
+                textureInfo =
+                    value;
+
+                renderType =
+                    value & 0x3;
+
+                textureTriangleIndex =
+                    value >> 2;
             }
         }
 
@@ -167,7 +170,10 @@ std::vector<Face> decodeFaces(
             color,
             priority,
             alpha,
-            textureFlag
+            triangleType,
+            renderType,
+            textureInfo,
+            textureTriangleIndex
         });
     }
 
@@ -188,8 +194,14 @@ std::vector<TextureTriangle> decodeTextureTriangles(
     auto readU16 =
         [&](std::size_t offset) -> uint16_t {
             return
-                (static_cast<uint8_t>(payload[offset]) << 8) |
-                static_cast<uint8_t>(payload[offset + 1]);
+                (
+                    static_cast<uint8_t>(
+                        payload[offset]
+                    ) << 8
+                ) |
+                static_cast<uint8_t>(
+                    payload[offset + 1]
+                );
         };
 
     std::size_t offset =

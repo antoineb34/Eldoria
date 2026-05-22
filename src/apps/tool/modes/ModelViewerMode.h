@@ -6,9 +6,13 @@
 #include <vector>
 
 #include "../../../core/cache/CacheStore.h"
+#include "../../../core/cache/ConfigArchiveLoader.h"
 
 #include "../../../core/model/FaceDecoder.h"
 #include "../../../core/model/VertexDecoder.h"
+
+#include "../../../core/texture/Texture.h"
+#include <unordered_map>
 
 namespace rf::tool {
 
@@ -17,7 +21,6 @@ public:
     ModelViewerMode();
 
     bool initialize() override;
-
     void onEnter() override;
 
     void handleEvent(
@@ -40,19 +43,33 @@ private:
         uint32_t id
     );
 
+    bool loadTexture(
+        int textureId
+    );
+
     bool hasAlpha(
         uint32_t id
     );
 
     void findNextAlphaModel();
 
+    bool hasTexture(
+        uint32_t id
+    );
+
+    void findNextTexturedModel();
+
 private:
     rf::cache::CacheStore modelCache_;
+    rf::cache::ConfigArchiveLoader textureArchive_;
 
-    uint32_t modelId_ = 0;
+    uint32_t modelId_ = 147;
 
     std::vector<rf::model::Vertex> vertices_;
     std::vector<rf::model::Face> faces_;
+    std::vector<rf::model::TextureTriangle> textureTriangles_;
+
+    std::unordered_map<int, rf::texture::DecodedTexture> textures_;
 
     float renderAngle_ = 0.0f;
     float scale_ = 4.0f;
@@ -67,7 +84,6 @@ private:
     bool highlightTexturedFaces_ = false;
 
     bool loaded_ = false;
-    std::vector<rf::model::TextureTriangle> textureTriangles_;
 };
 
 }
