@@ -1,6 +1,7 @@
 #include "ToolApplication.h"
 
 #include <array>
+#include <cstdlib>
 #include <iostream>
 
 #include <SDL3/SDL.h>
@@ -12,14 +13,13 @@
 #include "../../core/platform/SdlContext.h"
 #include "../../core/render/DepthBuffer.h"
 
-#include "modes/ModelViewerMode.h"
 #include "modes/CacheExplorerMode.h"
+#include "modes/ModelViewerMode.h"
 #include "../../ui/ImGuiTheme.h"
 
 namespace rf::tool {
 
 void clearTerminal() {
-
 #ifdef _WIN32
     std::system("cls");
 #else
@@ -28,7 +28,6 @@ void clearTerminal() {
 }
 
 int ToolApplication::run() {
-
     constexpr int WINDOW_WIDTH = 960;
     constexpr int WINDOW_HEIGHT = 640;
 
@@ -57,11 +56,10 @@ int ToolApplication::run() {
     io.ConfigFlags |=
         ImGuiConfigFlags_NavEnableKeyboard;
 
-    ImFont* font =
-        io.Fonts->AddFontFromFileTTF(
-            "/usr/share/fonts/jetbrains-mono-fonts/JetBrainsMono-Regular.otf",
-            18.0f
-        );
+    io.Fonts->AddFontFromFileTTF(
+        "/usr/share/fonts/jetbrains-mono-fonts/JetBrainsMono-Regular.otf",
+        18.0f
+    );
 
     ImGui::StyleColorsDark();
     rf::ui::applyImGuiTheme();
@@ -106,50 +104,22 @@ int ToolApplication::run() {
     bool running = true;
 
     while (running) {
-
         SDL_Event event;
 
         while (SDL_PollEvent(&event)) {
-
             ImGui_ImplSDL3_ProcessEvent(
                 &event
             );
 
-            if (
-                event.type ==
-                SDL_EVENT_QUIT
-            ) {
+            if (event.type == SDL_EVENT_QUIT) {
                 running = false;
             }
 
             if (
-                event.type ==
-                SDL_EVENT_KEY_DOWN &&
-                event.key.key ==
-                SDLK_ESCAPE
+                event.type == SDL_EVENT_KEY_DOWN &&
+                event.key.key == SDLK_ESCAPE
             ) {
                 running = false;
-            }
-
-            if (
-                event.type ==
-                SDL_EVENT_KEY_DOWN &&
-                event.key.key ==
-                SDLK_TAB
-            ) {
-                activeModeIndex =
-                    (activeModeIndex + 1) %
-                    modes.size();
-
-                activeMode =
-                    modes[activeModeIndex];
-
-                activeMode->onEnter();
-
-                std::cout
-                    << "\nSwitched mode: "
-                    << activeModeIndex
-                    << "\n";
             }
 
             activeMode->handleEvent(
@@ -177,13 +147,16 @@ int ToolApplication::run() {
 
         depthBuffer.clear();
 
-        activeMode->update();
-
-        activeMode->render(
+        SDL_SetRenderDrawColor(
             renderer,
-            depthBuffer,
-            windowWidth,
-            windowHeight
+            18,
+            20,
+            22,
+            255
+        );
+
+        SDL_RenderClear(
+            renderer
         );
 
         ImGuiViewport* viewport =
@@ -204,48 +177,48 @@ int ToolApplication::run() {
             ImGuiWindowFlags_NoCollapse |
             ImGuiWindowFlags_NoBringToFrontOnFocus;
 
+        int viewportX = 0;
+        int viewportY = 0;
+        int viewportWidth = 1;
+        int viewportHeight = 1;
+
         ImGui::Begin(
             "RuneForgeShell",
             nullptr,
             shellFlags
         );
 
-        ImGui::BeginChild(
-            "Sidebar",
-            ImVec2(220.0f, 0.0f),
-            true
-        );
+        if (ImGui::BeginTabBar("RuneForgeTabs")) {
+            if (ImGui::BeginTabItem("Model Viewer")) {
+                if (activeModeIndex != 0) {
+                    activeModeIndex = 0;
+                    activeMode = modes[activeModeIndex];
+                    clearTerminal();
+                    activeMode->onEnter();
+                }
 
-        ImGui::Text("RuneForge");
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Cache Explorer")) {
+                if (activeModeIndex != 1) {
+                    activeModeIndex = 1;
+                    activeMode = modes[activeModeIndex];
+                    clearTerminal();
+                    activeMode->onEnter();
+                }
+
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+
         ImGui::Separator();
 
-        if (ImGui::Button("Model Viewer")) {
-
-            activeModeIndex = 0;
-            activeMode = modes[activeModeIndex];
-
-            clearTerminal();
-
-            activeMode->onEnter();
-        }
-
-        if (ImGui::Button("Cache Explorer")) {
-
-            activeModeIndex = 1;
-            activeMode = modes[activeModeIndex];
-
-            clearTerminal();
-
-            activeMode->onEnter();
-        }
-
-        ImGui::EndChild();
-
-        ImGui::SameLine();
-
         ImGui::BeginChild(
-            "MainPanel",
-            ImVec2(0.0f, 0.0f),
+            "ControlsPanel",
+            ImVec2(300.0f, 0.0f),
             true
         );
 
@@ -253,7 +226,54 @@ int ToolApplication::run() {
 
         ImGui::EndChild();
 
+        ImGui::SameLine();
+
+        ImGui::BeginChild(
+            "ViewportPanel",
+            ImVec2(0.0f, 0.0f),
+            true
+        );
+
+        ImVec2 viewportPos =
+            ImGui::GetWindowPos();
+
+        ImVec2 viewportSize =
+            ImGui::GetWindowSize();
+
+        viewportX =
+            static_cast<int>(
+                viewportPos.x
+            );
+
+        viewportY =
+            static_cast<int>(
+                viewportPos.y
+            );
+
+        viewportWidth =
+            static_cast<int>(
+                viewportSize.x
+            );
+
+        viewportHeight =
+            static_cast<int>(
+                viewportSize.y
+            );
+
+        ImGui::EndChild();
+
         ImGui::End();
+
+        activeMode->update();
+
+        activeMode->render(
+            renderer,
+            depthBuffer,
+            viewportX,
+            viewportY,
+            viewportWidth,
+            viewportHeight
+        );
 
         ImGui::Render();
 

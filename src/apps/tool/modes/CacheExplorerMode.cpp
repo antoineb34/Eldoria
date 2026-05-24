@@ -54,12 +54,24 @@ void CacheExplorerMode::update() {
 void CacheExplorerMode::render(
     SDL_Renderer* renderer,
     rf::render::DepthBuffer& depthBuffer,
-    int windowWidth,
-    int windowHeight
+    int viewportX,
+    int viewportY,
+    int viewportWidth,
+    int viewportHeight
 ) {
     (void)depthBuffer;
-    (void)windowWidth;
-    (void)windowHeight;
+
+    SDL_Rect clip {
+        viewportX,
+        viewportY,
+        viewportWidth,
+        viewportHeight
+    };
+
+    SDL_SetRenderClipRect(
+        renderer,
+        &clip
+    );
 
     SDL_SetRenderDrawColor(
         renderer,
@@ -69,12 +81,25 @@ void CacheExplorerMode::render(
         255
     );
 
-    SDL_RenderClear(
-        renderer
+    SDL_FRect background {
+        static_cast<float>(viewportX),
+        static_cast<float>(viewportY),
+        static_cast<float>(viewportWidth),
+        static_cast<float>(viewportHeight)
+    };
+
+    SDL_RenderFillRect(
+        renderer,
+        &background
     );
 
     uploadPreviewTexture(
         renderer
+    );
+
+    SDL_SetRenderClipRect(
+        renderer,
+        nullptr
     );
 }
 

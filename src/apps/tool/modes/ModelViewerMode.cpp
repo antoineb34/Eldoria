@@ -141,6 +141,14 @@ void ModelViewerMode::handleEvent(
     if (event.key.key == SDLK_T) {
         findNextTexturedModel();
     }
+
+    if (event.key.key == SDLK_R) {
+        findNextModelWithRenderType(
+            static_cast<uint8_t>(
+                targetRenderType_
+            )
+        );
+    }
 }
 
 void ModelViewerMode::update() {
@@ -150,17 +158,53 @@ void ModelViewerMode::update() {
 void ModelViewerMode::render(
     SDL_Renderer* renderer,
     rf::render::DepthBuffer& depthBuffer,
-    int windowWidth,
-    int windowHeight
+    int viewportX,
+    int viewportY,
+    int viewportWidth,
+    int viewportHeight
 ) {
     rf::render::Camera camera {};
 
+    SDL_Rect clip {
+        viewportX,
+        viewportY,
+        viewportWidth,
+        viewportHeight
+    };
+
+    SDL_SetRenderClipRect(
+        renderer,
+        &clip
+    );
+
+    SDL_SetRenderDrawColor(
+        renderer,
+        185,
+        212,
+        177,
+        255
+    );
+
+    SDL_FRect background {
+        static_cast<float>(viewportX),
+        static_cast<float>(viewportY),
+        static_cast<float>(viewportWidth),
+        static_cast<float>(viewportHeight)
+    };
+
+    SDL_RenderFillRect(
+        renderer,
+        &background
+    );
+
     camera.centerX =
-        windowWidth * 0.5f +
+        viewportX +
+        viewportWidth * 0.5f +
         cameraOffsetX_;
 
     camera.centerY =
-        windowHeight * 0.5f +
+        viewportY +
+        viewportHeight * 0.5f +
         cameraOffsetY_;
 
     camera.angleY =
@@ -187,26 +231,107 @@ void ModelViewerMode::render(
         useAlpha_,
         highlightTexturedFaces_
     );
+
+    SDL_SetRenderClipRect(
+        renderer,
+        nullptr
+    );
 }
 
 void ModelViewerMode::renderUi() {
-    ImGui::Text(
-        "Model Viewer"
-    );
+    ImGui::Text("Model Viewer");
+    ImGui::Separator();
 
-    if (ImGui::Button("Find next textured model")) {
-        findNextTexturedModel();
+    ImGui::Text("Model ID: %u", modelId_);
+
+    if (ImGui::Button("Previous")) {
+        if (modelId_ > 0) {
+            modelId_--;
+        }
+
+        loadModel(modelId_);
     }
 
-    ImGui::Text(
-        "T: find next textured model"
-    );
+    ImGui::SameLine();
+
+    if (ImGui::Button("Next")) {
+        modelId_++;
+        loadModel(modelId_);
+    }
 
     ImGui::Separator();
 
-    ImGui::Text(
-        "Model ID: %u",
-        modelId_
+    if (ImGui::Button("Find textured")) {
+        findNextTexturedModel();
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Find alpha")) {
+        findNextAlphaModel();
+    }
+
+    ImGui::Separator();
+
+    ImGui::Text("Render type search");
+
+    ImGui::SliderInt(
+        "Type",
+        &targetRenderType_,
+        0,
+        3
+    );
+
+    if (ImGui::Button("Find render type")) {
+        findNextModelWithRenderType(
+            static_cast<uint8_t>(
+                targetRenderType_
+            )
+        );
+    }
+
+    ImGui::Separator();
+
+    ImGui::Text("Display");
+
+    ImGui::Checkbox(
+        "Face debug",
+        &showFaceDebug_
+    );
+
+    if (showFaceDebug_) {
+        ImGui::Separator();
+        ImGui::Text("Textured faces");
+
+        ImGui::BeginChild(
+            "FaceDebugPanel",
+            ImVec2(0.0f, 220.0f),
+            true
+        );
+
+        for (std::size_t i = 0; i < faces_.size(); i++) {
+            const rf::model::Face& face = faces_[i];
+
+            if (face.textureInfo < 0) {
+                continue;
+            }
+
+            ImGui::Text(
+                "#%zu color=%u info=%d type=%d tri=%d",
+                i,
+                face.color,
+                face.textureInfo,
+                static_cast<int>(face.renderType),
+                face.textureTriangleIndex
+            );
+        }
+
+        ImGui::EndChild();
+    }
+
+    ImGui::Checkbox(
+        "Filled",
+        &fillTriangles_
     );
 
     ImGui::Checkbox(
@@ -220,40 +345,19 @@ void ModelViewerMode::renderUi() {
     );
 
     ImGui::Checkbox(
-        "Fill triangles",
-        &fillTriangles_
-    );
-
-    ImGui::Checkbox(
-        "Use alpha",
+        "Alpha",
         &useAlpha_
     );
 
     ImGui::Checkbox(
-        "Highlight textured faces",
+        "Highlight textured",
         &highlightTexturedFaces_
     );
 
     ImGui::Separator();
 
-    ImGui::Text(
-        "Controls"
-    );
-
-    ImGui::Text(
-        "Left / Right: change model"
-    );
-
-    ImGui::Text(
-        "Up / Down: scale"
-    );
-
-    ImGui::Text(
-        "WASD: move camera"
-    );
-
-    ImGui::Text(
-        "F: find next alpha model"
+    ImGui::TextWrapped(
+        "Controls: arrows change model/scale, WASD moves camera."
     );
 }
 
@@ -388,6 +492,13 @@ bool ModelViewerMode::loadModel(
             fullPayload
         );
 
+    debug::dumpChunk(
+        decompressedPayload,
+        "model payload",
+        0,
+        decompressedPayload.size()
+    );
+
     std::cout
         << "\ndecompressed size: "
         << decompressedPayload.size()
@@ -471,6 +582,123 @@ bool ModelViewerMode::loadModel(
         << "\n";
 
     return true;
+}
+
+bool ModelViewerMode::hasRenderType(
+    uint32_t id,
+    uint8_t renderType
+) {
+    rf::cache::CacheArchive archive =
+        modelCache_.readArchive(
+            id
+        );
+
+    if (archive.payload.empty()) {
+        return false;
+    }
+
+    std::vector<char> fullPayload;
+
+    fullPayload.reserve(
+        archive.payload.size()
+    );
+
+    for (uint8_t byte : archive.payload) {
+        fullPayload.push_back(
+            static_cast<char>(
+                byte
+            )
+        );
+    }
+
+    if (
+        rf::io::detectCompression(
+            fullPayload
+        ) !=
+        rf::io::CompressionType::Gzip
+    ) {
+        return false;
+    }
+
+    std::vector<char> decompressedPayload =
+        rf::io::decompressGzip(
+            fullPayload
+        );
+
+    rf::model::ModelFooter footer =
+        rf::model::readModelFooter(
+            decompressedPayload
+        );
+
+    if (footer.textureFlag != 1) {
+        return false;
+    }
+
+    rf::model::ModelLayout layout =
+        rf::model::calculateModelLayout(
+            footer
+        );
+
+    std::vector<rf::model::Face> faces =
+        rf::model::decodeFaces(
+            decompressedPayload,
+            footer,
+            layout
+        );
+
+    for (const rf::model::Face& face : faces) {
+        if (
+            face.textureInfo >= 0 &&
+            face.renderType == renderType
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ModelViewerMode::findNextModelWithRenderType(
+    uint8_t renderType
+) {
+    uint32_t searchId =
+        modelId_ + 1;
+
+    while (searchId < 100000) {
+        if (
+            hasRenderType(
+                searchId,
+                renderType
+            )
+        ) {
+            modelId_ =
+                searchId;
+
+            std::cout
+                << "\nfound model "
+                << modelId_
+                << " with renderType "
+                << static_cast<int>(
+                    renderType
+                )
+                << "\n";
+
+            loadModel(
+                modelId_
+            );
+
+            return;
+        }
+
+        searchId++;
+    }
+
+    std::cout
+        << "\nno model found with renderType "
+        << static_cast<int>(
+            renderType
+        )
+        << "\n";
 }
 
 bool ModelViewerMode::hasAlpha(

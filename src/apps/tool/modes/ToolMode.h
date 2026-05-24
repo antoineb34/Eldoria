@@ -26,8 +26,10 @@ public:
     virtual void render(
         SDL_Renderer* renderer,
         rf::render::DepthBuffer& depthBuffer,
-        int windowWidth,
-        int windowHeight
+        int viewportX,
+        int viewportY,
+        int viewportWidth,
+        int viewportHeight
     ) = 0;
 };
 

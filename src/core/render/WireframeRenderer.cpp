@@ -22,15 +22,6 @@ void drawWireframeModel(
     bool useAlpha,
     bool highlightTexturedFaces
 ) {
-    SDL_SetRenderDrawColor(
-        renderer,
-        185,
-        212,
-        177,
-        255
-    );
-
-    SDL_RenderClear(renderer);
 
     struct RenderFace {
         rf::model::Face face;
