@@ -5,7 +5,7 @@
 
 namespace rf::model {
 
-std::vector<Vertex> decodeVertices(
+std::vector<TextureTriangle> decodeTextureTriangles(
     const std::vector<char>& payload,
     const ModelFooter& footer,
     const ModelLayout& layout

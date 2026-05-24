@@ -7,8 +7,7 @@
 
 #include "../../../core/debug/ModelDebug.h"
 #include "../../../core/io/Compression.h"
-#include "../../../core/codecs/model/ModelFooter.h"
-#include "../../../core/codecs/model/ModelLayout.h"
+#include "../../../core/codecs/model/ModelDecoder.h"
 #include "../../../render/software/WireframeRenderer.h"
 
 #include "../../../core/codecs/texture/TextureDecoder.h"
@@ -504,40 +503,14 @@ bool ModelViewerMode::loadModel(
         << decompressedPayload.size()
         << " bytes\n";
 
-    rf::model::ModelFooter footer =
-        rf::model::readModelFooter(
-            decompressedPayload
-        );
+    rf::model::ModelDef model =
+        rf::model::decodeModel(decompressedPayload);
 
-    rf::debug::dumpModelFooter(
-        footer
-    );
+    rf::debug::dumpModelFooter(model.footer);
 
-    rf::model::ModelLayout layout =
-        rf::model::calculateModelLayout(
-            footer
-        );
-
-    vertices_ =
-        rf::model::decodeVertices(
-            decompressedPayload,
-            footer,
-            layout
-        );
-
-    faces_ =
-        rf::model::decodeFaces(
-            decompressedPayload,
-            footer,
-            layout
-        );
-
-    textureTriangles_ =
-        rf::model::decodeTextureTriangles(
-            decompressedPayload,
-            footer,
-            layout
-        );
+    vertices_ = std::move(model.vertices);
+    faces_ = std::move(model.faces);
+    textureTriangles_ = std::move(model.textureTriangles);
 
     textures_.clear();
 

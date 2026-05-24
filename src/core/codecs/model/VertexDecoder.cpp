@@ -1,5 +1,7 @@
 #include "VertexDecoder.h"
 
+#include "../../io/ByteBuffer.h"
+
 namespace rf::model {
 
 std::vector<Vertex> decodeVertices(

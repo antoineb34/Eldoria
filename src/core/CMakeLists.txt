@@ -13,6 +13,8 @@ add_library(core STATIC
     codecs/model/ModelLayout.cpp
     codecs/model/VertexDecoder.cpp
     codecs/model/FaceDecoder.cpp
+    codecs/model/ModelDecoder.cpp
+    codecs/model/TextureTriangleDecoder.cpp
 
     debug/ModelDebug.cpp
 
