@@ -31,8 +31,10 @@ public:
     void render(
         SDL_Renderer* renderer,
         rf::render::DepthBuffer& depthBuffer,
-        int windowWidth,
-        int windowHeight
+        int viewportX,
+        int viewportY,
+        int viewportWidth,
+        int viewportHeight
     ) override;
 
     void renderUi() override;

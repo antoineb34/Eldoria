@@ -32,8 +32,10 @@ public:
     void render(
         SDL_Renderer* renderer,
         rf::render::DepthBuffer& depthBuffer,
-        int windowWidth,
-        int windowHeight
+        int viewportX,
+        int viewportY,
+        int viewportWidth,
+        int viewportHeight
     ) override;
 
     void renderUi() override;
@@ -58,6 +60,19 @@ private:
     );
 
     void findNextTexturedModel();
+
+    bool hasRenderType(
+        uint32_t id,
+        uint8_t renderType
+    );
+
+    void findNextModelWithRenderType(
+        uint8_t renderType
+    );
+
+    int targetRenderType_ = 0;
+    bool showFaceDebug_ = false;
+
 
 private:
     rf::cache::CacheStore modelCache_;
