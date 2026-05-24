@@ -4,7 +4,7 @@
 
 #include "Projection.h"
 #include "DepthBuffer.h"
-#include "texture/Texture.h"
+#include "../../core/codecs/texture/Texture.h"
 
 namespace rf::render {
 

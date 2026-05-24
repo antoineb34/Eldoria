@@ -1,6 +1,6 @@
 #include "FaceDecoder.h"
 
-#include "../io/ByteBuffer.h"
+#include "../../io/ByteBuffer.h"
 
 namespace rf::model {
 

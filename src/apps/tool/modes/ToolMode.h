@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "../../../core/render/DepthBuffer.h"
+#include "software/DepthBuffer.h"
 
 namespace rf::tool {
 

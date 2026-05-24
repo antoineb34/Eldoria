@@ -8,10 +8,10 @@
 #include "../../../core/cache/CacheStore.h"
 #include "../../../core/cache/ConfigArchiveLoader.h"
 
-#include "../../../core/model/FaceDecoder.h"
-#include "../../../core/model/VertexDecoder.h"
+#include "../../../core/codecs/model/FaceDecoder.h"
+#include "../../../core/codecs/model/VertexDecoder.h"
 
-#include "../../../core/texture/Texture.h"
+#include "../../../core/codecs/texture/Texture.h"
 #include <unordered_map>
 
 namespace rf::tool {

@@ -8,8 +8,8 @@
 #include "../../../core/cache/ArchiveFileTable.h"
 #include "../../../core/cache/KnownArchives.h"
 
-#include "../../../core/texture/TextureDecoder.h"
-#include "../../../core/texture/TextureIndex.h"
+#include "../../../core/codecs/texture/TextureDecoder.h"
+#include "../../../core/codecs/texture/TextureIndex.h"
 
 namespace rf::tool {
 
