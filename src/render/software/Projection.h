@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../model/VertexDecoder.h"
+#include "../../core/codecs/model/VertexDecoder.h"
 
 namespace rf::render {
 

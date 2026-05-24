@@ -6,9 +6,9 @@
 
 #include <SDL3/SDL.h>
 
-#include "../model/FaceDecoder.h"
-#include "../model/VertexDecoder.h"
-#include "../texture/Texture.h"
+#include "../../core/codecs/model/FaceDecoder.h"
+#include "../../core/codecs/model/VertexDecoder.h"
+#include "../../core/codecs/texture/Texture.h"
 #include "Projection.h"
 #include "DepthBuffer.h"
 

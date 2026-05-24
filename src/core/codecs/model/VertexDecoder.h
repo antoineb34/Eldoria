@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../io/ByteBuffer.h"
+#include "../../io/ByteBuffer.h"
 #include "ModelFooter.h"
 #include "ModelLayout.h"
 

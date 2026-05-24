@@ -12,6 +12,8 @@ target_include_directories(tool PRIVATE
 
 target_link_libraries(tool PRIVATE
     core
+    platform
+    render
     ui
 )
 

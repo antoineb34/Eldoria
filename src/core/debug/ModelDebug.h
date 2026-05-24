@@ -2,10 +2,10 @@
 
 #include <vector>
 
-#include "../model/FaceDecoder.h"
-#include "../model/ModelFooter.h"
-#include "../model/ModelLayout.h"
-#include "../model/VertexDecoder.h"
+#include "../codecs/model/FaceDecoder.h"
+#include "../codecs/model/ModelFooter.h"
+#include "../codecs/model/ModelLayout.h"
+#include "../codecs/model/VertexDecoder.h"
 
 namespace rf::debug {
 

@@ -10,7 +10,7 @@
 #include "../../../core/cache/CacheStore.h"
 #include "../../../core/cache/ConfigArchiveLoader.h"
 
-#include "../../core/texture/Texture.h"
+#include "../../../core/codecs/texture/Texture.h"
 
 #include "cache/CacheTreeNode.h"
 

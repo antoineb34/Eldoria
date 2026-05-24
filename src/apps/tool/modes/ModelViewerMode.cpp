@@ -7,12 +7,12 @@
 
 #include "../../../core/debug/ModelDebug.h"
 #include "../../../core/io/Compression.h"
-#include "../../../core/model/ModelFooter.h"
-#include "../../../core/model/ModelLayout.h"
-#include "../../../core/render/WireframeRenderer.h"
+#include "../../../core/codecs/model/ModelFooter.h"
+#include "../../../core/codecs/model/ModelLayout.h"
+#include "../../../render/software/WireframeRenderer.h"
 
-#include "../../../core/texture/TextureDecoder.h"
-#include "../../../core/texture/TextureIndex.h"
+#include "../../../core/codecs/texture/TextureDecoder.h"
+#include "../../../core/codecs/texture/TextureIndex.h"
 
 namespace rf::tool {
 
