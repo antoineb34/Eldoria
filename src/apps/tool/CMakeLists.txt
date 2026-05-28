@@ -1,9 +1,14 @@
 add_executable(tool
     main.cpp
-    ToolApplication.cpp
 
-    modes/ModelViewerMode.cpp
-    modes/CacheExplorerMode.cpp
+    StudioApplication.cpp
+
+    workspace/cache/CacheTreeBuilder.cpp
+    workspace/cache/CacheWorkspace.cpp
+
+    panels/cache/CacheTreePanel.cpp
+    panels/cache/CacheInspectorPanel.cpp
+    panels/cache/CachePreviewPanel.cpp
 )
 
 target_include_directories(tool PRIVATE

@@ -4,16 +4,13 @@
 #include <vector>
 
 #include "ModelDef.h"
+#include "ModelFooter.h"
+#include "ModelLayout.h"
 
 namespace rf::model {
 
-int findMatchingTextureTriangle(
-    const Face& face,
-    const std::vector<TextureTriangle>& textureTriangles
-);
-
 std::vector<Face> decodeFaces(
-    const std::vector<char>& payload,
+    const std::vector<uint8_t>& payload,
     const ModelFooter& footer,
     const ModelLayout& layout
 );

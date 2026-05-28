@@ -7,7 +7,7 @@ namespace rf::model {
 static constexpr int MODEL_FOOTER_SIZE = 18;
 
 ModelFooter readModelFooter(
-    const std::vector<char>& payload
+    const std::vector<uint8_t>& payload
 ) {
 
     if (payload.size() < MODEL_FOOTER_SIZE) {

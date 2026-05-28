@@ -1,9 +1,11 @@
 #include "VertexDecoder.h"
 
+#include "../../io/ByteBuffer.h"
+
 namespace rf::model {
 
 std::vector<Vertex> decodeVertices(
-    const std::vector<char>& payload,
+    const std::vector<uint8_t>& payload,
     const ModelFooter& footer,
     const ModelLayout& layout
 ) {
