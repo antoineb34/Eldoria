@@ -1,9 +1,12 @@
 add_library(render STATIC
-    software/Projection.cpp
-    software/WireframeRenderer.cpp
-    software/Color.cpp
-    software/TriangleRasterizer.cpp
-    software/DepthBuffer.cpp
+    model/ModelRenderer.cpp
+
+    software/camera/Projection.cpp
+
+    software/color/Color.cpp
+
+    software/raster/TriangleRasterizer.cpp
+    software/raster/DepthBuffer.cpp
 )
 
 target_include_directories(render PUBLIC

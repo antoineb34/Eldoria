@@ -2,13 +2,13 @@
 
 #include <SDL3/SDL.h>
 
-#include "software/DepthBuffer.h"
+#include "../../render/software/raster/DepthBuffer.h"
 
 namespace rf::tool {
 
-class ToolMode {
+class Workspace {
 public:
-    virtual ~ToolMode() = default;
+    virtual ~Workspace() = default;
 
     virtual bool initialize() = 0;
 

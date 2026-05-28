@@ -1,8 +1,8 @@
-#include "ToolApplication.h"
+#include "StudioApplication.h"
 
 int main() {
 
-    rf::tool::ToolApplication app;
+    rf::tool::StudioApplication app;
 
     return app.run();
 }

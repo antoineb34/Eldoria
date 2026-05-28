@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ToolMode.h"
+#include "Workspace.h"
 
 #include <cstdint>
 #include <vector>
@@ -16,9 +16,9 @@
 
 namespace rf::tool {
 
-class ModelViewerMode : public ToolMode {
+class ModelWorkspace : public Workspace {
 public:
-    ModelViewerMode();
+    ModelWorkspace();
 
     bool initialize() override;
     void onEnter() override;

@@ -1,25 +1,23 @@
 add_library(core STATIC
     io/ByteBuffer.cpp
-    io/Compression.cpp
+    compression/Compression.cpp
 
-    cache/CacheStore.cpp
-    cache/ArchiveDecoder.cpp
-    cache/ArchiveFileTable.cpp
-    cache/NameHash.cpp
-    cache/ArchiveFileExtractor.cpp
-    cache/ConfigArchiveLoader.cpp
-
-    codecs/model/ModelFooter.cpp
-    codecs/model/ModelLayout.cpp
-    codecs/model/VertexDecoder.cpp
-    codecs/model/FaceDecoder.cpp
-    codecs/model/ModelDecoder.cpp
-    codecs/model/TextureTriangleDecoder.cpp
+    cache/Cache.cpp
 
     debug/ModelDebug.cpp
 
-    codecs/texture/TextureDecoder.cpp
-    codecs/texture/TextureIndex.cpp
+    assets/model/ModelLoader.cpp
+    assets/model/ModelFileReader.cpp
+    assets/model/ModelBuilder.cpp
+    assets/model/decoder/VertexDecoder.cpp
+    assets/model/decoder/FaceDecoder.cpp
+    assets/model/decoder/TextureUVMappingDecoder.cpp
+
+    assets/texture/TextureLoader.cpp
+    assets/texture/TextureFileReader.cpp
+    assets/texture/TextureBuilder.cpp
+    assets/texture/decoder/TexturePixelDecoder.cpp
+    assets/texture/decoder/TextureCanvasDecoder.cpp
 )
 
 target_include_directories(core PUBLIC

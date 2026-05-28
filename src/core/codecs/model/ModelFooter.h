@@ -27,7 +27,7 @@ struct ModelFooter {
 };
 
 ModelFooter readModelFooter(
-    const std::vector<char>& payload
+    const std::vector<uint8_t>& payload
 );
 
 }

@@ -1,14 +1,24 @@
 #include "DepthBuffer.h"
 
+#include <algorithm>
 #include <limits>
 
 namespace rf::render {
 
-DepthBuffer::DepthBuffer(int width, int height) {
-    resize(width, height);
+DepthBuffer::DepthBuffer(
+    int width,
+    int height
+) {
+    resize(
+        width,
+        height
+    );
 }
 
-void DepthBuffer::resize(int width, int height) {
+void DepthBuffer::resize(
+    int width,
+    int height
+) {
     width_ = width;
     height_ = height;
 
@@ -27,7 +37,11 @@ void DepthBuffer::clear() {
     );
 }
 
-bool DepthBuffer::testAndSet(int x, int y, float depth) {
+bool DepthBuffer::testAndSet(
+    int x,
+    int y,
+    float depth
+) {
     if (
         x < 0 ||
         y < 0 ||

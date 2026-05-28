@@ -9,7 +9,7 @@
 namespace rf::model {
 
 ModelDef decodeModel(
-    const std::vector<char>& payload
+    const std::vector<uint8_t>& payload
 ) {
     ModelFooter footer =
         readModelFooter(payload);

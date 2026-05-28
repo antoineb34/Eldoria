@@ -3,76 +3,125 @@
 namespace rf::io {
 
 ByteBuffer::ByteBuffer(
-    const std::vector<char>& data
+    const std::vector<uint8_t>& data
 )
     : data_(data)
 {
 }
 
 uint8_t ByteBuffer::readU8() {
-
-    return static_cast<uint8_t>(
-        data_[position_++]
-    );
+    return data_[position_++];
 }
 
 uint16_t ByteBuffer::readU16() {
-
     uint16_t value =
-        (readU8() << 8) |
-        readU8();
+        static_cast<uint16_t>(
+            readU8()
+        ) << 8;
+
+    value |=
+        static_cast<uint16_t>(
+            readU8()
+        );
 
     return value;
 }
 
 uint32_t ByteBuffer::readU24() {
-
     uint32_t value =
-        (readU8() << 16) |
-        (readU8() << 8) |
-        readU8();
+        static_cast<uint32_t>(
+            readU8()
+        ) << 16;
+
+    value |=
+        static_cast<uint32_t>(
+            readU8()
+        ) << 8;
+
+    value |=
+        static_cast<uint32_t>(
+            readU8()
+        );
 
     return value;
 }
 
 uint32_t ByteBuffer::readU32() {
-
     uint32_t value =
-        (readU8() << 24) |
-        (readU8() << 16) |
-        (readU8() << 8) |
-        readU8();
+        static_cast<uint32_t>(
+            readU8()
+        ) << 24;
+
+    value |=
+        static_cast<uint32_t>(
+            readU8()
+        ) << 16;
+
+    value |=
+        static_cast<uint32_t>(
+            readU8()
+        ) << 8;
+
+    value |=
+        static_cast<uint32_t>(
+            readU8()
+        );
 
     return value;
 }
 
-int ByteBuffer::readSmart() {
+int ByteBuffer::readSignedSmart() {
+    uint8_t peek =
+        peekU8();
 
-    uint8_t first =
-        static_cast<uint8_t>(
-            data_[position_]
-        );
-
-    if (first < 128) {
-        return readU8() - 64;
+    if (peek < 128) {
+        return
+            static_cast<int>(
+                readU8()
+            ) - 64;
     }
 
-    return readU16() - 49152;
+    return
+        static_cast<int>(
+            readU16()
+        ) - 49152;
 }
 
-void ByteBuffer::skip(int bytes) {
+int ByteBuffer::readUnsignedSmart() {
+    uint8_t peek =
+        peekU8();
 
+    if (peek < 128) {
+        return
+            static_cast<int>(
+                readU8()
+            );
+    }
+
+    return
+        static_cast<int>(
+            readU16()
+        ) - 32768;
+}
+
+void ByteBuffer::skip(
+    int bytes
+) {
     position_ += bytes;
 }
 
 int ByteBuffer::position() const {
-
     return position_;
 }
 
-void ByteBuffer::setPosition(int position) {
-
+void ByteBuffer::setPosition(
+    int position
+) {
     position_ = position;
+}
+
+uint8_t ByteBuffer::peekU8() const {
+    return data_[position_];
 }
 
 }

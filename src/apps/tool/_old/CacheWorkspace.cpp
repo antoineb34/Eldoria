@@ -1,4 +1,4 @@
-#include "CacheExplorerMode.h"
+#include "CacheWorkspace.h"
 
 #include <imgui.h>
 #include <iostream>
@@ -13,7 +13,7 @@
 
 namespace rf::tool {
 
-CacheExplorerMode::CacheExplorerMode()
+CacheWorkspace::CacheWorkspace()
 : configCache_(
     "cache/main_file_cache.dat",
     "cache/main_file_cache.idx0"
@@ -25,7 +25,7 @@ configLoader_(
 {
 }
 
-bool CacheExplorerMode::initialize() {
+bool CacheWorkspace::initialize() {
     buildRawCacheTree();
 
     std::vector<char> textureIndex =
@@ -42,16 +42,16 @@ bool CacheExplorerMode::initialize() {
     return true;
 }
 
-void CacheExplorerMode::handleEvent(
+void CacheWorkspace::handleEvent(
     const SDL_Event& event
 ) {
     (void)event;
 }
 
-void CacheExplorerMode::update() {
+void CacheWorkspace::update() {
 }
 
-void CacheExplorerMode::render(
+void CacheWorkspace::render(
     SDL_Renderer* renderer,
     rf::render::DepthBuffer& depthBuffer,
     int viewportX,
@@ -103,7 +103,7 @@ void CacheExplorerMode::render(
     );
 }
 
-void CacheExplorerMode::renderUi() {
+void CacheWorkspace::renderUi() {
     ImGui::Text("Cache Explorer");
     ImGui::Separator();
 
@@ -135,7 +135,7 @@ void CacheExplorerMode::renderUi() {
     ImGui::EndChild();
 }
 
-void CacheExplorerMode::buildRawCacheTree() {
+void CacheWorkspace::buildRawCacheTree() {
     rootNode_ = {
         "Raw Cache",
         "RuneForge cache filesystem",
@@ -211,7 +211,7 @@ void CacheExplorerMode::buildRawCacheTree() {
     );
 }
 
-CacheTreeNode CacheExplorerMode::makeFileNode(
+CacheTreeNode CacheWorkspace::makeFileNode(
     uint32_t archiveId,
     int fileIndex,
     const rf::cache::ArchiveFileEntry& file
@@ -245,7 +245,7 @@ CacheTreeNode CacheExplorerMode::makeFileNode(
     return fileNode;
 }
 
-void CacheExplorerMode::renderTreeNode(
+void CacheWorkspace::renderTreeNode(
     const CacheTreeNode& node
 ) {
     ImGuiTreeNodeFlags flags =
@@ -301,7 +301,7 @@ void CacheExplorerMode::renderTreeNode(
     }
 }
 
-void CacheExplorerMode::renderInspector() {
+void CacheWorkspace::renderInspector() {
     ImGui::Text("Inspector");
     ImGui::Separator();
 
@@ -371,7 +371,7 @@ void CacheExplorerMode::renderInspector() {
     }
 }
 
-void CacheExplorerMode::uploadPreviewTexture(
+void CacheWorkspace::uploadPreviewTexture(
     SDL_Renderer* renderer
 ) {
     if (previewTextureData_.pixels.empty()) {
@@ -407,7 +407,7 @@ void CacheExplorerMode::uploadPreviewTexture(
     );
 }
 
-std::vector<std::uint8_t> CacheExplorerMode::toBytes(
+std::vector<std::uint8_t> CacheWorkspace::toBytes(
     const std::vector<char>& data
 ) const {
     std::vector<std::uint8_t> bytes;
@@ -422,7 +422,7 @@ std::vector<std::uint8_t> CacheExplorerMode::toBytes(
     return bytes;
 }
 
-void CacheExplorerMode::inspectSelectedArchive() {
+void CacheWorkspace::inspectSelectedArchive() {
     if (selectedNode_.archiveId != 6) {
         return;
     }
@@ -495,7 +495,7 @@ void CacheExplorerMode::inspectSelectedArchive() {
     }
 }
 
-void CacheExplorerMode::inspectSelectedFile() {
+void CacheWorkspace::inspectSelectedFile() {
     if (previewTexture_ != nullptr) {
         SDL_DestroyTexture(
             previewTexture_

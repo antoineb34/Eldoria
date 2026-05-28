@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ToolMode.h"
+#include "Workspace.h"
 #include <SDL3/SDL.h>
 
 #include <cstdint>
@@ -16,9 +16,9 @@
 
 namespace rf::tool {
 
-class CacheExplorerMode : public ToolMode {
+class CacheWorkspace : public Workspace {
 public:
-    CacheExplorerMode();
+    CacheWorkspace();
 
     bool initialize() override;
 

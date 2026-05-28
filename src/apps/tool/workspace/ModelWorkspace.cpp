@@ -1,4 +1,4 @@
-#include "ModelViewerMode.h"
+#include "ModelWorkspace.h"
 
 #include <cmath>
 #include <cstdint>
@@ -15,7 +15,7 @@
 
 namespace rf::tool {
 
-ModelViewerMode::ModelViewerMode()
+ModelWorkspace::ModelWorkspace()
     : modelCache_(
           "cache/main_file_cache.dat",
           "cache/main_file_cache.idx1"
@@ -27,11 +27,11 @@ ModelViewerMode::ModelViewerMode()
 {
 }
 
-bool ModelViewerMode::initialize() {
+bool ModelWorkspace::initialize() {
     return true;
 }
 
-void ModelViewerMode::onEnter() {
+void ModelWorkspace::onEnter() {
     if (loaded_) {
         return;
     }
@@ -42,7 +42,7 @@ void ModelViewerMode::onEnter() {
         );
 }
 
-void ModelViewerMode::handleEvent(
+void ModelWorkspace::handleEvent(
     const SDL_Event& event
 ) {
     if (
@@ -150,11 +150,11 @@ void ModelViewerMode::handleEvent(
     }
 }
 
-void ModelViewerMode::update() {
+void ModelWorkspace::update() {
     renderAngle_ += 0.02f;
 }
 
-void ModelViewerMode::render(
+void ModelWorkspace::render(
     SDL_Renderer* renderer,
     rf::render::DepthBuffer& depthBuffer,
     int viewportX,
@@ -237,7 +237,7 @@ void ModelViewerMode::render(
     );
 }
 
-void ModelViewerMode::renderUi() {
+void ModelWorkspace::renderUi() {
     ImGui::Text("Model Viewer");
     ImGui::Separator();
 
@@ -360,7 +360,7 @@ void ModelViewerMode::renderUi() {
     );
 }
 
-bool ModelViewerMode::loadTexture(
+bool ModelWorkspace::loadTexture(
     int textureId
 ) {
     if (textures_.contains(textureId)) {
@@ -434,7 +434,7 @@ bool ModelViewerMode::loadTexture(
     }
 }
 
-bool ModelViewerMode::loadModel(
+bool ModelWorkspace::loadModel(
     uint32_t id
 ) {
     std::cout
@@ -557,7 +557,7 @@ bool ModelViewerMode::loadModel(
     return true;
 }
 
-bool ModelViewerMode::hasRenderType(
+bool ModelWorkspace::hasRenderType(
     uint32_t id,
     uint8_t renderType
 ) {
@@ -631,7 +631,7 @@ bool ModelViewerMode::hasRenderType(
     return false;
 }
 
-void ModelViewerMode::findNextModelWithRenderType(
+void ModelWorkspace::findNextModelWithRenderType(
     uint8_t renderType
 ) {
     uint32_t searchId =
@@ -674,7 +674,7 @@ void ModelViewerMode::findNextModelWithRenderType(
         << "\n";
 }
 
-bool ModelViewerMode::hasAlpha(
+bool ModelWorkspace::hasAlpha(
     uint32_t id
 ) {
     rf::cache::CacheArchive archive =
@@ -722,7 +722,7 @@ bool ModelViewerMode::hasAlpha(
     return footer.alphaFlag == 1;
 }
 
-bool ModelViewerMode::hasTexture(
+bool ModelWorkspace::hasTexture(
     uint32_t id
 ) {
     rf::cache::CacheArchive archive =
@@ -771,7 +771,7 @@ bool ModelViewerMode::hasTexture(
         footer.textureTriangleCount > 0;
 }
 
-void ModelViewerMode::findNextTexturedModel() {
+void ModelWorkspace::findNextTexturedModel() {
     uint32_t searchId =
         modelId_ + 1;
 
@@ -799,7 +799,7 @@ void ModelViewerMode::findNextTexturedModel() {
         << "\nno textured model found\n";
 }
 
-void ModelViewerMode::findNextAlphaModel() {
+void ModelWorkspace::findNextAlphaModel() {
     uint32_t searchId =
         modelId_ + 1;
 

@@ -2,7 +2,7 @@
 
 namespace rf::tool {
 
-class ToolApplication {
+class StudioApplication {
 public:
 
     int run();

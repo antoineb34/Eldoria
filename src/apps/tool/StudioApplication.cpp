@@ -1,8 +1,4 @@
-#include "ToolApplication.h"
-
-#include <array>
-#include <cstdlib>
-#include <iostream>
+#include "StudioApplication.h"
 
 #include <SDL3/SDL.h>
 
@@ -10,29 +6,22 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
-#include "sdl/SdlContext.h"
-#include "software/DepthBuffer.h"
+#include "../platform/sdl/SdlContext.h"
+#include "../ui/imgui/ImGuiTheme.h"
 
-#include "modes/CacheExplorerMode.h"
-#include "modes/ModelViewerMode.h"
-#include "imgui/ImGuiTheme.h"
+#include "../../render/software/raster/DepthBuffer.h"
+
+#include "workspace/Workspace.h"
+#include "workspace/cache/CacheWorkspace.h"
 
 namespace rf::tool {
 
-void clearTerminal() {
-#ifdef _WIN32
-    std::system("cls");
-#else
-    std::system("clear");
-#endif
-}
-
-int ToolApplication::run() {
-    constexpr int WINDOW_WIDTH = 960;
-    constexpr int WINDOW_HEIGHT = 640;
+int StudioApplication::run() {
+    constexpr int WINDOW_WIDTH = 1280;
+    constexpr int WINDOW_HEIGHT = 720;
 
     rf::platform::SdlContext sdl(
-        "RuneForge Tool",
+        "RuneForge Studio",
         WINDOW_WIDTH,
         WINDOW_HEIGHT
     );
@@ -48,6 +37,7 @@ int ToolApplication::run() {
     }
 
     IMGUI_CHECKVERSION();
+
     ImGui::CreateContext();
 
     ImGuiIO& io =
@@ -62,6 +52,7 @@ int ToolApplication::run() {
     );
 
     ImGui::StyleColorsDark();
+
     rf::ui::applyImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(
@@ -73,28 +64,16 @@ int ToolApplication::run() {
         renderer
     );
 
-    ModelViewerMode modelViewer;
-    CacheExplorerMode cacheExplorer;
+    CacheWorkspace cacheWorkspace;
 
-    if (!modelViewer.initialize()) {
+    Workspace* activeWorkspace =
+        &cacheWorkspace;
+
+    if (!activeWorkspace->initialize()) {
         return 1;
     }
 
-    if (!cacheExplorer.initialize()) {
-        return 1;
-    }
-
-    std::array<ToolMode*, 2> modes {
-        &modelViewer,
-        &cacheExplorer
-    };
-
-    int activeModeIndex = 0;
-
-    ToolMode* activeMode =
-        modes[activeModeIndex];
-
-    activeMode->onEnter();
+    activeWorkspace->onEnter();
 
     rf::render::DepthBuffer depthBuffer(
         WINDOW_WIDTH,
@@ -122,13 +101,14 @@ int ToolApplication::run() {
                 running = false;
             }
 
-            activeMode->handleEvent(
+            activeWorkspace->handleEvent(
                 event
             );
         }
 
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
+
         ImGui::NewFrame();
 
         int windowWidth = 0;
@@ -183,90 +163,29 @@ int ToolApplication::run() {
         int viewportHeight = 1;
 
         ImGui::Begin(
-            "RuneForgeShell",
+            "RuneForgeStudio",
             nullptr,
             shellFlags
         );
 
-        if (ImGui::BeginTabBar("RuneForgeTabs")) {
-            if (ImGui::BeginTabItem("Model Viewer")) {
-                if (activeModeIndex != 0) {
-                    activeModeIndex = 0;
-                    activeMode = modes[activeModeIndex];
-                    clearTerminal();
-                    activeMode->onEnter();
-                }
-
-                ImGui::EndTabItem();
-            }
-
-            if (ImGui::BeginTabItem("Cache Explorer")) {
-                if (activeModeIndex != 1) {
-                    activeModeIndex = 1;
-                    activeMode = modes[activeModeIndex];
-                    clearTerminal();
-                    activeMode->onEnter();
-                }
-
-                ImGui::EndTabItem();
-            }
-
-            ImGui::EndTabBar();
-        }
-
-        ImGui::Separator();
-
-        ImGui::BeginChild(
-            "ControlsPanel",
-            ImVec2(300.0f, 0.0f),
-            true
-        );
-
-        activeMode->renderUi();
-
-        ImGui::EndChild();
-
-        ImGui::SameLine();
-
-        ImGui::BeginChild(
-            "ViewportPanel",
-            ImVec2(0.0f, 0.0f),
-            true
-        );
+        activeWorkspace->renderUi();
 
         ImVec2 viewportPos =
-            ImGui::GetWindowPos();
+            ImGui::GetCursorScreenPos();
 
         ImVec2 viewportSize =
-            ImGui::GetWindowSize();
+            ImGui::GetContentRegionAvail();
 
-        viewportX =
-            static_cast<int>(
-                viewportPos.x
-            );
-
-        viewportY =
-            static_cast<int>(
-                viewportPos.y
-            );
-
-        viewportWidth =
-            static_cast<int>(
-                viewportSize.x
-            );
-
-        viewportHeight =
-            static_cast<int>(
-                viewportSize.y
-            );
-
-        ImGui::EndChild();
+        viewportX = static_cast<int>(viewportPos.x);
+        viewportY = static_cast<int>(viewportPos.y);
+        viewportWidth = static_cast<int>(viewportSize.x);
+        viewportHeight = static_cast<int>(viewportSize.y);
 
         ImGui::End();
 
-        activeMode->update();
+        activeWorkspace->update();
 
-        activeMode->render(
+        activeWorkspace->render(
             renderer,
             depthBuffer,
             viewportX,
@@ -291,6 +210,7 @@ int ToolApplication::run() {
 
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
+
     ImGui::DestroyContext();
 
     return 0;
