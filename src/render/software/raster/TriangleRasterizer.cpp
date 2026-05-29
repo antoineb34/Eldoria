@@ -82,7 +82,6 @@ const rf::texture::RgbaColor* sampleTexture(
 
 void fillTexturedTriangle(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
 
     const ScreenPoint& a,
     const ScreenPoint& b,
@@ -198,16 +197,6 @@ void fillTexturedTriangle(
                 b.z * w1 +
                 c.z * w2;
 
-            if (
-                !depthBuffer.testAndSet(
-                    x,
-                    y,
-                    depth
-                )
-            ) {
-                continue;
-            }
-
             TextureMappingPoint point {
                 faceA.x * w0 + faceB.x * w1 + faceC.x * w2,
                 faceA.y * w0 + faceB.y * w1 + faceC.y * w2,
@@ -282,7 +271,6 @@ void fillTexturedTriangle(
 
 void fillTriangle(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
     const ScreenPoint& a,
     const ScreenPoint& b,
     const ScreenPoint& c
@@ -347,19 +335,11 @@ void fillTriangle(
                 b.z * w1 +
                 c.z * w2;
 
-            if (
-                depthBuffer.testAndSet(
-                    x,
-                    y,
-                    depth
-                )
-            ) {
-                SDL_RenderPoint(
-                    renderer,
-                    static_cast<float>(x),
-                    static_cast<float>(y)
-                );
-            }
+            SDL_RenderPoint(
+                renderer,
+                static_cast<float>(x),
+                static_cast<float>(y)
+            );
         }
     }
 }

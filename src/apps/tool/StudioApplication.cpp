@@ -9,8 +9,6 @@
 #include "../platform/sdl/SdlContext.h"
 #include "../ui/imgui/ImGuiTheme.h"
 
-#include "../../render/software/raster/DepthBuffer.h"
-
 #include "workspace/Workspace.h"
 #include "workspace/cache/CacheWorkspace.h"
 
@@ -75,11 +73,6 @@ int StudioApplication::run() {
 
     activeWorkspace->onEnter();
 
-    rf::render::DepthBuffer depthBuffer(
-        WINDOW_WIDTH,
-        WINDOW_HEIGHT
-    );
-
     bool running = true;
 
     while (running) {
@@ -119,13 +112,6 @@ int StudioApplication::run() {
             &windowWidth,
             &windowHeight
         );
-
-        depthBuffer.resize(
-            windowWidth,
-            windowHeight
-        );
-
-        depthBuffer.clear();
 
         SDL_SetRenderDrawColor(
             renderer,
@@ -187,7 +173,6 @@ int StudioApplication::run() {
 
         activeWorkspace->render(
             renderer,
-            depthBuffer,
             viewportX,
             viewportY,
             viewportWidth,

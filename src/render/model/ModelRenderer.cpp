@@ -168,7 +168,6 @@ void drawVertices(
 
 void drawRenderFace(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
     const rf::model::ModelAsset& model,
     const ModelTransform& modelTransform,
     const RenderOptions& options,
@@ -224,7 +223,6 @@ void drawRenderFace(
     if (!textured) {
         fillTriangle(
             renderer,
-            depthBuffer,
             renderFace.a,
             renderFace.b,
             renderFace.c
@@ -239,7 +237,6 @@ void drawRenderFace(
     if (!isValidTextureMapping(mapping, model.vertices)) {
         fillTriangle(
             renderer,
-            depthBuffer,
             renderFace.a,
             renderFace.b,
             renderFace.c
@@ -268,7 +265,6 @@ void drawRenderFace(
 
     fillTexturedTriangle(
         renderer,
-        depthBuffer,
         renderFace.a,
         renderFace.b,
         renderFace.c,
@@ -308,7 +304,6 @@ float averageBucketDepth(
 
 void drawPriorityBuckets(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
     const rf::model::ModelAsset& model,
     const ModelTransform& modelTransform,
     const RenderOptions& options,
@@ -353,7 +348,6 @@ void drawPriorityBuckets(
 
         drawRenderFace(
             renderer,
-            depthBuffer,
             model,
             modelTransform,
             options,
@@ -388,7 +382,6 @@ void drawPriorityBuckets(
         for (const RenderFace& face : buckets[priority]) {
             drawRenderFace(
                 renderer,
-                depthBuffer,
                 model,
                 modelTransform,
                 options,
@@ -416,7 +409,6 @@ float screenArea(
 
 void drawModel(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
     const rf::model::ModelAsset& model,
     const Camera& camera,
     const RenderOptions& options,
@@ -508,7 +500,6 @@ void drawModel(
     if (options.fillTriangles) {
         drawPriorityBuckets(
             renderer,
-            depthBuffer,
             model,
             modelTransform,
             options,

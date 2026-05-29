@@ -6,7 +6,6 @@ add_library(render STATIC
     software/color/Color.cpp
 
     software/raster/TriangleRasterizer.cpp
-    software/raster/DepthBuffer.cpp
 )
 
 target_include_directories(render PUBLIC

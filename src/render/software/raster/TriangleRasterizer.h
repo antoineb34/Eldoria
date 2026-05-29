@@ -6,8 +6,6 @@
 
 #include "../camera/Projection.h"
 
-#include "DepthBuffer.h"
-
 namespace rf::render {
 
 struct TextureMappingPoint {
@@ -18,7 +16,6 @@ struct TextureMappingPoint {
 
 void fillTriangle(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
     const ScreenPoint& a,
     const ScreenPoint& b,
     const ScreenPoint& c
@@ -26,8 +23,6 @@ void fillTriangle(
 
 void fillTexturedTriangle(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
-
     const ScreenPoint& a,
     const ScreenPoint& b,
     const ScreenPoint& c,
