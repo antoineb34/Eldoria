@@ -51,15 +51,6 @@ bool DepthBuffer::testAndSet(
         return false;
     }
 
-    int index =
-        y * width_ + x;
-
-    if (depth <= values_[index]) {
-        return false;
-    }
-
-    values_[index] = depth;
-
     return true;
 }
 

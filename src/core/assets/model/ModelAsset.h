@@ -8,11 +8,11 @@
 
 namespace rf::model {
 
-struct Vertex {
-    int x = 0;
-    int y = 0;
-    int z = 0;
-};
+    struct Vertex {
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
+    };
 
 struct Face {
     int a = 0;

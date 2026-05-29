@@ -17,7 +17,8 @@ namespace rf::render {
 void drawModel(
     SDL_Renderer* renderer,
     DepthBuffer& depthBuffer,
-    const rf::model::ModelAsset& model,    const Camera& camera,
+    const rf::model::ModelAsset& model,
+    const Camera& camera,
     const RenderOptions& options,
     const ModelTransform& transform
 );

@@ -1,7 +1,9 @@
 #include "ModelRenderer.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include "../software/camera/Projection.h"
@@ -14,6 +16,9 @@
 namespace rf::render {
 
 namespace {
+
+constexpr size_t PriorityBucketCount = 12;
+constexpr float NoDepth = -std::numeric_limits<float>::infinity();
 
 bool isValidFace(
     const rf::model::Face& face,
@@ -41,9 +46,7 @@ bool isValidTextureMapping(
         mapping.vVertex < static_cast<int>(vertices.size());
 }
 
-bool isFinitePoint(
-    const ScreenPoint& point
-) {
+bool isFinitePoint(const ScreenPoint& point) {
     return
         std::isfinite(point.x) &&
         std::isfinite(point.y) &&
@@ -54,14 +57,9 @@ rf::model::Vertex transformVertex(
     rf::model::Vertex vertex,
     const ModelTransform& transform
 ) {
-    float x =
-        static_cast<float>(vertex.x) * transform.scale;
-
-    float y =
-        static_cast<float>(vertex.y) * transform.scale;
-
-    float z =
-        static_cast<float>(vertex.z) * transform.scale;
+    float x = static_cast<float>(vertex.x) * transform.scale;
+    float y = static_cast<float>(vertex.y) * transform.scale;
+    float z = static_cast<float>(vertex.z) * transform.scale;
 
     float cosX = std::cos(transform.rotationX);
     float sinX = std::sin(transform.rotationX);
@@ -91,11 +89,7 @@ rf::model::Vertex transformVertex(
     y = y2 + transform.offsetY;
     z = z + transform.offsetZ;
 
-    return {
-        static_cast<int>(x),
-        static_cast<int>(y),
-        static_cast<int>(z)
-    };
+    return { x, y, z };
 }
 
 TextureMappingPoint toTexturePoint(
@@ -103,10 +97,7 @@ TextureMappingPoint toTexturePoint(
     const ModelTransform& modelTransform
 ) {
     rf::model::Vertex transformed =
-        transformVertex(
-            vertex,
-            modelTransform
-        );
+        transformVertex(vertex, modelTransform);
 
     return {
         static_cast<float>(transformed.x),
@@ -118,18 +109,17 @@ TextureMappingPoint toTexturePoint(
 ScreenPoint projectModelVertex(
     const rf::model::Vertex& vertex,
     const ModelTransform& modelTransform,
-    const Mat4& cameraTransform,
+    const Mat4& view,
+    const Mat4& projection,
     const Camera& camera
 ) {
     rf::model::Vertex transformed =
-        transformVertex(
-            vertex,
-            modelTransform
-        );
+        transformVertex(vertex, modelTransform);
 
     return projectVertex(
         transformed,
-        cameraTransform,
+        view,
+        projection,
         camera
     );
 }
@@ -138,13 +128,7 @@ void drawWireframe(
     SDL_Renderer* renderer,
     const RenderFace& face
 ) {
-    SDL_SetRenderDrawColor(
-        renderer,
-        255,
-        255,
-        255,
-        255
-    );
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
     SDL_RenderLine(renderer, face.a.x, face.a.y, face.b.x, face.b.y);
     SDL_RenderLine(renderer, face.b.x, face.b.y, face.c.x, face.c.y);
@@ -155,23 +139,19 @@ void drawVertices(
     SDL_Renderer* renderer,
     const rf::model::ModelAsset& model,
     const ModelTransform& modelTransform,
-    const Mat4& cameraTransform,
+    const Mat4& view,
+    const Mat4& projection,
     const Camera& camera
 ) {
-    SDL_SetRenderDrawColor(
-        renderer,
-        255,
-        120,
-        80,
-        255
-    );
+    SDL_SetRenderDrawColor(renderer, 255, 120, 80, 255);
 
     for (const rf::model::Vertex& vertex : model.vertices) {
         ScreenPoint point =
             projectModelVertex(
                 vertex,
                 modelTransform,
-                cameraTransform,
+                view,
+                projection,
                 camera
             );
 
@@ -182,13 +162,256 @@ void drawVertices(
             4.0f
         };
 
-        SDL_RenderFillRect(
-            renderer,
-            &rect
-        );
+        SDL_RenderFillRect(renderer, &rect);
     }
 }
 
+void drawRenderFace(
+    SDL_Renderer* renderer,
+    DepthBuffer& depthBuffer,
+    const rf::model::ModelAsset& model,
+    const ModelTransform& modelTransform,
+    const RenderOptions& options,
+    const RenderFace& renderFace
+) {
+    const rf::model::Face& face =
+        *renderFace.face;
+
+    RgbColor color =
+        rsColorToRgb(face.color);
+
+    uint8_t alpha = 255;
+
+    if (options.useAlpha && face.alpha > 0) {
+        alpha = static_cast<uint8_t>(255 - face.alpha);
+    }
+
+    if (
+        options.highlightTexturedFaces &&
+        (
+            face.renderType == 2 ||
+            face.renderType == 3
+        )
+    ) {
+        color = { 255, 0, 255 };
+    }
+
+    SDL_SetRenderDrawColor(
+        renderer,
+        color.r,
+        color.g,
+        color.b,
+        alpha
+    );
+
+    auto textureIt =
+        model.textures.find(face.color);
+
+    bool hasMapping =
+        face.textureUVMappingIndex >= 0 &&
+        face.textureUVMappingIndex <
+            static_cast<int>(model.textureUVMappings.size());
+
+    bool isTexturedRenderType =
+        face.renderType == 2 ||
+        face.renderType == 3;
+
+    bool textured =
+        isTexturedRenderType &&
+        hasMapping &&
+        textureIt != model.textures.end();
+
+    if (!textured) {
+        fillTriangle(
+            renderer,
+            depthBuffer,
+            renderFace.a,
+            renderFace.b,
+            renderFace.c
+        );
+
+        return;
+    }
+
+    const rf::model::TextureUVMapping& mapping =
+        model.textureUVMappings[face.textureUVMappingIndex];
+
+    if (!isValidTextureMapping(mapping, model.vertices)) {
+        fillTriangle(
+            renderer,
+            depthBuffer,
+            renderFace.a,
+            renderFace.b,
+            renderFace.c
+        );
+
+        return;
+    }
+
+    TextureMappingPoint faceA =
+        toTexturePoint(model.vertices[face.a], modelTransform);
+
+    TextureMappingPoint faceB =
+        toTexturePoint(model.vertices[face.b], modelTransform);
+
+    TextureMappingPoint faceC =
+        toTexturePoint(model.vertices[face.c], modelTransform);
+
+    TextureMappingPoint textureOrigin =
+        toTexturePoint(model.vertices[mapping.originVertex], modelTransform);
+
+    TextureMappingPoint textureU =
+        toTexturePoint(model.vertices[mapping.uVertex], modelTransform);
+
+    TextureMappingPoint textureV =
+        toTexturePoint(model.vertices[mapping.vVertex], modelTransform);
+
+    fillTexturedTriangle(
+        renderer,
+        depthBuffer,
+        renderFace.a,
+        renderFace.b,
+        renderFace.c,
+        faceA,
+        faceB,
+        faceC,
+        textureOrigin,
+        textureU,
+        textureV,
+        textureIt->second
+    );
+}
+
+float averageBucketDepth(
+    const std::vector<RenderFace>& a,
+    const std::vector<RenderFace>& b
+) {
+    float total = 0.0f;
+    size_t count = 0;
+
+    for (const RenderFace& face : a) {
+        total += face.depth;
+        count++;
+    }
+
+    for (const RenderFace& face : b) {
+        total += face.depth;
+        count++;
+    }
+
+    if (count == 0) {
+        return NoDepth;
+    }
+
+    return total / static_cast<float>(count);
+}
+
+void drawPriorityBuckets(
+    SDL_Renderer* renderer,
+    DepthBuffer& depthBuffer,
+    const rf::model::ModelAsset& model,
+    const ModelTransform& modelTransform,
+    const RenderOptions& options,
+    const std::array<std::vector<RenderFace>, PriorityBucketCount>& buckets
+) {
+    float depth12 =
+        averageBucketDepth(buckets[1], buckets[2]);
+
+    float depth34 =
+        averageBucketDepth(buckets[3], buckets[4]);
+
+    float depth68 =
+        averageBucketDepth(buckets[6], buckets[8]);
+
+    size_t highBucket = 10;
+    size_t highIndex = 0;
+
+    auto hasHighPriorityFace = [&]() {
+        while (
+            highBucket < PriorityBucketCount &&
+            highIndex >= buckets[highBucket].size()
+        ) {
+            highBucket++;
+            highIndex = 0;
+        }
+
+        return highBucket < PriorityBucketCount;
+    };
+
+    auto highPriorityDepth = [&]() {
+        if (!hasHighPriorityFace()) {
+            return NoDepth;
+        }
+
+        return buckets[highBucket][highIndex].depth;
+    };
+
+    auto drawNextHighPriority = [&]() {
+        if (!hasHighPriorityFace()) {
+            return;
+        }
+
+        drawRenderFace(
+            renderer,
+            depthBuffer,
+            model,
+            modelTransform,
+            options,
+            buckets[highBucket][highIndex]
+        );
+
+        highIndex++;
+    };
+
+    for (size_t priority = 0; priority < 10; priority++) {
+        while (
+            priority == 0 &&
+            highPriorityDepth() > depth12
+        ) {
+            drawNextHighPriority();
+        }
+
+        while (
+            priority == 3 &&
+            highPriorityDepth() > depth34
+        ) {
+            drawNextHighPriority();
+        }
+
+        while (
+            priority == 5 &&
+            highPriorityDepth() > depth68
+        ) {
+            drawNextHighPriority();
+        }
+
+        for (const RenderFace& face : buckets[priority]) {
+            drawRenderFace(
+                renderer,
+                depthBuffer,
+                model,
+                modelTransform,
+                options,
+                face
+            );
+        }
+    }
+
+    while (hasHighPriorityFace()) {
+        drawNextHighPriority();
+    }
+}
+
+}
+
+float screenArea(
+    const ScreenPoint& a,
+    const ScreenPoint& b,
+    const ScreenPoint& c
+) {
+    return
+        (b.x - a.x) * (c.y - a.y) -
+        (b.y - a.y) * (c.x - a.x);
 }
 
 void drawModel(
@@ -205,9 +428,6 @@ void drawModel(
     Mat4 projection =
         buildProjectionMatrix(camera);
 
-    Mat4 cameraTransform =
-        view * projection;
-
     std::vector<RenderFace> renderFaces;
     renderFaces.reserve(model.faces.size());
 
@@ -220,7 +440,8 @@ void drawModel(
             projectModelVertex(
                 model.vertices[face.a],
                 modelTransform,
-                cameraTransform,
+                view,
+                projection,
                 camera
             );
 
@@ -228,7 +449,8 @@ void drawModel(
             projectModelVertex(
                 model.vertices[face.b],
                 modelTransform,
-                cameraTransform,
+                view,
+                projection,
                 camera
             );
 
@@ -236,7 +458,8 @@ void drawModel(
             projectModelVertex(
                 model.vertices[face.c],
                 modelTransform,
-                cameraTransform,
+                view,
+                projection,
                 camera
             );
 
@@ -245,6 +468,10 @@ void drawModel(
             !isFinitePoint(b) ||
             !isFinitePoint(c)
         ) {
+            continue;
+        }
+
+        if (screenArea(a, b, c) <= 0.0f) {
             continue;
         }
 
@@ -261,154 +488,39 @@ void drawModel(
         renderFaces.begin(),
         renderFaces.end(),
         [](const RenderFace& a, const RenderFace& b) {
-            if (a.face->priority != b.face->priority) {
-                return a.face->priority < b.face->priority;
-            }
-
             return a.depth < b.depth;
         }
     );
 
-    if (options.fillTriangles) {
-        for (const RenderFace& renderFace : renderFaces) {
-            const rf::model::Face& face =
-                *renderFace.face;
+    std::array<std::vector<RenderFace>, PriorityBucketCount> buckets;
 
-            RgbColor color =
-                rsColorToRgb(face.color);
+    for (const RenderFace& face : renderFaces) {
+        size_t priority =
+            static_cast<size_t>(face.face->priority);
 
-            uint8_t alpha = 255;
-
-            if (options.useAlpha && face.alpha > 0) {
-                alpha =
-                    static_cast<uint8_t>(
-                        255 - face.alpha
-                    );
-            }
-
-            if (
-                options.highlightTexturedFaces &&
-                (
-                    face.renderType == 2 ||
-                    face.renderType == 3
-                )
-            ) {
-                color = { 255, 0, 255 };
-            }
-
-            SDL_SetRenderDrawColor(
-                renderer,
-                color.r,
-                color.g,
-                color.b,
-                alpha
-            );
-
-            auto textureIt =
-                model.textures.find(face.color);
-
-            bool hasMapping =
-                face.textureUVMappingIndex >= 0 &&
-                face.textureUVMappingIndex <
-                    static_cast<int>(
-                        model.textureUVMappings.size()
-                    );
-
-            bool isTexturedRenderType =
-                face.renderType == 2 ||
-                face.renderType == 3;
-
-            bool textured =
-                isTexturedRenderType &&
-                hasMapping &&
-                textureIt != model.textures.end();
-
-            if (textured) {
-                const rf::model::TextureUVMapping& mapping =
-                    model.textureUVMappings[
-                        face.textureUVMappingIndex
-                    ];
-
-                if (isValidTextureMapping(mapping, model.vertices)) {
-                    TextureMappingPoint faceA =
-                        toTexturePoint(
-                            model.vertices[face.a],
-                            modelTransform
-                        );
-
-                    TextureMappingPoint faceB =
-                        toTexturePoint(
-                            model.vertices[face.b],
-                            modelTransform
-                        );
-
-                    TextureMappingPoint faceC =
-                        toTexturePoint(
-                            model.vertices[face.c],
-                            modelTransform
-                        );
-
-                    TextureMappingPoint textureOrigin =
-                        toTexturePoint(
-                            model.vertices[mapping.originVertex],
-                            modelTransform
-                        );
-
-                    TextureMappingPoint textureU =
-                        toTexturePoint(
-                            model.vertices[mapping.uVertex],
-                            modelTransform
-                        );
-
-                    TextureMappingPoint textureV =
-                        toTexturePoint(
-                            model.vertices[mapping.vVertex],
-                            modelTransform
-                        );
-
-                    fillTexturedTriangle(
-                        renderer,
-                        depthBuffer,
-                        renderFace.a,
-                        renderFace.b,
-                        renderFace.c,
-                        faceA,
-                        faceB,
-                        faceC,
-                        textureOrigin,
-                        textureU,
-                        textureV,
-                        textureIt->second
-                    );
-                }
-                else {
-                    fillTriangle(
-                        renderer,
-                        depthBuffer,
-                        renderFace.a,
-                        renderFace.b,
-                        renderFace.c
-                    );
-                }
-            }
-            else {
-                fillTriangle(
-                    renderer,
-                    depthBuffer,
-                    renderFace.a,
-                    renderFace.b,
-                    renderFace.c
-                );
-            }
+        if (priority >= PriorityBucketCount) {
+            priority = 0;
         }
+
+        buckets[priority].push_back(face);
+    }
+
+    if (options.fillTriangles) {
+        drawPriorityBuckets(
+            renderer,
+            depthBuffer,
+            model,
+            modelTransform,
+            options,
+            buckets
+        );
     }
 
     if (options.showWireframe) {
-        for (const RenderFace& renderFace : renderFaces) {
-            drawWireframe(
-                renderer,
-                renderFace
-            );
+        for (const std::vector<RenderFace>& bucket : buckets) {
+            for (const RenderFace& face : bucket) {
+                drawWireframe(renderer, face);
+            }
         }
     }
 
@@ -417,7 +529,8 @@ void drawModel(
             renderer,
             model,
             modelTransform,
-            cameraTransform,
+            view,
+            projection,
             camera
         );
     }

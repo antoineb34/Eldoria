@@ -1,6 +1,7 @@
 #include "FaceDecoder.h"
 
 #include <utility>
+#include <iostream>
 
 namespace rf::model {
 
@@ -51,6 +52,15 @@ std::vector<Face> FaceDecoder::decode() {
     for (uint32_t i = 0; i < file_.footer.triangleCount; i++) {
         faces.push_back(decodeFace(i));
     }
+    printf(
+        "Face decode end | triDataPos=%zu expected=%u | colorPos=%zu expected=%u | priorityPos=%zu expected=%u\n",
+        triangleDataBuffer_.position(),
+        file_.layout.triangleDataOffset + file_.footer.triangleDataLength,
+        colorBuffer_.position(),
+        file_.layout.triangleColorsOffset + file_.footer.triangleCount * 2,
+        priorityBuffer_.position(),
+        file_.layout.trianglePrioritiesOffset + file_.footer.triangleCount
+    );
 
     return faces;
 }
@@ -80,6 +90,24 @@ Face FaceDecoder::decodeFace(uint32_t index) {
     face.renderType = texture.renderType;
     face.texturePointer = texture.texturePointer;
     face.textureUVMappingIndex = texture.textureUVMappingIndex;
+
+    if (index >= 120 && index <= 170) {
+        printf(
+            "face %u | type=%u | lastIndex=%d | a=%d b=%d c=%d | color=%u | priority=%u | triDataPos=%zu colorPos=%zu priorityPos=%zu\n",
+            index,
+            triangleType,
+            indexState_.lastIndex,
+            face.a,
+            face.b,
+            face.c,
+            face.color,
+            face.priority,
+            triangleDataBuffer_.position(),
+            colorBuffer_.position(),
+            priorityBuffer_.position()
+        );
+
+    }
 
     return face;
 }

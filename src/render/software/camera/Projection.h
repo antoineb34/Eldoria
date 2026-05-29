@@ -28,13 +28,16 @@ Mat4 buildProjectionMatrix(
 
 ScreenPoint projectPoint(
     const Vec3& point,
-    const Mat4& transform,
+    const Mat4& view,
+    const Mat4& projection,
     const Camera& camera
+
 );
 
 ScreenPoint projectVertex(
     const rf::model::Vertex& vertex,
-    const Mat4& transform,
+    const Mat4& view,
+    const Mat4& projection,
     const Camera& camera
 );
 
