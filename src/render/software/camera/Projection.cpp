@@ -1,4 +1,5 @@
 #include "Projection.h"
+#include <iostream>
 
 namespace rf::render {
 
@@ -59,46 +60,44 @@ Mat4 buildProjectionMatrix(
 
 ScreenPoint projectPoint(
     const Vec3& point,
-    const Mat4& transform,
+    const Mat4& view,
+    const Mat4& projection,
     const Camera& camera
 ) {
+    Vec3 viewPoint =
+        view.transformPoint(point);
+
     Vec3 projected =
-        transform.transformPoint(
-            point
-        );
+        projection.transformPoint(viewPoint);
 
     ScreenPoint screenPoint {};
 
     screenPoint.x =
         static_cast<float>(camera.viewportX) +
-        (projected.x + 1.0f) *
-        0.5f *
-        static_cast<float>(
-            camera.viewportWidth
-        );
+        (projected.x + 1.0f) * 0.5f *
+        static_cast<float>(camera.viewportWidth);
 
     screenPoint.y =
         static_cast<float>(camera.viewportY) +
-        (1.0f - projected.y) *
-        0.5f *
-        static_cast<float>(
-            camera.viewportHeight
-        );
+        (1.0f - projected.y) * 0.5f *
+        static_cast<float>(camera.viewportHeight);
 
     screenPoint.z =
-        projected.z;
+        viewPoint.z;
 
     return screenPoint;
 }
 
 ScreenPoint projectVertex(
     const rf::model::Vertex& vertex,
-    const Mat4& transform,
+    const Mat4& view,
+    const Mat4& projection,
     const Camera& camera
 ) {
     return projectPoint(
         toVec3(vertex),
-        transform,
+        view,
+        projection,
         camera
     );
 }

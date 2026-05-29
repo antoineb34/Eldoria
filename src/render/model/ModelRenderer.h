@@ -8,7 +8,6 @@
 #include "../../core/assets/texture/TextureAsset.h"
 
 #include "../software/camera/Camera.h"
-#include "../software/raster/DepthBuffer.h"
 
 #include "RenderOptions.h"
 
@@ -16,8 +15,8 @@ namespace rf::render {
 
 void drawModel(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
-    const rf::model::ModelAsset& model,    const Camera& camera,
+    const rf::model::ModelAsset& model,
+    const Camera& camera,
     const RenderOptions& options,
     const ModelTransform& transform
 );

@@ -37,11 +37,17 @@ const rf::texture::RgbaColor* sampleTexture(
         return nullptr;
     }
 
-    u =
-        u - std::floor(u);
+    u = std::clamp(
+        u,
+        0.0f,
+        1.0f
+    );
 
-    v =
-        v - std::floor(v);
+    v = std::clamp(
+        v,
+        0.0f,
+        1.0f
+    );
 
     int tx =
         static_cast<int>(
@@ -76,7 +82,6 @@ const rf::texture::RgbaColor* sampleTexture(
 
 void fillTexturedTriangle(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
 
     const ScreenPoint& a,
     const ScreenPoint& b,
@@ -175,49 +180,22 @@ void fillTexturedTriangle(
             float py =
                 static_cast<float>(y) + 0.5f;
 
-            float w0 =
-                edge(b, c, px, py);
+            float w0 = edge(b, c, px, py) / area;
+            float w1 = edge(c, a, px, py) / area;
+            float w2 = edge(a, b, px, py) / area;
 
-            float w1 =
-                edge(c, a, px, py);
-
-            float w2 =
-                edge(a, b, px, py);
-
-            bool inside =
-                (
-                    w0 >= 0.0f &&
-                    w1 >= 0.0f &&
-                    w2 >= 0.0f
-                ) ||
-                (
-                    w0 <= 0.0f &&
-                    w1 <= 0.0f &&
-                    w2 <= 0.0f
-                );
-
-            if (!inside) {
+            if (
+                w0 < 0.0f ||
+                w1 < 0.0f ||
+                w2 < 0.0f
+            ) {
                 continue;
             }
-
-            w0 /= area;
-            w1 /= area;
-            w2 /= area;
 
             float depth =
                 a.z * w0 +
                 b.z * w1 +
                 c.z * w2;
-
-            if (
-                !depthBuffer.testAndSet(
-                    x,
-                    y,
-                    depth
-                )
-            ) {
-                continue;
-            }
 
             TextureMappingPoint point {
                 faceA.x * w0 + faceB.x * w1 + faceC.x * w2,
@@ -259,9 +237,17 @@ void fillTexturedTriangle(
                     v
                 );
 
+            if (pixel == nullptr) {
+                continue;
+            }
+
             if (
-                pixel == nullptr ||
-                pixel->a == 0
+                pixel->a == 0 ||
+                (
+                    pixel->r == 0 &&
+                    pixel->g == 0 &&
+                    pixel->b == 0
+                )
             ) {
                 continue;
             }
@@ -285,7 +271,6 @@ void fillTexturedTriangle(
 
 void fillTriangle(
     SDL_Renderer* renderer,
-    DepthBuffer& depthBuffer,
     const ScreenPoint& a,
     const ScreenPoint& b,
     const ScreenPoint& c
@@ -333,53 +318,28 @@ void fillTriangle(
             float py =
                 static_cast<float>(y) + 0.5f;
 
-            float w0 =
-                edge(b, c, px, py);
+            float w0 = edge(b, c, px, py) / area;
+            float w1 = edge(c, a, px, py) / area;
+            float w2 = edge(a, b, px, py) / area;
 
-            float w1 =
-                edge(c, a, px, py);
-
-            float w2 =
-                edge(a, b, px, py);
-
-            bool inside =
-                (
-                    w0 >= 0.0f &&
-                    w1 >= 0.0f &&
-                    w2 >= 0.0f
-                ) ||
-                (
-                    w0 <= 0.0f &&
-                    w1 <= 0.0f &&
-                    w2 <= 0.0f
-                );
-
-            if (!inside) {
+            if (
+                w0 < 0.0f ||
+                w1 < 0.0f ||
+                w2 < 0.0f
+            ) {
                 continue;
             }
-
-            w0 /= area;
-            w1 /= area;
-            w2 /= area;
 
             float depth =
                 a.z * w0 +
                 b.z * w1 +
                 c.z * w2;
 
-            if (
-                depthBuffer.testAndSet(
-                    x,
-                    y,
-                    depth
-                )
-            ) {
-                SDL_RenderPoint(
-                    renderer,
-                    static_cast<float>(x),
-                    static_cast<float>(y)
-                );
-            }
+            SDL_RenderPoint(
+                renderer,
+                static_cast<float>(x),
+                static_cast<float>(y)
+            );
         }
     }
 }

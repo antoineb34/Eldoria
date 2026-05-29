@@ -2,8 +2,6 @@
 
 #include <SDL3/SDL.h>
 
-#include "../../render/software/raster/DepthBuffer.h"
-
 namespace rf::tool {
 
 class Workspace {
@@ -25,7 +23,6 @@ public:
 
     virtual void render(
         SDL_Renderer* renderer,
-        rf::render::DepthBuffer& depthBuffer,
         int viewportX,
         int viewportY,
         int viewportWidth,

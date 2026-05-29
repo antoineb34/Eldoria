@@ -1,30 +1,62 @@
 # RuneForge
 
-RuneForge is a modern C++ RuneScape 317 cache viewer / tooling project.
+RuneForge is a modern C++ RuneScape 317 cache exploration, asset decoding, and rendering project.
 
-The long-term goal is to build a clean and extensible foundation for:
-- cache exploration
-- asset decoding
-- rendering
-- tooling/editor workflows
-- eventually a custom game client
+The goal is to build a clean, maintainable, and extensible foundation for understanding RuneScape's cache formats while providing tooling, rendering systems, and eventually a custom game client.
 
-Current development is focused on:
-- cache decoding
-- rendering pipeline foundations
-- architecture and tooling
+Development follows a tool-first approach: build tooling to understand the data, then use that knowledge to build the client.
+
+---
+
+# Current Goals
+
+* Cache exploration and research
+* Asset decoding
+* Software rendering
+* Tooling and editor workflows
+* Rendering architecture
+* Future game client development
 
 ---
 
 # Features
 
 Current functionality includes:
-- DAT/IDX FileStore reading
-- archive extraction
-- GZIP decompression
-- model decoding experiments
-- SDL3 application structure
-- tool/viewer foundation
+
+## Cache System
+
+* DAT/IDX FileStore reading
+* Archive extraction
+* GZIP decompression
+* Binary parsing utilities
+
+## Asset Decoding
+
+* Model loading
+* Vertex decoding
+* Face decoding
+* Texture UV mapping decoding
+* Texture loading
+* Texture canvas decoding
+* Texture pixel decoding
+
+## Rendering
+
+* Software rasterizer
+* Model rendering
+* Texture mapping
+* Backface culling
+* Priority-based face rendering
+* RuneScape-style transparency handling
+* Interactive model viewer
+
+## Tooling
+
+* SDL3 application framework
+* Cache browser
+* Cache tree explorer
+* Asset inspection panels
+* Model preview system
 
 ---
 
@@ -32,13 +64,13 @@ Current functionality includes:
 
 ## Requirements
 
-- CMake 3.20+
-- C++20 compiler
-- SDL3
-- ZLIB
-- BZip2
+* CMake 3.20+
+* C++20 compiler
+* SDL3
+* ZLIB
+* BZip2
 
-## Build Commands
+## Build
 
 ```bash
 cmake -B build
@@ -51,15 +83,63 @@ cmake --build build
 
 ```text
 src/
-  core/      # cache, io, decoding, engine core
-  ui/        # shared UI/rendering systems
-  apps/
-    tool/    # cache viewer/editor tool
-    client/  # future game client
+
+├── apps/
+│   ├── tool/
+│   └── client/
+│
+├── core/
+│   ├── assets/
+│   │   ├── model/
+│   │   └── texture/
+│   │
+│   ├── cache/
+│   ├── compression/
+│   ├── io/
+│   └── references/
+│
+├── render/
+│   ├── model/
+│   └── software/
+│
+├── platform/
+│   └── sdl/
+│
+└── ui/
 ```
 
 ---
 
-# Current State
+# Development Philosophy
 
-See `PROJECT_STATE.md`
+RuneForge favors:
+
+* clear data flow
+* explicit decoding steps
+* minimal abstractions
+* tool-first development
+* renderer-independent asset formats
+* separation between cache structures and runtime structures
+
+The project intentionally prioritizes understanding the original RuneScape formats before introducing engine-level abstractions.
+
+---
+
+# Current Status
+
+The cache pipeline, model decoding pipeline, texture decoding pipeline, and software rendering foundation are operational.
+
+Current research areas include:
+
+* map decoding
+* animation decoding
+* scene rendering
+* GPU rendering architecture
+* client architecture
+* editor tooling
+
+---
+
+# License
+
+Work in progress.

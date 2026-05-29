@@ -4,8 +4,6 @@ add_library(core STATIC
 
     cache/Cache.cpp
 
-    debug/ModelDebug.cpp
-
     assets/model/ModelLoader.cpp
     assets/model/ModelFileReader.cpp
     assets/model/ModelBuilder.cpp

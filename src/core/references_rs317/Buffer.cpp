@@ -28,9 +28,9 @@ std::string Buffer::readString() {
         pos++;
     }
     int len = pos - start;
-    
+
     std::string result(reinterpret_cast<const char*>(&data_[start]), len);
-    
+
     if (pos < (int)data_.size()) pos++; // skip the terminator byte
     return result;
 }
