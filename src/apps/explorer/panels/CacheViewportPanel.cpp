@@ -1,0 +1,131 @@
+#include "CacheViewportPanel.h"
+
+#include <imgui.h>
+
+#include "../CacheExplorerState.h"
+#include "../../../render/model/ModelRenderer.h"
+
+namespace rf::explorer {
+
+    namespace {
+    void updateViewportControls(CacheExplorerState& state) {
+        const bool* keys = SDL_GetKeyboardState(nullptr);
+
+        auto& transform = state.modelTransform;
+
+        transform.rotationY += 0.01f;
+
+        if (keys[SDL_SCANCODE_EQUALS]) transform.scale += 0.02f;
+        if (keys[SDL_SCANCODE_MINUS]) transform.scale -= 0.02f;
+
+        if (transform.scale < 0.1f) transform.scale = 0.1f;
+
+        if (keys[SDL_SCANCODE_W]) transform.offsetY -= 8.0f;
+        if (keys[SDL_SCANCODE_S]) transform.offsetY += 8.0f;
+        if (keys[SDL_SCANCODE_A]) transform.offsetX -= 8.0f;
+        if (keys[SDL_SCANCODE_D]) transform.offsetX += 8.0f;
+    }
+    }
+
+void CacheViewportPanel::render(
+    CacheExplorerState& state,
+    float width,
+    float height
+) {
+    ImGui::BeginChild(
+        "CacheViewportPanel",
+        ImVec2(width, height),
+        true
+    );
+
+    ImGui::TextUnformatted("VIEWPORT");
+    ImGui::Separator();
+
+    ImVec2 viewportPos =
+        ImGui::GetCursorScreenPos();
+
+    ImVec2 viewportSize =
+        ImGui::GetContentRegionAvail();
+
+    state.viewportX =
+        static_cast<int>(viewportPos.x);
+
+    state.viewportY =
+        static_cast<int>(viewportPos.y);
+
+    state.viewportWidth =
+        static_cast<int>(viewportSize.x);
+
+    state.viewportHeight =
+        static_cast<int>(viewportSize.y);
+
+    ImGui::Dummy(
+        viewportSize
+    );
+
+    ImGui::EndChild();
+}
+
+void CacheViewportPanel::renderViewport(
+    SDL_Renderer* renderer,
+    CacheExplorerState& state
+) {
+
+    if (!state.activeModel) {
+        return;
+    }
+
+    state.camera.viewportX = state.viewportX;
+    state.camera.viewportY = state.viewportY;
+    state.camera.viewportWidth = state.viewportWidth;
+    state.camera.viewportHeight = state.viewportHeight;
+
+    SDL_Rect clip {
+        state.viewportX,
+        state.viewportY,
+        state.viewportWidth,
+        state.viewportHeight
+    };
+
+    SDL_SetRenderClipRect(
+        renderer,
+        &clip
+    );
+
+    SDL_SetRenderDrawColor(
+        renderer,
+        30,
+        36,
+        28,
+        255
+    );
+
+    SDL_FRect rect {
+        static_cast<float>(state.viewportX),
+        static_cast<float>(state.viewportY),
+        static_cast<float>(state.viewportWidth),
+        static_cast<float>(state.viewportHeight)
+    };
+
+    SDL_RenderFillRect(
+        renderer,
+        &rect
+    );
+
+    updateViewportControls(state);
+
+    rf::render::drawModel(
+        renderer,
+        *state.activeModel,
+        state.camera,
+        state.renderOptions,
+        state.modelTransform
+    );
+
+    SDL_SetRenderClipRect(
+        renderer,
+        nullptr
+    );
+}
+
+}
