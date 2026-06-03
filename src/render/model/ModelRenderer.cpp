@@ -1,37 +1,21 @@
 #include "ModelRenderer.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <limits>
 #include <vector>
 
-#include "../software/camera/Projection.h"
 #include "../software/color/Color.h"
-#include "../software/math/Mat4.h"
 #include "../software/raster/TriangleRasterizer.h"
 
-#include "RenderFace.h"
+#include "RenderMesh.h"
+#include "../order/FaceOrderer.h"
 
 namespace rf::render {
 
 namespace {
 
-constexpr size_t PriorityBucketCount = 12;
 constexpr float NoDepth = -std::numeric_limits<float>::infinity();
-
-bool isValidFace(
-    const rf::model::Face& face,
-    const std::vector<rf::model::Vertex>& vertices
-) {
-    return
-        face.a >= 0 &&
-        face.b >= 0 &&
-        face.c >= 0 &&
-        face.a < static_cast<int>(vertices.size()) &&
-        face.b < static_cast<int>(vertices.size()) &&
-        face.c < static_cast<int>(vertices.size());
-}
 
 bool isValidTextureMapping(
     const rf::model::TextureUVMapping& mapping,
@@ -44,13 +28,6 @@ bool isValidTextureMapping(
         mapping.originVertex < static_cast<int>(vertices.size()) &&
         mapping.uVertex < static_cast<int>(vertices.size()) &&
         mapping.vVertex < static_cast<int>(vertices.size());
-}
-
-bool isFinitePoint(const ScreenPoint& point) {
-    return
-        std::isfinite(point.x) &&
-        std::isfinite(point.y) &&
-        std::isfinite(point.z);
 }
 
 rf::model::Vertex transformVertex(
@@ -106,54 +83,30 @@ TextureMappingPoint toTexturePoint(
     };
 }
 
-ScreenPoint projectModelVertex(
-    const rf::model::Vertex& vertex,
-    const ModelTransform& modelTransform,
-    const Mat4& view,
-    const Mat4& projection,
-    const Camera& camera
-) {
-    rf::model::Vertex transformed =
-        transformVertex(vertex, modelTransform);
-
-    return projectVertex(
-        transformed,
-        view,
-        projection,
-        camera
-    );
-}
-
 void drawWireframe(
     SDL_Renderer* renderer,
+    const RenderMesh& mesh,
     const RenderFace& face
 ) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-    SDL_RenderLine(renderer, face.a.x, face.a.y, face.b.x, face.b.y);
-    SDL_RenderLine(renderer, face.b.x, face.b.y, face.c.x, face.c.y);
-    SDL_RenderLine(renderer, face.c.x, face.c.y, face.a.x, face.a.y);
+    const ScreenPoint& a = mesh.vertices[face.a].screen;
+    const ScreenPoint& b = mesh.vertices[face.b].screen;
+    const ScreenPoint& c = mesh.vertices[face.c].screen;
+
+    SDL_RenderLine(renderer, a.x, a.y, b.x, b.y);
+    SDL_RenderLine(renderer, b.x, b.y, c.x, c.y);
+    SDL_RenderLine(renderer, c.x, c.y, a.x, a.y);
 }
 
 void drawVertices(
     SDL_Renderer* renderer,
-    const rf::model::ModelAsset& model,
-    const ModelTransform& modelTransform,
-    const Mat4& view,
-    const Mat4& projection,
-    const Camera& camera
+    const RenderMesh& mesh
 ) {
     SDL_SetRenderDrawColor(renderer, 255, 120, 80, 255);
 
-    for (const rf::model::Vertex& vertex : model.vertices) {
-        ScreenPoint point =
-            projectModelVertex(
-                vertex,
-                modelTransform,
-                view,
-                projection,
-                camera
-            );
+    for (const RenderVertex& vertex : mesh.vertices) {
+        const ScreenPoint& point = vertex.screen;
 
         SDL_FRect rect {
             point.x - 2.0f,
@@ -169,12 +122,22 @@ void drawVertices(
 void drawRenderFace(
     SDL_Renderer* renderer,
     const rf::model::ModelAsset& model,
+    const RenderMesh& mesh,
     const ModelTransform& modelTransform,
     const RenderOptions& options,
     const RenderFace& renderFace
 ) {
     const rf::model::Face& face =
-        *renderFace.face;
+        *renderFace.source;
+
+    const ScreenPoint& a =
+        mesh.vertices[renderFace.a].screen;
+
+    const ScreenPoint& b =
+        mesh.vertices[renderFace.b].screen;
+
+    const ScreenPoint& c =
+        mesh.vertices[renderFace.c].screen;
 
     RgbColor color =
         rsColorToRgb(face.color);
@@ -223,9 +186,9 @@ void drawRenderFace(
     if (!textured) {
         fillTriangle(
             renderer,
-            renderFace.a,
-            renderFace.b,
-            renderFace.c
+            a,
+            b,
+            c
         );
 
         return;
@@ -237,9 +200,9 @@ void drawRenderFace(
     if (!isValidTextureMapping(mapping, model.vertices)) {
         fillTriangle(
             renderer,
-            renderFace.a,
-            renderFace.b,
-            renderFace.c
+            a,
+            b,
+            c
         );
 
         return;
@@ -265,9 +228,9 @@ void drawRenderFace(
 
     fillTexturedTriangle(
         renderer,
-        renderFace.a,
-        renderFace.b,
-        renderFace.c,
+        a,
+        b,
+        c,
         faceA,
         faceB,
         faceC,
@@ -286,12 +249,12 @@ float averageBucketDepth(
     size_t count = 0;
 
     for (const RenderFace& face : a) {
-        total += face.depth;
+        total += face.depthAvg;
         count++;
     }
 
     for (const RenderFace& face : b) {
-        total += face.depth;
+        total += face.depthAvg;
         count++;
     }
 
@@ -305,6 +268,7 @@ float averageBucketDepth(
 void drawPriorityBuckets(
     SDL_Renderer* renderer,
     const rf::model::ModelAsset& model,
+    const RenderMesh& mesh,
     const ModelTransform& modelTransform,
     const RenderOptions& options,
     const std::array<std::vector<RenderFace>, PriorityBucketCount>& buckets
@@ -338,7 +302,7 @@ void drawPriorityBuckets(
             return NoDepth;
         }
 
-        return buckets[highBucket][highIndex].depth;
+        return buckets[highBucket][highIndex].depthAvg;
     };
 
     auto drawNextHighPriority = [&]() {
@@ -349,6 +313,7 @@ void drawPriorityBuckets(
         drawRenderFace(
             renderer,
             model,
+            mesh,
             modelTransform,
             options,
             buckets[highBucket][highIndex]
@@ -383,6 +348,7 @@ void drawPriorityBuckets(
             drawRenderFace(
                 renderer,
                 model,
+                mesh,
                 modelTransform,
                 options,
                 face
@@ -397,16 +363,6 @@ void drawPriorityBuckets(
 
 }
 
-float screenArea(
-    const ScreenPoint& a,
-    const ScreenPoint& b,
-    const ScreenPoint& c
-) {
-    return
-        (b.x - a.x) * (c.y - a.y) -
-        (b.y - a.y) * (c.x - a.x);
-}
-
 void drawModel(
     SDL_Renderer* renderer,
     const rf::model::ModelAsset& model,
@@ -414,93 +370,30 @@ void drawModel(
     const RenderOptions& options,
     const ModelTransform& modelTransform
 ) {
-    Mat4 view =
-        buildViewMatrix(camera);
+    RenderMeshBuilder meshBuilder;
 
-    Mat4 projection =
-        buildProjectionMatrix(camera);
+    RenderMesh mesh =
+        meshBuilder.build(
+            model,
+            camera,
+            modelTransform
+        );
 
-    std::vector<RenderFace> renderFaces;
-    renderFaces.reserve(model.faces.size());
+    FaceOrderer faceOrderer;
 
-    for (const rf::model::Face& face : model.faces) {
-        if (!isValidFace(face, model.vertices)) {
-            continue;
-        }
-
-        ScreenPoint a =
-            projectModelVertex(
-                model.vertices[face.a],
-                modelTransform,
-                view,
-                projection,
-                camera
-            );
-
-        ScreenPoint b =
-            projectModelVertex(
-                model.vertices[face.b],
-                modelTransform,
-                view,
-                projection,
-                camera
-            );
-
-        ScreenPoint c =
-            projectModelVertex(
-                model.vertices[face.c],
-                modelTransform,
-                view,
-                projection,
-                camera
-            );
-
-        if (
-            !isFinitePoint(a) ||
-            !isFinitePoint(b) ||
-            !isFinitePoint(c)
-        ) {
-            continue;
-        }
-
-        if (screenArea(a, b, c) <= 0.0f) {
-            continue;
-        }
-
-        renderFaces.push_back({
-            &face,
-            a,
-            b,
-            c,
-            (a.z + b.z + c.z) / 3.0f
-        });
-    }
-
-    std::sort(
-        renderFaces.begin(),
-        renderFaces.end(),
-        [](const RenderFace& a, const RenderFace& b) {
-            return a.depth < b.depth;
-        }
+    faceOrderer.order(
+        mesh,
+        options.faceOrderMode
     );
 
-    std::array<std::vector<RenderFace>, PriorityBucketCount> buckets;
-
-    for (const RenderFace& face : renderFaces) {
-        size_t priority =
-            static_cast<size_t>(face.face->priority);
-
-        if (priority >= PriorityBucketCount) {
-            priority = 0;
-        }
-
-        buckets[priority].push_back(face);
-    }
+    auto buckets =
+        faceOrderer.buildPriorityBuckets(mesh);
 
     if (options.fillTriangles) {
         drawPriorityBuckets(
             renderer,
             model,
+            mesh,
             modelTransform,
             options,
             buckets
@@ -510,19 +403,16 @@ void drawModel(
     if (options.showWireframe) {
         for (const std::vector<RenderFace>& bucket : buckets) {
             for (const RenderFace& face : bucket) {
-                drawWireframe(renderer, face);
+                drawWireframe(renderer, mesh, face);
             }
         }
     }
 
     if (options.showVertices) {
+
         drawVertices(
             renderer,
-            model,
-            modelTransform,
-            view,
-            projection,
-            camera
+            mesh
         );
     }
 }

@@ -32,11 +32,18 @@ public:
 
     void endFrame() override;
 
+    void setHighlightTexturedFaces(
+        bool enabled
+    ) {
+        highlightTexturedFaces_ = enabled;
+    }
+
 private:
     void destroyTexture();
     void ensureTexture();
 
 private:
+    bool highlightTexturedFaces_ = false;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* texture_ = nullptr;
 

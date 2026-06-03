@@ -10,6 +10,7 @@ add_library(rune_forge_render_next
     pipeline/DepthSorter.cpp
 
     material/MaterialResolver.cpp
+    material/TextureSampler.cpp
 
     backend/software/SoftwareRenderBackend.cpp
     backend/software/TriangleRasterizer.cpp

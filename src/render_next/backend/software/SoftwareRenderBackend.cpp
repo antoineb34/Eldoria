@@ -8,17 +8,50 @@ namespace rf::render_next {
 
 namespace {
 
+    bool isTexturedPacket(
+        const RenderPacket& packet,
+        const RenderObject& object
+    ) {
+        if (object.model == nullptr) {
+            return false;
+        }
+
+        const bool texturedRenderType =
+            packet.renderType == 2 ||
+            packet.renderType == 3;
+
+        const bool hasMapping =
+            packet.textureUVMappingIndex >= 0 &&
+            packet.textureUVMappingIndex <
+                static_cast<int>(object.model->textureUVMappings.size());
+
+        const bool hasTexture =
+            object.model->textures.find(packet.color) !=
+            object.model->textures.end();
+
+        return
+            texturedRenderType &&
+            hasMapping &&
+            hasTexture;
+    }
+
     ColorPixel colorFromPacket(
         const RenderPacket& packet
     ) {
         rf::render::RgbColor rgb =
             rf::render::rsColorToRgb(packet.color);
 
+        uint8_t alpha = 255;
+
+        if (packet.alpha > 0) {
+            alpha = static_cast<uint8_t>(255 - packet.alpha);
+        }
+
         return {
             rgb.r,
             rgb.g,
             rgb.b,
-            255
+            alpha
         };
     }
 
@@ -80,7 +113,7 @@ void SoftwareRenderBackend::drawObject(
     const ProjectedMesh& mesh,
     const RenderQueue& queue
 ) {
-    (void) object;
+    int texturedPackets = 0;
 
     for (const RenderPacket& packet : queue.packets) {
         rf::render::ScreenPoint a =
@@ -92,12 +125,80 @@ void SoftwareRenderBackend::drawObject(
         rf::render::ScreenPoint c =
             mesh.vertices[packet.c].screen;
 
+        if (isTexturedPacket(packet, object)) {
+            texturedPackets++;
+
+            SDL_Log(
+                "TEXTURED face=%d color=%d texPtr=%d uvMap=%d renderType=%d priority=%d",
+                packet.faceIndex,
+                packet.color,
+                packet.texturePointer,
+                packet.textureUVMappingIndex,
+                packet.renderType,
+                packet.priority
+            );
+
+            const rf::model::TextureUVMapping& mapping =
+                object.model->textureUVMappings[packet.textureUVMappingIndex];
+
+            SDL_Log(
+                "UV origin=%d u=%d v=%d",
+                mapping.originVertex,
+                mapping.uVertex,
+                mapping.vVertex
+            );
+
+            const rf::texture::TextureAsset& texture =
+                object.model->textures.at(packet.color);
+
+            const rf::render::Vec3& faceA =
+                mesh.vertices[packet.a].world;
+
+            const rf::render::Vec3& faceB =
+                mesh.vertices[packet.b].world;
+
+            const rf::render::Vec3& faceC =
+                mesh.vertices[packet.c].world;
+
+            const rf::render::Vec3& textureOrigin =
+                mesh.vertices[mapping.originVertex].world;
+
+            const rf::render::Vec3& textureU =
+                mesh.vertices[mapping.uVertex].world;
+
+            const rf::render::Vec3& textureV =
+                mesh.vertices[mapping.vVertex].world;
+
+            rasterizer_.drawTexturedTriangle(
+                framebuffer_,
+                a,
+                b,
+                c,
+                faceA,
+                faceB,
+                faceC,
+                textureOrigin,
+                textureU,
+                textureV,
+                texture
+            );
+
+            continue;
+        }
+
         rasterizer_.drawSolidTriangle(
             framebuffer_,
             a,
             b,
             c,
             colorFromPacket(packet)
+        );
+    }
+
+    if (texturedPackets > 0) {
+        SDL_Log(
+            "render_next textured packets = %d",
+            texturedPackets
         );
     }
 }

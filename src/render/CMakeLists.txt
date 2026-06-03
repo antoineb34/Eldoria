@@ -1,5 +1,7 @@
 add_library(render STATIC
     model/ModelRenderer.cpp
+    model/RenderMeshBuilder.cpp
+    order/FaceOrderer.cpp
 
     software/camera/Projection.cpp
 

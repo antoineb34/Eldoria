@@ -11,6 +11,7 @@
 namespace rf::explorer {
 
     namespace {
+
         void updateViewportControls(CacheExplorerState& state) {
             const bool* keys = SDL_GetKeyboardState(nullptr);
 
@@ -81,6 +82,16 @@ namespace rf::explorer {
                 transform.rotationY = 0.0f;
                 transform.rotationZ = 0.0f;
             }
+
+            static bool previousT = false;
+            bool currentT = keys[SDL_SCANCODE_T];
+
+            if (currentT && !previousT) {
+                state.debugHighlightTexturedFaces =
+                    !state.debugHighlightTexturedFaces;
+            }
+
+            previousT = currentT;
         }
     }
 
@@ -193,6 +204,11 @@ void CacheViewportPanel::renderViewport(
     scene.objects.push_back(object);
 
     rf::render_next::SoftwareRenderBackend backend(renderer);
+
+    backend.setHighlightTexturedFaces(
+        state.debugHighlightTexturedFaces
+    );
+
     rf::render_next::RenderPipeline pipeline;
 
     pipeline.render(

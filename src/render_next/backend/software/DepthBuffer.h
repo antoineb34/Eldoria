@@ -30,6 +30,15 @@ public:
         int y,
         float depth
     ) {
+        if (
+            x < 0 ||
+            y < 0 ||
+            x >= width_ ||
+            y >= height_
+        ) {
+            return false;
+        }
+
         float& current =
             depths_[y * width_ + x];
 
