@@ -1,6 +1,8 @@
 add_library(rune_forge_render_next
     RenderPipeline.cpp
 
+    scene/Transform.cpp
+
     geometry/MeshProjector.cpp
 
     pipeline/FaceAssembler.cpp

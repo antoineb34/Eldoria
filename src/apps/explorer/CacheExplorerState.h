@@ -12,6 +12,7 @@
 
 #include "../../render/software/camera/Camera.h"
 #include "../../render/model/RenderOptions.h"
+#include "../../render/model/ModelTransform.h"
 
 namespace rf::explorer {
 

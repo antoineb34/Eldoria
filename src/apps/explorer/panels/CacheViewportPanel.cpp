@@ -5,26 +5,83 @@
 #include "../CacheExplorerState.h"
 #include "../../../render/model/ModelRenderer.h"
 
+#include "../../../render_next/RenderPipeline.h"
+#include "../../../render_next/backend/software/SoftwareRenderBackend.h"
+
 namespace rf::explorer {
 
     namespace {
-    void updateViewportControls(CacheExplorerState& state) {
-        const bool* keys = SDL_GetKeyboardState(nullptr);
+        void updateViewportControls(CacheExplorerState& state) {
+            const bool* keys = SDL_GetKeyboardState(nullptr);
 
-        auto& transform = state.modelTransform;
+            auto& transform = state.modelTransform;
 
-        transform.rotationY += 0.01f;
+            constexpr float rotationSpeed = 0.03f;
+            constexpr float moveSpeed = 8.0f;
+            constexpr float zoomSpeed = 0.02f;
 
-        if (keys[SDL_SCANCODE_EQUALS]) transform.scale += 0.02f;
-        if (keys[SDL_SCANCODE_MINUS]) transform.scale -= 0.02f;
+            if (keys[SDL_SCANCODE_LEFT]) {
+                transform.rotationY -= rotationSpeed;
+            }
 
-        if (transform.scale < 0.1f) transform.scale = 0.1f;
+            if (keys[SDL_SCANCODE_RIGHT]) {
+                transform.rotationY += rotationSpeed;
+            }
 
-        if (keys[SDL_SCANCODE_W]) transform.offsetY -= 8.0f;
-        if (keys[SDL_SCANCODE_S]) transform.offsetY += 8.0f;
-        if (keys[SDL_SCANCODE_A]) transform.offsetX -= 8.0f;
-        if (keys[SDL_SCANCODE_D]) transform.offsetX += 8.0f;
-    }
+            if (keys[SDL_SCANCODE_UP]) {
+                transform.rotationX -= rotationSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_DOWN]) {
+                transform.rotationX += rotationSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_Q]) {
+                transform.rotationZ -= rotationSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_E]) {
+                transform.rotationZ += rotationSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_EQUALS]) {
+                transform.scale += zoomSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_MINUS]) {
+                transform.scale -= zoomSpeed;
+            }
+
+            if (transform.scale < 0.1f) {
+                transform.scale = 0.1f;
+            }
+
+            if (keys[SDL_SCANCODE_W]) {
+                transform.offsetY -= moveSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_S]) {
+                transform.offsetY += moveSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_A]) {
+                transform.offsetX -= moveSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_D]) {
+                transform.offsetX += moveSpeed;
+            }
+
+            if (keys[SDL_SCANCODE_R]) {
+                transform.offsetX = 0.0f;
+                transform.offsetY = 0.0f;
+                transform.offsetZ = 0.0f;
+                transform.scale = 1.0f;
+                transform.rotationX = 0.0f;
+                transform.rotationY = 0.0f;
+                transform.rotationZ = 0.0f;
+            }
+        }
     }
 
 void CacheViewportPanel::render(
@@ -94,9 +151,9 @@ void CacheViewportPanel::renderViewport(
 
     SDL_SetRenderDrawColor(
         renderer,
-        30,
-        36,
-        28,
+        68,
+        88,
+        68,
         255
     );
 
@@ -114,12 +171,33 @@ void CacheViewportPanel::renderViewport(
 
     updateViewportControls(state);
 
-    rf::render::drawModel(
-        renderer,
-        *state.activeModel,
-        state.camera,
-        state.renderOptions,
-        state.modelTransform
+    rf::render_next::RenderObject object;
+    object.model = &state.activeModel.value();    object.transform.position = {
+        state.modelTransform.offsetX,
+        state.modelTransform.offsetY,
+        state.modelTransform.offsetZ
+    };
+    object.transform.rotation = {
+        state.modelTransform.rotationX,
+        state.modelTransform.rotationY,
+        state.modelTransform.rotationZ
+    };
+    object.transform.scale = {
+        state.modelTransform.scale,
+        state.modelTransform.scale,
+        state.modelTransform.scale
+    };
+
+    rf::render_next::RenderScene scene;
+    scene.camera = state.camera;
+    scene.objects.push_back(object);
+
+    rf::render_next::SoftwareRenderBackend backend(renderer);
+    rf::render_next::RenderPipeline pipeline;
+
+    pipeline.render(
+        scene,
+        backend
     );
 
     SDL_SetRenderClipRect(
