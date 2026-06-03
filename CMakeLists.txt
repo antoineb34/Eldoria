@@ -19,8 +19,10 @@ find_package(BZip2 REQUIRED)
 add_subdirectory(src/core)
 add_subdirectory(src/platform)
 add_subdirectory(src/render)
-add_subdirectory(src/ui)
 add_subdirectory(src/apps/tool)
+add_subdirectory(src/ui)
+add_subdirectory(src/apps/archive_probe)
+add_subdirectory(src/apps/explorer)
 
 # Later:
 # add_subdirectory(src/apps/client)

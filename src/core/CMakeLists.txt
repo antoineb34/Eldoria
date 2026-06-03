@@ -3,6 +3,8 @@ add_library(core STATIC
     compression/Compression.cpp
 
     cache/Cache.cpp
+    cache/versionlist/VersionListReader.cpp
+    cache/ArchiveReader.cpp
 
     assets/model/ModelLoader.cpp
     assets/model/ModelFileReader.cpp
