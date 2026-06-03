@@ -1,8 +1,166 @@
+
+==================== src/render_next/pipeline/FaceAssembler.cpp ====================
+#include "FaceAssembler.h"
+
+#include <algorithm>
+
+namespace rf::render_next {
+
+namespace {
+
+bool isValidFace(
+    const rf::model::Face& face,
+    const ProjectedMesh& mesh
+) {
+    return
+        face.a >= 0 &&
+        face.b >= 0 &&
+        face.c >= 0 &&
+        face.a < static_cast<int>(mesh.vertices.size()) &&
+        face.b < static_cast<int>(mesh.vertices.size()) &&
+        face.c < static_cast<int>(mesh.vertices.size());
+}
+
+bool hasValidProjectedVertices(
+    const rf::model::Face& face,
+    const ProjectedMesh& mesh
+) {
+    return
+        mesh.vertices[face.a].valid &&
+        mesh.vertices[face.b].valid &&
+        mesh.vertices[face.c].valid;
+}
+
+RenderPacket makePacket(
+    int objectIndex,
+    int faceIndex,
+    const rf::model::Face& face,
+    const ProjectedMesh& mesh
+) {
+    const float z0 = mesh.vertices[face.a].screen.z;
+    const float z1 = mesh.vertices[face.b].screen.z;
+    const float z2 = mesh.vertices[face.c].screen.z;
+
+    return RenderPacket {
+        objectIndex,
+        faceIndex,
+
+        face.a,
+        face.b,
+        face.c,
+
+        (z0 + z1 + z2) / 3.0f,
+        std::min({ z0, z1, z2 }),
+        std::max({ z0, z1, z2 }),
+
+        face.color,
+        face.alpha,
+        face.renderType,
+        face.priority,
+
+        face.texturePointer,
+        face.textureUVMappingIndex,
+
+        true
+    };
+}
+
+}
+
+RenderQueue FaceAssembler::assemble(
+    int objectIndex,
+    const RenderObject& object,
+    const ProjectedMesh& mesh
+) const {
+    RenderQueue queue;
+
+    if (object.model == nullptr) {
+        return queue;
+    }
+
+    queue.packets.reserve(object.model->faces.size());
+
+    for (int faceIndex = 0;
+         faceIndex < static_cast<int>(object.model->faces.size());
+         faceIndex++) {
+        const rf::model::Face& face =
+            object.model->faces[faceIndex];
+
+        if (!isValidFace(face, mesh)) {
+            continue;
+        }
+
+        if (!hasValidProjectedVertices(face, mesh)) {
+            continue;
+        }
+
+        queue.packets.push_back(
+            makePacket(
+                objectIndex,
+                faceIndex,
+                face,
+                mesh
+            )
+        );
+    }
+
+    return queue;
+}
+
+}
+
+==================== src/render_next/pipeline/FaceAssembler.h ====================
+#pragma once
+
+#include "../geometry/ProjectedMesh.h"
+#include "../scene/RenderObject.h"
+#include "RenderQueue.h"
+
+namespace rf::render_next {
+
+class FaceAssembler {
+public:
+    RenderQueue assemble(
+        int objectIndex,
+        const RenderObject& object,
+        const ProjectedMesh& mesh
+    ) const;
+};
+
+}
+
+==================== src/render_next/material/MaterialResolver.cpp ====================
+#include "MaterialResolver.h"
+
+namespace rf::render_next {
+
+}
+
+==================== src/render_next/material/MaterialResolver.h ====================
+
+==================== src/render_next/material/Material.h ====================
+#pragma once
+
+#include <cstdint>
+
+namespace rf::render_next {
+
+struct Material {
+    uint8_t r = 255;
+    uint8_t g = 255;
+    uint8_t b = 255;
+    uint8_t a = 255;
+
+    bool textured = false;
+};
+
+}
+
+==================== src/render_next/backend/software/TriangleRasterizer.cpp ====================
 #include "TriangleRasterizer.h"
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 
 #include "../../material/TextureSampler.h"
 
@@ -134,15 +292,6 @@ void TriangleRasterizer::drawTexturedTriangle(
         return;
     }
 
-    float minUSeen = 999999.0f;
-    float maxUSeen = -999999.0f;
-    float minVSeen = 999999.0f;
-    float maxVSeen = -999999.0f;
-
-    int insidePixels = 0;
-    int sampledPixels = 0;
-    int outOfRangePixels = 0;
-
     for (int y = static_cast<int>(minY); y <= static_cast<int>(maxY); y++) {
         for (int x = static_cast<int>(minX); x <= static_cast<int>(maxX); x++) {
             const float px = static_cast<float>(x) + 0.5f;
@@ -172,8 +321,6 @@ void TriangleRasterizer::drawTexturedTriangle(
             if (!inside) {
                 continue;
             }
-
-            insidePixels++;
 
             const float normalizedW0 = w0 / area;
             const float normalizedW1 = w1 / area;
@@ -214,20 +361,6 @@ void TriangleRasterizer::drawTexturedTriangle(
                 (projectedV * uu - projectedU * uv) /
                 determinant;
 
-            minUSeen = std::min(minUSeen, u);
-            maxUSeen = std::max(maxUSeen, u);
-            minVSeen = std::min(minVSeen, v);
-            maxVSeen = std::max(maxVSeen, v);
-
-            if (
-                u < 0.0f ||
-                u > 1.0f ||
-                v < 0.0f ||
-                v > 1.0f
-            ) {
-                outOfRangePixels++;
-            }
-
             const rf::texture::RgbaColor* pixel =
                 sampler.sample(
                     texture,
@@ -238,8 +371,6 @@ void TriangleRasterizer::drawTexturedTriangle(
             if (pixel == nullptr) {
                 continue;
             }
-
-            sampledPixels++;
 
             if (
                 pixel->a == 0 ||
@@ -274,20 +405,6 @@ void TriangleRasterizer::drawTexturedTriangle(
                 }
             );
         }
-    }
-
-    if (
-        insidePixels > 0 &&
-        outOfRangePixels > insidePixels / 10
-    ) {
-        std::cout
-            << "TRI UV RANGE "
-            << "u=" << minUSeen << ".." << maxUSeen
-            << " v=" << minVSeen << ".." << maxVSeen
-            << " inside=" << insidePixels
-            << " sampled=" << sampledPixels
-            << " outOfRange=" << outOfRangePixels
-            << std::endl;
     }
 }
 
@@ -424,5 +541,121 @@ void TriangleRasterizer::drawSolidTriangle(
         }
     }
 }
+
+}
+
+==================== src/render_next/backend/software/TriangleRasterizer.h ====================
+#pragma once
+
+#include "../../../render/software/camera/Projection.h"
+#include "Framebuffer.h"
+#include "../../../core/assets/texture/TextureAsset.h"
+#include "../../material/TextureSampler.h"
+
+namespace rf::render_next {
+
+class TriangleRasterizer {
+public:
+    void drawSolidTriangle(
+        Framebuffer& framebuffer,
+
+        const rf::render::ScreenPoint& a,
+        const rf::render::ScreenPoint& b,
+        const rf::render::ScreenPoint& c,
+
+        ColorPixel color
+    ) const;
+
+    void drawTexturedTriangle(
+        Framebuffer& framebuffer,
+
+        const rf::render::ScreenPoint& a,
+        const rf::render::ScreenPoint& b,
+        const rf::render::ScreenPoint& c,
+
+        const rf::render::Vec3& faceA,
+        const rf::render::Vec3& faceB,
+        const rf::render::Vec3& faceC,
+
+        const rf::render::Vec3& textureOrigin,
+        const rf::render::Vec3& textureU,
+        const rf::render::Vec3& textureV,
+
+        const rf::texture::TextureAsset& texture
+    ) const;
+};
+
+}
+
+==================== src/render_next/material/TextureSampler.cpp ====================
+#include "TextureSampler.h"
+
+#include <algorithm>
+
+namespace rf::render_next {
+
+const rf::texture::RgbaColor* TextureSampler::sample(
+    const rf::texture::TextureAsset& texture,
+    float u,
+    float v
+) const {
+    const int width =
+        texture.metadata.canvasWidth;
+
+    const int height =
+        texture.metadata.canvasHeight;
+
+    if (
+        width <= 0 ||
+        height <= 0 ||
+        texture.pixels.empty()
+    ) {
+        return nullptr;
+    }
+
+    u = std::clamp(u, 0.0f, 1.0f);
+    v = std::clamp(v, 0.0f, 1.0f);
+
+    const int tx =
+        static_cast<int>(
+            u * static_cast<float>(width - 1)
+        );
+
+    const int ty =
+        static_cast<int>(
+            v * static_cast<float>(height - 1)
+        );
+
+    const int pixelIndex =
+        ty * width + tx;
+
+    if (
+        pixelIndex < 0 ||
+        pixelIndex >= static_cast<int>(texture.pixels.size())
+    ) {
+        return nullptr;
+    }
+
+    return &texture.pixels[pixelIndex];
+}
+
+}
+
+==================== src/render_next/material/TextureSampler.h ====================
+#pragma once
+
+#include "../../core/assets/texture/TextureAsset.h"
+#include "../backend/software/ColorBuffer.h"
+
+namespace rf::render_next {
+
+class TextureSampler {
+public:
+    const rf::texture::RgbaColor* sample(
+        const rf::texture::TextureAsset& texture,
+        float u,
+        float v
+    ) const;
+};
 
 }
