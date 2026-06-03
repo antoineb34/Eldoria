@@ -1,6 +1,8 @@
 #include "TextureSampler.h"
 
 #include <algorithm>
+#include <cmath>
+
 
 namespace rf::render_next {
 
@@ -24,7 +26,7 @@ const rf::texture::RgbaColor* TextureSampler::sample(
     }
 
     u = std::clamp(u, 0.0f, 1.0f);
-    v = std::clamp(v, 0.0f, 1.0f);
+    v = v - std::floor(v);
 
     const int tx =
         static_cast<int>(
