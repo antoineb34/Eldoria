@@ -113,24 +113,6 @@ void SoftwareRenderBackend::drawObject(
     const ProjectedMesh& mesh,
     const RenderQueue& queue
 ) {
-    int texturedPackets = 0;
-
-    int type0 = 0;
-    int type1 = 0;
-    int type2 = 0;
-    int type3 = 0;
-    int otherTypes = 0;
-
-    const auto rawVec = [](
-        const rf::model::Vertex& vertex
-    ) -> rf::render::Vec3 {
-        return {
-            vertex.x,
-            vertex.y,
-            vertex.z
-        };
-    };
-
     for (const RenderPacket& packet : queue.packets) {
         rf::render::ScreenPoint a =
             mesh.vertices[packet.a].screen;
@@ -141,57 +123,30 @@ void SoftwareRenderBackend::drawObject(
         rf::render::ScreenPoint c =
             mesh.vertices[packet.c].screen;
 
-        switch (packet.renderType) {
-            case 0: type0++; break;
-            case 1: type1++; break;
-            case 2: type2++; break;
-            case 3: type3++; break;
-            default: otherTypes++; break;
-        }
-
         if (isTexturedPacket(packet, object)) {
-            texturedPackets++;
-
             const rf::model::TextureUVMapping& mapping =
                 object.model->textureUVMappings[packet.textureUVMappingIndex];
-
-            SDL_Log(
-                "TEXTURED face=%d color=%d texPtr=%d uvMap=%d renderType=%d priority=%d "
-                "verts=(%d,%d,%d) mapping=(%d,%d,%d)",
-                packet.faceIndex,
-                packet.color,
-                packet.texturePointer,
-                packet.textureUVMappingIndex,
-                packet.renderType,
-                packet.priority,
-                packet.a,
-                packet.b,
-                packet.c,
-                mapping.originVertex,
-                mapping.uVertex,
-                mapping.vVertex
-            );
 
             const rf::texture::TextureAsset& texture =
                 object.model->textures.at(packet.color);
 
-            const rf::render::Vec3 faceA =
-                rawVec(object.model->vertices[packet.a]);
+            const rf::render::Vec3& faceA =
+                mesh.vertices[packet.a].world;
 
-            const rf::render::Vec3 faceB =
-                rawVec(object.model->vertices[packet.b]);
+            const rf::render::Vec3& faceB =
+                mesh.vertices[packet.b].world;
 
-            const rf::render::Vec3 faceC =
-                rawVec(object.model->vertices[packet.c]);
+            const rf::render::Vec3& faceC =
+                mesh.vertices[packet.c].world;
 
-            const rf::render::Vec3 textureOrigin =
-                rawVec(object.model->vertices[mapping.originVertex]);
+            const rf::render::Vec3& textureOrigin =
+                mesh.vertices[mapping.originVertex].world;
 
-            const rf::render::Vec3 textureU =
-                rawVec(object.model->vertices[mapping.uVertex]);
+            const rf::render::Vec3& textureU =
+                mesh.vertices[mapping.uVertex].world;
 
-            const rf::render::Vec3 textureV =
-                rawVec(object.model->vertices[mapping.vVertex]);
+            const rf::render::Vec3& textureV =
+                mesh.vertices[mapping.vVertex].world;
 
             rasterizer_.drawTexturedTriangle(
                 framebuffer_,
@@ -218,17 +173,6 @@ void SoftwareRenderBackend::drawObject(
             colorFromPacket(packet)
         );
     }
-
-    SDL_Log(
-        "render types: 0=%d 1=%d 2=%d 3=%d other=%d textured=%d total=%zu",
-        type0,
-        type1,
-        type2,
-        type3,
-        otherTypes,
-        texturedPackets,
-        queue.packets.size()
-    );
 }
 
 void SoftwareRenderBackend::endFrame() {
