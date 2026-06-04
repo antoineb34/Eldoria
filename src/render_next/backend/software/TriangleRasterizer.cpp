@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 
 #include "../../material/TextureSampler.h"
 
@@ -134,15 +133,6 @@ void TriangleRasterizer::drawTexturedTriangle(
         return;
     }
 
-    float minUSeen = 999999.0f;
-    float maxUSeen = -999999.0f;
-    float minVSeen = 999999.0f;
-    float maxVSeen = -999999.0f;
-
-    int insidePixels = 0;
-    int sampledPixels = 0;
-    int outOfRangePixels = 0;
-
     for (int y = static_cast<int>(minY); y <= static_cast<int>(maxY); y++) {
         for (int x = static_cast<int>(minX); x <= static_cast<int>(maxX); x++) {
             const float px = static_cast<float>(x) + 0.5f;
@@ -172,8 +162,6 @@ void TriangleRasterizer::drawTexturedTriangle(
             if (!inside) {
                 continue;
             }
-
-            insidePixels++;
 
             const float normalizedW0 = w0 / area;
             const float normalizedW1 = w1 / area;
@@ -214,20 +202,6 @@ void TriangleRasterizer::drawTexturedTriangle(
                 (projectedV * uu - projectedU * uv) /
                 determinant;
 
-            minUSeen = std::min(minUSeen, u);
-            maxUSeen = std::max(maxUSeen, u);
-            minVSeen = std::min(minVSeen, v);
-            maxVSeen = std::max(maxVSeen, v);
-
-            if (
-                u < 0.0f ||
-                u > 1.0f ||
-                v < 0.0f ||
-                v > 1.0f
-            ) {
-                outOfRangePixels++;
-            }
-
             const rf::texture::RgbaColor* pixel =
                 sampler.sample(
                     texture,
@@ -238,8 +212,6 @@ void TriangleRasterizer::drawTexturedTriangle(
             if (pixel == nullptr) {
                 continue;
             }
-
-            sampledPixels++;
 
             if (
                 pixel->a == 0 ||
@@ -274,20 +246,6 @@ void TriangleRasterizer::drawTexturedTriangle(
                 }
             );
         }
-    }
-
-    if (
-        insidePixels > 0 &&
-        outOfRangePixels > insidePixels / 10
-    ) {
-        std::cout
-            << "TRI UV RANGE "
-            << "u=" << minUSeen << ".." << maxUSeen
-            << " v=" << minVSeen << ".." << maxVSeen
-            << " inside=" << insidePixels
-            << " sampled=" << sampledPixels
-            << " outOfRange=" << outOfRangePixels
-            << std::endl;
     }
 }
 
