@@ -10,6 +10,8 @@
 #include "../software/camera/Camera.h"
 
 #include "RenderOptions.h"
+#include "RenderMeshBuilder.h"
+#include "../order/FaceOrderer.h"
 
 namespace rf::render {
 

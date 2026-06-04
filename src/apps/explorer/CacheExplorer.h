@@ -46,6 +46,7 @@ private:
     void handleSelectionChanged();
 
     std::string lastSelectedLabel_;
+    void findNextAlphaModel();
 };
 
 }

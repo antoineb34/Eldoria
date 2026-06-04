@@ -12,6 +12,7 @@
 
 #include "../../render/software/camera/Camera.h"
 #include "../../render/model/RenderOptions.h"
+#include "../../render/model/ModelTransform.h"
 
 namespace rf::explorer {
 
@@ -28,6 +29,7 @@ struct CacheExplorerState {
 
     CacheSelection selection;
     CacheTreeNode rootNode;
+    bool debugHighlightTexturedFaces = false;
 
     std::optional<rf::model::ModelAsset> activeModel;
     std::optional<rf::texture::TextureAsset> activeTexture;

@@ -3,6 +3,62 @@
 
 namespace rf::explorer {
 
+    namespace {
+
+    bool hasAlphaFaces(
+        const rf::model::ModelAsset& model
+    ) {
+        for (const rf::model::Face& face : model.faces) {
+            if (face.alpha > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    }
+
+    void CacheExplorer::findNextAlphaModel() {
+        int startId = 0;
+
+        if (
+            state_.activeModel &&
+            state_.selection.fileId >= 0
+        ) {
+            startId = state_.selection.fileId + 1;
+        }
+
+        constexpr int MaxModelSearchId = 20000;
+
+        for (int modelId = startId; modelId < MaxModelSearchId; modelId++) {
+            std::optional<rf::model::ModelAsset> model =
+                modelLoader_.load(
+                    static_cast<std::uint32_t>(modelId)
+                );
+
+            if (!model) {
+                continue;
+            }
+
+            if (!hasAlphaFaces(*model)) {
+                continue;
+            }
+
+            state_.activeModel = std::move(model);
+            state_.activeTexture.reset();
+
+            state_.selection.type = CacheTreeNodeType::Model;
+            state_.selection.fileId = modelId;
+            state_.selection.label =
+                "Model " + std::to_string(modelId);
+
+            lastSelectedLabel_ = state_.selection.label;
+
+            return;
+        }
+    }
+
     CacheExplorer::CacheExplorer()
         : textureLoader_(cache_),
           modelLoader_(cache_, textureLoader_) {
@@ -146,6 +202,10 @@ void CacheExplorer::renderUi() {
     );
 
     ImGui::Separator();
+
+    if (ImGui::Button("Find alpha model")) {
+        findNextAlphaModel();
+    }
 
     const float treeWidth = 300.0f;
     const float inspectorWidth = 320.0f;
