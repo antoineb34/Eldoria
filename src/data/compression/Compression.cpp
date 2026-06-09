@@ -103,18 +103,6 @@ std::vector<uint8_t> decompressBzip2(
     unsigned int outputSize =
         static_cast<unsigned int>(output.size());
 
-    printf(
-        "BZIP input: %02x %02x %02x %02x %02x %02x | input=%zu expected=%zu\n",
-        input[0],
-        input[1],
-        input[2],
-        input[3],
-        input[4],
-        input[5],
-        input.size(),
-        expectedSize
-    );
-
     int result = BZ2_bzBuffToBuffDecompress(
         reinterpret_cast<char*>(output.data()),
         &outputSize,
@@ -127,7 +115,6 @@ std::vector<uint8_t> decompressBzip2(
     );
 
     if (result != BZ_OK) {
-        printf("BZIP failed result=%d\n", result);
         return {};
     }
 

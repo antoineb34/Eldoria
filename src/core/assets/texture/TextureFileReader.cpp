@@ -1,6 +1,6 @@
 #include "TextureFileReader.h"
 
-#include "../../io/ByteBuffer.h"
+#include "binary/ByteBuffer.h"
 
 namespace rf::texture {
 

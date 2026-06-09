@@ -1,4 +1,7 @@
 add_library(eldoria_data STATIC
+    binary/ByteBuffer.cpp
+    compression/Compression.cpp
+
     cache/Cache.cpp
     cache/Archive.cpp
     cache/ArchiveReader.cpp
@@ -13,4 +16,5 @@ target_include_directories(eldoria_data PUBLIC
 
 target_link_libraries(eldoria_data PUBLIC
     BZip2::BZip2
+    ZLIB::ZLIB
 )

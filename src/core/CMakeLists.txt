@@ -1,7 +1,4 @@
 add_library(core STATIC
-    io/ByteBuffer.cpp
-    compression/Compression.cpp
-
     assets/model/ModelLoader.cpp
     assets/model/ModelFileReader.cpp
     assets/model/ModelBuilder.cpp
@@ -22,6 +19,4 @@ target_include_directories(core PUBLIC
 
 target_link_libraries(core PUBLIC
     Eldoria::Data
-    BZip2::BZip2
-    ZLIB::ZLIB
 )
