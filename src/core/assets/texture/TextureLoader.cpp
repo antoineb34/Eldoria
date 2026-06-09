@@ -1,6 +1,6 @@
 #include "TextureLoader.h"
 
-#include "../../cache/ArchiveReader.h"
+#include "cache/ArchiveReader.h"
 
 namespace rf::texture {
 
