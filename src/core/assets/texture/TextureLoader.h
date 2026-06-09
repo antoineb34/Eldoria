@@ -9,7 +9,7 @@
 #include "TextureFile.h"
 #include "TextureFileReader.h"
 
-#include "../../cache/Cache.h"
+#include "cache/Cache.h"
 
 namespace rf::texture {
 
