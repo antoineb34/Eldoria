@@ -112,6 +112,7 @@ Detailed project planning lives in `docs/`.
 - [`docs/elforge.md`](docs/elforge.md) — ElForge roadmap
 - [`docs/elclient.md`](docs/elclient.md) — ElClient roadmap
 - [`docs/elserver.md`](docs/elserver.md) — ElServer roadmap
+- [`docs/development.md`](docs/development.md) — development workflow, branch strategy, and contribution process
 
 ---
 
@@ -128,6 +129,8 @@ The current focus is to turn the architecture into a working multi-application f
 5. Map and world foundation
 
 Small implementation tasks are tracked as GitHub Issues.
+
+Changes should be made through feature branches created from `dev`, then merged back into `dev` through pull requests.
 
 ---
 
