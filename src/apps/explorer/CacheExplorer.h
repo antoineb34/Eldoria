@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "../../core/cache/Cache.h"
+#include "cache/Cache.h"
 
 #include "CacheExplorerState.h"
 #include "CacheTreeBuilder.h"
@@ -11,7 +11,6 @@
 #include "panels/CacheInspectorPanel.h"
 #include "panels/CacheViewportPanel.h"
 
-#include "../../core/cache/Cache.h"
 #include "../../core/assets/texture/TextureLoader.h"
 #include "../../core/assets/model/ModelLoader.h"
 
