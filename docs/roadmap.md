@@ -82,6 +82,34 @@ Each phase should produce something:
 
 If a phase only produces abstract architecture, it should be broken into a smaller milestone.
 
+### Migration Is Not Rewriting
+
+Eldoria is not a pure greenfield project.
+
+The existing RuneForge-era codebase contains useful systems that should be migrated into the new architecture where appropriate.
+
+Working systems should not be rewritten just because the ownership model changed.
+
+Prefer:
+
+```text
+reuse useful code
+    ↓
+move it into the right module/app
+    ↓
+adjust names, includes, CMake, and boundaries
+    ↓
+verify behavior still works
+```
+
+Avoid:
+
+```text
+delete working systems
+    ↓
+rebuild from memory
+```
+
 ### Build Vertical Slices
 
 Eldoria should not be built by finishing one entire domain before touching the next.
@@ -135,7 +163,7 @@ Examples:
 - `net` is proven by the first ElClient/ElServer login loop.
 - `game` is proven by server-authoritative gameplay systems.
 
-### Issues Come From App Documents
+### Issues Come From App Documents and Migration Audits
 
 This roadmap defines major product order.
 
@@ -144,8 +172,9 @@ GitHub Issues should be generated mainly from:
 - `elforge.md`
 - `elclient.md`
 - `elserver.md`
+- migration audit findings
 
-Those documents contain feature areas and issue candidates.
+Those documents and audits contain feature areas and issue candidates.
 
 ---
 
@@ -179,6 +208,10 @@ GitHub Issues / Project
 
 ## Phase 0 — Architecture Baseline
 
+### Status
+
+Complete.
+
 ### Goal
 
 Define the long-term structure of Eldoria.
@@ -193,7 +226,6 @@ Define the long-term structure of Eldoria.
 - Project applications are named.
 - Shared modules are defined.
 - Source architecture is documented.
-- UI decision is documented.
 - Roadmap direction is established.
 - App roadmap files are planned.
 
@@ -204,6 +236,10 @@ The project has a clear foundation and future code has an obvious place to live.
 ---
 
 ## Phase 1 — App Skeletons
+
+### Status
+
+Complete.
 
 ### Goal
 
@@ -230,11 +266,108 @@ Eldoria exists as a multi-application workspace.
 
 ---
 
-## Phase 2 — ElForge Cache and Model Foundation
+## Phase 2 — RuneForge Migration Audit
+
+### Status
+
+Complete for initial audit.
 
 ### Goal
 
-Create the first useful inspection workflow.
+Understand the existing RuneForge-era codebase before moving systems into the Eldoria architecture.
+
+### Main Focus
+
+- Existing app targets
+- Existing shared systems
+- Reusable code
+- Temporary code
+- Obsolete code
+- Migration order
+
+### Success Criteria
+
+- Existing source tree is summarized.
+- Reusable RuneForge subsystems are mapped to Eldoria homes.
+- Obsolete or temporary systems are identified.
+- The first ElForge/cache migration backlog is created.
+- The roadmap is updated to reflect the migration reality.
+
+### Key Decisions
+
+- Eldoria is a migration project, not a greenfield rewrite.
+- `src/apps/explorer` is the primary ElForge migration source.
+- `src/apps/tool` is an older reference and should be reused selectively only.
+- `src/core/cache` should migrate to `src/data/cache`.
+- `src/core/assets/model` should migrate to `src/data/model`.
+- `src/core/assets/texture` should migrate to `src/data/texture`.
+- `render_next` is likely the future renderer path.
+- old `render` is legacy/reference until useful pieces are preserved.
+- `src/ui` should not remain shared only for a theme/backend glue; UI ownership should be decided during ElForge migration.
+
+### Proves
+
+The project knows what it is migrating before moving code around.
+
+---
+
+## Phase 3 — ElForge Cache Foundation
+
+### Goal
+
+Make ElForge useful by migrating the existing cache foundation into the new architecture.
+
+### Main App
+
+- ElForge
+
+### Main Domains
+
+- `data`
+- `platform`
+- ElForge app UI/panels
+
+### Main Migration Sources
+
+- `src/core/io`
+- `src/core/compression`
+- `src/core/cache`
+- `src/apps/explorer`
+- selected pieces of `src/apps/tool` only if better or missing from explorer
+
+### Success Criteria
+
+- Binary reading and compression helpers have a clear `data` home.
+- Cache reading lives under `src/data/cache`.
+- ElForge can browse cache indexes/files using migrated cache code.
+- ElForge has a basic cache details/metadata panel.
+- ElForge owns app-specific panels instead of hiding them in shared modules.
+- The workflow begins replacing manual probe/debug workflows like `archive_probe`.
+
+### Initial Backlog
+
+- #62 — Create `data/cache` module from existing `core/cache` code.
+- #63 — Move binary reading and compression support into `data`.
+- #64 — Migrate explorer cache browser shell into ElForge.
+- #65 — Add ElForge cache file details panel.
+- #66 — Decide ElForge UI ownership.
+- #67 — Plan renderer path consolidation around `render_next`.
+
+### Related Document
+
+- `elforge.md`
+
+### Proves
+
+The first useful ElForge workflow exists and RuneForge code can be migrated without starting over.
+
+---
+
+## Phase 4 — ElForge Model and Render Foundation
+
+### Goal
+
+Create the first real data-to-render validation path.
 
 ### Main App
 
@@ -246,14 +379,21 @@ Create the first useful inspection workflow.
 - `render`
 - `platform`
 
+### Main Migration Sources
+
+- `src/core/assets/model`
+- `src/render_next`
+- selected old `src/render` pieces only if still useful/correct
+- selected `src/apps/explorer` viewport/model inspection code
+
 ### Success Criteria
 
-- ElForge can open a cache.
-- Cache contents can be browsed.
-- A known model can be loaded.
-- A known model can be inspected.
-- A known model can be rendered.
+- A known model can be loaded through `data/model`.
+- A known model can be inspected in ElForge.
+- A known model can be rendered through the chosen render path.
 - Basic model viewport controls exist.
+- `render_next` has a clear migration/consolidation path into final `src/render` ownership.
+- The old renderer path is no longer treated as equal to the future path unless audit proves otherwise.
 
 ### Related Document
 
@@ -261,11 +401,11 @@ Create the first useful inspection workflow.
 
 ### Proves
 
-The first real data-to-render validation path works.
+Eldoria can move from raw cache browsing to visual asset inspection.
 
 ---
 
-## Phase 3 — ElClient Shell
+## Phase 5 — ElClient Shell
 
 ### Goal
 
@@ -299,7 +439,7 @@ ElClient exists as a real application before full world or gameplay systems exis
 
 ---
 
-## Phase 4 — Tiny ElServer and Login Loop
+## Phase 6 — Tiny ElServer and Login Loop
 
 ### Goal
 
@@ -336,7 +476,7 @@ The client/server boundary works before the world becomes complicated.
 
 ---
 
-## Phase 5 — Texture and Material Foundation
+## Phase 7 — Texture and Material Foundation
 
 ### Goal
 
@@ -351,9 +491,14 @@ Expand visual asset support.
 - `data`
 - `render`
 
+### Main Migration Sources
+
+- `src/core/assets/texture`
+- `render_next` material/texture sampling code
+
 ### Success Criteria
 
-- Textures can be loaded.
+- Textures can be loaded through `data/texture`.
 - Textures can be inspected.
 - Materials exist.
 - Model viewer can use texture/material data where available.
@@ -369,7 +514,7 @@ Eldoria can handle more than untextured geometry.
 
 ---
 
-## Phase 6 — Map and World Inspection
+## Phase 8 — Map and World Inspection
 
 ### Goal
 
@@ -403,7 +548,7 @@ Eldoria can understand and inspect the world, not just individual assets.
 
 ---
 
-## Phase 7 — Local World in ElClient
+## Phase 9 — Local World in ElClient
 
 ### Goal
 
@@ -439,7 +584,7 @@ ElClient can present a real world before server-authoritative gameplay exists.
 
 ---
 
-## Phase 8 — Local Player and Animation
+## Phase 10 — Local Player and Animation
 
 ### Goal
 
@@ -478,7 +623,7 @@ The client can represent a controllable, animated player in a world.
 
 ---
 
-## Phase 9 — Server-Authoritative Movement
+## Phase 11 — Server-Authoritative Movement
 
 ### Goal
 
@@ -515,7 +660,7 @@ The first real online gameplay loop works.
 
 ---
 
-## Phase 10 — World Synchronization
+## Phase 12 — World Synchronization
 
 ### Goal
 
@@ -553,7 +698,7 @@ Eldoria behaves like a real multiplayer world foundation.
 
 ---
 
-## Phase 11 — Interfaces, Sprites, and Client Game UI
+## Phase 13 — Interfaces, Sprites, and Client Game UI
 
 ### Goal
 
@@ -592,7 +737,7 @@ ElClient can become a real RuneScape-style game client, not only a world rendere
 
 ---
 
-## Phase 12 — Core Server Gameplay
+## Phase 14 — Core Server Gameplay
 
 ### Goal
 
@@ -644,7 +789,7 @@ Eldoria is becoming an actual game, not only a connected world viewer.
 
 ---
 
-## Phase 13 — Content Systems
+## Phase 15 — Content Systems
 
 ### Goal
 
@@ -684,7 +829,7 @@ Eldoria can support real authored content instead of hardcoded tests.
 
 ---
 
-## Phase 14 — ElForge Editing and Export Pipeline
+## Phase 16 — ElForge Editing and Export Pipeline
 
 ### Goal
 
@@ -720,7 +865,7 @@ Eldoria has a real custom content pipeline.
 
 ---
 
-## Phase 15 — Custom Eldoria Content
+## Phase 17 — Custom Eldoria Content
 
 ### Goal
 
@@ -754,7 +899,7 @@ Eldoria is no longer just a 317 reproduction. It can become its own game.
 
 ---
 
-## Phase 16 — Administration, Security, and Operations
+## Phase 18 — Administration, Security, and Operations
 
 ### Goal
 
@@ -791,7 +936,7 @@ The server is moving toward real private-server infrastructure.
 
 ---
 
-## Phase 17 — Production Readiness
+## Phase 19 — Production Readiness
 
 ### Goal
 
@@ -827,7 +972,7 @@ Eldoria is moving from prototype ecosystem to serious product.
 
 ---
 
-## Phase 18 — Polish, Optimization, and Growth
+## Phase 20 — Polish, Optimization, and Growth
 
 ### Goal
 
@@ -862,7 +1007,11 @@ Architecture baseline
     ↓
 App skeletons
     ↓
-ElForge cache/model foundation
+RuneForge migration audit
+    ↓
+ElForge cache foundation
+    ↓
+ElForge model/render foundation
     ↓
 ElClient shell
     ↓
@@ -908,13 +1057,14 @@ Small tasks should become GitHub Issues generated from:
 - `elforge.md`
 - `elclient.md`
 - `elserver.md`
+- migration audit findings
 
 Recommended hierarchy:
 
 ```text
 Roadmap Phase
     ↓
-App Roadmap Milestone
+App Roadmap Milestone or Migration Audit
         ↓
 Feature Area
             ↓
@@ -924,13 +1074,13 @@ GitHub Issue
 Example:
 
 ```text
-Phase 7 — Local World in ElClient
+Phase 3 — ElForge Cache Foundation
     ↓
-ElClient Milestone 7 — Local Map Region
+Migration Audit Finding: core/cache belongs in data/cache
         ↓
-Feature Area: Terrain Conversion
+Feature Area: Cache Access
             ↓
-Issue: Build terrain render geometry
+Issue: Create data/cache module from existing core cache code
 ```
 
 Recommended GitHub Project columns:
@@ -964,7 +1114,7 @@ Eldoria can be considered complete enough for serious public/player testing when
 
 ## Roadmap Status
 
-This document represents the current Eldoria master roadmap baseline.
+This document represents the current Eldoria master roadmap baseline after the initial RuneForge migration audit.
 
 It is expected to evolve as implementation reveals new requirements.
 
