@@ -1,14 +1,180 @@
 #include "ElForgeApplication.h"
 
 #include <iostream>
+#include <SDL3/SDL.h>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_sdlrenderer3.h>
+
+#include "../../platform/sdl/SdlContext.h"
+#include "../../ui/imgui/ImGuiTheme.h"
 
 namespace eldoria::apps::elforge {
 
+ElForgeApplication::ElForgeApplication()
+    : textureLoader_(cache_),
+      modelLoader_(cache_, textureLoader_) {
+}
+
+ElForgeApplication::~ElForgeApplication() {
+    shutdown();
+}
+
 int ElForgeApplication::run() {
-    std::cout << "ElForge starting..." << std::endl;
-    std::cout << "ElForge shutdown." << std::endl;
+    if (!initialize()) {
+        return 1;
+    }
+
+    running_ = true;
+
+    while (running_) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            handleEvent(event);
+        }
+
+        update();
+        render();
+
+        SDL_Delay(16);
+    }
 
     return 0;
+}
+
+bool ElForgeApplication::initialize() {
+    constexpr int WINDOW_WIDTH = 1280;
+    constexpr int WINDOW_HEIGHT = 720;
+
+    sdl_ = std::make_unique<rf::platform::SdlContext>(
+        "ElForge",
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT
+    );
+
+    if (!sdl_->window() || !sdl_->renderer()) {
+        return false;
+    }
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+    // Use a default font or the one from explorer
+    io.Fonts->AddFontFromFileTTF(
+        "/usr/share/fonts/jetbrains-mono-fonts/JetBrainsMono-Regular.otf",
+        18.0f
+    );
+
+    ImGui::StyleColorsDark();
+    rf::ui::applyImGuiTheme();
+
+    ImGui_ImplSDL3_InitForSDLRenderer(sdl_->window(), sdl_->renderer());
+    ImGui_ImplSDLRenderer3_Init(sdl_->renderer());
+
+    // Initialize state
+    state_.camera.angleX = 0.0f;
+    state_.camera.angleY = 0.0f;
+    state_.camera.distance = 500.0f;
+    state_.camera.fov = 1.04719755f;
+    state_.camera.nearPlane = 1.0f;
+    state_.camera.farPlane = 10000.0f;
+
+    state_.modelTransform.scale = 1.0f;
+    state_.renderOptions.fillTriangles = true;
+    state_.renderOptions.useAlpha = true;
+
+    if (cache_.isValid()) {
+        state_.rootNode = treeBuilder_.build(cache_);
+    }
+
+    return true;
+}
+
+void ElForgeApplication::shutdown() {
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+}
+
+void ElForgeApplication::handleEvent(const SDL_Event& event) {
+    ImGui_ImplSDL3_ProcessEvent(&event);
+
+    if (event.type == SDL_EVENT_QUIT) {
+        running_ = false;
+    }
+
+    if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
+        running_ = false;
+    }
+}
+
+void ElForgeApplication::update() {
+    if (state_.selection.label != lastSelectedLabel_) {
+        lastSelectedLabel_ = state_.selection.label;
+        handleSelectionChanged();
+    }
+}
+
+void ElForgeApplication::handleSelectionChanged() {
+    state_.activeModel.reset();
+    state_.activeTexture.reset();
+
+    if (state_.selection.type == CacheTreeNodeType::Model) {
+        if (state_.selection.fileId >= 0) {
+            state_.activeModel = modelLoader_.load(
+                static_cast<std::uint32_t>(state_.selection.fileId)
+            );
+        }
+    }
+}
+
+void ElForgeApplication::render() {
+    SDL_Renderer* renderer = sdl_->renderer();
+
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+
+    // Main layout
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+    ImGui::Begin("ElForgeShell", nullptr, windowFlags);
+
+    ImGui::TextUnformatted("ElForge - Eldoria Development Tool");
+    ImGui::Separator();
+
+    const float treeWidth = 300.0f;
+    const float inspectorWidth = 320.0f;
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const ImVec2 available = ImGui::GetContentRegionAvail();
+    const float height = available.y;
+
+    float viewportWidth = available.x - treeWidth - inspectorWidth - spacing * 2.0f;
+    if (viewportWidth < 100.0f) viewportWidth = 100.0f;
+
+    treePanel_.render(state_, treeWidth, height);
+    ImGui::SameLine();
+    viewportPanel_.render(state_, viewportWidth, height);
+    ImGui::SameLine();
+    inspectorPanel_.render(state_, inspectorWidth, height);
+
+    ImGui::End();
+
+    // Rendering
+    SDL_SetRenderDrawColor(renderer, 18, 20, 22, 255);
+    SDL_RenderClear(renderer);
+
+    ImGui::Render();
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
+
+    viewportPanel_.renderViewport(renderer, state_);
+
+    SDL_RenderPresent(renderer);
 }
 
 }
