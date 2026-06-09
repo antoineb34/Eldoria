@@ -2,7 +2,7 @@
 
 #include <limits>
 
-#include "../../compression/Compression.h"
+#include "compression/Compression.h"
 
 namespace rf::model {
 
