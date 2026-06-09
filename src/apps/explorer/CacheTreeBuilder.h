@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CacheTreeNode.h"
-#include "../../core/cache/Cache.h"
+#include "cache/Cache.h"
 
 namespace rf::explorer {
 
