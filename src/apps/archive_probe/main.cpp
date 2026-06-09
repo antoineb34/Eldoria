@@ -5,8 +5,8 @@
 #include <iostream>
 #include <vector>
 
-#include "../../core/cache/Cache.h"
-#include "../../core/cache/ArchiveHashes.h"
+#include "cache/Cache.h"
+#include "cache/ArchiveHashes.h"
 #include "../../core/compression/Compression.h"
 #include "../../core/io/ByteBuffer.h"
 
