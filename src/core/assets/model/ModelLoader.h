@@ -9,7 +9,7 @@
 #include "ModelBuilder.h"
 #include "ModelFileReader.h"
 
-#include "../../cache/Cache.h"
+#include "cache/Cache.h"
 #include "../texture/TextureLoader.h"
 
 namespace rf::model {
