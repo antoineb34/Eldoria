@@ -136,13 +136,49 @@ Changes should be made through feature branches created from `dev`, then merged 
 
 ## Build
 
-Build instructions will evolve as the multi-app workspace is implemented.
+The M1 workspace baseline is a multi-application CMake project.
 
-Current expected baseline:
+Configure from a clean build directory:
 
 ```bash
 cmake -B build
+```
+
+Build everything:
+
+```bash
 cmake --build build
 ```
 
-Requirements will be documented as the application skeletons and shared modules become stable.
+Build one application target:
+
+```bash
+cmake --build build --target elforge
+cmake --build build --target elclient
+cmake --build build --target elserver
+```
+
+Run the skeleton applications:
+
+```bash
+./build/bin/elforge
+./build/bin/elclient
+./build/bin/elserver
+```
+
+Expected skeleton output:
+
+```text
+ElForge starting...
+ElForge shutdown.
+
+ElClient starting...
+ElClient screen: startup
+ElClient shutdown.
+
+ElServer starting...
+ElServer run loop tick.
+ElServer shutdown.
+```
+
+These app skeletons are intentionally minimal. They exist to verify that the workspace can configure, build, launch, and exit cleanly before deeper systems are added.
