@@ -71,6 +71,46 @@ Issues do not need to wait for `dev` to merge into `main` before being closed.
 
 ---
 
+## CMake Workspace Rules
+
+The root `CMakeLists.txt` owns the workspace shape, not every source file.
+
+Use the helper functions in `cmake/EldoriaTargets.cmake` to register modules and applications.
+
+### Adding a shared module
+
+A shared module should live under `src/` and should own its own `CMakeLists.txt`.
+
+Example:
+
+```cmake
+eldoria_add_module(data src/data)
+```
+
+The module's source files should be listed inside `src/data/CMakeLists.txt`, not in the root `CMakeLists.txt`.
+
+### Adding an application
+
+An application should live under `src/apps/` and should own its own `CMakeLists.txt`.
+
+Example:
+
+```cmake
+eldoria_add_app(elforge src/apps/elforge)
+```
+
+The application's source files should be listed inside `src/apps/elforge/CMakeLists.txt`, not in the root `CMakeLists.txt`.
+
+### Ownership rules
+
+- Root CMake registers modules and apps.
+- Module CMake files list module source files and dependencies.
+- App CMake files list app source files and dependencies.
+- New modules should match `docs/architecture.md`.
+- Avoid one-off build logic in the root CMake file unless it applies to the whole workspace.
+
+---
+
 ## Release Flow
 
 When a milestone is complete and stable:
