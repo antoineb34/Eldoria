@@ -20,6 +20,10 @@ find_package(SDL3 REQUIRED CONFIG)
 find_package(BZip2 REQUIRED)
 
 # Shared modules.
+eldoria_add_module(data src/data)
+eldoria_add_module(world src/world)
+eldoria_add_module(game src/game)
+eldoria_add_module(network src/net)
 eldoria_add_module(core src/core)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
