@@ -7,8 +7,8 @@
 
 #include "cache/Cache.h"
 #include "cache/ArchiveHashes.h"
-#include "../../core/compression/Compression.h"
-#include "../../core/io/ByteBuffer.h"
+#include "compression/Compression.h"
+#include "binary/ByteBuffer.h"
 
 namespace {
 
