@@ -7,11 +7,11 @@
 namespace rf::cache {
 
 enum class CacheIndex {
-    Config = 1,
-    Model = 2,
-    Animation = 3,
-    Midi = 4,
-    Map = 5
+    Config = 0,
+    Model = 1,
+    Animation = 2,
+    Midi = 3,
+    Map = 4
 };
 
 struct CacheIndexEntry {
