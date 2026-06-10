@@ -5,8 +5,8 @@
 #include "../CacheExplorerState.h"
 #include "../../../render/model/ModelRenderer.h"
 
-#include "../../../render_next/RenderPipeline.h"
-#include "../../../render_next/backend/software/SoftwareRenderBackend.h"
+#include "../../../render/RenderPipeline.h"
+#include "../../../render/backend/software/SoftwareRenderBackend.h"
 
 namespace eld::explorer {
 
@@ -182,7 +182,7 @@ void CacheViewportPanel::renderViewport(
 
     updateViewportControls(state);
 
-    eld::render_next::RenderObject object;
+    eld::render::RenderObject object;
     object.model = &state.activeModel.value();    object.transform.position = {
         state.modelTransform.offsetX,
         state.modelTransform.offsetY,
@@ -199,17 +199,17 @@ void CacheViewportPanel::renderViewport(
         state.modelTransform.scale
     };
 
-    eld::render_next::RenderScene scene;
+    eld::render::RenderScene scene;
     scene.camera = state.camera;
     scene.objects.push_back(object);
 
-    eld::render_next::SoftwareRenderBackend backend(renderer);
+    eld::render::SoftwareRenderBackend backend(renderer);
 
     backend.setHighlightTexturedFaces(
         state.debugHighlightTexturedFaces
     );
 
-    eld::render_next::RenderPipeline pipeline;
+    eld::render::RenderPipeline pipeline;
 
     pipeline.render(
         scene,

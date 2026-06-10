@@ -4,10 +4,24 @@ add_library(render STATIC
     order/FaceOrderer.cpp
 
     software/camera/Projection.cpp
-
     software/color/Color.cpp
-
     software/raster/TriangleRasterizer.cpp
+
+    RenderPipeline.cpp
+
+    scene/Transform.cpp
+
+    geometry/MeshProjector.cpp
+
+    pipeline/FaceAssembler.cpp
+    pipeline/VisibilityStage.cpp
+    pipeline/DepthSorter.cpp
+
+    material/MaterialResolver.cpp
+    material/TextureSampler.cpp
+
+    backend/software/SoftwareRenderBackend.cpp
+    backend/software/TriangleRasterizer.cpp
 )
 
 target_include_directories(render PUBLIC

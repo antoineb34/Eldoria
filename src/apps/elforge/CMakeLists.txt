@@ -19,7 +19,6 @@ target_link_libraries(explorer PRIVATE
     Eldoria::Data
     platform
     platform_imgui
-    rune_forge_render_next
     render
 )
 

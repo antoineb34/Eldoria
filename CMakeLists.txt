@@ -27,10 +27,6 @@ eldoria_add_module(network src/net)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
 
-# Legacy / transition modules kept buildable while code migrates toward the
-# documented Eldoria architecture.
-eldoria_add_module(render_next src/render_next)
-
 # Target Eldoria applications. These are added when their skeletons exist.
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
