@@ -6,6 +6,10 @@ add_executable(elforge
     panels/cache/CacheTreePanel.cpp
     panels/cache/CacheInspectorPanel.cpp
     panels/cache/CacheViewportPanel.cpp
+    panels/texture/TextureInspector.cpp
+    panels/texture/TextureBrowserPanel.cpp
+    panels/texture/TexturePreviewPanel.cpp
+    panels/texture/TextureMetadataPanel.cpp
 )
 
 target_include_directories(elforge PRIVATE

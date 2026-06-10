@@ -9,6 +9,10 @@
 #include "panels/cache/CacheTreePanel.h"
 #include "panels/cache/CacheInspectorPanel.h"
 #include "panels/cache/CacheViewportPanel.h"
+#include "panels/texture/TextureBrowserPanel.h"
+#include "panels/texture/TexturePreviewPanel.h"
+#include "panels/texture/TextureMetadataPanel.h"
+#include "panels/texture/TextureInspector.h"
 
 #include "../../platform/sdl/SdlContext.h"
 #include "cache/Cache.h"
@@ -32,6 +36,7 @@ private:
     void render();
 
     void handleSelectionChanged();
+    void handleTextureSelection();
     std::optional<rf::texture::TextureAsset> loadModelTexture(
         std::uint32_t id
     );
@@ -48,11 +53,15 @@ private:
     // Tool state
     CacheState state_;
     CacheTreeBuilder treeBuilder_;
+    TextureInspector textureInspector_;
 
     // Panels
     CacheTreePanel treePanel_;
     CacheInspectorPanel inspectorPanel_;
     CacheViewportPanel viewportPanel_;
+    TextureBrowserPanel textureBrowserPanel_;
+    TexturePreviewPanel texturePreviewPanel_;
+    TextureMetadataPanel textureMetadataPanel_;
 
     // Shell state
     std::string lastSelectedLabel_;
