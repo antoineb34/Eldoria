@@ -3,7 +3,6 @@
 #include <imgui.h>
 
 #include "../CacheExplorerState.h"
-#include "../../../render/model/ModelRenderer.h"
 
 #include "../../../render/RenderPipeline.h"
 #include "../../../render/backend/software/SoftwareRenderBackend.h"
@@ -183,7 +182,8 @@ void CacheViewportPanel::renderViewport(
     updateViewportControls(state);
 
     eld::render::RenderObject object;
-    object.model = &state.activeModel.value();    object.transform.position = {
+    object.model = &state.activeModel.value();
+    object.transform.position = {
         state.modelTransform.offsetX,
         state.modelTransform.offsetY,
         state.modelTransform.offsetZ

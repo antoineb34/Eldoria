@@ -11,8 +11,8 @@
 #include "texture/TextureAsset.h"
 
 #include "../../render/camera/Camera.h"
-#include "../../render/model/RenderOptions.h"
-#include "../../render/model/ModelTransform.h"
+#include "../../render/viewport/RenderOptions.h"
+#include "../../render/viewport/ModelTransform.h"
 
 namespace eld::explorer {
 

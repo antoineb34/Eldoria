@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../order/FaceOrderMode.h"
-
 namespace eld::render {
 
 struct RenderOptions {
@@ -10,8 +8,6 @@ struct RenderOptions {
     bool showVertices = false;
     bool useAlpha = true;
     bool highlightTexturedFaces = false;
-
-    FaceOrderMode faceOrderMode = FaceOrderMode::RuneScapePriority;
 };
 
 }
