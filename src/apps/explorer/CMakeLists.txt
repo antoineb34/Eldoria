@@ -16,6 +16,7 @@ target_include_directories(explorer PRIVATE
 )
 
 target_link_libraries(explorer PRIVATE
+    Eldoria::Data
     core
     platform
     platform_imgui

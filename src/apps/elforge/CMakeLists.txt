@@ -13,6 +13,7 @@ target_include_directories(elforge PRIVATE
 )
 
 target_link_libraries(elforge PRIVATE
+    Eldoria::Data
     core
     platform
     platform_imgui

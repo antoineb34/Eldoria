@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -10,15 +11,17 @@
 #include "ModelFileReader.h"
 
 #include "cache/Cache.h"
-#include "../texture/TextureLoader.h"
 
 namespace rf::model {
+
+using TextureLoaderCallback =
+    std::function<std::optional<rf::texture::TextureAsset>(std::uint32_t)>;
 
 class ModelLoader {
 public:
     ModelLoader(
         const rf::cache::Cache& cache,
-        rf::texture::TextureLoader& textureLoader
+        TextureLoaderCallback textureLoader
     );
 
     std::optional<ModelAsset> load(
@@ -36,7 +39,7 @@ private:
 
 private:
     const rf::cache::Cache& cache_;
-    rf::texture::TextureLoader& textureLoader_;
+    TextureLoaderCallback textureLoader_;
 
     ModelFileReader fileReader_;
     ModelBuilder modelBuilder_;

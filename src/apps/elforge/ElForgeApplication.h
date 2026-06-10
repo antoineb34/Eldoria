@@ -10,8 +10,8 @@
 
 #include "../../platform/sdl/SdlContext.h"
 #include "cache/Cache.h"
+#include "model/ModelLoader.h"
 #include "../../core/assets/texture/TextureLoader.h"
-#include "../../core/assets/model/ModelLoader.h"
 
 namespace eldoria::apps::elforge {
 

@@ -20,3 +20,8 @@ target_include_directories(rune_forge_render_next
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+target_link_libraries(rune_forge_render_next PUBLIC
+    Eldoria::Data
+    render
+)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../core/assets/model/ModelAsset.h"
+#include "model/ModelAsset.h"
 #include "Transform.h"
 
 namespace rf::render_next {

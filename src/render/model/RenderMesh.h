@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../../core/assets/model/ModelAsset.h"
+#include "model/ModelAsset.h"
 #include "../software/camera/Projection.h"
 
 namespace rf::render {
