@@ -42,7 +42,7 @@ Use this during code review of any PR that touches:
 
 - **Texture wrapping**: `TextureSampler` clamps `u` to `[0, 1]` and wraps `v` via `v - floor(v)`. This may not match the wrapping mode used by the original RuneScape client for all texture types.
 - **Canvas vs image dimensions**: The sampler uses `canvasWidth/canvasHeight` but the decoded pixel data may represent a smaller image placed on a larger canvas. The `TextureCanvasDecoder` places pixels using `xOffset/yOffset` but the sampler does not account for this offset.
-- **Priority ordering**: The `RenderPacket` carries a `priority` field from the model face but the `render_next` pipeline does NOT sort or filter by priority. The `DepthSorter` sorts by `depthAvg` only.
+- **Priority ordering**: The `RenderPacket` carries a `priority` field from the model face but the `render_next` pipeline does NOT sort or filter by priority.
 - **Texture UV mapping accuracy**: The UV mapping uses world-space vertex positions projected onto a basis derived from the `TextureUVMapping` (origin, uVertex, vVertex). This is a reasonable approximation but has not been parity-tested against known-good renders.
 - **Alpha for textured faces**: The `alpha` field from `Face` is stored in the `RenderPacket` but the textured triangle rasterizer reads alpha from the sampled texture pixel instead of the face alpha value.
 - **`renderType` 0 and 1**: Treated as solid/untextured. Untextured faces use `face.color` as an RS 16-bit color.
@@ -51,11 +51,11 @@ Use this during code review of any PR that touches:
 
 | Check | Expected | Status |
 |-------|----------|--------|
-| Depth sorting orders faces back-to-front by average depth | Partial | `DepthSorter` exists but is **not called** by `RenderPipeline::render()` |
-| `DepthSorter::sort` sorts `RenderQueue` packets | Yes | Implemented but unused |
+| Depth sorting orders faces back-to-front by average depth | Yes | Implemented — `DepthSorter::sort` wired into `RenderPipeline::render()` in PR #101 |
+| `DepthSorter::sort` sorts `RenderQueue` packets | Yes | Implemented — called after `VisibilityStage::apply`, before `drawObject` |
+| Per-pixel depth test in framebuffer | Yes | Implemented |
 | Priority field is preserved on packets for future sorting | Yes | Implemented |
-| RuneScape priority-aware ordering (priority bucket then depth) | **Missing** | Not implemented |
-| Depth test per-pixel in framebuffer | Yes | Implemented |
+| RuneScape priority-aware ordering (priority bucket then depth) | **Missing** | Not implemented — follow-up |
 
 ## 4. Debug / Wireframe / Vertex Modes
 

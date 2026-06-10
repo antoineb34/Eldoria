@@ -32,6 +32,8 @@ void RenderPipeline::render(
             mesh
         );
 
+        depthSorter_.sort(queue);
+
         backend.drawObject(
             object,
             mesh,

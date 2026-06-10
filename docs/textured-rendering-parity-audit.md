@@ -6,7 +6,8 @@ This audit documents the current state of textured model rendering in the
 ElForge/render_next pipeline. It identifies what works, what is broken, and
 what is missing, to guide the implementation work in issue #95.
 
-**Date**: 2026-06-09
+**Date**: 2026-06-09  
+**Last updated**: 2026-06-09 (PR #101 — DepthSorter wired)  
 **Scope**: `render_next` pipeline, `SoftwareRenderBackend`, `TriangleRasterizer`,
 `TextureSampler`, `FaceAssembler`, `VisibilityStage`, `DepthSorter`
 
@@ -25,7 +26,7 @@ ModelAsset + TextureAsset
         ↓
    VisibilityStage (back-face culling)
         ↓
-   [DepthSorter] (exists but NOT called)
+   DepthSorter (wired into pipeline since PR #101)
         ↓
    SoftwareRenderBackend::drawObject
         ↓
@@ -43,6 +44,12 @@ ModelAsset + TextureAsset
 - Per-pixel depth test-and-write
 - Back-face culling via screen-space area sign
 - Alpha blending in `drawPixel` (solid triangles only)
+
+### Depth Sorting (PR #101)
+- `DepthSorter::sort` is called in `RenderPipeline::render()` after `VisibilityStage::apply` and before `backend.drawObject`
+- Render packets are sorted back-to-front by average depth before drawing
+- Per-pixel depth test still provides a second layer of correctness
+- Remains a follow-up: priority-aware sorting (see Moderate issue #4)
 
 ### Texture Loading
 - `TextureLoader` reads from cache index 0, archive 6
@@ -69,10 +76,9 @@ ModelAsset + TextureAsset
 
 ### Critical
 
-1. **DepthSorter not called**
-   - `DepthSorter::sort` is implemented but `RenderPipeline::render()` never calls it
-   - Face ordering relies entirely on per-pixel depth test, not packet-level sorting
-   - This means semi-transparent faces may render in incorrect order
+1. ~~DepthSorter not called~~ **Fixed in PR #101**
+   - `DepthSorter::sort` is now called in `RenderPipeline::render()` after `VisibilityStage::apply` and before `backend.drawObject`
+   - Face ordering now sorts back-to-front by average depth before drawing
 
 2. **Canvas offset not accounted in TextureSampler**
    - `TextureCanvasDecoder` places texture pixels at `(xOffset, yOffset)` on a larger canvas
@@ -158,21 +164,16 @@ Use the ElForge texture browser panel to validate:
 
 ---
 
-## Recommendations for #95
+## Recommendations for Future PRs
 
-Priority order for fixing textured rendering:
+Priority order for fixing textured rendering (updated after PR #101):
 
-1. **Wire the DepthSorter** — Call `DepthSorter::sort` in `RenderPipeline::render()` after `VisibilityStage::apply`. This is the single biggest correctness improvement.
-
-2. **Fix TextureSampler canvas offset** — Account for `xOffset/yOffset` when computing pixel index from UV coordinates.
-
-3. **Fix face alpha for textured triangles** — Use `packet.alpha` to modulate the sampled texture pixel alpha.
-
-4. **Implement priority-aware sorting** — Sort by priority bucket first, then by depth within each bucket.
-
-5. **Wire highlightTexturedFaces_** — In `drawObject`, when the flag is set, outline or tint textured faces differently.
-
-6. **Add wireframe mode** — Draw triangle edges instead of filled polygons. Can be a simple line draw in the rasterizer.
+1. ~~Wire the DepthSorter~~ — **Done in PR #101**
+2. **Fix TextureSampler canvas offset** — Account for `xOffset/yOffset` when computing pixel index from UV coordinates
+3. **Fix face alpha for textured triangles** — Use `packet.alpha` to modulate the sampled texture pixel alpha
+4. **Implement priority-aware sorting** — Sort by priority bucket first, then by depth within each bucket
+5. **Wire highlightTexturedFaces_** — In `drawObject`, when the flag is set, outline or tint textured faces differently
+6. **Add wireframe mode** — Draw triangle edges instead of filled polygons
 
 ---
 
