@@ -2,7 +2,7 @@
 
 #include "binary/ByteBuffer.h"
 
-namespace rf::model {
+namespace eld::model {
 
 namespace {
 
@@ -45,7 +45,7 @@ bool ModelFileReader::validatePayload(
 ModelFooter ModelFileReader::readFooter(
     const std::vector<uint8_t>& payload
 ) const {
-    rf::io::ByteBuffer buffer(payload);
+    binary::ByteBuffer buffer(payload);
 
     buffer.setPosition(
         static_cast<int>(payload.size()) -

@@ -5,12 +5,12 @@
 
 #include "Archive.h"
 
-namespace rf::cache {
+namespace eld::cache {
 
 class ArchiveReader {
 public:
     static std::optional<Archive> read(
-        const std::vector<unsigned char>& payload
+        const std::vector<std::uint8_t>& cacheFilePayload
     );
 };
 

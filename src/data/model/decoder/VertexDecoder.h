@@ -7,7 +7,7 @@
 #include "../ModelFile.h"
 #include "binary/ByteBuffer.h"
 
-namespace rf::model {
+namespace eld::model {
 
 class VertexDecoder {
 public:
@@ -20,9 +20,9 @@ private:
 
     const ModelFile& file_;
 
-    rf::io::ByteBuffer xBuffer_;
-    rf::io::ByteBuffer yBuffer_;
-    rf::io::ByteBuffer zBuffer_;
+    binary::ByteBuffer xBuffer_;
+    binary::ByteBuffer yBuffer_;
+    binary::ByteBuffer zBuffer_;
 
     int currentX_ = 0;
     int currentY_ = 0;

@@ -5,7 +5,7 @@
 
 #include "../TextureFile.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 class TexturePixelDecoder {
 public:

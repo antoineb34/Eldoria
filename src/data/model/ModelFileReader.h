@@ -6,7 +6,7 @@
 
 #include "ModelFile.h"
 
-namespace rf::model {
+namespace eld::model {
 
 class ModelFileReader {
 public:

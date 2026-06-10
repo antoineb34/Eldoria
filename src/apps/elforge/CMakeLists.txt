@@ -1,15 +1,13 @@
 add_executable(elforge
     main.cpp
-    ElForgeApplication.cpp
-    ui/ElForgeImGuiTheme.cpp
-    panels/cache/CacheTreeBuilder.cpp
-    panels/cache/CacheTreePanel.cpp
-    panels/cache/CacheInspectorPanel.cpp
-    panels/cache/CacheViewportPanel.cpp
-    panels/texture/TextureInspector.cpp
-    panels/texture/TextureBrowserPanel.cpp
-    panels/texture/TexturePreviewPanel.cpp
-    panels/texture/TextureMetadataPanel.cpp
+
+    AppShell.cpp
+    CacheExplorer.cpp
+    CacheTreeBuilder.cpp
+
+    panels/CacheInspectorPanel.cpp
+    panels/CacheTreePanel.cpp
+    panels/CacheViewportPanel.cpp
 )
 
 target_include_directories(elforge PRIVATE
@@ -18,13 +16,11 @@ target_include_directories(elforge PRIVATE
 
 target_link_libraries(elforge PRIVATE
     Eldoria::Data
-    platform
-    platform_imgui
-    rune_forge_render_next
-    render
+    Eldoria::Platform
+    Eldoria::PlatformImGui
+    Eldoria::Render
 )
 
 set_target_properties(elforge PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY
-    ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

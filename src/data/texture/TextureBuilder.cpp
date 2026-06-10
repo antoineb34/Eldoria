@@ -3,7 +3,7 @@
 #include "decoder/TextureCanvasDecoder.h"
 #include "decoder/TexturePixelDecoder.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
     TextureAsset TextureBuilder::build(
         const TextureFile& file

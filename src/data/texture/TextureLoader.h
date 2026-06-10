@@ -11,12 +11,12 @@
 
 #include "cache/Cache.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 class TextureLoader {
 public:
     explicit TextureLoader(
-        const rf::cache::Cache& cache
+        const eld::cache::Cache& cache
     );
 
     std::optional<TextureAsset> load(
@@ -29,7 +29,7 @@ private:
     ) const;
 
 private:
-    const rf::cache::Cache& cache_;
+    const eld::cache::Cache& cache_;
 
     TextureFileReader fileReader_;
     TextureBuilder textureBuilder_;

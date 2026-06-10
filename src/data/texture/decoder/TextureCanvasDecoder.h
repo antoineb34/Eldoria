@@ -6,7 +6,7 @@
 #include "../TextureAsset.h"
 #include "../TextureFile.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 class TextureCanvasDecoder {
 public:

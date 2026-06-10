@@ -5,7 +5,7 @@
 
 #include "TextureAsset.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 struct TextureFile {
     int id = -1;

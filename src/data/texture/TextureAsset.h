@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace rf::texture {
+namespace eld::texture {
 
 struct RgbaColor {
     uint8_t r = 0;

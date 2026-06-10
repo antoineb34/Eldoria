@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace rf::model {
+namespace eld::model {
 
 struct ModelFooter {
 

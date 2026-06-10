@@ -2,7 +2,7 @@
 
 #include "binary/ByteBuffer.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 std::optional<TextureFile> TextureFileReader::read(
     int id,
@@ -13,7 +13,7 @@ std::optional<TextureFile> TextureFileReader::read(
         return std::nullopt;
     }
 
-    rf::io::ByteBuffer textureBuffer(textureData);
+    binary::ByteBuffer textureBuffer(textureData);
 
     int indexOffset =
         textureBuffer.readU16();

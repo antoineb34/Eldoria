@@ -1,6 +1,6 @@
 #include "TextureUVMappingDecoder.h"
 
-namespace rf::model {
+namespace eld::model {
 
 TextureUVMappingDecoder::TextureUVMappingDecoder(
     const ModelFile& file

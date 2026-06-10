@@ -4,9 +4,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "texture/TextureAsset.h"
+#include "../texture/TextureAsset.h"
 
-namespace rf::model {
+namespace eld::model {
 
     struct Vertex {
         float x = 0.0f;
@@ -42,7 +42,7 @@ struct ModelAsset {
     std::vector<Face> faces;
     std::vector<TextureUVMapping> textureUVMappings;
 
-    std::unordered_map<int, rf::texture::TextureAsset> textures;
+    std::unordered_map<int, eld::texture::TextureAsset> textures;
 };
 
 }

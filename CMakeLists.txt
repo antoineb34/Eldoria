@@ -24,20 +24,10 @@ eldoria_add_module(data src/data)
 eldoria_add_module(world src/world)
 eldoria_add_module(game src/game)
 eldoria_add_module(network src/net)
-eldoria_add_module(core src/core)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
 
-# Legacy / transition modules kept buildable while code migrates toward the
-# documented Eldoria architecture.
-eldoria_add_module(render_next src/render_next)
-
-# Current legacy / transition applications.
-eldoria_add_app(tool src/apps/tool)
-eldoria_add_app(archive_probe src/apps/archive_probe)
-eldoria_add_app(explorer src/apps/explorer)
-
-# Target Eldoria applications. These are added when their skeletons exist.
+# Target Eldoria applications.
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)

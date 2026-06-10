@@ -1,6 +1,6 @@
 #include "Archive.h"
 
-namespace rf::cache {
+namespace eld::cache {
 
 std::optional<ArchiveFile> Archive::findByHash(
     std::uint32_t hash
@@ -15,18 +15,15 @@ std::optional<ArchiveFile> Archive::findByHash(
 }
 
 std::optional<ArchiveFile> Archive::findByIndex(
-    int index
+    int fileIndex
 ) const {
-    if (
-        index < 0 ||
-        index >= static_cast<int>(files.size())
-    ) {
-        return std::nullopt;
+    for (const ArchiveFile& file : files) {
+        if (file.fileIndex == fileIndex) {
+            return file;
+        }
     }
 
-    return files[
-        static_cast<std::size_t>(index)
-    ];
+    return std::nullopt;
 }
 
 }

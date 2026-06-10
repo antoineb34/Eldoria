@@ -1,5 +1,6 @@
 add_executable(elclient
     main.cpp
+
     ElClientApp.cpp
 )
 
@@ -7,7 +8,15 @@ target_include_directories(elclient PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_link_libraries(elclient PRIVATE
+    Eldoria::Data
+    Eldoria::Game
+    Eldoria::Network
+    Eldoria::Platform
+    Eldoria::Render
+    Eldoria::World
+)
+
 set_target_properties(elclient PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY
-    ${CMAKE_BINARY_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

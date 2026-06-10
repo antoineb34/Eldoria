@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace rf::platform {
+namespace eld::platform {
 
 SdlContext::SdlContext(
     const char* title,
