@@ -219,6 +219,23 @@ Examples:
 
 ElForge combines shared systems into an inspection, validation, and editing experience.
 
+### Renderer Path
+
+ElForge currently renders model viewports through `src/render_next/`.
+
+`render_next` is the intended future renderer architecture because it already has the newer scene, pipeline, backend, framebuffer, and software-rendering shape.
+
+ElForge still depends on `src/render/` for legacy/reference renderer code and still-used primitives such as camera, projection, math, color, model transform, and render option types.
+
+The final renderer ownership should eventually converge back to `src/render/` after `render_next` fully replaces the old direct model renderer path.
+
+Until that migration is complete:
+
+- keep `src/render/` available
+- keep `render_next` separate
+- do not delete old renderer code before useful behavior is preserved
+- do not move camera/math/color primitives until their final ownership is settled
+
 ---
 
 ## Planned App Structure

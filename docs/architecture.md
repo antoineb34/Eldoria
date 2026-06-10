@@ -645,6 +645,38 @@ It answers:
 
 > How do renderable scenes become pixels?
 
+## Current Implementation Status
+
+`src/render_next/` is the intended future renderer architecture.
+
+It currently owns the newer scene/pipeline/backend shape:
+
+- `RenderScene`
+- `RenderObject`
+- `RenderPipeline`
+- `RenderBackend`
+- software framebuffer/depth-buffer rendering
+- material and texture sampling stages
+
+The existing `src/render/` module is legacy/reference code plus some still-used primitives.
+
+It still contains useful low-level pieces such as:
+
+- camera and projection types
+- math types
+- color conversion helpers
+- model transform/options types used by current tools
+- older direct SDL model rendering code
+
+Final ownership should converge back to `src/render/` once `render_next` has replaced the old path.
+
+Until then:
+
+- do not delete `src/render/`
+- do not rename `render_next`
+- preserve useful primitives before removing old renderer code
+- migrate behavior in small steps after parity is confirmed
+
 ## Used By
 
 - ElForge
