@@ -82,16 +82,16 @@ bool ElForgeApplication::initialize() {
     ImGui_ImplSDLRenderer3_Init(sdl_->renderer());
 
     // Initialize state
-    state_.camera.angleX = 0.0f;
-    state_.camera.angleY = 0.0f;
-    state_.camera.distance = 500.0f;
-    state_.camera.fov = 1.04719755f;
-    state_.camera.nearPlane = 1.0f;
-    state_.camera.farPlane = 10000.0f;
+    state_.modelViewportCamera.angleX = 0.0f;
+    state_.modelViewportCamera.angleY = 0.0f;
+    state_.modelViewportCamera.distance = 500.0f;
+    state_.modelViewportCamera.fov = 1.04719755f;
+    state_.modelViewportCamera.nearPlane = 1.0f;
+    state_.modelViewportCamera.farPlane = 10000.0f;
 
-    state_.modelTransform.scale = 1.0f;
-    state_.renderOptions.fillTriangles = true;
-    state_.renderOptions.useAlpha = true;
+    state_.modelViewportTransform.scale = 1.0f;
+    state_.modelViewportRenderOptions.fillTriangles = true;
+    state_.modelViewportRenderOptions.useAlpha = true;
 
     if (cache_.isValid()) {
         state_.rootNode = treeBuilder_.build(cache_);
@@ -126,10 +126,10 @@ void ElForgeApplication::update() {
 }
 
 void ElForgeApplication::handleSelectionChanged() {
-    state_.activeModel.reset();
-    state_.activeModelLoadError.reset();
-    state_.activeTexture.reset();
-    state_.activeCacheFileDetails.reset();
+    state_.selectedModel.reset();
+    state_.selectedModelLoadError.reset();
+    state_.selectedModelTexture.reset();
+    state_.selectedCacheFileDetails.reset();
 
     if (state_.selection.fileId >= 0 && state_.selection.indexId >= 0) {
         auto file = cache_.readFile(
@@ -138,7 +138,7 @@ void ElForgeApplication::handleSelectionChanged() {
         );
 
         if (file.has_value()) {
-            state_.activeCacheFileDetails =
+            state_.selectedCacheFileDetails =
                 rf::cache::inspectCacheFile(*file);
         }
     }
@@ -151,11 +151,11 @@ void ElForgeApplication::handleSelectionChanged() {
                 );
 
             if (result.loaded()) {
-                state_.activeModel =
+                state_.selectedModel =
                     std::move(*result.asset);
             }
             else {
-                state_.activeModelLoadError =
+                state_.selectedModelLoadError =
                     result.message;
             }
         }
@@ -192,12 +192,12 @@ void ElForgeApplication::render() {
     const ImVec2 available = ImGui::GetContentRegionAvail();
     const float height = available.y;
 
-    float viewportWidth = available.x - treeWidth - inspectorWidth - spacing * 2.0f;
-    if (viewportWidth < 100.0f) viewportWidth = 100.0f;
+    float modelViewportWidth = available.x - treeWidth - inspectorWidth - spacing * 2.0f;
+    if (modelViewportWidth < 100.0f) modelViewportWidth = 100.0f;
 
     treePanel_.render(state_, treeWidth, height);
     ImGui::SameLine();
-    viewportPanel_.render(state_, viewportWidth, height);
+    viewportPanel_.render(state_, modelViewportWidth, height);
     ImGui::SameLine();
     inspectorPanel_.render(state_, inspectorWidth, height);
 

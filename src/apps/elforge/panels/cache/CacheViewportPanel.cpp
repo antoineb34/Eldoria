@@ -14,7 +14,7 @@ namespace eldoria::apps::elforge {
         void updateViewportControls(CacheState& state) {
             const bool* keys = SDL_GetKeyboardState(nullptr);
 
-            auto& transform = state.modelTransform;
+            auto& transform = state.modelViewportTransform;
 
             constexpr float rotationSpeed = 0.03f;
             constexpr float moveSpeed = 8.0f;
@@ -86,8 +86,8 @@ namespace eldoria::apps::elforge {
             bool currentT = keys[SDL_SCANCODE_T];
 
             if (currentT && !previousT) {
-                state.debugHighlightTexturedFaces =
-                    !state.debugHighlightTexturedFaces;
+                state.modelViewportHighlightTexturedFaces =
+                    !state.modelViewportHighlightTexturedFaces;
             }
 
             previousT = currentT;
@@ -114,16 +114,16 @@ void CacheViewportPanel::render(
     ImVec2 viewportSize =
         ImGui::GetContentRegionAvail();
 
-    state.viewportX =
+    state.modelViewportX =
         static_cast<int>(viewportPos.x);
 
-    state.viewportY =
+    state.modelViewportY =
         static_cast<int>(viewportPos.y);
 
-    state.viewportWidth =
+    state.modelViewportWidth =
         static_cast<int>(viewportSize.x);
 
-    state.viewportHeight =
+    state.modelViewportHeight =
         static_cast<int>(viewportSize.y);
 
     ImGui::Dummy(
@@ -138,13 +138,13 @@ void CacheViewportPanel::renderViewport(
     const CacheState& state
 ) {
 
-    if (!state.activeModel) {
-        if (state.activeModelLoadError) {
+    if (!state.selectedModel) {
+        if (state.selectedModelLoadError) {
             SDL_Rect clip {
-                state.viewportX,
-                state.viewportY,
-                state.viewportWidth,
-                state.viewportHeight
+                state.modelViewportX,
+                state.modelViewportY,
+                state.modelViewportWidth,
+                state.modelViewportHeight
             };
 
             SDL_SetRenderClipRect(
@@ -161,10 +161,10 @@ void CacheViewportPanel::renderViewport(
             );
 
             SDL_FRect rect {
-                static_cast<float>(state.viewportX),
-                static_cast<float>(state.viewportY),
-                static_cast<float>(state.viewportWidth),
-                static_cast<float>(state.viewportHeight)
+                static_cast<float>(state.modelViewportX),
+                static_cast<float>(state.modelViewportY),
+                static_cast<float>(state.modelViewportWidth),
+                static_cast<float>(state.modelViewportHeight)
             };
 
             SDL_RenderFillRect(
@@ -183,16 +183,16 @@ void CacheViewportPanel::renderViewport(
 
     CacheState& mutableState = const_cast<CacheState&>(state);
 
-    mutableState.camera.viewportX = state.viewportX;
-    mutableState.camera.viewportY = state.viewportY;
-    mutableState.camera.viewportWidth = state.viewportWidth;
-    mutableState.camera.viewportHeight = state.viewportHeight;
+    mutableState.modelViewportCamera.viewportX = state.modelViewportX;
+    mutableState.modelViewportCamera.viewportY = state.modelViewportY;
+    mutableState.modelViewportCamera.viewportWidth = state.modelViewportWidth;
+    mutableState.modelViewportCamera.viewportHeight = state.modelViewportHeight;
 
     SDL_Rect clip {
-        state.viewportX,
-        state.viewportY,
-        state.viewportWidth,
-        state.viewportHeight
+        state.modelViewportX,
+        state.modelViewportY,
+        state.modelViewportWidth,
+        state.modelViewportHeight
     };
 
     SDL_SetRenderClipRect(
@@ -209,10 +209,10 @@ void CacheViewportPanel::renderViewport(
     );
 
     SDL_FRect rect {
-        static_cast<float>(state.viewportX),
-        static_cast<float>(state.viewportY),
-        static_cast<float>(state.viewportWidth),
-        static_cast<float>(state.viewportHeight)
+        static_cast<float>(state.modelViewportX),
+        static_cast<float>(state.modelViewportY),
+        static_cast<float>(state.modelViewportWidth),
+        static_cast<float>(state.modelViewportHeight)
     };
 
     SDL_RenderFillRect(
@@ -223,31 +223,31 @@ void CacheViewportPanel::renderViewport(
     updateViewportControls(mutableState);
 
     rf::render_next::RenderObject object;
-    object.model = &state.activeModel.value();
+    object.model = &state.selectedModel.value();
     object.transform.position = {
-        state.modelTransform.offsetX,
-        state.modelTransform.offsetY,
-        state.modelTransform.offsetZ
+        state.modelViewportTransform.offsetX,
+        state.modelViewportTransform.offsetY,
+        state.modelViewportTransform.offsetZ
     };
     object.transform.rotation = {
-        state.modelTransform.rotationX,
-        state.modelTransform.rotationY,
-        state.modelTransform.rotationZ
+        state.modelViewportTransform.rotationX,
+        state.modelViewportTransform.rotationY,
+        state.modelViewportTransform.rotationZ
     };
     object.transform.scale = {
-        state.modelTransform.scale,
-        state.modelTransform.scale,
-        state.modelTransform.scale
+        state.modelViewportTransform.scale,
+        state.modelViewportTransform.scale,
+        state.modelViewportTransform.scale
     };
 
     rf::render_next::RenderScene scene;
-    scene.camera = state.camera;
+    scene.camera = state.modelViewportCamera;
     scene.objects.push_back(object);
 
     rf::render_next::SoftwareRenderBackend backend(renderer);
 
     backend.setHighlightTexturedFaces(
-        state.debugHighlightTexturedFaces
+        state.modelViewportHighlightTexturedFaces
     );
 
     rf::render_next::RenderPipeline pipeline;

@@ -18,23 +18,23 @@
 namespace eldoria::apps::elforge {
 
 struct CacheState {
-    rf::render::Camera camera;
-    rf::render::RenderOptions renderOptions;
-    rf::render::ModelTransform modelTransform;
+    rf::render::Camera modelViewportCamera;
+    rf::render::RenderOptions modelViewportRenderOptions;
+    rf::render::ModelTransform modelViewportTransform;
 
-    int viewportX = 0;
-    int viewportY = 0;
-    int viewportWidth = 1;
-    int viewportHeight = 1;
+    int modelViewportX = 0;
+    int modelViewportY = 0;
+    int modelViewportWidth = 1;
+    int modelViewportHeight = 1;
 
     CacheSelection selection;
     CacheTreeNode rootNode;
-    bool debugHighlightTexturedFaces = false;
+    bool modelViewportHighlightTexturedFaces = false;
 
-    std::optional<rf::model::ModelAsset> activeModel;
-    std::optional<std::string> activeModelLoadError;
-    std::optional<rf::texture::TextureAsset> activeTexture;
-    std::optional<rf::cache::CacheFileDetails> activeCacheFileDetails;
+    std::optional<rf::model::ModelAsset> selectedModel;
+    std::optional<std::string> selectedModelLoadError;
+    std::optional<rf::texture::TextureAsset> selectedModelTexture;
+    std::optional<rf::cache::CacheFileDetails> selectedCacheFileDetails;
 
     std::unordered_map<std::string, bool> expandedNodes;
 };
