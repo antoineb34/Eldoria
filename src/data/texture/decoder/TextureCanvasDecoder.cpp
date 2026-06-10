@@ -1,6 +1,6 @@
 #include "TextureCanvasDecoder.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 TextureCanvasDecoder::TextureCanvasDecoder(
     const TextureFile& file,

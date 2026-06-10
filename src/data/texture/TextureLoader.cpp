@@ -2,7 +2,7 @@
 
 #include "cache/ArchiveReader.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 namespace {
 
@@ -11,7 +11,7 @@ constexpr int TextureArchiveId = 6;
 }
 
 TextureLoader::TextureLoader(
-    const rf::cache::Cache& cache
+    const eld::cache::Cache& cache
 )
     : cache_(cache)
 {
@@ -51,7 +51,7 @@ TextureLoader::getTextureFile(
 ) const {
     auto cacheFile =
         cache_.readFile(
-            rf::cache::CacheIndex::Config,
+            eld::cache::CacheIndex::Config,
             TextureArchiveId
         );
 
@@ -60,7 +60,7 @@ TextureLoader::getTextureFile(
     }
 
     auto archive =
-        rf::cache::ArchiveReader::read(
+        eld::cache::ArchiveReader::read(
             cacheFile->payload
         );
 

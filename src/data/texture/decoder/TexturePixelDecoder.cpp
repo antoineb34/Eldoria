@@ -1,6 +1,6 @@
 #include "TexturePixelDecoder.h"
 
-namespace rf::texture {
+namespace eld::texture {
 
 TexturePixelDecoder::TexturePixelDecoder(
     const TextureFile& file

@@ -9,15 +9,15 @@
 #include "ModelBuilder.h"
 #include "ModelFileReader.h"
 
-#include "cache/Cache.h"
-#include "texture/TextureLoader.h"
+#include "../../cache/Cache.h"
+#include "../texture/TextureLoader.h"
 
-namespace eld::model {
+namespace rf::model {
 
 class ModelLoader {
 public:
     ModelLoader(
-        const eld::cache::Cache& cache,
+        const rf::cache::Cache& cache,
         rf::texture::TextureLoader& textureLoader
     );
 
@@ -35,7 +35,7 @@ private:
     ) const;
 
 private:
-    const eld::cache::Cache& cache_;
+    const rf::cache::Cache& cache_;
     rf::texture::TextureLoader& textureLoader_;
 
     ModelFileReader fileReader_;
