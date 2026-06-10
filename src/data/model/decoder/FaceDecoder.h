@@ -5,7 +5,7 @@
 
 #include "../ModelAsset.h"
 #include "../ModelFile.h"
-#include "binary/ByteBuffer.h"
+#include "../../../io/ByteBuffer.h"
 
 namespace rf::model {
 
