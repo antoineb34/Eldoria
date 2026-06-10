@@ -27,7 +27,7 @@ eldoria_add_module(network src/net)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
 
-# Target Eldoria applications. These are added when their skeletons exist.
+# Target Eldoria applications.
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
