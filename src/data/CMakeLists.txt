@@ -3,6 +3,7 @@ add_library(eldoria_data STATIC
     compression/Compression.cpp
 
     cache/Cache.cpp
+    cache/CacheFileDetails.cpp
     cache/Archive.cpp
     cache/ArchiveReader.cpp
     cache/versionlist/VersionListReader.cpp

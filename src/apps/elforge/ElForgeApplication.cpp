@@ -6,6 +6,8 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
+#include "cache/CacheFileDetails.h"
+
 #include "../../platform/sdl/SdlContext.h"
 #include "../../ui/imgui/ImGuiTheme.h"
 
@@ -120,6 +122,19 @@ void ElForgeApplication::update() {
 void ElForgeApplication::handleSelectionChanged() {
     state_.activeModel.reset();
     state_.activeTexture.reset();
+    state_.activeCacheFileDetails.reset();
+
+    if (state_.selection.fileId >= 0 && state_.selection.indexId >= 0) {
+        auto file = cache_.readFile(
+            static_cast<rf::cache::CacheIndex>(state_.selection.indexId),
+            state_.selection.fileId
+        );
+
+        if (file.has_value()) {
+            state_.activeCacheFileDetails =
+                rf::cache::inspectCacheFile(*file);
+        }
+    }
 
     if (state_.selection.type == CacheTreeNodeType::Model) {
         if (state_.selection.fileId >= 0) {

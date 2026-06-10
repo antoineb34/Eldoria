@@ -1,6 +1,7 @@
 #include "CacheInspectorPanel.h"
 
 #include <array>
+#include <cstdint>
 #include <string>
 
 #include <imgui.h>
@@ -32,6 +33,65 @@ const char* getNodeTypeName(
     }
 
     return "Unknown";
+}
+
+const char* getIndexName(
+    int indexId
+) {
+    switch (static_cast<rf::cache::CacheIndex>(indexId)) {
+        case rf::cache::CacheIndex::Config:
+            return "Config";
+
+        case rf::cache::CacheIndex::Model:
+            return "Models";
+
+        case rf::cache::CacheIndex::Animation:
+            return "Animations";
+
+        case rf::cache::CacheIndex::Midi:
+            return "Midi";
+
+        case rf::cache::CacheIndex::Map:
+            return "Maps";
+    }
+
+    return "Unknown";
+}
+
+const char* getCompressionTypeName(
+    rf::compression::CompressionType type
+) {
+    switch (type) {
+        case rf::compression::CompressionType::Gzip:
+            return "Gzip";
+
+        case rf::compression::CompressionType::Bzip2:
+            return "Bzip2";
+
+        case rf::compression::CompressionType::Unknown:
+            return "Unknown";
+    }
+
+    return "Unknown";
+}
+
+void renderIdLine(
+    const char* label,
+    int value
+) {
+    if (value < 0) {
+        ImGui::Text(
+            "%s: N/A",
+            label
+        );
+        return;
+    }
+
+    ImGui::Text(
+        "%s: %d",
+        label,
+        value
+    );
 }
 
 std::string buildModelDebugText(
@@ -153,7 +213,7 @@ void CacheInspectorPanel::render(
     ImGui::Separator();
 
     ImGui::Text(
-        "Selected: %s",
+        "Selected node: %s",
         state.selection.label.c_str()
     );
 
@@ -166,20 +226,91 @@ void CacheInspectorPanel::render(
         )
     );
 
-    ImGui::Text(
-        "Index: %d",
-        state.selection.indexId
-    );
+    if (state.selection.indexId >= 0) {
+        ImGui::Text(
+            "Selected index: %d (%s)",
+            state.selection.indexId,
+            getIndexName(state.selection.indexId)
+        );
+    }
+    else {
+        ImGui::TextUnformatted("Selected index: N/A");
+    }
 
-    ImGui::Text(
-        "Archive: %d",
+    renderIdLine(
+        "Archive id",
         state.selection.archiveId
     );
 
-    ImGui::Text(
-        "File: %d",
+    renderIdLine(
+        "File id",
         state.selection.fileId
     );
+
+    if (state.activeCacheFileDetails) {
+        const rf::cache::CacheFileDetails& details =
+            *state.activeCacheFileDetails;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("CACHE FILE");
+
+        ImGui::Text(
+            "Payload size: %zu bytes",
+            details.payloadSize
+        );
+
+        ImGui::Text(
+            "Cache entry size: %d bytes",
+            details.cacheEntrySize
+        );
+
+        ImGui::Text(
+            "First sector: %d",
+            details.firstSector
+        );
+
+        ImGui::Text(
+            "Compression: %s",
+            getCompressionTypeName(details.compressionType)
+        );
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("ARCHIVE");
+
+        if (!details.isArchive) {
+            ImGui::TextUnformatted("Archive file count: N/A");
+        }
+        else {
+            ImGui::Text(
+                "Archive file count: %zu",
+                details.archiveFiles.size()
+            );
+
+            ImGui::Spacing();
+
+            for (const rf::cache::ArchiveFileDetails& archiveFile :
+                details.archiveFiles) {
+                ImGui::Text(
+                    "#%d hash 0x%08X",
+                    archiveFile.index,
+                    static_cast<unsigned int>(archiveFile.hash)
+                );
+
+                ImGui::Text(
+                    "  size: %u -> %u bytes",
+                    archiveFile.compressedSize,
+                    archiveFile.uncompressedSize
+                );
+
+                ImGui::Text(
+                    "  payload: %zu bytes",
+                    archiveFile.payloadSize
+                );
+            }
+        }
+    }
 
     if (state.activeModel) {
         const rf::model::ModelAsset& model =
