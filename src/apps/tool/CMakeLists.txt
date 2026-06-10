@@ -23,8 +23,8 @@ target_include_directories(tool PRIVATE
 target_link_libraries(tool PRIVATE
     core
     platform
+    platform_imgui
     render
-    ui
 )
 
 set_target_properties(tool PROPERTIES

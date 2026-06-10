@@ -9,7 +9,7 @@
 #include "cache/CacheFileDetails.h"
 
 #include "../../platform/sdl/SdlContext.h"
-#include "../../ui/imgui/ImGuiTheme.h"
+#include "ui/ElForgeImGuiTheme.h"
 
 namespace eldoria::apps::elforge {
 
@@ -70,7 +70,7 @@ bool ElForgeApplication::initialize() {
     );
 
     ImGui::StyleColorsDark();
-    rf::ui::applyImGuiTheme();
+    applyElForgeImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(sdl_->window(), sdl_->renderer());
     ImGui_ImplSDLRenderer3_Init(sdl_->renderer());

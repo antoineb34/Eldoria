@@ -7,7 +7,6 @@
 #include <imgui_impl_sdlrenderer3.h>
 
 #include "../platform/sdl/SdlContext.h"
-#include "../ui/imgui/ImGuiTheme.h"
 
 #include "workspace/Workspace.h"
 #include "workspace/cache/CacheWorkspace.h"
@@ -50,8 +49,6 @@ int StudioApplication::run() {
     );
 
     ImGui::StyleColorsDark();
-
-    rf::ui::applyImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(
         window,

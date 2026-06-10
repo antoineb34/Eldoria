@@ -18,9 +18,9 @@ target_include_directories(explorer PRIVATE
 target_link_libraries(explorer PRIVATE
     core
     platform
+    platform_imgui
     rune_forge_render_next
     render
-    ui
 )
 
 set_target_properties(explorer PROPERTIES

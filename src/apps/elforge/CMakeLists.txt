@@ -1,6 +1,7 @@
 add_executable(elforge
     main.cpp
     ElForgeApplication.cpp
+    ui/ElForgeImGuiTheme.cpp
     panels/cache/CacheTreeBuilder.cpp
     panels/cache/CacheTreePanel.cpp
     panels/cache/CacheInspectorPanel.cpp
@@ -14,9 +15,9 @@ target_include_directories(elforge PRIVATE
 target_link_libraries(elforge PRIVATE
     core
     platform
+    platform_imgui
     rune_forge_render_next
     render
-    ui
 )
 
 set_target_properties(elforge PROPERTIES
