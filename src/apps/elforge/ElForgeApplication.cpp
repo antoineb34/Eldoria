@@ -18,7 +18,7 @@ ElForgeApplication::ElForgeApplication()
       modelLoader_(
           cache_,
           [this](std::uint32_t id) {
-              return textureLoader_.load(id);
+              return loadModelTexture(id);
           }
       ) {
 }
@@ -148,6 +148,12 @@ void ElForgeApplication::handleSelectionChanged() {
             );
         }
     }
+}
+
+std::optional<rf::texture::TextureAsset> ElForgeApplication::loadModelTexture(
+    std::uint32_t id
+) {
+    return textureLoader_.load(id);
 }
 
 void ElForgeApplication::render() {

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <SDL3/SDL.h>
 #include "panels/cache/CacheState.h"
 #include "panels/cache/CacheTreeBuilder.h"
@@ -30,6 +32,9 @@ private:
     void render();
 
     void handleSelectionChanged();
+    std::optional<rf::texture::TextureAsset> loadModelTexture(
+        std::uint32_t id
+    );
 
 private:
     // Platform
