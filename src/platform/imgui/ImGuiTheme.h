@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eld::elforge {
+namespace eld::platform::imgui {
 
 void applyImGuiTheme();
 

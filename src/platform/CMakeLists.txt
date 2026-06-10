@@ -1,5 +1,6 @@
 add_library(platform STATIC
     sdl/SdlContext.cpp
+    imgui/ImGuiTheme.cpp
 )
 
 target_include_directories(platform PUBLIC

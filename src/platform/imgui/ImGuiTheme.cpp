@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-namespace eld::elforge {
+namespace eld::platform::imgui {
 
 void applyImGuiTheme() {
     ImGuiStyle& style = ImGui::GetStyle();

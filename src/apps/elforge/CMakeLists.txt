@@ -1,4 +1,4 @@
-add_executable(explorer
+add_executable(elforge
     main.cpp
 
     AppShell.cpp
@@ -12,18 +12,18 @@ add_executable(explorer
     panels/CacheViewportPanel.cpp
 )
 
-target_include_directories(explorer PRIVATE
+target_include_directories(elforge PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(explorer PRIVATE
+target_link_libraries(elforge PRIVATE
     Eldoria::Data
     platform
     platform_imgui
     render
 )
 
-set_target_properties(explorer PROPERTIES
+set_target_properties(elforge PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY
     ${CMAKE_BINARY_DIR}/bin
 )

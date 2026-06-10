@@ -1,5 +1,5 @@
 #include "AppShell.h"
-#include "theme/ImGuiTheme.h"
+#include "../../platform/imgui/ImGuiTheme.h"
 
 #include <SDL3/SDL.h>
 
@@ -41,7 +41,7 @@ int AppShell::run() {
     );
 
     ImGui::StyleColorsDark();
-    eld::elforge::applyImGuiTheme();
+    eld::platform::imgui::applyImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(
         window,
