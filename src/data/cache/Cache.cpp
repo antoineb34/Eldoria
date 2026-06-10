@@ -1,62 +1,23 @@
 #include "Cache.h"
 
 #include <algorithm>
-#include <array>
-#include <cstdint>
-#include <fstream>
+#include <string>
 
-namespace rf::cache {
+#include "binary/ByteBuffer.h"
+
+namespace eld::cache {
 
 namespace {
 
-constexpr int IndexEntrySize = 6;
-constexpr int SectorSize = 520;
-constexpr int SectorHeaderSize = 8;
-constexpr int SectorPayloadSize = SectorSize - SectorHeaderSize;
+constexpr std::uint32_t IndexEntrySize = 6;
+constexpr std::uint32_t SectorSize = 520;
+constexpr std::uint32_t SectorHeaderSize = 8;
+constexpr std::uint32_t SectorPayloadSize =
+    SectorSize - SectorHeaderSize;
 
-std::filesystem::path defaultCachePath() {
-    const std::array<std::filesystem::path, 4> candidates {
-        "cache",
-        "data/cache",
-        "../cache",
-        "../../cache"
-    };
-
-    for (const auto& candidate : candidates) {
-        if (
-            std::filesystem::exists(candidate / "main_file_cache.dat") &&
-            std::filesystem::exists(candidate / "main_file_cache.idx0")
-        ) {
-            return candidate;
-        }
-    }
-
-    return "cache";
 }
 
-int readU24(
-    const unsigned char* bytes
-) {
-    return
-        (static_cast<int>(bytes[0]) << 16) |
-        (static_cast<int>(bytes[1]) << 8) |
-        static_cast<int>(bytes[2]);
-}
-
-int readU16(
-    const unsigned char* bytes
-) {
-    return
-        (static_cast<int>(bytes[0]) << 8) |
-        static_cast<int>(bytes[1]);
-}
-
-} // namespace
-
-Cache::Cache()
-    : rootPath_(defaultCachePath())
-{
-}
+Cache::Cache() = default;
 
 Cache::Cache(
     std::filesystem::path rootPath
@@ -66,168 +27,112 @@ Cache::Cache(
 }
 
 bool Cache::isValid() const {
-    if (!std::filesystem::exists(rootPath_ / "main_file_cache.dat")) {
-        return false;
-    }
-
-    for (int index = 0; index <= 4; ++index) {
-        if (!std::filesystem::exists(rootPath_ / ("main_file_cache.idx" + std::to_string(index)))) {
-            return false;
-        }
-    }
-
-    return true;
+    return validateDirectory();
 }
 
-std::filesystem::path Cache::indexPath(
-    CacheIndex index
-) const {
-    return rootPath_ / (
-        "main_file_cache.idx" +
-        std::to_string(static_cast<int>(index))
-    );
-}
-
-std::optional<CacheIndexEntry> Cache::readIndexEntry(
+bool Cache::hasFile(
     CacheIndex index,
     int fileId
 ) const {
-    if (fileId < 0) {
-        return std::nullopt;
-    }
-
-    std::ifstream stream(
-        indexPath(index),
-        std::ios::binary
-    );
-
-    if (!stream) {
-        return std::nullopt;
-    }
-
-    stream.seekg(
-        static_cast<std::streamoff>(fileId) * IndexEntrySize,
-        std::ios::beg
-    );
-
-    unsigned char bytes[IndexEntrySize] {};
-    stream.read(
-        reinterpret_cast<char*>(bytes),
-        IndexEntrySize
-    );
-
-    if (stream.gcount() != IndexEntrySize) {
-        return std::nullopt;
-    }
-
-    CacheIndexEntry entry;
-    entry.size = readU24(bytes);
-    entry.firstSector = readU24(bytes + 3);
-
-    if (entry.size <= 0 || entry.firstSector <= 0) {
-        return std::nullopt;
-    }
-
-    return entry;
+    return readIndexEntry(
+        index,
+        fileId
+    ).has_value();
 }
 
 std::optional<CacheFile> Cache::readFile(
     CacheIndex index,
     int fileId
 ) const {
-    auto entry = readIndexEntry(
-        index,
-        fileId
-    );
+    std::optional<CacheIndexEntry> entry =
+        readIndexEntry(
+            index,
+            fileId
+        );
 
     if (!entry.has_value()) {
         return std::nullopt;
     }
 
-    std::ifstream dataStream(
-        rootPath_ / "main_file_cache.dat",
+    std::ifstream datFile(
+        datPath(),
         std::ios::binary
     );
 
-    if (!dataStream) {
+    if (!datFile.is_open()) {
         return std::nullopt;
     }
 
-    std::vector<unsigned char> payload;
+    std::vector<std::uint8_t> payload;
+
     payload.reserve(
-        static_cast<std::size_t>(entry->size)
+        entry->size
     );
 
-    int currentSector = entry->firstSector;
-    int expectedChunk = 0;
+    std::uint32_t sector =
+        entry->firstSector;
 
-    while (
-        currentSector > 0 &&
-        static_cast<int>(payload.size()) < entry->size
-    ) {
-        dataStream.seekg(
-            static_cast<std::streamoff>(currentSector) * SectorSize,
-            std::ios::beg
-        );
+    std::uint32_t remainingBytes =
+        entry->size;
 
-        unsigned char header[SectorHeaderSize] {};
-        dataStream.read(
-            reinterpret_cast<char*>(header),
-            SectorHeaderSize
-        );
+    std::uint16_t expectedChunk =
+        0;
 
-        if (dataStream.gcount() != SectorHeaderSize) {
+    while (remainingBytes > 0) {
+        if (
+            !seekToSector(
+                datFile,
+                sector
+            )
+        ) {
             return std::nullopt;
         }
 
-        int actualFileId = readU16(header);
-                int actualChunk = readU16(header + 2);
-                int nextSector = readU24(header + 4);
-                int actualIndex = static_cast<int>(header[7]);
+        std::optional<CacheSectorHeader> header =
+            readSectorHeader(
+                datFile
+            );
 
-                // Cache format uses 1-based indexing for the index field in sector headers
-                // (1=Config, 2=Models, 3=Animations, 4=Midi, 5=Maps)
-                // while CacheIndex enum is 0-based.
-                int expectedCacheIndex = static_cast<int>(index) + 1;
+        if (!header.has_value()) {
+            return std::nullopt;
+        }
 
-                if (
-                    actualFileId != fileId ||
-                    actualChunk != expectedChunk ||
-                    actualIndex != expectedCacheIndex
-                ) {
-                    return std::nullopt;
-                }
+        if (
+            !validateSectorHeader(
+                *header,
+                index,
+                fileId,
+                expectedChunk
+            )
+        ) {
+            return std::nullopt;
+        }
 
-                int remaining =
-                    entry->size - static_cast<int>(payload.size());
+        std::optional<std::vector<std::uint8_t>> sectorPayload =
+            readSectorPayload(
+                datFile,
+                remainingBytes
+            );
 
-                int bytesToRead = std::min(
-                    SectorPayloadSize,
-                    remaining
-                );
-
-                std::array<unsigned char, SectorPayloadSize> sectorPayload {};
-                dataStream.read(
-            reinterpret_cast<char*>(sectorPayload.data()),
-            bytesToRead
-        );
-
-        if (dataStream.gcount() != bytesToRead) {
+        if (!sectorPayload.has_value()) {
             return std::nullopt;
         }
 
         payload.insert(
             payload.end(),
-            sectorPayload.begin(),
-            sectorPayload.begin() + bytesToRead
+            sectorPayload->begin(),
+            sectorPayload->end()
         );
 
-        currentSector = nextSector;
-        ++expectedChunk;
-    }
+        remainingBytes -=
+            static_cast<std::uint32_t>(
+                sectorPayload->size()
+            );
 
-    if (static_cast<int>(payload.size()) != entry->size) {
-        return std::nullopt;
+        sector =
+            header->nextSector;
+
+        expectedChunk++;
     }
 
     return CacheFile {
@@ -243,23 +148,39 @@ std::vector<CacheFile> Cache::listFiles(
 ) const {
     std::vector<CacheFile> files;
 
-    std::ifstream stream(
-        indexPath(index),
-        std::ios::binary | std::ios::ate
+    std::ifstream idxFile(
+        idxPath(index),
+        std::ios::binary
     );
 
-    if (!stream) {
+    if (!idxFile.is_open()) {
         return files;
     }
 
-    int fileCount =
-        static_cast<int>(stream.tellg()) / IndexEntrySize;
+    idxFile.seekg(
+        0,
+        std::ios::end
+    );
 
-    for (int fileId = 0; fileId < fileCount; ++fileId) {
-        auto file = readFile(
-            index,
-            fileId
+    std::streamsize fileSize =
+        idxFile.tellg();
+
+    idxFile.seekg(
+        0,
+        std::ios::beg
+    );
+
+    int fileCount =
+        static_cast<int>(
+            fileSize / IndexEntrySize
         );
+
+    for (int fileId = 0; fileId < fileCount; fileId++) {
+        auto file =
+            readFile(
+                index,
+                fileId
+            );
 
         if (file.has_value()) {
             files.push_back(
@@ -271,4 +192,199 @@ std::vector<CacheFile> Cache::listFiles(
     return files;
 }
 
-} // namespace rf::cache
+std::filesystem::path Cache::datPath() const {
+    return rootPath_ / "main_file_cache.dat";
+}
+
+std::filesystem::path Cache::idxPath(
+    CacheIndex index
+) const {
+    return rootPath_ /
+        (
+            "main_file_cache.idx" +
+            std::to_string(
+                static_cast<int>(index) - 1
+            )
+        );
+}
+
+bool Cache::validateDirectory() const {
+    if (!std::filesystem::exists(rootPath_)) {
+        return false;
+    }
+
+    if (!std::filesystem::exists(datPath())) {
+        return false;
+    }
+
+    for (
+        int i = static_cast<int>(CacheIndex::Config);
+        i <= static_cast<int>(CacheIndex::Map);
+        i++
+    ) {
+        if (
+            !std::filesystem::exists(
+                idxPath(
+                    static_cast<CacheIndex>(i)
+                )
+            )
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+std::optional<CacheIndexEntry> Cache::readIndexEntry(
+    CacheIndex index,
+    int fileId
+) const {
+    if (fileId < 0) {
+        return std::nullopt;
+    }
+
+    std::ifstream idxFile(
+        idxPath(index),
+        std::ios::binary
+    );
+
+    if (!idxFile.is_open()) {
+        return std::nullopt;
+    }
+
+    idxFile.seekg(
+        static_cast<std::streamoff>(fileId) *
+            IndexEntrySize,
+        std::ios::beg
+    );
+
+    std::optional<std::vector<std::uint8_t>> bytes =
+        readBytes(
+            idxFile,
+            IndexEntrySize
+        );
+
+    if (!bytes.has_value()) {
+        return std::nullopt;
+    }
+
+    eld::binary::ByteBuffer buffer(
+        *bytes
+    );
+
+    CacheIndexEntry entry {
+        buffer.readU24(),
+        buffer.readU24()
+    };
+
+    if (
+        entry.size == 0 ||
+        entry.firstSector == 0
+    ) {
+        return std::nullopt;
+    }
+
+    return entry;
+}
+
+std::optional<CacheSectorHeader> Cache::readSectorHeader(
+    std::ifstream& datFile
+) const {
+    std::optional<std::vector<std::uint8_t>> bytes =
+        readBytes(
+            datFile,
+            SectorHeaderSize
+        );
+
+    if (!bytes.has_value()) {
+        return std::nullopt;
+    }
+
+    eld::binary::ByteBuffer buffer(
+        *bytes
+    );
+
+    return CacheSectorHeader {
+        buffer.readU16(),
+        buffer.readU16(),
+        buffer.readU24(),
+        static_cast<CacheIndex>(
+            buffer.readU8()
+        )
+    };
+}
+
+std::optional<std::vector<std::uint8_t>> Cache::readSectorPayload(
+    std::ifstream& datFile,
+    std::uint32_t remainingBytes
+) const {
+    std::uint32_t amount =
+        std::min(
+            remainingBytes,
+            SectorPayloadSize
+        );
+
+    return readBytes(
+        datFile,
+        amount
+    );
+}
+
+bool Cache::seekToSector(
+    std::ifstream& datFile,
+    std::uint32_t sector
+) const {
+    if (sector == 0) {
+        return false;
+    }
+
+    datFile.seekg(
+        static_cast<std::streamoff>(sector) *
+            SectorSize,
+        std::ios::beg
+    );
+
+    return datFile.good();
+}
+
+bool Cache::validateSectorHeader(
+    const CacheSectorHeader& header,
+    CacheIndex index,
+    int fileId,
+    std::uint16_t expectedChunk
+) const {
+    return
+        header.fileId == fileId &&
+        header.chunkId == expectedChunk &&
+        header.index == index;
+}
+
+std::optional<std::vector<std::uint8_t>> Cache::readBytes(
+    std::ifstream& file,
+    std::uint32_t amount
+) {
+    std::vector<std::uint8_t> bytes(
+        amount
+    );
+
+    file.read(
+        reinterpret_cast<char*>(
+            bytes.data()
+        ),
+        static_cast<std::streamsize>(
+            amount
+        )
+    );
+
+    if (
+        file.gcount() !=
+        static_cast<std::streamsize>(amount)
+    ) {
+        return std::nullopt;
+    }
+
+    return bytes;
+}
+
+}

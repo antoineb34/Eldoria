@@ -4,13 +4,12 @@
 #include <optional>
 #include <vector>
 
-namespace rf::cache {
+namespace eld::cache {
 
 struct ArchiveFile {
+    int fileIndex = -1;
     std::uint32_t hash = 0;
-    std::uint32_t uncompressedSize = 0;
-    std::uint32_t compressedSize = 0;
-    std::vector<unsigned char> payload;
+    std::vector<std::uint8_t> payload;
 };
 
 struct Archive {
@@ -21,7 +20,7 @@ struct Archive {
     ) const;
 
     std::optional<ArchiveFile> findByIndex(
-        int index
+        int fileIndex
     ) const;
 };
 
