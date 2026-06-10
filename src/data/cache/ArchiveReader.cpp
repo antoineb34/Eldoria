@@ -1,193 +1,213 @@
 #include "ArchiveReader.h"
 
-#include <bzlib.h>
-
-#include <cstdint>
+#include "../binary/ByteBuffer.h"
+#include "../compression/Compression.h"
 
 namespace rf::cache {
 
 namespace {
 
-std::uint16_t readU16(
-    const std::vector<unsigned char>& data,
-    std::size_t offset
-) {
-    return
-        (static_cast<std::uint16_t>(data[offset]) << 8) |
-        static_cast<std::uint16_t>(data[offset + 1]);
-}
+constexpr int ArchiveHeaderSize = 6;
+constexpr int FileCountSize = 2;
+constexpr int ArchiveFileEntrySize = 10;
 
-std::uint32_t readU24(
-    const std::vector<unsigned char>& data,
-    std::size_t offset
-) {
-    return
-        (static_cast<std::uint32_t>(data[offset]) << 16) |
-        (static_cast<std::uint32_t>(data[offset + 1]) << 8) |
-        static_cast<std::uint32_t>(data[offset + 2]);
-}
+struct FileMetadata {
+    int fileIndex = -1;
 
-std::uint32_t readU32(
-    const std::vector<unsigned char>& data,
-    std::size_t offset
-) {
-    return
-        (static_cast<std::uint32_t>(data[offset]) << 24) |
-        (static_cast<std::uint32_t>(data[offset + 1]) << 16) |
-        (static_cast<std::uint32_t>(data[offset + 2]) << 8) |
-        static_cast<std::uint32_t>(data[offset + 3]);
-}
+    std::uint32_t hash = 0;
 
-std::vector<unsigned char> decompressBzip2Payload(
-    const std::vector<unsigned char>& payload,
-    std::size_t expectedSize
-) {
-    std::vector<unsigned char> input;
+    std::uint32_t compressedSize = 0;
+    std::uint32_t uncompressedSize = 0;
 
-    if (
-        payload.size() >= 3 &&
-        payload[0] == 'B' &&
-        payload[1] == 'Z' &&
-        payload[2] == 'h'
-    ) {
-        input = payload;
+    std::uint32_t offset = 0;
+};
+
+std::optional<std::vector<unsigned char>> decodeArchivePayload(
+    const std::vector<unsigned char>& cacheFilePayload
+) {
+    if (cacheFilePayload.size() < ArchiveHeaderSize) {
+        return std::nullopt;
     }
-    else {
-        input = { 'B', 'Z', 'h', '1' };
-        input.insert(
-            input.end(),
-            payload.begin(),
-            payload.end()
+
+    rf::io::ByteBuffer buffer(
+        cacheFilePayload
+    );
+
+    std::uint32_t uncompressedSize =
+        buffer.readU24();
+
+    std::uint32_t compressedSize =
+        buffer.readU24();
+
+    if (cacheFilePayload.size() < ArchiveHeaderSize + compressedSize) {
+        return std::nullopt;
+    }
+
+    std::vector<unsigned char> payload(
+        cacheFilePayload.begin() + ArchiveHeaderSize,
+        cacheFilePayload.begin() + ArchiveHeaderSize + compressedSize
+    );
+
+    if (uncompressedSize == compressedSize) {
+        return payload;
+    }
+
+    auto decompressed = rf::compression::decompressBzip2(
+        payload,
+        uncompressedSize
+    );
+
+    if (decompressed.empty() && uncompressedSize > 0) {
+        return std::nullopt;
+    }
+
+    return decompressed;
+}
+
+std::vector<FileMetadata> readFileMetadata(
+    const std::vector<unsigned char>& archivePayload
+) {
+    rf::io::ByteBuffer buffer(
+        archivePayload
+    );
+
+    std::uint16_t fileCount =
+        buffer.readU16();
+
+    std::vector<FileMetadata> metadata;
+
+    metadata.reserve(
+        fileCount
+    );
+
+    std::uint32_t offset =
+        FileCountSize +
+        fileCount * ArchiveFileEntrySize;
+
+    for (int i = 0; i < fileCount; i++) {
+        FileMetadata file {};
+
+        file.fileIndex =
+            i;
+
+        file.hash =
+            buffer.readU32();
+
+        file.uncompressedSize =
+            buffer.readU24();
+
+        file.compressedSize =
+            buffer.readU24();
+
+        file.offset =
+            offset;
+
+        offset +=
+            file.compressedSize;
+
+        metadata.push_back(
+            file
         );
     }
 
-    std::vector<unsigned char> output(expectedSize);
-
-    unsigned int outputSize =
-        static_cast<unsigned int>(output.size());
-
-    int result = BZ2_bzBuffToBuffDecompress(
-        reinterpret_cast<char*>(output.data()),
-        &outputSize,
-        const_cast<char*>(
-            reinterpret_cast<const char*>(input.data())
-        ),
-        static_cast<unsigned int>(input.size()),
-        0,
-        1
-    );
-
-    if (result != BZ_OK) {
-        return {};
-    }
-
-    output.resize(outputSize);
-    return output;
+    return metadata;
 }
 
-} // namespace
+std::optional<std::vector<unsigned char>> extractPayload(
+    const std::vector<unsigned char>& archivePayload,
+    const FileMetadata& file
+) {
+    if (
+        file.offset > archivePayload.size() ||
+        file.offset + file.compressedSize > archivePayload.size()
+    ) {
+        return std::nullopt;
+    }
+
+    std::vector<unsigned char> payload(
+        archivePayload.begin() + file.offset,
+        archivePayload.begin() + file.offset + file.compressedSize
+    );
+
+    if (file.compressedSize == file.uncompressedSize) {
+        return payload;
+    }
+
+    auto decompressed = rf::compression::decompressBzip2(
+        payload,
+        file.uncompressedSize
+    );
+
+    if (decompressed.empty() && file.uncompressedSize > 0) {
+        return std::nullopt;
+    }
+
+    return decompressed;
+}
+
+}
 
 std::optional<Archive> ArchiveReader::read(
-    const std::vector<unsigned char>& payload
+    const std::vector<unsigned char>& cacheFilePayload
 ) {
-    if (payload.size() < 8) {
+    auto archivePayload =
+        decodeArchivePayload(
+            cacheFilePayload
+        );
+
+    if (!archivePayload.has_value()) {
         return std::nullopt;
     }
 
-    std::uint32_t uncompressedSize = readU24(
-        payload,
-        0
+    if (archivePayload->size() < FileCountSize) {
+        return std::nullopt;
+    }
+
+    std::vector<FileMetadata> metadata =
+        readFileMetadata(
+            *archivePayload
+        );
+
+    Archive archive {};
+
+    archive.files.reserve(
+        metadata.size()
     );
 
-    std::uint32_t compressedSize = readU24(
-        payload,
-        3
-    );
+    for (const FileMetadata& file : metadata) {
+        auto payload =
+            extractPayload(
+                *archivePayload,
+                file
+            );
 
-    if (payload.size() < 6 + compressedSize) {
-        return std::nullopt;
-    }
-
-    std::vector<unsigned char> archiveData;
-
-    if (uncompressedSize != compressedSize) {
-        std::vector<unsigned char> compressed(
-            payload.begin() + 6,
-            payload.begin() + 6 + compressedSize
-        );
-
-        archiveData = decompressBzip2Payload(
-            compressed,
-            uncompressedSize
-        );
-
-        if (archiveData.empty()) {
-            return std::nullopt;
-        }
-    }
-    else {
-        archiveData.assign(
-            payload.begin() + 6,
-            payload.begin() + 6 + compressedSize
-        );
-    }
-
-    if (archiveData.size() < 2) {
-        return std::nullopt;
-    }
-
-    std::uint16_t fileCount = readU16(
-        archiveData,
-        0
-    );
-
-    std::size_t tableOffset = 2;
-    std::size_t dataOffset = tableOffset + fileCount * 10;
-
-    if (archiveData.size() < dataOffset) {
-        return std::nullopt;
-    }
-
-    Archive archive;
-    archive.files.reserve(fileCount);
-
-    for (std::uint16_t fileIndex = 0; fileIndex < fileCount; ++fileIndex) {
-        ArchiveFile file;
-        file.hash = readU32(
-            archiveData,
-            tableOffset
-        );
-        tableOffset += 4;
-
-        file.uncompressedSize = readU24(
-            archiveData,
-            tableOffset
-        );
-        tableOffset += 3;
-
-        file.compressedSize = readU24(
-            archiveData,
-            tableOffset
-        );
-        tableOffset += 3;
-
-        if (archiveData.size() < dataOffset + file.compressedSize) {
+        if (!payload.has_value()) {
             return std::nullopt;
         }
 
-        file.payload.assign(
-            archiveData.begin() + static_cast<std::ptrdiff_t>(dataOffset),
-            archiveData.begin() + static_cast<std::ptrdiff_t>(dataOffset + file.compressedSize)
-        );
+        ArchiveFile archiveFile {};
 
-        dataOffset += file.compressedSize;
+        archiveFile.fileIndex =
+            file.fileIndex;
+
+        archiveFile.hash =
+            file.hash;
+
+        archiveFile.uncompressedSize =
+            file.uncompressedSize;
+
+        archiveFile.compressedSize =
+            file.compressedSize;
+
+        archiveFile.payload =
+            std::move(*payload);
 
         archive.files.push_back(
-            std::move(file)
+            std::move(archiveFile)
         );
     }
 
     return archive;
 }
 
-} // namespace rf::cache
+}
