@@ -181,28 +181,33 @@ std::optional<CacheFile> Cache::readFile(
         }
 
         int actualFileId = readU16(header);
-        int actualChunk = readU16(header + 2);
-        int nextSector = readU24(header + 4);
-        int actualIndex = static_cast<int>(header[7]);
+                int actualChunk = readU16(header + 2);
+                int nextSector = readU24(header + 4);
+                int actualIndex = static_cast<int>(header[7]);
 
-        if (
-            actualFileId != fileId ||
-            actualChunk != expectedChunk ||
-            actualIndex != static_cast<int>(index)
-        ) {
-            return std::nullopt;
-        }
+                // Cache format uses 1-based indexing for the index field in sector headers
+                // (1=Config, 2=Models, 3=Animations, 4=Midi, 5=Maps)
+                // while CacheIndex enum is 0-based.
+                int expectedCacheIndex = static_cast<int>(index) + 1;
 
-        int remaining =
-            entry->size - static_cast<int>(payload.size());
+                if (
+                    actualFileId != fileId ||
+                    actualChunk != expectedChunk ||
+                    actualIndex != expectedCacheIndex
+                ) {
+                    return std::nullopt;
+                }
 
-        int bytesToRead = std::min(
-            SectorPayloadSize,
-            remaining
-        );
+                int remaining =
+                    entry->size - static_cast<int>(payload.size());
 
-        std::array<unsigned char, SectorPayloadSize> sectorPayload {};
-        dataStream.read(
+                int bytesToRead = std::min(
+                    SectorPayloadSize,
+                    remaining
+                );
+
+                std::array<unsigned char, SectorPayloadSize> sectorPayload {};
+                dataStream.read(
             reinterpret_cast<char*>(sectorPayload.data()),
             bytesToRead
         );
