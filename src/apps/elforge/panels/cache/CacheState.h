@@ -36,6 +36,12 @@ struct CacheState {
     std::optional<rf::texture::TextureAsset> selectedModelTexture;
     std::optional<rf::cache::CacheFileDetails> selectedCacheFileDetails;
 
+    // Texture browser state
+    int textureInputId = 0;
+    bool pendingTextureLoad = false;
+    std::optional<rf::texture::TextureAsset> selectedTexture;
+    std::optional<std::string> selectedTextureLoadError;
+
     std::unordered_map<std::string, bool> expandedNodes;
 };
 
