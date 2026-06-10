@@ -14,6 +14,12 @@ add_library(eldoria_data STATIC
     model/decoder/VertexDecoder.cpp
     model/decoder/FaceDecoder.cpp
     model/decoder/TextureUVMappingDecoder.cpp
+
+    texture/TextureLoader.cpp
+    texture/TextureFileReader.cpp
+    texture/TextureBuilder.cpp
+    texture/decoder/TexturePixelDecoder.cpp
+    texture/decoder/TextureCanvasDecoder.cpp
 )
 
 add_library(Eldoria::Data ALIAS eldoria_data)

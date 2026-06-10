@@ -12,7 +12,7 @@
 #include "panels/CacheViewportPanel.h"
 
 #include "model/ModelLoader.h"
-#include "../../core/assets/texture/TextureLoader.h"
+#include "texture/TextureLoader.h"
 
 namespace rf::explorer {
 

@@ -4,5 +4,5 @@ add_executable(archive_probe
 
 target_link_libraries(archive_probe
     PRIVATE
-        core
+        Eldoria::Data
 )

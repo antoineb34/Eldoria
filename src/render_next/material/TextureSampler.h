@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../core/assets/texture/TextureAsset.h"
+#include "texture/TextureAsset.h"
 #include "../backend/software/ColorBuffer.h"
 
 namespace rf::render_next {
