@@ -32,6 +32,7 @@ struct CacheState {
     bool debugHighlightTexturedFaces = false;
 
     std::optional<rf::model::ModelAsset> activeModel;
+    std::optional<std::string> activeModelLoadError;
     std::optional<rf::texture::TextureAsset> activeTexture;
     std::optional<rf::cache::CacheFileDetails> activeCacheFileDetails;
 

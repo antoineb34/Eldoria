@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -17,6 +18,26 @@ namespace rf::model {
 using TextureLoaderCallback =
     std::function<std::optional<rf::texture::TextureAsset>(std::uint32_t)>;
 
+enum class ModelLoadStatus {
+    Loaded,
+    MissingCacheFile,
+    EmptyPayload,
+    UnsupportedCompression,
+    DecompressionFailed,
+    InvalidModelFile,
+    EmptyModel
+};
+
+struct ModelLoadResult {
+    ModelLoadStatus status = ModelLoadStatus::MissingCacheFile;
+    std::string message;
+    std::optional<ModelAsset> asset;
+
+    bool loaded() const {
+        return status == ModelLoadStatus::Loaded && asset.has_value();
+    }
+};
+
 class ModelLoader {
 public:
     ModelLoader(
@@ -25,6 +46,10 @@ public:
     );
 
     std::optional<ModelAsset> load(
+        std::uint32_t id
+    );
+
+    ModelLoadResult loadDetailed(
         std::uint32_t id
     );
 
