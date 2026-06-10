@@ -152,7 +152,7 @@ void ElForgeApplication::handleSelectionChanged() {
 
             if (result.loaded()) {
                 state_.activeModel =
-                    std::move(result.asset);
+                    std::move(*result.asset);
             }
             else {
                 state_.activeModelLoadError =
