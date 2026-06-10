@@ -47,9 +47,10 @@ docs/update-roadmap
 4. Implement the change.
 5. Push the feature branch.
 6. Open a pull request into `dev`.
-7. Merge the pull request into `dev`.
-8. Close the issue.
-9. Move the issue to `Done` on the project board.
+7. Review the pull request.
+8. Merge the pull request into `dev` after review.
+9. Close the issue.
+10. Move the issue to `Done` on the project board.
 
 Example:
 
@@ -60,14 +61,41 @@ feature/issue-43-cmake-workspace
     ↓
 Pull Request
     ↓
+Review
+    ↓
 dev
     ↓
 Close issue
 ```
 
-Issues are considered complete when their pull request is merged into `dev`.
+Issues are considered complete when their pull request is reviewed and merged into `dev`.
 
 Issues do not need to wait for `dev` to merge into `main` before being closed.
+
+---
+
+## Review Gate
+
+Implementation work should stop at an open pull request unless the maintainer explicitly asks for more.
+
+A contributor should:
+
+1. Read the relevant docs before coding.
+2. Create a branch from `dev`.
+3. Keep the change scoped to the issue.
+4. Build or verify the change when practical.
+5. Push the branch.
+6. Open a pull request targeting `dev`.
+7. Include a summary, changed files, and verification notes.
+8. Wait for review.
+
+A contributor should not:
+
+- Commit directly to `main`
+- Commit directly to `dev`
+- Merge their own pull request
+- Close the issue before review
+- Perform unrelated refactors outside the issue scope
 
 ---
 
