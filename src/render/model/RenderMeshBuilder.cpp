@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
-#include "../software/math/Mat4.h"
-#include "../software/camera/Projection.h"
+#include "../math/Mat4.h"
+#include "../camera/Projection.h"
 
 namespace eld::render {
 

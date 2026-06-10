@@ -5,7 +5,7 @@
 #include <limits>
 #include <vector>
 
-#include "../software/color/Color.h"
+#include "../color/Color.h"
 #include "../software/raster/TriangleRasterizer.h"
 
 #include "RenderMesh.h"

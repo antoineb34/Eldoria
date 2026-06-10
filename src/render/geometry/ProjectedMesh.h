@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "../../render/software/camera/Projection.h"
-#include "../../render/software/math/Vec3.h"
+#include "../../render/camera/Projection.h"
+#include "../../render/math/Vec3.h"
 
 namespace eld::render {
 

@@ -3,8 +3,8 @@ add_library(render STATIC
     model/RenderMeshBuilder.cpp
     order/FaceOrderer.cpp
 
-    software/camera/Projection.cpp
-    software/color/Color.cpp
+    camera/Projection.cpp
+    color/Color.cpp
     software/raster/TriangleRasterizer.cpp
 
     RenderPipeline.cpp

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../../../render/software/color/Color.h"
+#include "../../../render/color/Color.h"
 
 namespace eld::render {
 

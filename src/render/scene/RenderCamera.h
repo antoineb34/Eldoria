@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../render/software/camera/Camera.h"
+#include "../../render/camera/Camera.h"
 
 namespace eld::render {
 

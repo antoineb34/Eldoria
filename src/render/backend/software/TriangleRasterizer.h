@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../render/software/camera/Projection.h"
+#include "../../../render/camera/Projection.h"
 #include "Framebuffer.h"
 #include "texture/TextureAsset.h"
 #include "../../material/TextureSampler.h"

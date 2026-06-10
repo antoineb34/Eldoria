@@ -7,7 +7,7 @@
 #include "model/ModelAsset.h"
 #include "texture/TextureAsset.h"
 
-#include "../software/camera/Camera.h"
+#include "../camera/Camera.h"
 
 #include "RenderOptions.h"
 #include "RenderMeshBuilder.h"

@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "model/ModelAsset.h"
-#include "../software/camera/Projection.h"
+#include "../camera/Projection.h"
 
 namespace eld::render {
 

@@ -4,8 +4,8 @@
 
 #include "../scene/Transform.h"
 
-#include "../../render/software/camera/Projection.h"
-#include "../../render/software/math/Mat4.h"
+#include "../../render/camera/Projection.h"
+#include "../../render/math/Mat4.h"
 
 namespace eld::render {
 

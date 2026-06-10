@@ -10,7 +10,7 @@
 #include "model/ModelAsset.h"
 #include "texture/TextureAsset.h"
 
-#include "../../render/software/camera/Camera.h"
+#include "../../render/camera/Camera.h"
 #include "../../render/model/RenderOptions.h"
 #include "../../render/model/ModelTransform.h"
 

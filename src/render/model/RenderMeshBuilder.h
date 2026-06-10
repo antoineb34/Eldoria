@@ -3,7 +3,7 @@
 #include "RenderMesh.h"
 #include "ModelTransform.h"
 
-#include "../software/camera/Camera.h"
+#include "../camera/Camera.h"
 
 namespace eld::render {
 

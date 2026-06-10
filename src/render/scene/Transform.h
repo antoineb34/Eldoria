@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../render/software/math/Vec3.h"
-#include "../../render/software/math/Mat4.h"
+#include "../../render/math/Vec3.h"
+#include "../../render/math/Mat4.h"
 
 namespace eld::render {
 
