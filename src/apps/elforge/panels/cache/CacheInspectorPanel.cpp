@@ -247,9 +247,9 @@ void CacheInspectorPanel::render(
         state.selection.fileId
     );
 
-    if (state.activeCacheFileDetails) {
+    if (state.selectedCacheFileDetails) {
         const rf::cache::CacheFileDetails& details =
-            *state.activeCacheFileDetails;
+            *state.selectedCacheFileDetails;
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -312,19 +312,19 @@ void CacheInspectorPanel::render(
         }
     }
 
-    if (state.activeModelLoadError) {
+    if (state.selectedModelLoadError) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::TextUnformatted("MODEL LOAD ERROR");
         ImGui::TextWrapped(
             "%s",
-            state.activeModelLoadError->c_str()
+            state.selectedModelLoadError->c_str()
         );
     }
 
-    if (state.activeModel) {
+    if (state.selectedModel) {
         const rf::model::ModelAsset& model =
-            *state.activeModel;
+            *state.selectedModel;
 
         ImGui::Spacing();
         ImGui::Separator();
