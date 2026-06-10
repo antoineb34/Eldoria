@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace eldoria::apps::elforge {
+namespace eld::explorer {
 
 namespace {
 
@@ -15,7 +15,7 @@ CacheTreeNode makeRoot() {
 }
 
 CacheTreeNode makeIndexNode(
-    rf::cache::CacheIndex index,
+    eld::cache::CacheIndex index,
     const std::string& label
 ) {
     CacheTreeNode node;
@@ -33,20 +33,20 @@ CacheTreeNode makeIndexNode(
 }
 
 CacheTreeNode makeFileNode(
-    rf::cache::CacheIndex index,
-    const rf::cache::CacheFile& file
+    eld::cache::CacheIndex index,
+    const eld::cache::CacheFile& file
 ) {
     CacheTreeNode node;
 
     node.type =
-        index == rf::cache::CacheIndex::Model
+        index == eld::cache::CacheIndex::Model
             ? CacheTreeNodeType::Model
             : CacheTreeNodeType::File;
 
     node.label =
         "File " + std::to_string(file.id);
 
-    if (index == rf::cache::CacheIndex::Model) {
+    if (index == eld::cache::CacheIndex::Model) {
         node.label =
             "Model " + std::to_string(file.id);
     }
@@ -62,8 +62,8 @@ CacheTreeNode makeFileNode(
 
 void addIndex(
     CacheTreeNode& root,
-    const rf::cache::Cache& cache,
-    rf::cache::CacheIndex index,
+    const eld::cache::Cache& cache,
+    eld::cache::CacheIndex index,
     const std::string& label
 ) {
     CacheTreeNode indexNode =
@@ -72,10 +72,10 @@ void addIndex(
             label
         );
 
-    std::vector<rf::cache::CacheFile> files =
+    std::vector<eld::cache::CacheFile> files =
         cache.listFiles(index);
 
-    for (const rf::cache::CacheFile& file : files) {
+    for (const eld::cache::CacheFile& file : files) {
         indexNode.children.push_back(
             makeFileNode(
                 index,
@@ -92,7 +92,7 @@ void addIndex(
 }
 
 CacheTreeNode CacheTreeBuilder::build(
-    const rf::cache::Cache& cache
+    const eld::cache::Cache& cache
 ) {
     CacheTreeNode root =
         makeRoot();
@@ -100,35 +100,35 @@ CacheTreeNode CacheTreeBuilder::build(
     addIndex(
         root,
         cache,
-        rf::cache::CacheIndex::Config,
+        eld::cache::CacheIndex::Config,
         "Index 0 - Config"
     );
 
     addIndex(
         root,
         cache,
-        rf::cache::CacheIndex::Model,
+        eld::cache::CacheIndex::Model,
         "Index 1 - Models"
     );
 
     addIndex(
         root,
         cache,
-        rf::cache::CacheIndex::Animation,
+        eld::cache::CacheIndex::Animation,
         "Index 2 - Animations"
     );
 
     addIndex(
         root,
         cache,
-        rf::cache::CacheIndex::Midi,
+        eld::cache::CacheIndex::Midi,
         "Index 3 - Midi"
     );
 
     addIndex(
         root,
         cache,
-        rf::cache::CacheIndex::Map,
+        eld::cache::CacheIndex::Map,
         "Index 4 - Maps"
     );
 

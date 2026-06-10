@@ -1,6 +1,6 @@
 #pragma once
 
-namespace rf::render {
+namespace eld::render {
 
 struct Camera {
     float angleX = 0.0f;

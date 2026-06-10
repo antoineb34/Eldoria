@@ -1,10 +1,10 @@
 #include "Projection.h"
 #include <iostream>
 
-namespace rf::render {
+namespace eld::render {
 
 Vec3 toVec3(
-    const rf::model::Vertex& vertex
+    const eld::model::Vertex& vertex
 ) {
     return {
         static_cast<float>(vertex.x),
@@ -89,7 +89,7 @@ ScreenPoint projectPoint(
 }
 
 ScreenPoint projectVertex(
-    const rf::model::Vertex& vertex,
+    const eld::model::Vertex& vertex,
     const Mat4& view,
     const Mat4& projection,
     const Camera& camera

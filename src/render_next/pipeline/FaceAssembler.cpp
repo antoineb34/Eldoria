@@ -2,12 +2,12 @@
 
 #include <algorithm>
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 namespace {
 
 bool isValidFace(
-    const rf::model::Face& face,
+    const eld::model::Face& face,
     const ProjectedMesh& mesh
 ) {
     return
@@ -20,7 +20,7 @@ bool isValidFace(
 }
 
 bool hasValidProjectedVertices(
-    const rf::model::Face& face,
+    const eld::model::Face& face,
     const ProjectedMesh& mesh
 ) {
     return
@@ -32,7 +32,7 @@ bool hasValidProjectedVertices(
 RenderPacket makePacket(
     int objectIndex,
     int faceIndex,
-    const rf::model::Face& face,
+    const eld::model::Face& face,
     const ProjectedMesh& mesh
 ) {
     const float z0 = mesh.vertices[face.a].screen.z;
@@ -81,7 +81,7 @@ RenderQueue FaceAssembler::assemble(
     for (int faceIndex = 0;
          faceIndex < static_cast<int>(object.model->faces.size());
          faceIndex++) {
-        const rf::model::Face& face =
+        const eld::model::Face& face =
             object.model->faces[faceIndex];
 
         if (!isValidFace(face, mesh)) {

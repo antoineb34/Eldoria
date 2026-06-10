@@ -4,7 +4,7 @@
 #include "decoder/TextureUVMappingDecoder.h"
 #include "decoder/VertexDecoder.h"
 
-namespace rf::model {
+namespace eld::model {
 
 ModelAsset ModelBuilder::build(
     const ModelFile& file

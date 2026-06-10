@@ -4,7 +4,7 @@
 #include "../scene/RenderObject.h"
 #include "ProjectedMesh.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 class MeshProjector {
 public:

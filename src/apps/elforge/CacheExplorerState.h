@@ -14,13 +14,13 @@
 #include "../../render/model/RenderOptions.h"
 #include "../../render/model/ModelTransform.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 struct CacheExplorerState {
 
-    rf::render::Camera camera;
-    rf::render::RenderOptions renderOptions;
-    rf::render::ModelTransform modelTransform;
+    eld::render::Camera camera;
+    eld::render::RenderOptions renderOptions;
+    eld::render::ModelTransform modelTransform;
 
     int viewportX = 0;
     int viewportY = 0;
@@ -31,8 +31,8 @@ struct CacheExplorerState {
     CacheTreeNode rootNode;
     bool debugHighlightTexturedFaces = false;
 
-    std::optional<rf::model::ModelAsset> activeModel;
-    std::optional<rf::texture::TextureAsset> activeTexture;
+    std::optional<eld::model::ModelAsset> activeModel;
+    std::optional<eld::texture::TextureAsset> activeTexture;
 
     std::unordered_map<std::string, bool> expandedNodes;
 };

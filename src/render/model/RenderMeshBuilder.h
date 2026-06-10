@@ -5,12 +5,12 @@
 
 #include "../software/camera/Camera.h"
 
-namespace rf::render {
+namespace eld::render {
 
 class RenderMeshBuilder {
 public:
     RenderMesh build(
-        const rf::model::ModelAsset& model,
+        const eld::model::ModelAsset& model,
         const Camera& camera,
         const ModelTransform& transform
     );

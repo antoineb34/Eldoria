@@ -13,11 +13,11 @@
 #include "RenderMeshBuilder.h"
 #include "../order/FaceOrderer.h"
 
-namespace rf::render {
+namespace eld::render {
 
 void drawModel(
     SDL_Renderer* renderer,
-    const rf::model::ModelAsset& model,
+    const eld::model::ModelAsset& model,
     const Camera& camera,
     const RenderOptions& options,
     const ModelTransform& transform

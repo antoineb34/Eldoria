@@ -4,7 +4,7 @@
 
 #include "RenderPacket.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 struct RenderQueue {
     std::vector<RenderPacket> packets;

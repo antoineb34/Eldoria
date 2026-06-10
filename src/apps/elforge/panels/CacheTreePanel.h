@@ -1,20 +1,21 @@
 #pragma once
 
-#include "CacheState.h"
+namespace eld::explorer {
 
-namespace eldoria::apps::elforge {
+struct CacheExplorerState;
+struct CacheTreeNode;
 
 class CacheTreePanel {
 public:
     void render(
-        CacheState& state,
+        CacheExplorerState& state,
         float width,
         float height
     );
 
 private:
     void renderNode(
-        CacheState& state,
+        CacheExplorerState& state,
         const CacheTreeNode& node,
         int depth
     );

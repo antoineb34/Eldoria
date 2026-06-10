@@ -1,7 +1,6 @@
-#include "ElForgeApplication.h"
+#include "AppShell.h"
 
 int main() {
-    eldoria::apps::elforge::ElForgeApplication application;
-
-    return application.run();
+    eld::explorer::AppShell app;
+    return app.run();
 }

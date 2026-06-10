@@ -8,7 +8,7 @@
 #include "../../../render_next/RenderPipeline.h"
 #include "../../../render_next/backend/software/SoftwareRenderBackend.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
     namespace {
 
@@ -182,7 +182,7 @@ void CacheViewportPanel::renderViewport(
 
     updateViewportControls(state);
 
-    rf::render_next::RenderObject object;
+    eld::render_next::RenderObject object;
     object.model = &state.activeModel.value();    object.transform.position = {
         state.modelTransform.offsetX,
         state.modelTransform.offsetY,
@@ -199,17 +199,17 @@ void CacheViewportPanel::renderViewport(
         state.modelTransform.scale
     };
 
-    rf::render_next::RenderScene scene;
+    eld::render_next::RenderScene scene;
     scene.camera = state.camera;
     scene.objects.push_back(object);
 
-    rf::render_next::SoftwareRenderBackend backend(renderer);
+    eld::render_next::SoftwareRenderBackend backend(renderer);
 
     backend.setHighlightTexturedFaces(
         state.debugHighlightTexturedFaces
     );
 
-    rf::render_next::RenderPipeline pipeline;
+    eld::render_next::RenderPipeline pipeline;
 
     pipeline.render(
         scene,

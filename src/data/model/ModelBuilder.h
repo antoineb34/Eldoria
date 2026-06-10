@@ -3,7 +3,7 @@
 #include "ModelAsset.h"
 #include "ModelFile.h"
 
-namespace rf::model {
+namespace eld::model {
 
 class ModelBuilder {
 public:

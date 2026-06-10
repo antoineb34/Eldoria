@@ -1,14 +1,14 @@
 #include "CacheExplorer.h"
 #include <imgui.h>
 
-namespace rf::explorer {
+namespace eld::explorer {
 
     namespace {
 
     bool hasAlphaFaces(
-        const rf::model::ModelAsset& model
+        const eld::model::ModelAsset& model
     ) {
-        for (const rf::model::Face& face : model.faces) {
+        for (const eld::model::Face& face : model.faces) {
             if (face.alpha > 0) {
                 return true;
             }
@@ -32,7 +32,7 @@ namespace rf::explorer {
         constexpr int MaxModelSearchId = 20000;
 
         for (int modelId = startId; modelId < MaxModelSearchId; modelId++) {
-            std::optional<rf::model::ModelAsset> model =
+            std::optional<eld::model::ModelAsset> model =
                 modelLoader_.load(
                     static_cast<std::uint32_t>(modelId)
                 );
@@ -63,9 +63,7 @@ namespace rf::explorer {
         : textureLoader_(cache_),
           modelLoader_(
               cache_,
-              [this](std::uint32_t id) {
-                  return textureLoader_.load(id);
-              }
+              textureLoader_
           ) {
     }
 

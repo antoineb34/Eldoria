@@ -5,7 +5,7 @@
 #include "../scene/RenderCamera.h"
 #include "../scene/RenderObject.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 class IRenderBackend {
 public:

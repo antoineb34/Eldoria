@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 struct Material {
     uint8_t r = 255;

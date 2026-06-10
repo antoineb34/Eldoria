@@ -2,13 +2,13 @@
 
 #include <limits>
 
-#include "../../compression/Compression.h"
+#include "binary/Compression.h"
 
-namespace rf::model {
+namespace eld::model {
 
 ModelLoader::ModelLoader(
-    const rf::cache::Cache& cache,
-    rf::texture::TextureLoader& textureLoader
+    const cache::Cache& cache,
+    texture::TextureLoader& textureLoader
 )
     : cache_(cache),
     textureLoader_(textureLoader)
@@ -104,9 +104,9 @@ std::optional<std::vector<uint8_t>> ModelLoader::getModelFile(
         return std::nullopt;
     }
 
-    std::optional<rf::cache::CacheFile> file =
+    std::optional<eld::cache::CacheFile> file =
         cache_.readFile(
-            rf::cache::CacheIndex::Model,
+            eld::cache::CacheIndex::Model,
             static_cast<int>(id)
         );
 
@@ -120,16 +120,16 @@ std::optional<std::vector<uint8_t>> ModelLoader::getModelFile(
 std::optional<std::vector<uint8_t>> ModelLoader::decompressPayload(
     const std::vector<uint8_t>& payload
 ) const {
-    rf::compression::CompressionType compressionType =
-        rf::compression::detectCompression(payload);
+    binary::CompressionType compressionType =
+        binary::detectCompression(payload);
 
-    if (compressionType == rf::compression::CompressionType::Unknown) {
+    if (compressionType == binary::CompressionType::Unknown) {
         return payload;
     }
 
-    if (compressionType == rf::compression::CompressionType::Gzip) {
+    if (compressionType == binary::CompressionType::Gzip) {
         std::vector<uint8_t> decompressed =
-            rf::compression::decompressGzip(payload);
+            binary::decompressGzip(payload);
 
         if (decompressed.empty()) {
             return std::nullopt;

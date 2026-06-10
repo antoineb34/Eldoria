@@ -1,6 +1,6 @@
 #include "RenderPipeline.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 void RenderPipeline::render(
     const RenderScene& scene,

@@ -2,14 +2,14 @@
 
 #include <vector>
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 namespace {
 
 float screenArea(
-    const rf::render::ScreenPoint& a,
-    const rf::render::ScreenPoint& b,
-    const rf::render::ScreenPoint& c
+    const eld::render::ScreenPoint& a,
+    const eld::render::ScreenPoint& b,
+    const eld::render::ScreenPoint& c
 ) {
     return
         (b.x - a.x) * (c.y - a.y) -
@@ -20,13 +20,13 @@ bool isFrontFacing(
     const RenderPacket& packet,
     const ProjectedMesh& mesh
 ) {
-    const rf::render::ScreenPoint& a =
+    const eld::render::ScreenPoint& a =
         mesh.vertices[packet.a].screen;
 
-    const rf::render::ScreenPoint& b =
+    const eld::render::ScreenPoint& b =
         mesh.vertices[packet.b].screen;
 
-    const rf::render::ScreenPoint& c =
+    const eld::render::ScreenPoint& c =
         mesh.vertices[packet.c].screen;
 
     return screenArea(a, b, c) < 0.0f;

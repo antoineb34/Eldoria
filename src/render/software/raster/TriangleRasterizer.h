@@ -6,7 +6,7 @@
 
 #include "../camera/Projection.h"
 
-namespace rf::render {
+namespace eld::render {
 
 struct TextureMappingPoint {
     float x = 0.0f;
@@ -35,7 +35,7 @@ void fillTexturedTriangle(
     const TextureMappingPoint& textureU,
     const TextureMappingPoint& textureV,
 
-    const rf::texture::TextureAsset& texture
+    const eld::texture::TextureAsset& texture
 );
 
 }

@@ -4,9 +4,9 @@
 
 #include "../ModelAsset.h"
 #include "../ModelFile.h"
-#include "../../../io/ByteBuffer.h"
+#include "binary/ByteBuffer.h"
 
-namespace rf::model {
+namespace eld::model {
 
 class TextureUVMappingDecoder {
 public:
@@ -21,7 +21,7 @@ private:
 
     const ModelFile& file_;
 
-    rf::io::ByteBuffer buffer_;
+    binary::ByteBuffer buffer_;
 };
 
 }

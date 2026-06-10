@@ -6,7 +6,7 @@
 #include "Framebuffer.h"
 #include "TriangleRasterizer.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 class SoftwareRenderBackend : public IRenderBackend {
 public:

@@ -7,12 +7,12 @@
 #include "../../render/software/camera/Projection.h"
 #include "../../render/software/math/Mat4.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 namespace {
 
-rf::render::Vec3 toLocalVec3(
-    const rf::model::Vertex& vertex
+eld::render::Vec3 toLocalVec3(
+    const eld::model::Vertex& vertex
 ) {
     return {
         static_cast<float>(vertex.x),
@@ -22,7 +22,7 @@ rf::render::Vec3 toLocalVec3(
 }
 
 bool isFiniteScreenPoint(
-    const rf::render::ScreenPoint& point
+    const eld::render::ScreenPoint& point
 ) {
     return
         std::isfinite(point.x) &&
@@ -30,12 +30,12 @@ bool isFiniteScreenPoint(
         std::isfinite(point.z);
 }
 
-rf::render::ScreenPoint toScreenPoint(
-    const rf::render::Vec3& projected,
-    const rf::render::Vec3& viewPoint,
+eld::render::ScreenPoint toScreenPoint(
+    const eld::render::Vec3& projected,
+    const eld::render::Vec3& viewPoint,
     const RenderCamera& camera
 ) {
-    rf::render::ScreenPoint screen {};
+    eld::render::ScreenPoint screen {};
 
     screen.x =
         (projected.x + 1.0f) * 0.5f *
@@ -62,31 +62,31 @@ ProjectedMesh MeshProjector::project(
         return mesh;
     }
 
-    const rf::render::Mat4 modelMatrix =
+    const eld::render::Mat4 modelMatrix =
         buildModelMatrix(object.transform);
 
-    const rf::render::Mat4 viewMatrix =
-        rf::render::buildViewMatrix(camera);
+    const eld::render::Mat4 viewMatrix =
+        eld::render::buildViewMatrix(camera);
 
-    const rf::render::Mat4 projectionMatrix =
-        rf::render::buildProjectionMatrix(camera);
+    const eld::render::Mat4 projectionMatrix =
+        eld::render::buildProjectionMatrix(camera);
 
     mesh.vertices.reserve(object.model->vertices.size());
 
-    for (const rf::model::Vertex& sourceVertex : object.model->vertices) {
-        const rf::render::Vec3 local =
+    for (const eld::model::Vertex& sourceVertex : object.model->vertices) {
+        const eld::render::Vec3 local =
             toLocalVec3(sourceVertex);
 
-        const rf::render::Vec3 world =
+        const eld::render::Vec3 world =
             modelMatrix.transformPoint(local);
 
-        const rf::render::Vec3 view =
+        const eld::render::Vec3 view =
             viewMatrix.transformPoint(world);
 
-        const rf::render::Vec3 projected =
+        const eld::render::Vec3 projected =
             projectionMatrix.transformPoint(view);
 
-        const rf::render::ScreenPoint screen =
+        const eld::render::ScreenPoint screen =
             toScreenPoint(
                 projected,
                 view,

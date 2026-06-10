@@ -5,9 +5,9 @@
 
 #include "../ModelAsset.h"
 #include "../ModelFile.h"
-#include "../../../io/ByteBuffer.h"
+#include "binary/ByteBuffer.h"
 
-namespace rf::model {
+namespace eld::model {
 
 struct TriangleIndexState {
     int a = 0;
@@ -49,11 +49,11 @@ private:
 
     const ModelFile& file_;
 
-    rf::io::ByteBuffer triangleDataBuffer_;
-    rf::io::ByteBuffer colorBuffer_;
-    rf::io::ByteBuffer priorityBuffer_;
-    rf::io::ByteBuffer alphaBuffer_;
-    rf::io::ByteBuffer textureBuffer_;
+    binary::ByteBuffer triangleDataBuffer_;
+    binary::ByteBuffer colorBuffer_;
+    binary::ByteBuffer priorityBuffer_;
+    binary::ByteBuffer alphaBuffer_;
+    binary::ByteBuffer textureBuffer_;
 
     TriangleIndexState indexState_;
 };

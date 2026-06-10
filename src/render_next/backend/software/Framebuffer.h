@@ -3,7 +3,7 @@
 #include "ColorBuffer.h"
 #include "DepthBuffer.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 class Framebuffer {
 public:

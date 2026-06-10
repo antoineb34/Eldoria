@@ -5,7 +5,7 @@
 #include "model/ModelAsset.h"
 #include "../software/camera/Projection.h"
 
-namespace rf::render {
+namespace eld::render {
 
 struct RenderVertex {
     ScreenPoint screen;
@@ -13,7 +13,7 @@ struct RenderVertex {
 
 struct RenderFace {
     int faceIndex = -1;
-    const rf::model::Face* source = nullptr;
+    const eld::model::Face* source = nullptr;
 
     int a = 0;
     int b = 0;

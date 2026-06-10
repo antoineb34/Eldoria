@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-namespace rf::render {
+namespace eld::render {
 
 struct RgbColor {
 

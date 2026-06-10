@@ -4,10 +4,10 @@
 #include <cmath>
 
 
-namespace rf::render_next {
+namespace eld::render_next {
 
-const rf::texture::RgbaColor* TextureSampler::sample(
-    const rf::texture::TextureAsset& texture,
+const eld::texture::RgbaColor* TextureSampler::sample(
+    const eld::texture::TextureAsset& texture,
     float u,
     float v
 ) const {

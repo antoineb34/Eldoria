@@ -5,7 +5,7 @@
 #include "RenderCamera.h"
 #include "RenderObject.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 struct RenderScene {
     RenderCamera camera;

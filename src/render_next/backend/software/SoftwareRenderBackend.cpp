@@ -4,7 +4,7 @@
 
 #include "../../../render/software/color/Color.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 namespace {
 
@@ -38,8 +38,8 @@ namespace {
     ColorPixel colorFromPacket(
         const RenderPacket& packet
     ) {
-        rf::render::RgbColor rgb =
-            rf::render::rsColorToRgb(packet.color);
+        eld::render::RgbColor rgb =
+            eld::render::rsColorToRgb(packet.color);
 
         uint8_t alpha = 255;
 
@@ -114,38 +114,38 @@ void SoftwareRenderBackend::drawObject(
     const RenderQueue& queue
 ) {
     for (const RenderPacket& packet : queue.packets) {
-        rf::render::ScreenPoint a =
+        eld::render::ScreenPoint a =
             mesh.vertices[packet.a].screen;
 
-        rf::render::ScreenPoint b =
+        eld::render::ScreenPoint b =
             mesh.vertices[packet.b].screen;
 
-        rf::render::ScreenPoint c =
+        eld::render::ScreenPoint c =
             mesh.vertices[packet.c].screen;
 
         if (isTexturedPacket(packet, object)) {
-            const rf::model::TextureUVMapping& mapping =
+            const eld::model::TextureUVMapping& mapping =
                 object.model->textureUVMappings[packet.textureUVMappingIndex];
 
-            const rf::texture::TextureAsset& texture =
+            const eld::texture::TextureAsset& texture =
                 object.model->textures.at(packet.color);
 
-            const rf::render::Vec3& faceA =
+            const eld::render::Vec3& faceA =
                 mesh.vertices[packet.a].world;
 
-            const rf::render::Vec3& faceB =
+            const eld::render::Vec3& faceB =
                 mesh.vertices[packet.b].world;
 
-            const rf::render::Vec3& faceC =
+            const eld::render::Vec3& faceC =
                 mesh.vertices[packet.c].world;
 
-            const rf::render::Vec3& textureOrigin =
+            const eld::render::Vec3& textureOrigin =
                 mesh.vertices[mapping.originVertex].world;
 
-            const rf::render::Vec3& textureU =
+            const eld::render::Vec3& textureU =
                 mesh.vertices[mapping.uVertex].world;
 
-            const rf::render::Vec3& textureV =
+            const eld::render::Vec3& textureV =
                 mesh.vertices[mapping.vVertex].world;
 
             rasterizer_.drawTexturedTriangle(

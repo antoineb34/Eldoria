@@ -2,9 +2,16 @@
 
 #include <string>
 #include <vector>
-#include "CacheTreeNodeType.h"
 
-namespace eldoria::apps::elforge {
+namespace eld::explorer {
+
+enum class CacheTreeNodeType {
+    Root,
+    Index,
+    File,
+    Model,
+    Texture
+};
 
 struct CacheTreeNode {
     CacheTreeNodeType type = CacheTreeNodeType::File;

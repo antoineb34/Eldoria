@@ -1,13 +1,13 @@
 #pragma once
 
-#include "CacheState.h"
+namespace eld::explorer {
 
-namespace eldoria::apps::elforge {
+struct CacheExplorerState;
 
 class CacheInspectorPanel {
 public:
     void render(
-        CacheState& state,
+        CacheExplorerState& state,
         float width,
         float height
     );

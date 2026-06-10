@@ -7,7 +7,7 @@
 #include "pipeline/DepthSorter.h"
 #include "scene/RenderScene.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 class RenderPipeline {
 public:

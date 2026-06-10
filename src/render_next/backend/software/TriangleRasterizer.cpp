@@ -5,7 +5,7 @@
 
 #include "../../material/TextureSampler.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 namespace {
 
@@ -71,19 +71,19 @@ float edgeFunction(
 void TriangleRasterizer::drawTexturedTriangle(
     Framebuffer& framebuffer,
 
-    const rf::render::ScreenPoint& a,
-    const rf::render::ScreenPoint& b,
-    const rf::render::ScreenPoint& c,
+    const eld::render::ScreenPoint& a,
+    const eld::render::ScreenPoint& b,
+    const eld::render::ScreenPoint& c,
 
-    const rf::render::Vec3& faceA,
-    const rf::render::Vec3& faceB,
-    const rf::render::Vec3& faceC,
+    const eld::render::Vec3& faceA,
+    const eld::render::Vec3& faceB,
+    const eld::render::Vec3& faceC,
 
-    const rf::render::Vec3& textureOrigin,
-    const rf::render::Vec3& textureU,
-    const rf::render::Vec3& textureV,
+    const eld::render::Vec3& textureOrigin,
+    const eld::render::Vec3& textureU,
+    const eld::render::Vec3& textureV,
 
-    const rf::texture::TextureAsset& texture
+    const eld::texture::TextureAsset& texture
 ) const {
     TextureSampler sampler;
 
@@ -99,13 +99,13 @@ void TriangleRasterizer::drawTexturedTriangle(
         return;
     }
 
-    const rf::render::Vec3 basisU {
+    const eld::render::Vec3 basisU {
         textureU.x - textureOrigin.x,
         textureU.y - textureOrigin.y,
         textureU.z - textureOrigin.z
     };
 
-    const rf::render::Vec3 basisV {
+    const eld::render::Vec3 basisV {
         textureV.x - textureOrigin.x,
         textureV.y - textureOrigin.y,
         textureV.z - textureOrigin.z
@@ -172,13 +172,13 @@ void TriangleRasterizer::drawTexturedTriangle(
                 normalizedW1 * b.z +
                 normalizedW2 * c.z;
 
-            const rf::render::Vec3 point {
+            const eld::render::Vec3 point {
                 faceA.x * normalizedW0 + faceB.x * normalizedW1 + faceC.x * normalizedW2,
                 faceA.y * normalizedW0 + faceB.y * normalizedW1 + faceC.y * normalizedW2,
                 faceA.z * normalizedW0 + faceB.z * normalizedW1 + faceC.z * normalizedW2
             };
 
-            const rf::render::Vec3 relative {
+            const eld::render::Vec3 relative {
                 point.x - textureOrigin.x,
                 point.y - textureOrigin.y,
                 point.z - textureOrigin.z
@@ -202,7 +202,7 @@ void TriangleRasterizer::drawTexturedTriangle(
                 (projectedV * uu - projectedU * uv) /
                 determinant;
 
-            const rf::texture::RgbaColor* pixel =
+            const eld::texture::RgbaColor* pixel =
                 sampler.sample(
                     texture,
                     u,
@@ -252,9 +252,9 @@ void TriangleRasterizer::drawTexturedTriangle(
 void TriangleRasterizer::drawSolidTriangle(
     Framebuffer& framebuffer,
 
-    const rf::render::ScreenPoint& a,
-    const rf::render::ScreenPoint& b,
-    const rf::render::ScreenPoint& c,
+    const eld::render::ScreenPoint& a,
+    const eld::render::ScreenPoint& b,
+    const eld::render::ScreenPoint& c,
 
     ColorPixel color
 ) const {

@@ -8,13 +8,13 @@
 
 #include "../platform/sdl/SdlContext.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 int AppShell::run() {
     constexpr int WINDOW_WIDTH = 1280;
     constexpr int WINDOW_HEIGHT = 720;
 
-    rf::platform::SdlContext sdl(
+    eld::platform::SdlContext sdl(
         "RuneForge Cache Explorer",
         WINDOW_WIDTH,
         WINDOW_HEIGHT

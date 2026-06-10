@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 struct CacheExplorerState;
 

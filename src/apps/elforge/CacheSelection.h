@@ -4,7 +4,7 @@
 
 #include "CacheTreeNode.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 struct CacheSelection {
     CacheTreeNodeType type = CacheTreeNodeType::Root;

@@ -11,15 +11,15 @@
 #include "RenderMesh.h"
 #include "../order/FaceOrderer.h"
 
-namespace rf::render {
+namespace eld::render {
 
 namespace {
 
 constexpr float NoDepth = -std::numeric_limits<float>::infinity();
 
 bool isValidTextureMapping(
-    const rf::model::TextureUVMapping& mapping,
-    const std::vector<rf::model::Vertex>& vertices
+    const eld::model::TextureUVMapping& mapping,
+    const std::vector<eld::model::Vertex>& vertices
 ) {
     return
         mapping.originVertex >= 0 &&
@@ -30,8 +30,8 @@ bool isValidTextureMapping(
         mapping.vVertex < static_cast<int>(vertices.size());
 }
 
-rf::model::Vertex transformVertex(
-    rf::model::Vertex vertex,
+eld::model::Vertex transformVertex(
+    eld::model::Vertex vertex,
     const ModelTransform& transform
 ) {
     float x = static_cast<float>(vertex.x) * transform.scale;
@@ -70,10 +70,10 @@ rf::model::Vertex transformVertex(
 }
 
 TextureMappingPoint toTexturePoint(
-    const rf::model::Vertex& vertex,
+    const eld::model::Vertex& vertex,
     const ModelTransform& modelTransform
 ) {
-    rf::model::Vertex transformed =
+    eld::model::Vertex transformed =
         transformVertex(vertex, modelTransform);
 
     return {
@@ -121,13 +121,13 @@ void drawVertices(
 
 void drawRenderFace(
     SDL_Renderer* renderer,
-    const rf::model::ModelAsset& model,
+    const eld::model::ModelAsset& model,
     const RenderMesh& mesh,
     const ModelTransform& modelTransform,
     const RenderOptions& options,
     const RenderFace& renderFace
 ) {
-    const rf::model::Face& face =
+    const eld::model::Face& face =
         *renderFace.source;
 
     const ScreenPoint& a =
@@ -194,7 +194,7 @@ void drawRenderFace(
         return;
     }
 
-    const rf::model::TextureUVMapping& mapping =
+    const eld::model::TextureUVMapping& mapping =
         model.textureUVMappings[face.textureUVMappingIndex];
 
     if (!isValidTextureMapping(mapping, model.vertices)) {
@@ -267,7 +267,7 @@ float averageBucketDepth(
 
 void drawPriorityBuckets(
     SDL_Renderer* renderer,
-    const rf::model::ModelAsset& model,
+    const eld::model::ModelAsset& model,
     const RenderMesh& mesh,
     const ModelTransform& modelTransform,
     const RenderOptions& options,
@@ -365,7 +365,7 @@ void drawPriorityBuckets(
 
 void drawModel(
     SDL_Renderer* renderer,
-    const rf::model::ModelAsset& model,
+    const eld::model::ModelAsset& model,
     const Camera& camera,
     const RenderOptions& options,
     const ModelTransform& modelTransform

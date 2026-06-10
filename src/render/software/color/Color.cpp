@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace rf::render {
+namespace eld::render {
 
 static float hueToRgb(
     float p,

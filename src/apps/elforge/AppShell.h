@@ -2,7 +2,7 @@
 
 #include "CacheExplorer.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 class AppShell {
 public:

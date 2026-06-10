@@ -3,11 +3,11 @@
 #include "CacheTreeNode.h"
 #include "cache/Cache.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 class CacheTreeBuilder {
 public:
-    CacheTreeNode build(const rf::cache::Cache& cache);
+    CacheTreeNode build(const eld::cache::Cache& cache);
 };
 
 }

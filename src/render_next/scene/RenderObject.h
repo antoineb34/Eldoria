@@ -3,10 +3,10 @@
 #include "model/ModelAsset.h"
 #include "Transform.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 struct RenderObject {
-    const rf::model::ModelAsset* model = nullptr;
+    const eld::model::ModelAsset* model = nullptr;
     Transform transform;
 };
 

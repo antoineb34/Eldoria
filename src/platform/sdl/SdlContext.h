@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-namespace rf::platform {
+namespace eld::platform {
 
 class SdlContext {
 public:

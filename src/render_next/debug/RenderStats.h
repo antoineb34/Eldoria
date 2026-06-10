@@ -1,6 +1,6 @@
 #pragma once
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 struct RenderStats {
     int objects = 0;

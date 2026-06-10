@@ -4,7 +4,7 @@
 #include <limits>
 #include <vector>
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 class DepthBuffer {
 public:

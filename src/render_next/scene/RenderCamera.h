@@ -2,8 +2,8 @@
 
 #include "../../render/software/camera/Camera.h"
 
-namespace rf::render_next {
+namespace eld::render_next {
 
-using RenderCamera = rf::render::Camera;
+using RenderCamera = eld::render::Camera;
 
 }

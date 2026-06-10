@@ -6,13 +6,13 @@
 #include "../software/math/Mat4.h"
 #include "../software/camera/Projection.h"
 
-namespace rf::render {
+namespace eld::render {
 
 namespace {
 
 bool isValidFace(
-    const rf::model::Face& face,
-    const std::vector<rf::model::Vertex>& vertices
+    const eld::model::Face& face,
+    const std::vector<eld::model::Vertex>& vertices
 ) {
     return
         face.a >= 0 &&
@@ -40,8 +40,8 @@ float screenArea(
         (b.y - a.y) * (c.x - a.x);
 }
 
-rf::model::Vertex transformVertex(
-    rf::model::Vertex vertex,
+eld::model::Vertex transformVertex(
+    eld::model::Vertex vertex,
     const ModelTransform& transform
 ) {
     float x = vertex.x * transform.scale;
@@ -80,13 +80,13 @@ rf::model::Vertex transformVertex(
 }
 
 ScreenPoint projectTransformedVertex(
-    const rf::model::Vertex& vertex,
+    const eld::model::Vertex& vertex,
     const ModelTransform& transform,
     const Mat4& view,
     const Mat4& projection,
     const Camera& camera
 ) {
-    rf::model::Vertex transformed =
+    eld::model::Vertex transformed =
         transformVertex(vertex, transform);
 
     return projectVertex(
@@ -100,7 +100,7 @@ ScreenPoint projectTransformedVertex(
 }
 
 RenderMesh RenderMeshBuilder::build(
-    const rf::model::ModelAsset& model,
+    const eld::model::ModelAsset& model,
     const Camera& camera,
     const ModelTransform& transform
 ) {
@@ -111,7 +111,7 @@ RenderMesh RenderMeshBuilder::build(
     mesh.vertices.reserve(model.vertices.size());
     mesh.faces.reserve(model.faces.size());
 
-    for (const rf::model::Vertex& vertex : model.vertices) {
+    for (const eld::model::Vertex& vertex : model.vertices) {
         ScreenPoint screen =
             projectTransformedVertex(
                 vertex,
@@ -127,7 +127,7 @@ RenderMesh RenderMeshBuilder::build(
     }
 
     for (int faceIndex = 0; faceIndex < static_cast<int>(model.faces.size()); faceIndex++) {
-        const rf::model::Face& face = model.faces[faceIndex];
+        const eld::model::Face& face = model.faces[faceIndex];
 
         if (!isValidFace(face, model.vertices)) {
             continue;

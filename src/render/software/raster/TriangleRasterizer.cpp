@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace rf::render {
+namespace eld::render {
 
 namespace {
 
@@ -18,8 +18,8 @@ float edge(
         (y - a.y) * (b.x - a.x);
 }
 
-const rf::texture::RgbaColor* sampleTexture(
-    const rf::texture::TextureAsset& texture,
+const eld::texture::RgbaColor* sampleTexture(
+    const eld::texture::TextureAsset& texture,
     float u,
     float v
 ) {
@@ -95,7 +95,7 @@ void fillTexturedTriangle(
     const TextureMappingPoint& textureU,
     const TextureMappingPoint& textureV,
 
-    const rf::texture::TextureAsset& texture
+    const eld::texture::TextureAsset& texture
 ) {
     float minX =
         std::floor(
@@ -230,7 +230,7 @@ void fillTexturedTriangle(
                 (projectedV * uu - projectedU * uv) /
                 determinant;
 
-            const rf::texture::RgbaColor* pixel =
+            const eld::texture::RgbaColor* pixel =
                 sampleTexture(
                     texture,
                     u,

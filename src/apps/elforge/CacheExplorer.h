@@ -14,7 +14,7 @@
 #include "model/ModelLoader.h"
 #include "texture/TextureLoader.h"
 
-namespace rf::explorer {
+namespace eld::explorer {
 
 class CacheExplorer {
 public:
@@ -30,9 +30,9 @@ public:
     );
 
 private:
-    rf::cache::Cache cache_;
-    rf::texture::TextureLoader textureLoader_;
-    rf::model::ModelLoader modelLoader_;
+    eld::cache::Cache cache_;
+    eld::texture::TextureLoader textureLoader_;
+    eld::model::ModelLoader modelLoader_;
 
     CacheExplorerState state_;
     CacheTreeBuilder treeBuilder_;

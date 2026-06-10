@@ -5,7 +5,7 @@
 #include "Camera.h"
 #include "model/ModelAsset.h"
 
-namespace rf::render {
+namespace eld::render {
 
 struct ScreenPoint {
 
@@ -15,7 +15,7 @@ struct ScreenPoint {
 };
 
 Vec3 toVec3(
-    const rf::model::Vertex& vertex
+    const eld::model::Vertex& vertex
 );
 
 Mat4 buildViewMatrix(
@@ -35,7 +35,7 @@ ScreenPoint projectPoint(
 );
 
 ScreenPoint projectVertex(
-    const rf::model::Vertex& vertex,
+    const eld::model::Vertex& vertex,
     const Mat4& view,
     const Mat4& projection,
     const Camera& camera

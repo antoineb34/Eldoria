@@ -1,14 +1,13 @@
 #include "CacheInspectorPanel.h"
 
 #include <array>
-#include <cstdint>
 #include <string>
 
 #include <imgui.h>
 
-#include "CacheState.h"
+#include "../CacheExplorerState.h"
 
-namespace eldoria::apps::elforge {
+namespace eld::explorer {
 
 namespace {
 
@@ -35,68 +34,9 @@ const char* getNodeTypeName(
     return "Unknown";
 }
 
-const char* getIndexName(
-    int indexId
-) {
-    switch (static_cast<rf::cache::CacheIndex>(indexId)) {
-        case rf::cache::CacheIndex::Config:
-            return "Config";
-
-        case rf::cache::CacheIndex::Model:
-            return "Models";
-
-        case rf::cache::CacheIndex::Animation:
-            return "Animations";
-
-        case rf::cache::CacheIndex::Midi:
-            return "Midi";
-
-        case rf::cache::CacheIndex::Map:
-            return "Maps";
-    }
-
-    return "Unknown";
-}
-
-const char* getCompressionTypeName(
-    rf::compression::CompressionType type
-) {
-    switch (type) {
-        case rf::compression::CompressionType::Gzip:
-            return "Gzip";
-
-        case rf::compression::CompressionType::Bzip2:
-            return "Bzip2";
-
-        case rf::compression::CompressionType::Unknown:
-            return "Unknown";
-    }
-
-    return "Unknown";
-}
-
-void renderIdLine(
-    const char* label,
-    int value
-) {
-    if (value < 0) {
-        ImGui::Text(
-            "%s: N/A",
-            label
-        );
-        return;
-    }
-
-    ImGui::Text(
-        "%s: %d",
-        label,
-        value
-    );
-}
-
 std::string buildModelDebugText(
-    const CacheState& state,
-    const rf::model::ModelAsset& model
+    const CacheExplorerState& state,
+    const eld::model::ModelAsset& model
 ) {
     std::array<int, 12> priorityCounts {};
     std::array<int, 4> renderTypeCounts {};
@@ -104,12 +44,12 @@ std::string buildModelDebugText(
     int alphaFaces = 0;
     int texturedFaces = 0;
 
-    for (const rf::model::Face& face : model.faces) {
-        if (face.priority < static_cast<int>(priorityCounts.size())) {
+    for (const eld::model::Face& face : model.faces) {
+        if (face.priority < priorityCounts.size()) {
             priorityCounts[face.priority]++;
         }
 
-        if (face.renderType < static_cast<int>(renderTypeCounts.size())) {
+        if (face.renderType < renderTypeCounts.size()) {
             renderTypeCounts[face.renderType]++;
         }
 
@@ -199,7 +139,7 @@ std::string buildModelDebugText(
 }
 
 void CacheInspectorPanel::render(
-    CacheState& state,
+    CacheExplorerState& state,
     float width,
     float height
 ) {
@@ -213,7 +153,7 @@ void CacheInspectorPanel::render(
     ImGui::Separator();
 
     ImGui::Text(
-        "Selected node: %s",
+        "Selected: %s",
         state.selection.label.c_str()
     );
 
@@ -226,105 +166,24 @@ void CacheInspectorPanel::render(
         )
     );
 
-    if (state.selection.indexId >= 0) {
-        ImGui::Text(
-            "Selected index: %d (%s)",
-            state.selection.indexId,
-            getIndexName(state.selection.indexId)
-        );
-    }
-    else {
-        ImGui::TextUnformatted("Selected index: N/A");
-    }
+    ImGui::Text(
+        "Index: %d",
+        state.selection.indexId
+    );
 
-    renderIdLine(
-        "Archive id",
+    ImGui::Text(
+        "Archive: %d",
         state.selection.archiveId
     );
 
-    renderIdLine(
-        "File id",
+    ImGui::Text(
+        "File: %d",
         state.selection.fileId
     );
 
-    if (state.selectedCacheFileDetails) {
-        const rf::cache::CacheFileDetails& details =
-            *state.selectedCacheFileDetails;
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::TextUnformatted("CACHE FILE");
-
-        ImGui::Text(
-            "Payload size: %zu bytes",
-            details.payloadSize
-        );
-
-        ImGui::Text(
-            "Cache entry size: %d bytes",
-            details.cacheEntrySize
-        );
-
-        ImGui::Text(
-            "First sector: %d",
-            details.firstSector
-        );
-
-        ImGui::Text(
-            "Compression: %s",
-            getCompressionTypeName(details.compressionType)
-        );
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::TextUnformatted("ARCHIVE");
-
-        if (!details.isArchive) {
-            ImGui::TextUnformatted("Archive file count: N/A");
-        }
-        else {
-            ImGui::Text(
-                "Archive file count: %zu",
-                details.archiveFiles.size()
-            );
-
-            ImGui::Spacing();
-
-            for (const rf::cache::ArchiveFileDetails& archiveFile :
-                details.archiveFiles) {
-                ImGui::Text(
-                    "#%d hash 0x%08X",
-                    archiveFile.index,
-                    static_cast<unsigned int>(archiveFile.hash)
-                );
-
-                ImGui::Text(
-                    "  size: %u -> %u bytes",
-                    archiveFile.compressedSize,
-                    archiveFile.uncompressedSize
-                );
-
-                ImGui::Text(
-                    "  payload: %zu bytes",
-                    archiveFile.payloadSize
-                );
-            }
-        }
-    }
-
-    if (state.selectedModelLoadError) {
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::TextUnformatted("MODEL LOAD ERROR");
-        ImGui::TextWrapped(
-            "%s",
-            state.selectedModelLoadError->c_str()
-        );
-    }
-
-    if (state.selectedModel) {
-        const rf::model::ModelAsset& model =
-            *state.selectedModel;
+    if (state.activeModel) {
+        const eld::model::ModelAsset& model =
+            *state.activeModel;
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -364,8 +223,8 @@ void CacheInspectorPanel::render(
 
         std::array<int, 12> priorityCounts {};
 
-        for (const rf::model::Face& face : model.faces) {
-            if (face.priority < static_cast<int>(priorityCounts.size())) {
+        for (const eld::model::Face& face : model.faces) {
+            if (face.priority < priorityCounts.size()) {
                 priorityCounts[face.priority]++;
             }
         }

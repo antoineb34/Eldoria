@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace rf::render_next {
+namespace eld::render_next {
 
 struct ColorPixel {
     uint8_t r = 0;

@@ -6,7 +6,7 @@
 #include "../model/RenderMesh.h"
 #include "FaceOrderMode.h"
 
-namespace rf::render {
+namespace eld::render {
 
 constexpr size_t PriorityBucketCount = 12;
 
