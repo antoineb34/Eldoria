@@ -7,7 +7,7 @@
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
 
-#include "../../../../core/assets/model/ModelAsset.h"
+#include "model/ModelAsset.h"
 #include "../../../../core/assets/texture/TextureAsset.h"
 
 #include "../../../../render/software/camera/Camera.h"

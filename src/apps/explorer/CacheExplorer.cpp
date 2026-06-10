@@ -61,7 +61,12 @@ namespace rf::explorer {
 
     CacheExplorer::CacheExplorer()
         : textureLoader_(cache_),
-          modelLoader_(cache_, textureLoader_) {
+          modelLoader_(
+              cache_,
+              [this](std::uint32_t id) {
+                  return textureLoader_.load(id);
+              }
+          ) {
     }
 
     bool CacheExplorer::initialize() {

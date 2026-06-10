@@ -1,6 +1,7 @@
 #include "ModelLoader.h"
 
 #include <limits>
+#include <utility>
 
 #include "compression/Compression.h"
 
@@ -8,10 +9,10 @@ namespace rf::model {
 
 ModelLoader::ModelLoader(
     const rf::cache::Cache& cache,
-    rf::texture::TextureLoader& textureLoader
+    TextureLoaderCallback textureLoader
 )
     : cache_(cache),
-    textureLoader_(textureLoader)
+      textureLoader_(std::move(textureLoader))
 {
 }
 
@@ -88,7 +89,7 @@ void ModelLoader::loadModelTextures(
         }
 
         auto texture =
-            textureLoader_.load(textureId);
+            textureLoader_(static_cast<std::uint32_t>(textureId));
 
         if (texture.has_value()) {
             asset.textures[textureId] =

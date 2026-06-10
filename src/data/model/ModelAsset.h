@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../texture/TextureAsset.h"
+#include "../../core/assets/texture/TextureAsset.h"
 
 namespace rf::model {
 

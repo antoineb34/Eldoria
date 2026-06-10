@@ -6,6 +6,13 @@ add_library(eldoria_data STATIC
     cache/Archive.cpp
     cache/ArchiveReader.cpp
     cache/versionlist/VersionListReader.cpp
+
+    model/ModelLoader.cpp
+    model/ModelFileReader.cpp
+    model/ModelBuilder.cpp
+    model/decoder/VertexDecoder.cpp
+    model/decoder/FaceDecoder.cpp
+    model/decoder/TextureUVMappingDecoder.cpp
 )
 
 add_library(Eldoria::Data ALIAS eldoria_data)

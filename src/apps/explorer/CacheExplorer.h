@@ -11,8 +11,8 @@
 #include "panels/CacheInspectorPanel.h"
 #include "panels/CacheViewportPanel.h"
 
+#include "model/ModelLoader.h"
 #include "../../core/assets/texture/TextureLoader.h"
-#include "../../core/assets/model/ModelLoader.h"
 
 namespace rf::explorer {
 

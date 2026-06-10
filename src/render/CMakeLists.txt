@@ -15,6 +15,6 @@ target_include_directories(render PUBLIC
 )
 
 target_link_libraries(render PUBLIC
-    core
+    Eldoria::Data
     SDL3::SDL3
 )

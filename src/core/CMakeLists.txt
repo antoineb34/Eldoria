@@ -1,11 +1,4 @@
 add_library(core STATIC
-    assets/model/ModelLoader.cpp
-    assets/model/ModelFileReader.cpp
-    assets/model/ModelBuilder.cpp
-    assets/model/decoder/VertexDecoder.cpp
-    assets/model/decoder/FaceDecoder.cpp
-    assets/model/decoder/TextureUVMappingDecoder.cpp
-
     assets/texture/TextureLoader.cpp
     assets/texture/TextureFileReader.cpp
     assets/texture/TextureBuilder.cpp

@@ -3,7 +3,7 @@
 #include "../math/Vec3.h"
 #include "../math/Mat4.h"
 #include "Camera.h"
-#include "../../../core/assets/model/ModelAsset.h"
+#include "model/ModelAsset.h"
 
 namespace rf::render {
 
