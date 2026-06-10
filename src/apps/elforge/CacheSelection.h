@@ -4,7 +4,7 @@
 
 #include "CacheTreeNode.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 struct CacheSelection {
     CacheTreeNodeType type = CacheTreeNodeType::Root;

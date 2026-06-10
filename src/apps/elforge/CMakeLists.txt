@@ -2,6 +2,7 @@ add_executable(explorer
     main.cpp
 
     AppShell.cpp
+    theme/ImGuiTheme.cpp
 
     CacheExplorer.cpp
     CacheTreeBuilder.cpp

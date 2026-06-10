@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 struct CacheExplorerState;
 

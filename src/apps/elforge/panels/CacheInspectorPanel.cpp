@@ -7,7 +7,7 @@
 
 #include "../CacheExplorerState.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 namespace {
 

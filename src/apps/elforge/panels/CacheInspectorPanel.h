@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 struct CacheExplorerState;
 

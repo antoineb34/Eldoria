@@ -1,7 +1,7 @@
 #include "CacheExplorer.h"
 #include <imgui.h>
 
-namespace eld::explorer {
+namespace eld::elforge {
 
     namespace {
 

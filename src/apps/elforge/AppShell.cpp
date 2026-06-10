@@ -1,4 +1,5 @@
 #include "AppShell.h"
+#include "theme/ImGuiTheme.h"
 
 #include <SDL3/SDL.h>
 
@@ -8,7 +9,7 @@
 
 #include "../platform/sdl/SdlContext.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 int AppShell::run() {
     constexpr int WINDOW_WIDTH = 1280;
@@ -40,6 +41,7 @@ int AppShell::run() {
     );
 
     ImGui::StyleColorsDark();
+    eld::elforge::applyImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(
         window,

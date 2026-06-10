@@ -3,7 +3,7 @@
 #include "CacheTreeNode.h"
 #include "cache/Cache.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 class CacheTreeBuilder {
 public:

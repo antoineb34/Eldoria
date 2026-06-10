@@ -2,7 +2,7 @@
 
 #include "CacheExplorer.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 class AppShell {
 public:

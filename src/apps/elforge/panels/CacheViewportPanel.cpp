@@ -7,7 +7,7 @@
 #include "../../../render/RenderPipeline.h"
 #include "../../../render/backend/software/SoftwareRenderBackend.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
     namespace {
 

@@ -7,7 +7,7 @@
 #include "../CacheExplorerState.h"
 #include "../CacheTreeNode.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 namespace {
 

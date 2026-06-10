@@ -14,7 +14,7 @@
 #include "model/ModelLoader.h"
 #include "texture/TextureLoader.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 class CacheExplorer {
 public:

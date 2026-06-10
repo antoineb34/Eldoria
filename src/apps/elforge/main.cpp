@@ -1,6 +1,6 @@
 #include "AppShell.h"
 
 int main() {
-    eld::explorer::AppShell app;
+    eld::elforge::AppShell app;
     return app.run();
 }

@@ -14,7 +14,7 @@
 #include "../../render/viewport/RenderOptions.h"
 #include "../../render/viewport/ModelTransform.h"
 
-namespace eld::explorer {
+namespace eld::elforge {
 
 struct CacheExplorerState {
 
