@@ -677,6 +677,119 @@ Until then:
 - preserve useful primitives before removing old renderer code
 - migrate behavior in small steps after parity is confirmed
 
+## Renderer Consolidation Plan
+
+The renderer migration should keep ElForge model rendering working while
+`render_next` is promoted into the final `src/render/` ownership.
+
+Current `render_next` ownership:
+
+- scene submission through `RenderScene` and `RenderObject`
+- per-object transforms
+- mesh projection
+- face assembly into render packets
+- visibility filtering
+- material and texture sampling helpers
+- software framebuffer and depth-buffer types
+- software render backend
+- render debug frame/stat structures
+
+Current `src/render/` ownership:
+
+- legacy direct model renderer entry point
+- legacy render mesh conversion
+- RuneScape priority/depth face ordering helpers
+- camera and projection primitives
+- math primitives
+- color conversion helpers
+- model transform and render option types still used by ElForge
+- older software triangle rasterizer code
+
+Primitives to preserve before removing old renderer code:
+
+- `Camera` and projection behavior
+- `Vec2`, `Vec3`, `Vec4`, and `Mat4`
+- `ScreenPoint`
+- RuneScape color conversion
+- model transform semantics used by the current viewport controls
+- render options that represent public viewer behavior, including fill,
+  wireframe, vertex debug, alpha, textured-face debug, and face ordering mode
+- RuneScape priority-aware face ordering behavior, if parity testing proves it
+  is still needed
+
+Current ElForge dependencies:
+
+- ElForge links both `render` and `rune_forge_render_next`.
+- The model viewport directly includes `render_next/RenderPipeline.h` and the
+  software backend.
+- ElForge model viewport state still uses `render` camera, transform, and
+  render option types.
+- ElForge should not own renderer primitives; it should only own tool-specific
+  viewport state and control mapping.
+
+Final public render API should be owned by `src/render/` and expose:
+
+- `RenderScene`
+- `RenderObject`
+- `Transform`
+- `Camera`
+- render options/debug options
+- a render pipeline facade
+- backend interfaces
+- CPU software backend
+- future GPU backend
+- material and texture sampling behavior
+- render debug/stat output
+
+Applications should submit scenes and choose/configure a backend through the
+public render API. They should not depend on internal pipeline stages such as
+face assemblers, visibility stages, sorters, framebuffer internals, or texture
+sampler implementation details unless a debug tool explicitly needs that data.
+
+Safe migration order:
+
+1. Add parity checks around the current ElForge model viewport behavior using
+   known models.
+2. Make `render_next` consume the existing public render option semantics or
+   replace them with equivalent final render options.
+3. Restore or intentionally retire missing behavior from the legacy renderer,
+   including fill, wireframe, vertex debug, textured-face highlight, alpha, and
+   priority ordering.
+4. Move or alias preserved primitives into their final `src/render/` layout
+   without changing behavior.
+5. Introduce final `src/render/` public headers for scene submission, pipeline
+   rendering, backend selection, camera, transform, and render options.
+6. Update ElForge to include and link only the final `render` API.
+7. Move `render_next` implementation files under `src/render/` after ElForge no
+   longer includes `render_next` paths directly.
+8. Delete old direct model renderer code only after the final path has parity
+   for the behavior ElForge still needs.
+9. Remove the temporary `rune_forge_render_next` target only after no app or
+   module links it.
+
+Code that can be deleted only after parity is confirmed:
+
+- old direct SDL model rendering
+- old render mesh builder path, if the final pipeline no longer needs it
+- duplicate triangle rasterizer code
+- duplicate model transform/render option types, after the final public API
+  replaces them
+- unused face ordering implementations, after priority/depth behavior is either
+  preserved in the new pipeline or explicitly retired
+
+Follow-up issues:
+
+- Define final `src/render` public headers and target ownership.
+- Add ElForge viewport parity checks for known model rendering behavior.
+- Wire current render option semantics into `render_next` or document retired
+  options.
+- Decide and implement priority-aware ordering in the new pipeline.
+- Move camera/math/color primitives into their final `src/render` layout.
+- Update ElForge to consume only final `src/render` headers.
+- Move `render_next` implementation into `src/render` and remove the temporary
+  target.
+- Retire old direct model renderer code after parity is proven.
+
 ## Used By
 
 - ElForge
