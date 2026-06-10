@@ -9,3 +9,5 @@ target_include_directories(platform PUBLIC
 target_link_libraries(platform PUBLIC
     SDL3::SDL3
 )
+
+add_subdirectory(imgui)

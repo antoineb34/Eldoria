@@ -1,10 +1,10 @@
-#include "ImGuiTheme.h"
+#include "ElForgeImGuiTheme.h"
 
 #include <imgui.h>
 
-namespace rf::ui {
+namespace eldoria::apps::elforge {
 
-void applyImGuiTheme() {
+void applyElForgeImGuiTheme() {
     ImGuiStyle& style = ImGui::GetStyle();
 
     style.WindowRounding = 3.0f;
@@ -27,15 +27,11 @@ void applyImGuiTheme() {
 
     ImVec4* colors = style.Colors;
 
-    // Text
-
     colors[ImGuiCol_Text] =
         ImVec4(0.8f, 0.84f, 0.66f, 1.00f);
 
     colors[ImGuiCol_TextDisabled] =
         ImVec4(0.48f, 0.45f, 0.33f, 1.00f);
-
-    // Backgrounds
 
     colors[ImGuiCol_WindowBg] =
         ImVec4(0.07f, 0.07f, 0.05f, 1.00f);
@@ -46,15 +42,11 @@ void applyImGuiTheme() {
     colors[ImGuiCol_PopupBg] =
         ImVec4(0.10f, 0.10f, 0.07f, 1.00f);
 
-    // Borders
-
     colors[ImGuiCol_Border] =
         ImVec4(0.42f, 0.36f, 0.20f, 1.00f);
 
     colors[ImGuiCol_BorderShadow] =
         ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-
-    // Frames
 
     colors[ImGuiCol_FrameBg] =
         ImVec4(0.19f, 0.17f, 0.11f, 1.00f);
@@ -74,13 +66,14 @@ void applyImGuiTheme() {
     colors[ImGuiCol_TextSelectedBg] =
         ImVec4(0.28f, 0.42f, 0.18f, 0.80f);
 
-    // Headers / Selection
+    colors[ImGuiCol_Header] =
+        ImVec4(0.24f, 0.36f, 0.20f, 0.70f);
 
-    colors[ImGuiCol_Header]        = ImVec4(0.24f, 0.36f, 0.20f, 0.70f);
-    colors[ImGuiCol_HeaderHovered] = ImVec4(0.36f, 0.50f, 0.30f, 0.85f);
-    colors[ImGuiCol_HeaderActive]  = ImVec4(0.50f, 0.66f, 0.44f, 1.00f);
+    colors[ImGuiCol_HeaderHovered] =
+        ImVec4(0.36f, 0.50f, 0.30f, 0.85f);
 
-    // Buttons
+    colors[ImGuiCol_HeaderActive] =
+        ImVec4(0.50f, 0.66f, 0.44f, 1.00f);
 
     colors[ImGuiCol_Button] =
         ImVec4(0.20f, 0.18f, 0.11f, 1.00f);
@@ -91,12 +84,8 @@ void applyImGuiTheme() {
     colors[ImGuiCol_ButtonActive] =
         ImVec4(0.56f, 0.74f, 0.54f, 1.00f);
 
-    // Checkboxes
-
     colors[ImGuiCol_CheckMark] =
         ImVec4(0.76f, 0.96f, 0.76f, 1.00f);
-
-    // Sliders
 
     colors[ImGuiCol_SliderGrab] =
         ImVec4(0.56f, 0.76f, 0.52f, 1.00f);
@@ -104,12 +93,8 @@ void applyImGuiTheme() {
     colors[ImGuiCol_SliderGrabActive] =
         ImVec4(0.74f, 0.94f, 0.70f, 1.00f);
 
-    // Separators
-
     colors[ImGuiCol_Separator] =
         ImVec4(0.42f, 0.36f, 0.20f, 1.00f);
-
-    // Tabs
 
     colors[ImGuiCol_Tab] =
         ImVec4(0.15f, 0.14f, 0.09f, 1.00f);
@@ -119,8 +104,6 @@ void applyImGuiTheme() {
 
     colors[ImGuiCol_TabActive] =
         ImVec4(0.32f, 0.44f, 0.30f, 1.00f);
-
-    // Scrollbars
 
     colors[ImGuiCol_ScrollbarBg] =
         ImVec4(0.10f, 0.09f, 0.06f, 1.00f);

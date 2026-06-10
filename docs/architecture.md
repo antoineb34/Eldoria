@@ -952,9 +952,9 @@ ElServer owns NPC state, behavior, combat, and drops
 
 # Top-Level Modules Not Included Initially
 
-## No shared `src/ui/` initially
+## No shared product UI module initially
 
-There is no top-level shared `ui/` module at this stage.
+There is no top-level shared `src/ui/` product UI module at this stage.
 
 Reason:
 
@@ -966,11 +966,13 @@ These systems are too different to force into one shared module.
 Current ownership:
 
 - ElForge UI belongs in `apps/elforge/`.
+- ElForge ImGui theme/look-and-feel belongs in `apps/elforge/`.
 - ElClient runtime interfaces belong in `apps/elclient/interface/`.
 - Interface definitions loaded from cache belong in `src/data/interface/`.
 - Shared window/input behavior belongs in `src/platform/`.
+- Shared ImGui backend/vendor build plumbing belongs in `src/platform/imgui/`.
 
-A shared `src/ui/` module may be introduced later only if real duplicated UI code appears.
+A shared `src/ui/` module may be introduced later only if real duplicated product UI code appears.
 
 ---
 

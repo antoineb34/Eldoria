@@ -3,7 +3,6 @@
 #include <SDL3/SDL.h>
 
 #include <imgui.h>
-#include "../ui/imgui/ImGuiTheme.h"
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
@@ -41,7 +40,6 @@ int AppShell::run() {
     );
 
     ImGui::StyleColorsDark();
-    rf::ui::applyImGuiTheme();
 
     ImGui_ImplSDL3_InitForSDLRenderer(
         window,

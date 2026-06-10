@@ -27,7 +27,6 @@ eldoria_add_module(network src/net)
 eldoria_add_module(core src/core)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
-eldoria_add_module(ui src/ui)
 
 # Legacy / transition modules kept buildable while code migrates toward the
 # documented Eldoria architecture.

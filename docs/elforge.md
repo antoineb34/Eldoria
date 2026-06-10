@@ -192,6 +192,7 @@ Examples:
 - inspector panels
 - preview viewports
 - debug panels
+- ImGui theme/look-and-feel
 - editing tools
 - import/export workflows
 - save/export actions
@@ -214,6 +215,7 @@ Examples:
 - world concepts belong in `src/world/`
 - rendering backend belongs in `src/render/`
 - platform/window/input behavior belongs in `src/platform/`
+- ImGui backend/vendor build plumbing belongs in `src/platform/imgui/`
 - server authority belongs in ElServer
 - client runtime presentation belongs in ElClient
 
