@@ -300,7 +300,7 @@ Understand the existing RuneForge-era codebase before moving systems into the El
 - `src/apps/tool` is an older reference and should be reused selectively only.
 - `src/core/cache` should migrate to `src/data/cache`.
 - `src/core/assets/model` should migrate to `src/data/model`.
-- `src/core/assets/texture` should migrate to `src/data/texture`.
+- `src/core/assets/texture` has been migrated to `src/data/texture`.
 - `render_next` is likely the future renderer path.
 - old `render` is legacy/reference until useful pieces are preserved.
 - `src/ui` should not remain shared only for a theme/backend glue; UI ownership should be decided during ElForge migration.
@@ -493,7 +493,7 @@ Expand visual asset support.
 
 ### Main Migration Sources
 
-- `src/core/assets/texture`
+- `src/data/texture` (migrated from `src/core/assets/texture`)
 - `render_next` material/texture sampling code
 
 ### Success Criteria

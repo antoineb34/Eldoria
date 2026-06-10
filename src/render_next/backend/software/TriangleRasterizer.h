@@ -2,7 +2,7 @@
 
 #include "../../../render/software/camera/Projection.h"
 #include "Framebuffer.h"
-#include "../../../core/assets/texture/TextureAsset.h"
+#include "texture/TextureAsset.h"
 #include "../../material/TextureSampler.h"
 
 namespace rf::render_next {

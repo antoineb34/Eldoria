@@ -13,7 +13,7 @@
 #include "../../platform/sdl/SdlContext.h"
 #include "cache/Cache.h"
 #include "model/ModelLoader.h"
-#include "../../core/assets/texture/TextureLoader.h"
+#include "texture/TextureLoader.h"
 
 namespace eldoria::apps::elforge {
 

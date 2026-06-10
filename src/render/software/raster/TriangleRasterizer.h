@@ -2,7 +2,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "../../../core/assets/texture/TextureAsset.h"
+#include "texture/TextureAsset.h"
 
 #include "../camera/Projection.h"
 

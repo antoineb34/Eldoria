@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "model/ModelAsset.h"
-#include "../../core/assets/texture/TextureAsset.h"
+#include "texture/TextureAsset.h"
 
 #include "../software/camera/Camera.h"
 

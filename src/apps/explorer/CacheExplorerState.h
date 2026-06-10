@@ -8,7 +8,7 @@
 #include "CacheTreeNode.h"
 
 #include "model/ModelAsset.h"
-#include "../../core/assets/texture/TextureAsset.h"
+#include "texture/TextureAsset.h"
 
 #include "../../render/software/camera/Camera.h"
 #include "../../render/model/RenderOptions.h"
