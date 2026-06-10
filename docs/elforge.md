@@ -541,6 +541,52 @@ Load, inspect, and render models.
 
 The data-to-render pipeline works for the first major asset type.
 
+### Current Viewport Controls Audit
+
+The migrated ElForge model viewport currently uses keyboard-driven controls in
+`CacheViewportPanel` and stores tool interaction state in `CacheState`.
+Selecting a model cache file loads that model by file id through
+`ElForgeApplication::handleSelectionChanged`. There are no next/previous model
+id navigation controls yet.
+
+Current verified controls:
+
+- Left/right arrows rotate the model around Y.
+- Up/down arrows rotate the model around X.
+- Q/E rotate the model around Z.
+- Equals/minus scale the model, clamped to a minimum scale of 0.1.
+- W/S move the model vertically in viewport space.
+- A/D move the model horizontally in viewport space.
+- R resets model offset, rotation, and scale.
+- T toggles the textured-face debug flag passed to the software render backend.
+
+The model transform controls belong to ElForge UI state because they describe
+how the tool presents the selected asset. The viewport submits that state to
+`render_next` as a `RenderObject` transform. Shared renderer state owns camera
+projection, mesh projection, face assembly, visibility, material sampling,
+alpha application, framebuffer output, and backend drawing.
+
+The current viewport initializes camera distance/FOV values, but it does not
+provide runtime zoom, distance, or FOV controls. The current zoom-like behavior
+is model scale, not camera distance.
+
+The legacy `RenderOptions` state still includes fill, wireframe, vertex, and
+alpha flags, but the current `render_next` viewport path does not expose or
+consume fill, wireframe, or vertex debug toggles. Alpha is consumed by the
+software backend for solid packets, and textured packets use texture sampling.
+Priority data is assembled into render packets, but priority-specific ordering
+is not currently applied by the `render_next` pipeline.
+
+Follow-up candidates:
+
+- Add visible viewport controls or a compact control reference.
+- Add explicit camera zoom/distance controls.
+- Implement fill, wireframe, and vertex debug behavior for the `render_next`
+  viewport path.
+- Verify and complete the textured-face debug highlight behavior.
+- Audit priority-aware face ordering in `render_next`.
+- Add model id navigation if it fits the cache/model inspection workflow.
+
 ---
 
 ## Milestone 4 — Texture and Material Viewer
