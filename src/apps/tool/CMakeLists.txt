@@ -1,8 +1,3 @@
-if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/workspace/cache/CacheWorkspace.cpp")
-    message(STATUS "Skipping tool app: legacy cache workspace sources are not present")
-    return()
-endif()
-
 add_executable(tool
     main.cpp
 
