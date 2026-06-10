@@ -4,6 +4,8 @@
 #include <array>
 #include <cstdint>
 #include <fstream>
+#include <string>
+#include <utility>
 
 namespace rf::cache {
 
@@ -49,6 +51,12 @@ int readU16(
     return
         (static_cast<int>(bytes[0]) << 8) |
         static_cast<int>(bytes[1]);
+}
+
+int sectorHeaderIndexFor(
+    CacheIndex index
+) {
+    return static_cast<int>(index) + 1;
 }
 
 } // namespace
@@ -185,28 +193,24 @@ std::optional<CacheFile> Cache::readFile(
         int nextSector = readU24(header + 4);
         int actualIndex = static_cast<int>(header[7]);
 
-        // Cache format uses 1-based indexing for the index field in sector headers
-        // (1=Config, 2=Models, 3=Animations, 4=Midi, 5=Maps)
-        // CacheIndex enum is now 1-based to match.
-
         if (
             actualFileId != fileId ||
             actualChunk != expectedChunk ||
-            actualIndex != static_cast<int>(index)
+            actualIndex != sectorHeaderIndexFor(index)
         ) {
             return std::nullopt;
         }
 
-                int remaining =
-                    entry->size - static_cast<int>(payload.size());
+        int remaining =
+            entry->size - static_cast<int>(payload.size());
 
-                int bytesToRead = std::min(
-                    SectorPayloadSize,
-                    remaining
-                );
+        int bytesToRead = std::min(
+            SectorPayloadSize,
+            remaining
+        );
 
-                std::array<unsigned char, SectorPayloadSize> sectorPayload {};
-                dataStream.read(
+        std::array<unsigned char, SectorPayloadSize> sectorPayload {};
+        dataStream.read(
             reinterpret_cast<char*>(sectorPayload.data()),
             bytesToRead
         );
