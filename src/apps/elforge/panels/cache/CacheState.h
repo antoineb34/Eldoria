@@ -13,6 +13,7 @@
 #include "../../../../render/software/camera/Camera.h"
 #include "../../../../render/model/RenderOptions.h"
 #include "../../../../render/model/ModelTransform.h"
+#include "cache/CacheFileDetails.h"
 
 namespace eldoria::apps::elforge {
 
@@ -32,6 +33,7 @@ struct CacheState {
 
     std::optional<rf::model::ModelAsset> activeModel;
     std::optional<rf::texture::TextureAsset> activeTexture;
+    std::optional<rf::cache::CacheFileDetails> activeCacheFileDetails;
 
     std::unordered_map<std::string, bool> expandedNodes;
 };
