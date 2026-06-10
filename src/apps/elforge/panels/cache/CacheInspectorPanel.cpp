@@ -312,6 +312,16 @@ void CacheInspectorPanel::render(
         }
     }
 
+    if (state.activeModelLoadError) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("MODEL LOAD ERROR");
+        ImGui::TextWrapped(
+            "%s",
+            state.activeModelLoadError->c_str()
+        );
+    }
+
     if (state.activeModel) {
         const rf::model::ModelAsset& model =
             *state.activeModel;

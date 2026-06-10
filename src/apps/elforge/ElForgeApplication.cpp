@@ -1,6 +1,7 @@
 #include "ElForgeApplication.h"
 
 #include <iostream>
+#include <utility>
 #include <SDL3/SDL.h>
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -126,6 +127,7 @@ void ElForgeApplication::update() {
 
 void ElForgeApplication::handleSelectionChanged() {
     state_.activeModel.reset();
+    state_.activeModelLoadError.reset();
     state_.activeTexture.reset();
     state_.activeCacheFileDetails.reset();
 
@@ -143,9 +145,19 @@ void ElForgeApplication::handleSelectionChanged() {
 
     if (state_.selection.type == CacheTreeNodeType::Model) {
         if (state_.selection.fileId >= 0) {
-            state_.activeModel = modelLoader_.load(
-                static_cast<std::uint32_t>(state_.selection.fileId)
-            );
+            rf::model::ModelLoadResult result =
+                modelLoader_.loadDetailed(
+                    static_cast<std::uint32_t>(state_.selection.fileId)
+                );
+
+            if (result.loaded()) {
+                state_.activeModel =
+                    std::move(result.asset);
+            }
+            else {
+                state_.activeModelLoadError =
+                    result.message;
+            }
         }
     }
 }

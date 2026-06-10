@@ -139,6 +139,45 @@ void CacheViewportPanel::renderViewport(
 ) {
 
     if (!state.activeModel) {
+        if (state.activeModelLoadError) {
+            SDL_Rect clip {
+                state.viewportX,
+                state.viewportY,
+                state.viewportWidth,
+                state.viewportHeight
+            };
+
+            SDL_SetRenderClipRect(
+                renderer,
+                &clip
+            );
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                68,
+                36,
+                36,
+                255
+            );
+
+            SDL_FRect rect {
+                static_cast<float>(state.viewportX),
+                static_cast<float>(state.viewportY),
+                static_cast<float>(state.viewportWidth),
+                static_cast<float>(state.viewportHeight)
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &rect
+            );
+
+            SDL_SetRenderClipRect(
+                renderer,
+                nullptr
+            );
+        }
+
         return;
     }
 
