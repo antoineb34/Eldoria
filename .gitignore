@@ -31,3 +31,6 @@ region_*.ppm
 .DS_Store
 build-release/
 *.ppm
+
+# Local ImGui state
+imgui.ini

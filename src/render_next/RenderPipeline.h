@@ -4,6 +4,7 @@
 #include "geometry/MeshProjector.h"
 #include "pipeline/FaceAssembler.h"
 #include "pipeline/VisibilityStage.h"
+#include "pipeline/DepthSorter.h"
 #include "scene/RenderScene.h"
 
 namespace rf::render_next {
@@ -19,6 +20,7 @@ private:
     MeshProjector projector_;
     FaceAssembler faceAssembler_;
     VisibilityStage visibilityStage_;
+    DepthSorter depthSorter_;
 };
 
 }
