@@ -1,5 +1,7 @@
 #include "ElClientApp.h"
 
+#include "PlaceholderScreen.h"
+
 #include "../../platform/sdl/SdlContext.h"
 
 #include <iostream>
@@ -32,6 +34,12 @@ bool ElClientApp::initialize() {
         return false;
     }
 
+    // Register placeholder screen for verification
+    screenManager_.registerScreen(std::make_unique<PlaceholderScreen>());
+
+    // Activate placeholder screen
+    screenManager_.requestTransition(ScreenId::Placeholder);
+
     state_.screen = ClientScreen::Startup;
     initialized_ = true;
     running_ = true;
@@ -55,6 +63,9 @@ void ElClientApp::update() {
             running_ = false;
         }
     }
+
+    // Update screen manager (handles transitions and active screen update)
+    screenManager_.update(*sdlContext_);
 }
 
 void ElClientApp::render() {
@@ -70,8 +81,8 @@ void ElClientApp::render() {
     SDL_SetRenderDrawColor(renderer, 18, 20, 22, 255);
     SDL_RenderClear(renderer);
 
-    // Placeholder: render current screen state
-    // Future: dispatch to screen-specific renderers
+    // Render active screen
+    screenManager_.render(*sdlContext_);
 
     SDL_RenderPresent(renderer);
 }
@@ -114,6 +125,10 @@ bool ElClientApp::isRunning() const {
 
 const ClientState& ElClientApp::state() const {
     return state_;
+}
+
+ScreenManager& ElClientApp::screenManager() {
+    return screenManager_;
 }
 
 } // namespace eldoria::apps::elclient

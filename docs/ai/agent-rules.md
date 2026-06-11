@@ -40,6 +40,153 @@ Before making changes:
 
 Do not start coding before understanding the existing system.
 
+## Feature Branch Gate
+
+Before modifying any files:
+
+```bash
+git checkout dev
+git pull
+git checkout -b feature/<issue-number>-<short-name>
+git branch --show-current
+```
+
+Verify the reported branch matches the assigned issue.
+
+Example:
+
+```text
+Issue #118
+feature/118-screen-management
+```
+
+Do not modify repository files until branch verification has been completed.
+
+Working directly on:
+
+```text
+dev
+main
+```
+
+is prohibited.
+
+---
+
+## GitHub Issue Verification
+
+GitHub Issues are the implementation source of truth.
+
+Before implementation:
+
+```bash
+gh issue view <issue-number>
+```
+
+Verify:
+
+* scope
+* requirements
+* acceptance criteria
+
+Do not rely solely on memory or previous discussions.
+
+---
+
+## Placeholder Rule
+
+Do not implement future systems to verify architecture.
+
+If a concrete implementation is required for testing:
+
+Prefer:
+
+```text
+PlaceholderScreen
+TestRenderer
+DummyProvider
+```
+
+Avoid:
+
+```text
+LoginScreen
+GameScreen
+InventorySystem
+NetworkClient
+```
+
+unless the issue explicitly requires those systems.
+
+Implementation agents should not introduce future product features simply to validate current architecture.
+
+---
+
+## Completion Verification
+
+Before reporting completion:
+
+Verify:
+
+```bash
+git status
+git branch --show-current
+git log --oneline --decorate -3
+```
+
+Include these results in the final report.
+
+Do not report implementation complete unless:
+
+* changes are committed
+* changes are pushed
+* branch is correct
+* verification has been performed
+
+---
+
+## Scope Enforcement
+
+Before opening a pull request:
+
+Verify:
+
+* only issue requirements were implemented
+* no future issue work was added
+* no unrelated systems were introduced
+* no speculative architecture was created
+
+If implementation exceeds issue scope:
+
+```text
+Remove the additional work
+or
+Create a separate issue
+```
+
+Pull requests should map cleanly to a single issue whenever possible.
+
+---
+
+## Pull Request Discipline
+
+After opening a pull request:
+
+STOP.
+
+Do not:
+
+* continue implementing
+* start the next issue
+* expand scope
+* add opportunistic features
+* perform unrelated refactors
+
+Wait for Architect review.
+
+The pull request is the handoff point between the implementation agent and the Architect.
+
+
 ---
 
 ## Scope Discipline

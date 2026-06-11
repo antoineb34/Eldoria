@@ -191,6 +191,91 @@ Issues do not need to wait for `dev` to merge into `main` before being closed.
 
 ---
 
+## Feature Branch Verification
+
+Before modifying any files:
+
+```bash
+git checkout dev
+git pull
+git checkout -b feature/<issue-number>-<short-name>
+git branch --show-current
+```
+
+The reported branch name must match the assigned issue.
+
+Example:
+
+```bash
+git checkout -b feature/118-screen-management
+git branch --show-current
+```
+
+Expected output:
+
+```text
+feature/118-screen-management
+```
+
+Implementation work must not begin until the feature branch has been created and verified.
+
+Working directly on `dev` is prohibited.
+
+---
+
+## GitHub Workflow
+
+GitHub Issues are the implementation source of truth.
+
+Before starting implementation:
+
+```bash
+gh issue view <issue-number>
+```
+
+Example:
+
+```bash
+gh issue view 118
+```
+
+Review:
+
+* issue description
+* acceptance criteria
+* issue comments
+
+before making changes.
+
+After implementation:
+
+```bash
+git push -u origin <branch>
+```
+
+Create a pull request:
+
+```bash
+gh pr create \
+  --base dev \
+  --head <branch>
+```
+
+Pull requests must target:
+
+```text
+dev
+```
+
+Never merge directly into:
+
+```text
+dev
+main
+```
+
+---
+
 ## Commit Workflow
 
 ### Required Git Workflow
@@ -310,6 +395,60 @@ Nothing unintended
 
 ---
 
+## Pull Request Validation
+
+Before opening a pull request:
+
+Verify:
+
+```bash
+git status
+git branch --show-current
+git log --oneline --decorate -3
+```
+
+The final implementation report should include:
+
+* active branch
+* latest commit(s)
+* build verification
+* files modified
+
+This verification exists to prevent:
+
+```text
+Work completed on wrong branch
+Commit not created
+Commit not pushed
+PR created from wrong branch
+```
+
+---
+
+## Scope Validation
+
+Before opening a pull request:
+
+Compare implementation against the assigned issue.
+
+Verify:
+
+* no future issue work was implemented
+* no unrelated systems were added
+* no unrelated refactors were performed
+
+If implementation extends beyond issue scope:
+
+```text
+remove the additional work
+or
+create a separate issue
+```
+
+Pull requests should map cleanly to a single issue whenever possible.
+
+---
+
 ## Review Gate
 
 Implementation work should stop at an open pull request unless the maintainer explicitly asks for more.
@@ -332,6 +471,9 @@ A contributor should not:
 * merge their own pull request
 * close the issue before review
 * perform unrelated refactors outside the issue scope
+* implement work belonging to future issues
+
+A pull request that contains work from future issues should be rejected and reduced to the scope of the assigned issue.
 
 ---
 
