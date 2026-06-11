@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 namespace eldoria::apps::elclient {
@@ -20,18 +21,22 @@ public:
     int32_t deltaY() const { return deltaY_; }
 
     // Check if a mouse button is currently held down
+    // SDL buttons are 1-based (1=left, 2=middle, 3=right, 4=X1, 5=X2)
     bool isButtonDown(uint8_t button) const {
-        return button < MaxMouseButtons && current_[button];
+        if (button == 0 || button > MaxMouseButtons) return false;
+        return current_[button - 1];
     }
 
     // Check if a mouse button was pressed this frame
     bool isButtonPressed(uint8_t button) const {
-        return button < MaxMouseButtons && pressed_[button];
+        if (button == 0 || button > MaxMouseButtons) return false;
+        return pressed_[button - 1];
     }
 
     // Check if a mouse button was released this frame
     bool isButtonReleased(uint8_t button) const {
-        return button < MaxMouseButtons && released_[button];
+        if (button == 0 || button > MaxMouseButtons) return false;
+        return released_[button - 1];
     }
 
     // Check if any button is currently held
@@ -42,12 +47,14 @@ public:
         return false;
     }
 
-    // Update state for a new frame - clears pressed/released, resets delta
+    // Update state for a new frame - clears pressed/released, resets delta and wheel
     void beginFrame() {
         pressed_.fill(false);
         released_.fill(false);
         deltaX_ = 0;
         deltaY_ = 0;
+        wheelX_ = 0;
+        wheelY_ = 0;
     }
 
     // Process mouse motion event
@@ -60,20 +67,22 @@ public:
 
     // Process mouse button down event
     void onButtonDown(uint8_t button) {
-        if (button >= MaxMouseButtons) return;
-        if (!current_[button]) {
-            pressed_[button] = true;
+        if (button == 0 || button > MaxMouseButtons) return;
+        const auto index = button - 1;
+        if (!current_[index]) {
+            pressed_[index] = true;
         }
-        current_[button] = true;
+        current_[index] = true;
     }
 
     // Process mouse button up event
     void onButtonUp(uint8_t button) {
-        if (button >= MaxMouseButtons) return;
-        if (current_[button]) {
-            released_[button] = true;
+        if (button == 0 || button > MaxMouseButtons) return;
+        const auto index = button - 1;
+        if (current_[index]) {
+            released_[index] = true;
         }
-        current_[button] = false;
+        current_[index] = false;
     }
 
     // Process mouse wheel event
