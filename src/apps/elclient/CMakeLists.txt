@@ -2,6 +2,10 @@ add_executable(elclient
     main.cpp
 
     ElClientApp.cpp
+    ScreenManager.cpp
+    BootScreen.cpp
+    LoadingScreen.cpp
+    LoginScreen.cpp
 )
 
 target_include_directories(elclient PRIVATE

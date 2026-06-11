@@ -5,6 +5,7 @@
 #include <SDL3/SDL.h>
 
 #include "ClientState.h"
+#include "ScreenManager.h"
 
 namespace eld::platform {
 class SdlContext;
@@ -36,9 +37,13 @@ public:
     bool isRunning() const;
     const ClientState& state() const;
 
+    // Screen management
+    ScreenManager& screenManager();
+
 private:
     std::unique_ptr<eld::platform::SdlContext> sdlContext_;
     ClientState state_;
+    ScreenManager screenManager_;
     bool initialized_ = false;
     bool running_ = false;
 };
