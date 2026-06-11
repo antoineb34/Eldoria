@@ -6,6 +6,7 @@
 
 #include "ClientState.h"
 #include "ScreenManager.h"
+#include "InputManager.h"
 
 namespace eld::platform {
 class SdlContext;
@@ -40,10 +41,14 @@ public:
     // Screen management
     ScreenManager& screenManager();
 
+    // Input management
+    InputManager& inputManager();
+
 private:
     std::unique_ptr<eld::platform::SdlContext> sdlContext_;
     ClientState state_;
     ScreenManager screenManager_;
+    InputManager inputManager_;
     bool initialized_ = false;
     bool running_ = false;
 };

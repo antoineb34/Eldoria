@@ -12,6 +12,8 @@ class SdlContext;
 
 namespace eldoria::apps::elclient {
 
+class InputManager;
+
 class Screen;
 
 class ScreenManager {
@@ -48,7 +50,7 @@ public:
     void processTransition(eld::platform::SdlContext& context);
 
     // Update the active screen
-    void update(eld::platform::SdlContext& context);
+    void update(eld::platform::SdlContext& context, InputManager& input);
 
     // Render the active screen
     void render(eld::platform::SdlContext& context);
