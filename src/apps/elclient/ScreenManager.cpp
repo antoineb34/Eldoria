@@ -2,6 +2,7 @@
 
 #include "Screen.h"
 #include "InputManager.h"
+#include "ClientRenderContext.h"
 
 #include <iostream>
 
@@ -81,9 +82,9 @@ void ScreenManager::update(eld::platform::SdlContext& context, InputManager& inp
     }
 }
 
-void ScreenManager::render(eld::platform::SdlContext& context) {
+void ScreenManager::render(ClientRenderContext& renderContext) {
     if (active_) {
-        active_->render(*this, context);
+        active_->render(*this, renderContext);
     }
 }
 

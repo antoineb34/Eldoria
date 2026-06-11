@@ -12,6 +12,7 @@ namespace eldoria::apps::elclient {
 
 class ScreenManager;
 class InputManager;
+class ClientRenderContext;
 
 class Screen {
 public:
@@ -26,8 +27,8 @@ public:
     // Update screen logic
     virtual void update(ScreenManager& manager, eld::platform::SdlContext& context, InputManager& input) = 0;
 
-    // Render screen
-    virtual void render(ScreenManager& manager, eld::platform::SdlContext& context) = 0;
+    // Render screen through client render context
+    virtual void render(ScreenManager& manager, ClientRenderContext& renderContext) = 0;
 
     // Get the screen identity
     virtual ScreenId id() const = 0;

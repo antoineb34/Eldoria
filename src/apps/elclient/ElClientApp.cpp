@@ -34,6 +34,13 @@ bool ElClientApp::initialize() {
         return false;
     }
 
+    // Create and initialize client render context
+    renderContext_ = std::make_unique<ClientRenderContext>(*sdlContext_);
+    if (!renderContext_->initialize(WINDOW_WIDTH, WINDOW_HEIGHT)) {
+        std::cerr << "ElClient: failed to initialize render context\n";
+        return false;
+    }
+
     // Register placeholder screen for verification
     screenManager_.registerScreen(std::make_unique<PlaceholderScreen>());
 
@@ -79,18 +86,18 @@ void ElClientApp::render() {
         return;
     }
 
-    SDL_Renderer* renderer = sdlContext_->renderer();
-    if (!renderer) {
+    if (!renderContext_ || !renderContext_->isInitialized()) {
         return;
     }
 
-    SDL_SetRenderDrawColor(renderer, 18, 20, 22, 255);
-    SDL_RenderClear(renderer);
+    // Begin frame (clears framebuffer, sets up camera)
+    renderContext_->beginFrame();
 
-    // Render active screen
-    screenManager_.render(*sdlContext_);
+    // Render active screen through client render context
+    screenManager_.render(*renderContext_);
 
-    SDL_RenderPresent(renderer);
+    // End frame (renders scene through pipeline, presents to SDL)
+    renderContext_->endFrame();
 }
 
 void ElClientApp::shutdown() {
@@ -99,6 +106,7 @@ void ElClientApp::shutdown() {
     }
 
     running_ = false;
+    renderContext_.reset();
     sdlContext_.reset();
     initialized_ = false;
 
@@ -139,6 +147,10 @@ ScreenManager& ElClientApp::screenManager() {
 
 InputManager& ElClientApp::inputManager() {
     return inputManager_;
+}
+
+ClientRenderContext& ElClientApp::renderContext() {
+    return *renderContext_;
 }
 
 } // namespace eldoria::apps::elclient
