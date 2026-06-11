@@ -1,8 +1,6 @@
 #include "ElClientApp.h"
 
-#include "BootScreen.h"
-#include "LoadingScreen.h"
-#include "LoginScreen.h"
+#include "PlaceholderScreen.h"
 
 #include "../../platform/sdl/SdlContext.h"
 
@@ -36,13 +34,11 @@ bool ElClientApp::initialize() {
         return false;
     }
 
-    // Register screens
-    screenManager_.registerScreen(std::make_unique<BootScreen>());
-    screenManager_.registerScreen(std::make_unique<LoadingScreen>());
-    screenManager_.registerScreen(std::make_unique<LoginScreen>());
+    // Register placeholder screen for verification
+    screenManager_.registerScreen(std::make_unique<PlaceholderScreen>());
 
-    // Start with boot screen
-    screenManager_.requestTransition(ScreenId::Boot);
+    // Activate placeholder screen
+    screenManager_.requestTransition(ScreenId::Placeholder);
 
     state_.screen = ClientScreen::Startup;
     initialized_ = true;
