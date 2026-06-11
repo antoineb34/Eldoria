@@ -6,7 +6,189 @@ This document defines the development roadmap for ElClient.
 
 ElClient is the player-facing C++ game client for Eldoria.
 
-It should eventually become a complete RuneScape-317-feeling client for a custom private server ecosystem.
+It should eventually become a complete# ElClient
+
+## Purpose
+
+ElClient is the player-facing game client for Eldoria.
+
+It is responsible for presenting the game world to players and providing an interface for interacting with that world.
+
+ElClient should feel familiar to players of RuneScape-style games while using a modern and maintainable C++ architecture.
+
+ElClient is a product.
+
+It is not a development tool.
+
+---
+
+## Current State
+
+ElClient currently exists as an application foundation.
+
+Its current purpose is to provide a stable location for future client systems.
+
+Implementation is intentionally minimal during early milestones.
+
+---
+
+## Long-Term Direction
+
+ElClient should eventually support:
+
+* login
+* character selection
+* world rendering
+* entity rendering
+* interface rendering
+* inventory management
+* player interaction
+* NPC interaction
+* combat visualization
+* audio
+* networking
+* client-side prediction where appropriate
+
+The client should provide a complete player experience while remaining server-authoritative.
+
+---
+
+## Ownership
+
+ElClient owns:
+
+* player-facing UI
+* client screens
+* client workflows
+* input handling
+* client presentation
+* local client state
+* server communication
+
+ElClient does not own:
+
+* gameplay authority
+* persistence
+* world authority
+* account authority
+* game rules
+
+Those responsibilities belong to ElServer.
+
+---
+
+## Architectural Position
+
+ElClient composes shared systems into a player-facing application.
+
+```text
+ElClient
+    ↓
+world
+    ↓
+render
+    ↓
+net
+    ↓
+platform
+```
+
+ElClient consumes systems.
+
+It should not reimplement them.
+
+---
+
+## Future Workflows
+
+Examples:
+
+### Login
+
+```text
+Player
+    ↓
+Login Screen
+    ↓
+Login Request
+    ↓
+ElServer
+```
+
+---
+
+### Gameplay
+
+```text
+Player Input
+    ↓
+Client Request
+    ↓
+ElServer
+    ↓
+World Update
+    ↓
+Client Presentation
+```
+
+---
+
+### Inventory
+
+```text
+Player Action
+    ↓
+Server Request
+    ↓
+Server Validation
+    ↓
+Inventory Update
+    ↓
+Client Display
+```
+
+---
+
+## Relationship To Systems
+
+ElClient will consume systems such as:
+
+```text
+Networking
+Entity Synchronization
+Rendering
+Interface Rendering
+Audio
+Input
+```
+
+ElClient should orchestrate systems.
+
+It should not replace them.
+
+---
+
+## Common Mistakes
+
+Do not:
+
+* implement gameplay authority in ElClient
+* implement persistence in ElClient
+* duplicate server logic
+* make shared modules depend on ElClient
+
+ElClient presents the game.
+
+It does not own the game.
+
+---
+
+## Golden Rule
+
+ElClient shows the world.
+
+ElServer owns the world.
+ RuneScape-317-feeling client for a custom private server ecosystem.
 
 This document answers:
 
