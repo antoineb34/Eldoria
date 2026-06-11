@@ -56,10 +56,10 @@ Vertex VertexDecoder::decodeVertex(uint32_t index) {
     currentY_ += dy;
     currentZ_ += dz;
 
-    return {
-        currentX_,
-        currentY_,
-        currentZ_
+    return Vertex {
+        static_cast<float>(currentX_),
+        static_cast<float>(currentY_),
+        static_cast<float>(currentZ_)
     };
 }
 
