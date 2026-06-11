@@ -13,6 +13,7 @@ class SdlContext;
 namespace eldoria::apps::elclient {
 
 class InputManager;
+class ClientRenderContext;
 
 class Screen;
 
@@ -52,8 +53,8 @@ public:
     // Update the active screen
     void update(eld::platform::SdlContext& context, InputManager& input);
 
-    // Render the active screen
-    void render(eld::platform::SdlContext& context);
+    // Render the active screen through client render context
+    void render(ClientRenderContext& renderContext);
 
     // Check if a screen is registered
     bool hasScreen(ScreenId id) const;

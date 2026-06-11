@@ -2,6 +2,7 @@
 
 #include "ScreenManager.h"
 #include "InputManager.h"
+#include "ClientRenderContext.h"
 
 #include "../../platform/sdl/SdlContext.h"
 
@@ -29,10 +30,11 @@ void PlaceholderScreen::update(ScreenManager& manager, eld::platform::SdlContext
     // Input available via input.keyboard() and input.mouse()
 }
 
-void PlaceholderScreen::render(ScreenManager& manager, eld::platform::SdlContext& context) {
+void PlaceholderScreen::render(ScreenManager& manager, ClientRenderContext& renderContext) {
     (void)manager;
-    (void)context;
-    // No-op - render is handled by main loop clear/present
+    (void)renderContext;
+    // No-op - client render context handles clear/present
+    // Screens can populate renderContext.scene() for actual rendering
 }
 
 } // namespace eldoria::apps::elclient
