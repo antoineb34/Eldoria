@@ -1,6 +1,7 @@
 #include "ScreenManager.h"
 
 #include "Screen.h"
+#include "InputManager.h"
 
 #include <iostream>
 
@@ -71,12 +72,12 @@ void ScreenManager::processTransition(eld::platform::SdlContext& context) {
     transitionPending_ = false;
 }
 
-void ScreenManager::update(eld::platform::SdlContext& context) {
+void ScreenManager::update(eld::platform::SdlContext& context, InputManager& input) {
     // Process any pending transition first
     processTransition(context);
 
     if (active_) {
-        active_->update(*this, context);
+        active_->update(*this, context, input);
     }
 }
 

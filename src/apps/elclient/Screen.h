@@ -11,6 +11,7 @@ class SdlContext;
 namespace eldoria::apps::elclient {
 
 class ScreenManager;
+class InputManager;
 
 class Screen {
 public:
@@ -23,7 +24,7 @@ public:
     virtual void onExit(ScreenManager& manager, eld::platform::SdlContext& context) = 0;
 
     // Update screen logic
-    virtual void update(ScreenManager& manager, eld::platform::SdlContext& context) = 0;
+    virtual void update(ScreenManager& manager, eld::platform::SdlContext& context, InputManager& input) = 0;
 
     // Render screen
     virtual void render(ScreenManager& manager, eld::platform::SdlContext& context) = 0;

@@ -4,6 +4,7 @@ add_executable(elclient
     ElClientApp.cpp
     ScreenManager.cpp
     PlaceholderScreen.cpp
+    InputManager.cpp
 )
 
 target_include_directories(elclient PRIVATE

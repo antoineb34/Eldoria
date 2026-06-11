@@ -53,8 +53,14 @@ void ElClientApp::update() {
         return;
     }
 
+    // Begin new input frame
+    inputManager_.beginFrame();
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+        // Process input events through InputManager
+        inputManager_.processEvents(&event);
+
         if (event.type == SDL_EVENT_QUIT) {
             running_ = false;
         }
@@ -65,7 +71,7 @@ void ElClientApp::update() {
     }
 
     // Update screen manager (handles transitions and active screen update)
-    screenManager_.update(*sdlContext_);
+    screenManager_.update(*sdlContext_, inputManager_);
 }
 
 void ElClientApp::render() {
@@ -129,6 +135,10 @@ const ClientState& ElClientApp::state() const {
 
 ScreenManager& ElClientApp::screenManager() {
     return screenManager_;
+}
+
+InputManager& ElClientApp::inputManager() {
+    return inputManager_;
 }
 
 } // namespace eldoria::apps::elclient
