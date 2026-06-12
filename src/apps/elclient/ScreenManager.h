@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Screen.h"
 #include "ScreenId.h"
+#include "Screen.h"
 
 #include <array>
 #include <memory>
@@ -14,6 +14,8 @@ namespace eldoria::apps::elclient {
 
 class InputManager;
 class ClientRenderContext;
+class UIContext;
+class UIManager;
 
 class Screen;
 
@@ -27,6 +29,9 @@ public:
     ScreenManager& operator=(const ScreenManager&) = delete;
     ScreenManager(ScreenManager&&) = delete;
     ScreenManager& operator=(ScreenManager&&) = delete;
+
+    // Set the UI manager reference (called by ElClientApp after construction)
+    void setUIManager(UIManager& uiManager);
 
     // Register a screen (takes ownership)
     void registerScreen(ScreenPtr screen);
@@ -54,7 +59,7 @@ public:
     void update(eld::platform::SdlContext& context, InputManager& input);
 
     // Render the active screen through client render context
-    void render(ClientRenderContext& renderContext);
+    void render(ClientRenderContext& renderContext, UIContext& uiContext);
 
     // Check if a screen is registered
     bool hasScreen(ScreenId id) const;
@@ -66,6 +71,7 @@ private:
     Screen* active_ = nullptr;
     ScreenId pending_ = ScreenId::Invalid;
     bool transitionPending_ = false;
+    UIManager* uiManager_ = nullptr;
 
     // Internal transition helper
     void performTransition(ScreenId to, eld::platform::SdlContext& context);

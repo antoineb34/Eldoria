@@ -1,12 +1,17 @@
 #include "ScreenManager.h"
-
 #include "Screen.h"
 #include "InputManager.h"
 #include "ClientRenderContext.h"
+#include "UIContext.h"
+#include "UIManager.h"
 
 #include <iostream>
 
 namespace eldoria::apps::elclient {
+
+void ScreenManager::setUIManager(UIManager& uiManager) {
+    uiManager_ = &uiManager;
+}
 
 void ScreenManager::registerScreen(ScreenPtr screen) {
     ScreenId id = screen->id();
@@ -82,9 +87,9 @@ void ScreenManager::update(eld::platform::SdlContext& context, InputManager& inp
     }
 }
 
-void ScreenManager::render(ClientRenderContext& renderContext) {
+void ScreenManager::render(ClientRenderContext& renderContext, UIContext& uiContext) {
     if (active_) {
-        active_->render(*this, renderContext);
+        active_->render(*this, renderContext, uiContext);
     }
 }
 
@@ -94,8 +99,14 @@ bool ScreenManager::hasScreen(ScreenId id) const {
 }
 
 void ScreenManager::performTransition(ScreenId to, eld::platform::SdlContext& context) {
+    // UIManager must be set before any transitions can occur
+    if (!uiManager_) {
+        std::cerr << "ScreenManager: UIManager not set, cannot perform transition\n";
+        return;
+    }
+
     if (active_) {
-        active_->onExit(*this, context);
+        active_->onExit(*this, context, *uiManager_);
         std::cout << "ScreenManager: exited screen " << screenIdToString(active_->id()) << "\n";
     }
 
@@ -103,7 +114,7 @@ void ScreenManager::performTransition(ScreenId to, eld::platform::SdlContext& co
     active_ = screens_[index].get();
 
     if (active_) {
-        active_->onEnter(*this, context);
+        active_->onEnter(*this, context, *uiManager_);
         std::cout << "ScreenManager: entered screen " << screenIdToString(active_->id()) << "\n";
     } else {
         std::cerr << "ScreenManager: failed to transition to " << screenIdToString(to) << " - not registered\n";
