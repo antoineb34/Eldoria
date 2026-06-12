@@ -1,5 +1,4 @@
 #include "PlaceholderWidget.h"
-#include "PlaceholderWidget.h"
 #include "UIContext.h"
 #include "InputManager.h"
 
