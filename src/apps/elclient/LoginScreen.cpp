@@ -7,6 +7,7 @@
 #include "TextInputWidget.h"
 #include "ButtonWidget.h"
 #include "LabelWidget.h"
+#include "backend/software/SoftwareRenderBackend.h"
 
 #include "../../platform/sdl/SdlContext.h"
 
@@ -93,10 +94,26 @@ void LoginScreen::update(ScreenManager& manager, eld::platform::SdlContext& cont
 
 void LoginScreen::render(ScreenManager& manager, ClientRenderContext& renderContext, UIContext& uiContext) {
     (void)manager;
-    (void)renderContext;
     (void)uiContext;
-    // No-op - UI is rendered separately by UIManager
-    // The screen's widgets are managed by UIContext
+
+    // Draw login screen background panel
+    auto& backend = renderContext.backend();
+    
+    // Draw semi-transparent dark overlay for the login panel
+    eld::render::ColorPixel panelBg{40, 40, 60, 230};
+    int panelX = 250;
+    int panelY = 150;
+    int panelWidth = 300;
+    int panelHeight = 350;
+    backend.drawRect(panelX, panelY, panelWidth, panelHeight, panelBg);
+    
+    // Draw panel border
+    eld::render::ColorPixel panelBorder{100, 150, 220, 255};
+    backend.drawRectOutline(panelX, panelY, panelWidth, panelHeight, panelBorder, 3);
+
+    // Draw "Login" title
+    eld::render::ColorPixel titleColor{255, 255, 255, 255};
+    backend.drawRect(panelX + 120, panelY + 20, 60, 20, titleColor);
 }
 
 } // namespace eldoria::apps::elclient

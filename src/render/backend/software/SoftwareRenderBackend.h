@@ -20,6 +20,15 @@ public:
         return framebuffer_;
     }
 
+    // Access mutable framebuffer for UI drawing
+    Framebuffer& framebuffer() {
+        return framebuffer_;
+    }
+
+    // Simple 2D drawing utilities for UI
+    void drawRect(int x, int y, int width, int height, ColorPixel color);
+    void drawRectOutline(int x, int y, int width, int height, ColorPixel color, int thickness = 1);
+
     void beginFrame(
         const RenderCamera& camera
     ) override;
@@ -56,4 +65,4 @@ private:
     TriangleRasterizer rasterizer_;
 };
 
-}
+} // namespace eld::render

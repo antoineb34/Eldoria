@@ -1,6 +1,7 @@
 #include "ButtonWidget.h"
 #include "InputManager.h"
 #include "UIContext.h"
+#include "backend/software/SoftwareRenderBackend.h"
 
 namespace eldoria::apps::elclient {
 
@@ -42,8 +43,32 @@ void ButtonWidget::update(UIContext& uiContext, InputManager& input) {
 
 void ButtonWidget::render(UIContext& uiContext, eld::render::SoftwareRenderBackend& backend) {
     (void)uiContext;
-    (void)backend;
-    // Rendering is handled by the render backend - placeholder for now
+
+    // Background color based on state
+    eld::render::ColorPixel bgColor;
+    if (pressed_) {
+        bgColor = eld::render::ColorPixel{60, 100, 180, 255};      // Darker blue when pressed
+    } else if (hovered_) {
+        bgColor = eld::render::ColorPixel{80, 140, 220, 255};      // Lighter blue when hovered
+    } else {
+        bgColor = eld::render::ColorPixel{100, 150, 220, 255};     // Normal blue
+    }
+
+    // Draw background
+    backend.drawRect(x_, y_, width_, height_, bgColor);
+
+    // Draw border
+    eld::render::ColorPixel borderColor{40, 80, 160, 255};
+    backend.drawRectOutline(x_, y_, width_, height_, borderColor, 2);
+
+    // Draw label text representation (simple centered rectangle)
+    // In a real implementation, this would render actual text
+    eld::render::ColorPixel textColor{255, 255, 255, 255};
+    int textWidth = static_cast<int>(label_.size()) * 8;
+    int textHeight = 14;
+    int textX = x_ + (width_ - textWidth) / 2;
+    int textY = y_ + (height_ - textHeight) / 2;
+    backend.drawRect(textX, textY, textWidth, textHeight, textColor);
 }
 
 bool ButtonWidget::contains(int x, int y) const {

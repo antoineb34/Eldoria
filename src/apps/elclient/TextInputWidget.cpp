@@ -1,6 +1,7 @@
 #include "TextInputWidget.h"
 #include "InputManager.h"
 #include "UIContext.h"
+#include "backend/software/SoftwareRenderBackend.h"
 
 #include <iostream>
 
@@ -115,9 +116,55 @@ void TextInputWidget::update(UIContext& uiContext, InputManager& input) {
 
 void TextInputWidget::render(UIContext& uiContext, eld::render::SoftwareRenderBackend& backend) {
     (void)uiContext;
-    (void)backend;
-    // Rendering is handled by the render backend - placeholder for now
-    // In a real implementation, this would draw the text box and text
+
+    // Background color - different when focused
+    eld::render::ColorPixel bgColor = focused_ ? 
+        eld::render::ColorPixel{255, 255, 255, 255} : // White when focused
+        eld::render::ColorPixel{220, 220, 220, 255};  // Light gray when not focused
+    
+    // Draw background
+    backend.drawRect(x_, y_, width_, height_, bgColor);
+    
+    // Draw border - different color when focused
+    eld::render::ColorPixel borderColor = focused_ ?
+        eld::render::ColorPixel{0, 120, 255, 255} :   // Blue when focused
+        eld::render::ColorPixel{128, 128, 128, 255};  // Gray when not focused
+    
+    backend.drawRectOutline(x_, y_, width_, height_, borderColor, 2);
+
+    // Draw placeholder text as a simple rectangle representation
+    // (real text rendering would require font system)
+    if (textRef_.empty() && !focused_) {
+        // Draw a subtle placeholder indicator
+        eld::render::ColorPixel placeholderColor{180, 180, 180, 255};
+        backend.drawRect(x_ + 5, y_ + 8, width_ - 10, height_ - 16, placeholderColor);
+    } else if (!textRef_.empty()) {
+        // Draw text representation - simple rectangles for each character
+        // This is a very basic visualization
+        int charWidth = 8;
+        int charHeight = 14;
+        int startX = x_ + 5;
+        int startY = y_ + 8;
+        
+        for (size_t i = 0; i < textRef_.size() && i < 20; ++i) { // Limit visible chars
+            if (isPassword_) {
+                // Draw asterisk representation for password
+                eld::render::ColorPixel charColor{0, 0, 0, 255};
+                backend.drawRect(startX + i * charWidth, startY, 6, charHeight, charColor);
+            } else {
+                // Draw character representation
+                eld::render::ColorPixel charColor{0, 0, 0, 255};
+                backend.drawRect(startX + i * charWidth, startY, 6, charHeight, charColor);
+            }
+        }
+        
+        // Draw cursor if focused
+        if (focused_) {
+            eld::render::ColorPixel cursorColor{0, 0, 0, 255};
+            int cursorX = startX + static_cast<int>(cursorPos_) * charWidth;
+            backend.drawRect(cursorX, startY, 2, charHeight, cursorColor);
+        }
+    }
 }
 
 bool TextInputWidget::contains(int x, int y) const {

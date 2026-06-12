@@ -218,4 +218,31 @@ void SoftwareRenderBackend::endFrame() {
     );
 }
 
+void SoftwareRenderBackend::drawRect(int x, int y, int width, int height, ColorPixel color) {
+    // Clamp to framebuffer bounds
+    int x1 = std::max(0, x);
+    int y1 = std::max(0, y);
+    int x2 = std::min(width_, x + width);
+    int y2 = std::min(height_, y + height);
+
+    if (x1 >= x2 || y1 >= y2) return;
+
+    for (int py = y1; py < y2; ++py) {
+        for (int px = x1; px < x2; ++px) {
+            framebuffer_.color().at(px, py) = color;
+        }
+    }
 }
+
+void SoftwareRenderBackend::drawRectOutline(int x, int y, int width, int height, ColorPixel color, int thickness) {
+    // Draw top
+    drawRect(x, y, width, thickness, color);
+    // Draw bottom
+    drawRect(x, y + height - thickness, width, thickness, color);
+    // Draw left
+    drawRect(x, y, thickness, height, color);
+    // Draw right
+    drawRect(x + width - thickness, y, thickness, height, color);
+}
+
+} // namespace eld::render

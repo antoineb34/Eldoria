@@ -1,6 +1,7 @@
 #include "LabelWidget.h"
 #include "InputManager.h"
 #include "UIContext.h"
+#include "backend/software/SoftwareRenderBackend.h"
 
 namespace eldoria::apps::elclient {
 
@@ -20,8 +21,13 @@ void LabelWidget::update(UIContext& uiContext, InputManager& input) {
 
 void LabelWidget::render(UIContext& uiContext, eld::render::SoftwareRenderBackend& backend) {
     (void)uiContext;
-    (void)backend;
-    // Rendering is handled by the render backend - placeholder for now
+
+    // Draw text representation (simple rectangle)
+    // In a real implementation, this would render actual text
+    eld::render::ColorPixel textColor{0, 0, 0, 255}; // Black text
+    int textWidth = static_cast<int>(text_.size()) * 8;
+    int textHeight = 14;
+    backend.drawRect(x_, y_, textWidth, textHeight, textColor);
 }
 
 bool LabelWidget::contains(int x, int y) const {
