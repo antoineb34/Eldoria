@@ -6,6 +6,9 @@ add_executable(elclient
     PlaceholderScreen.cpp
     InputManager.cpp
     ClientRenderContext.cpp
+    UIManager.cpp
+    UIContext.cpp
+    PlaceholderWidget.cpp
 )
 
 target_include_directories(elclient PRIVATE

@@ -41,6 +41,16 @@ bool ElClientApp::initialize() {
         return false;
     }
 
+    // Create and initialize UI manager
+    uiManager_ = std::make_unique<UIManager>();
+    if (!uiManager_->initialize(*sdlContext_)) {
+        std::cerr << "ElClient: failed to initialize UI manager\n";
+        return false;
+    }
+
+    // Set UI manager on screen manager so screens can access UI context
+    screenManager_.setUIManager(*uiManager_);
+
     // Register placeholder screen for verification
     screenManager_.registerScreen(std::make_unique<PlaceholderScreen>());
 
@@ -63,6 +73,9 @@ void ElClientApp::update() {
     // Begin new input frame
     inputManager_.beginFrame();
 
+    // Begin new UI frame
+    uiManager_->beginFrame();
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         // Process input events through InputManager
@@ -79,6 +92,9 @@ void ElClientApp::update() {
 
     // Update screen manager (handles transitions and active screen update)
     screenManager_.update(*sdlContext_, inputManager_);
+
+    // Update UI manager
+    uiManager_->update(inputManager_);
 }
 
 void ElClientApp::render() {
@@ -94,7 +110,10 @@ void ElClientApp::render() {
     renderContext_->beginFrame();
 
     // Render active screen through client render context
-    screenManager_.render(*renderContext_);
+    screenManager_.render(*renderContext_, uiManager_->context());
+
+    // Render UI on top
+    uiManager_->render(renderContext_->backend());
 
     // End frame (renders scene through pipeline, presents to SDL)
     renderContext_->endFrame();
@@ -106,6 +125,7 @@ void ElClientApp::shutdown() {
     }
 
     running_ = false;
+    uiManager_.reset();
     renderContext_.reset();
     sdlContext_.reset();
     initialized_ = false;
@@ -151,6 +171,10 @@ InputManager& ElClientApp::inputManager() {
 
 ClientRenderContext& ElClientApp::renderContext() {
     return *renderContext_;
+}
+
+UIManager& ElClientApp::uiManager() {
+    return *uiManager_;
 }
 
 } // namespace eldoria::apps::elclient

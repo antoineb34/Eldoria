@@ -8,6 +8,7 @@
 #include "ScreenManager.h"
 #include "InputManager.h"
 #include "ClientRenderContext.h"
+#include "UIManager.h"
 
 namespace eld::platform {
 class SdlContext;
@@ -48,12 +49,16 @@ public:
     // Render management
     ClientRenderContext& renderContext();
 
+    // UI management
+    UIManager& uiManager();
+
 private:
     std::unique_ptr<eld::platform::SdlContext> sdlContext_;
     ClientState state_;
     ScreenManager screenManager_;
     InputManager inputManager_;
     std::unique_ptr<ClientRenderContext> renderContext_;
+    std::unique_ptr<UIManager> uiManager_;
     bool initialized_ = false;
     bool running_ = false;
 };
