@@ -1,5 +1,4 @@
 #include "ElClientApp.h"
-#include "ElClientApp.h"
 #include "PlaceholderScreen.h"
 #include "LoginScreen.h"
 

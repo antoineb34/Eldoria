@@ -10,6 +10,9 @@ add_executable(elclient
     UIManager.cpp
     UIContext.cpp
     PlaceholderWidget.cpp
+    TextInputWidget.cpp
+    ButtonWidget.cpp
+    LabelWidget.cpp
 )
 
 target_include_directories(elclient PRIVATE

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Screen.h"
+#include "TextInputWidget.h"
+#include "ButtonWidget.h"
+#include "LabelWidget.h"
 
 namespace eld::platform {
 class SdlContext;
@@ -34,11 +37,13 @@ private:
     // Store UIManager reference for accessing UI context during updates
     UIManager* uiManager_ = nullptr;
 
+    // Widget references (explicit ownership, not string-based discovery)
+    LabelWidget* statusLabel_ = nullptr;
+
     // Local login state (no networking, no real auth)
     std::string username_;
     std::string password_;
     std::string statusText_;
-    bool usernameFocused_ = true;
     bool loginRequested_ = false;
 };
 
