@@ -4,6 +4,7 @@ add_executable(elclient
     ElClientApp.cpp
     ScreenManager.cpp
     PlaceholderScreen.cpp
+    LoginScreen.cpp
     InputManager.cpp
     ClientRenderContext.cpp
     UIManager.cpp
