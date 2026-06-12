@@ -1,5 +1,4 @@
 #include "ScreenManager.h"
-#include "ScreenManager.h"
 #include "Screen.h"
 #include "InputManager.h"
 #include "ClientRenderContext.h"
@@ -100,6 +99,12 @@ bool ScreenManager::hasScreen(ScreenId id) const {
 }
 
 void ScreenManager::performTransition(ScreenId to, eld::platform::SdlContext& context) {
+    // UIManager must be set before any transitions can occur
+    if (!uiManager_) {
+        std::cerr << "ScreenManager: UIManager not set, cannot perform transition\n";
+        return;
+    }
+
     if (active_) {
         active_->onExit(*this, context, *uiManager_);
         std::cout << "ScreenManager: exited screen " << screenIdToString(active_->id()) << "\n";

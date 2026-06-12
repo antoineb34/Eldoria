@@ -1,5 +1,4 @@
 #include "PlaceholderScreen.h"
-#include "PlaceholderScreen.h"
 #include "ScreenManager.h"
 #include "InputManager.h"
 #include "ClientRenderContext.h"
