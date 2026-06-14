@@ -1,6 +1,5 @@
 #include "ElClientApp.h"
-
-#include "PlaceholderScreen.h"
+#include "ClientRenderContext.h"
 
 #include "../../platform/sdl/SdlContext.h"
 
@@ -41,23 +40,6 @@ bool ElClientApp::initialize() {
         return false;
     }
 
-    // Create and initialize UI manager
-    uiManager_ = std::make_unique<UIManager>();
-    if (!uiManager_->initialize(*sdlContext_)) {
-        std::cerr << "ElClient: failed to initialize UI manager\n";
-        return false;
-    }
-
-    // Set UI manager on screen manager so screens can access UI context
-    screenManager_.setUIManager(*uiManager_);
-
-    // Register placeholder screen for verification
-    screenManager_.registerScreen(std::make_unique<PlaceholderScreen>());
-
-    // Activate placeholder screen
-    screenManager_.requestTransition(ScreenId::Placeholder);
-
-    state_.screen = ClientScreen::Startup;
     initialized_ = true;
     running_ = true;
 
@@ -70,17 +52,8 @@ void ElClientApp::update() {
         return;
     }
 
-    // Begin new input frame
-    inputManager_.beginFrame();
-
-    // Begin new UI frame
-    uiManager_->beginFrame();
-
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        // Process input events through InputManager
-        inputManager_.processEvents(&event);
-
         if (event.type == SDL_EVENT_QUIT) {
             running_ = false;
         }
@@ -89,12 +62,6 @@ void ElClientApp::update() {
             running_ = false;
         }
     }
-
-    // Update screen manager (handles transitions and active screen update)
-    screenManager_.update(*sdlContext_, inputManager_);
-
-    // Update UI manager
-    uiManager_->update(inputManager_);
 }
 
 void ElClientApp::render() {
@@ -109,12 +76,6 @@ void ElClientApp::render() {
     // Begin frame (clears framebuffer, sets up camera)
     renderContext_->beginFrame();
 
-    // Render active screen through client render context
-    screenManager_.render(*renderContext_, uiManager_->context());
-
-    // Render UI on top
-    uiManager_->render(renderContext_->backend());
-
     // End frame (renders scene through pipeline, presents to SDL)
     renderContext_->endFrame();
 }
@@ -125,7 +86,6 @@ void ElClientApp::shutdown() {
     }
 
     running_ = false;
-    uiManager_.reset();
     renderContext_.reset();
     sdlContext_.reset();
     initialized_ = false;
@@ -157,24 +117,8 @@ bool ElClientApp::isRunning() const {
     return running_;
 }
 
-const ClientState& ElClientApp::state() const {
-    return state_;
-}
-
-ScreenManager& ElClientApp::screenManager() {
-    return screenManager_;
-}
-
-InputManager& ElClientApp::inputManager() {
-    return inputManager_;
-}
-
 ClientRenderContext& ElClientApp::renderContext() {
     return *renderContext_;
-}
-
-UIManager& ElClientApp::uiManager() {
-    return *uiManager_;
 }
 
 } // namespace eldoria::apps::elclient

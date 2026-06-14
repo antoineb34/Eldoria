@@ -2,13 +2,7 @@ add_executable(elclient
     main.cpp
 
     ElClientApp.cpp
-    ScreenManager.cpp
-    PlaceholderScreen.cpp
-    InputManager.cpp
     ClientRenderContext.cpp
-    UIManager.cpp
-    UIContext.cpp
-    PlaceholderWidget.cpp
 )
 
 target_include_directories(elclient PRIVATE
@@ -16,12 +10,8 @@ target_include_directories(elclient PRIVATE
 )
 
 target_link_libraries(elclient PRIVATE
-    Eldoria::Data
-    Eldoria::Game
-    Eldoria::Network
     Eldoria::Platform
     Eldoria::Render
-    Eldoria::World
 )
 
 set_target_properties(elclient PROPERTIES
