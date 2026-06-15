@@ -38,12 +38,32 @@ bool ElClientApp::initialize() {
     cache_ = eld::cache::Cache("cache");
     std::cout << "ElClient: cache path = " << std::filesystem::absolute("cache") << "\n";
 
-    if (cache_.isValid()) {
+    auto cacheRoot = std::filesystem::path("cache");
+    auto datPath = cacheRoot / "main_file_cache.dat";
+    std::vector<std::string> missingFiles;
+
+    if (!std::filesystem::exists(datPath)) {
+        missingFiles.push_back("main_file_cache.dat");
+    }
+
+    for (int i = 0; i <= 4; ++i) {
+        auto idxPath = cacheRoot / ("main_file_cache.idx" + std::to_string(i));
+        if (!std::filesystem::exists(idxPath)) {
+            missingFiles.push_back("main_file_cache.idx" + std::to_string(i));
+        }
+    }
+
+    if (missingFiles.empty() && cache_.isValid()) {
         std::cout << "ElClient: cache validation passed\n";
     } else {
         std::cerr << "ElClient: cache validation failed\n";
-        std::cerr << "ElClient: missing required cache files\n";
-        std::cerr << "ElClient: expected: main_file_cache.dat, main_file_cache.idx0-idx4\n";
+        if (missingFiles.empty()) {
+            std::cerr << "ElClient: cache directory exists but is invalid\n";
+        } else {
+            for (const auto& file : missingFiles) {
+                std::cerr << "ElClient: missing: " << file << "\n";
+            }
+        }
     }
 
     // Create and initialize client render context
