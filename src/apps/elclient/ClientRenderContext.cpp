@@ -61,6 +61,13 @@ void ClientRenderContext::endFrame() {
     // Render the scene through the pipeline
     pipeline_.render(scene_, backend_);
 
+    // Draw simple placeholder panel (centered, 200x150, bright cyan)
+    int panelW = 200;
+    int panelH = 150;
+    int panelX = (camera_.viewportWidth - panelW) / 2;
+    int panelY = (camera_.viewportHeight - panelH) / 2;
+    backend_.drawRect(panelX, panelY, panelW, panelH, { 0, 255, 255, 255 });
+
     // End frame on backend (uploads to SDL texture, renders to screen)
     backend_.endFrame();
 }
