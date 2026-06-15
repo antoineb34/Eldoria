@@ -61,6 +61,9 @@ void ClientRenderContext::endFrame() {
     // Render the scene through the pipeline
     pipeline_.render(scene_, backend_);
 
+    // Draw baseline visible marker (white 10x10 square at top-left)
+    backend_.drawRect(10, 10, 10, 10, { 255, 255, 255, 255 });
+
     // End frame on backend (uploads to SDL texture, renders to screen)
     backend_.endFrame();
 }

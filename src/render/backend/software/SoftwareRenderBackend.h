@@ -44,6 +44,9 @@ public:
         clearColor_ = color;
     }
 
+    // Draw a filled rectangle on the framebuffer (client-owned visible primitive)
+    void drawRect(int x, int y, int width, int height, const ColorPixel& color);
+
 private:
     void destroyTexture();
     void ensureTexture();
