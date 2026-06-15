@@ -1,14 +1,22 @@
 #include "ClientRenderContext.h"
 
 #include "../../platform/sdl/SdlContext.h"
+#include "model/ModelAsset.h"
 
 #include <iostream>
+#include <algorithm>
 
 namespace eldoria::apps::elclient {
 
-ClientRenderContext::ClientRenderContext(eld::platform::SdlContext& context)
+ClientRenderContext::ClientRenderContext(
+    eld::platform::SdlContext& context,
+    eld::cache::Cache& cache,
+    eld::model::ModelLoader& modelLoader
+)
     : sdlContext_(context)
     , backend_(context.renderer())
+    , cache_(cache)
+    , modelLoader_(modelLoader)
 {
 }
 
@@ -17,28 +25,113 @@ bool ClientRenderContext::initialize(int width, int height) {
         return true;
     }
 
-    // Set up camera for client rendering (orthographic for 2D/UI)
+    configureCamera(width, height);
+
+    scene_.objects.clear();
+    scene_.camera = camera_;
+
+    backend_.setClearColor({ 20, 30, 60, 255 });
+
+    loadModel147();
+
+    initialized_ = true;
+
+    std::cout << "ClientRenderContext: initialized (" << width << "x" << height << ")\n";
+    std::cout << "ClientRenderContext: scene objects=" << scene_.objects.size() << "\n";
+
+    return true;
+}
+
+void ClientRenderContext::configureCamera(int width, int height) {
     camera_.viewportX = 0;
     camera_.viewportY = 0;
     camera_.viewportWidth = width;
     camera_.viewportHeight = height;
-    camera_.angleX = 0.0f;
-    camera_.angleY = 0.0f;
-    camera_.distance = 500.0f;
-    camera_.fov = 1.04719755f; // 60 degrees
+
+    // Match the known working ElForge model viewport defaults.
+    camera_.angleX = 0.45f;
+    camera_.angleY = 0.6f;
+    camera_.distance = 1200.0f;
+    camera_.fov = 0.35f;
     camera_.nearPlane = 1.0f;
     camera_.farPlane = 10000.0f;
+}
 
-    // Clear scene
+void ClientRenderContext::loadModel147() {
+    modelLoadedInScene_ = false;
+    modelAsset_.reset();
+
+    if (!cache_.isValid()) {
+        std::cerr << "ElClient: failed to load model 147: cache invalid\n";
+        return;
+    }
+
+    std::cout << "ElClient: loading model 147\n";
+
+    auto loadedModel = modelLoader_.load(147);
+    if (!loadedModel.has_value()) {
+        std::cerr << "ElClient: failed to load model 147: ModelLoader returned empty optional\n";
+        return;
+    }
+
+    std::cout << "ElClient: model 147 loaded vertices="
+              << loadedModel->vertices.size()
+              << " faces="
+              << loadedModel->faces.size()
+              << "\n";
+
+    if (loadedModel->vertices.empty() || loadedModel->faces.empty()) {
+        std::cerr << "ElClient: failed to load model 147: model has no geometry\n";
+        return;
+    }
+
+    // Compute and log model bounds
+    const auto& first = loadedModel->vertices.front();
+    float minX = first.x;
+    float maxX = first.x;
+    float minY = first.y;
+    float maxY = first.y;
+    float minZ = first.z;
+    float maxZ = first.z;
+
+    for (const auto& vertex : loadedModel->vertices) {
+        if (vertex.x < minX) minX = vertex.x;
+        if (vertex.x > maxX) maxX = vertex.x;
+        if (vertex.y < minY) minY = vertex.y;
+        if (vertex.y > maxY) maxY = vertex.y;
+        if (vertex.z < minZ) minZ = vertex.z;
+        if (vertex.z > maxZ) maxZ = vertex.z;
+    }
+
+    std::cout << "ElClient: model 147 bounds x=["
+              << minX << ", " << maxX << "] y=["
+              << minY << ", " << maxY << "] z=["
+              << minZ << ", " << maxZ << "]\n";
+
+    modelAsset_ = std::move(*loadedModel);
+    addModel147ToScene();
+}
+
+void ClientRenderContext::addModel147ToScene() {
+    if (!modelAsset_.has_value()) {
+        return;
+    }
+
+    eld::render::RenderObject object;
+    object.model = &modelAsset_.value();
+    object.transform.position = { 0.0f, 0.0f, 0.0f };
+    object.transform.rotation = { 0.0f, 0.0f, 0.0f };
+    object.transform.scale = { 1.0f, 1.0f, 1.0f };
+
     scene_.objects.clear();
+    scene_.objects.push_back(object);
     scene_.camera = camera_;
 
-    // Set visible baseline clear color (dark blue)
-    backend_.setClearColor({ 20, 30, 60, 255 });
+    modelLoadedInScene_ = true;
 
-    initialized_ = true;
-    std::cout << "ClientRenderContext: initialized (" << width << "x" << height << ")\n";
-    return true;
+    std::cout << "ClientRenderContextRenderContext: added model 147 to scene (objects="
+              << scene_.objects.size()
+              << ")\n";
 }
 
 void ClientRenderContext::beginFrame() {
@@ -58,18 +151,28 @@ void ClientRenderContext::endFrame() {
         return;
     }
 
-    // Render the scene through the pipeline
-    pipeline_.render(scene_, backend_);
+    if (modelLoadedInScene_) {
+        pipeline_.render(scene_, backend_);
+    } else {
+        drawFallbackPlaceholder();
+    }
 
-    // Draw simple placeholder panel (centered, 200x150, bright cyan)
-    int panelW = 200;
-    int panelH = 150;
-    int panelX = (camera_.viewportWidth - panelW) / 2;
-    int panelY = (camera_.viewportHeight - panelH) / 2;
-    backend_.drawRect(panelX, panelY, panelW, panelH, { 0, 255, 255, 255 });
-
-    // End frame on backend (uploads to SDL texture, renders to screen)
     backend_.endFrame();
+}
+
+void ClientRenderContext::drawFallbackPlaceholder() {
+    const int panelW = 200;
+    const int panelH = 150;
+    const int panelX = (camera_.viewportWidth - panelW) / 2;
+    const int panelY = (camera_.viewportHeight - panelH) / 2;
+
+    backend_.drawRect(
+        panelX,
+        panelY,
+        panelW,
+        panelH,
+        { 0, 255, 255, 255 }
+    );
 }
 
 } // namespace eldoria::apps::elclient

@@ -4,6 +4,8 @@
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
+#include "model/ModelLoader.h"
+#include "texture/TextureLoader.h"
 
 namespace eld::platform {
 class SdlContext;
@@ -41,8 +43,10 @@ public:
 
 private:
     std::unique_ptr<eld::platform::SdlContext> sdlContext_;
-    std::unique_ptr<ClientRenderContext> renderContext_;
     eld::cache::Cache cache_;
+    eld::texture::TextureLoader textureLoader_;
+    eld::model::ModelLoader modelLoader_;
+    std::unique_ptr<ClientRenderContext> renderContext_;
     bool initialized_ = false;
     bool running_ = false;
 };

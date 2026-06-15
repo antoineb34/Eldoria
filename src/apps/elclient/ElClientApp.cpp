@@ -8,7 +8,12 @@
 
 namespace eldoria::apps::elclient {
 
-ElClientApp::ElClientApp() = default;
+ElClientApp::ElClientApp()
+    : cache_("cache")
+    , textureLoader_(cache_)
+    , modelLoader_(cache_, textureLoader_)
+{
+}
 
 ElClientApp::~ElClientApp() {
     shutdown();
@@ -34,8 +39,6 @@ bool ElClientApp::initialize() {
         return false;
     }
 
-    // Initialize cache with default path (./cache)
-    cache_ = eld::cache::Cache("cache");
     std::cout << "ElClient: cache path = " << std::filesystem::absolute("cache") << "\n";
 
     auto cacheRoot = std::filesystem::path("cache");
@@ -67,7 +70,7 @@ bool ElClientApp::initialize() {
     }
 
     // Create and initialize client render context
-    renderContext_ = std::make_unique<ClientRenderContext>(*sdlContext_);
+    renderContext_ = std::make_unique<ClientRenderContext>(*sdlContext_, cache_, modelLoader_);
     if (!renderContext_->initialize(WINDOW_WIDTH, WINDOW_HEIGHT)) {
         std::cerr << "ElClient: failed to initialize render context\n";
         return false;
