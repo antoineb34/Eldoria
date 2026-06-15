@@ -80,6 +80,7 @@ private:
     std::optional<eld::model::ModelAsset> modelAsset_;
     bool modelLoadedInScene_ = false;
     bool initialized_ = false;
+    bool debugLoggedFirstFrame_ = false;
 };
 
 } // namespace eldoria::apps::elclient
