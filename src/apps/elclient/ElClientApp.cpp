@@ -8,7 +8,11 @@
 
 namespace eldoria::apps::elclient {
 
-ElClientApp::ElClientApp() = default;
+ElClientApp::ElClientApp()
+    : textureLoader_(cache_)
+    , modelLoader_(cache_, textureLoader_)
+{
+}
 
 ElClientApp::~ElClientApp() {
     shutdown();
@@ -67,7 +71,7 @@ bool ElClientApp::initialize() {
     }
 
     // Create and initialize client render context
-    renderContext_ = std::make_unique<ClientRenderContext>(*sdlContext_);
+    renderContext_ = std::make_unique<ClientRenderContext>(*sdlContext_, cache_, modelLoader_);
     if (!renderContext_->initialize(WINDOW_WIDTH, WINDOW_HEIGHT)) {
         std::cerr << "ElClient: failed to initialize render context\n";
         return false;

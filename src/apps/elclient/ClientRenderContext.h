@@ -1,13 +1,15 @@
 #pragma once
 
 #include <memory>
-
+#include <optional>
 #include <SDL3/SDL.h>
 
 #include "RenderPipeline.h"
 #include "backend/software/SoftwareRenderBackend.h"
 #include "scene/RenderCamera.h"
 #include "scene/RenderScene.h"
+#include "model/ModelAsset.h"
+#include "model/ModelLoader.h"
 
 namespace eld::platform {
 class SdlContext;
@@ -17,7 +19,11 @@ namespace eldoria::apps::elclient {
 
 class ClientRenderContext {
 public:
-    explicit ClientRenderContext(eld::platform::SdlContext& context);
+    explicit ClientRenderContext(
+        eld::platform::SdlContext& context,
+        eld::cache::Cache& cache,
+        eld::model::ModelLoader& modelLoader
+    );
     ~ClientRenderContext() = default;
 
     // Deleted copy/move
@@ -32,7 +38,7 @@ public:
     // Begin a new frame (clears framebuffer, sets up camera)
     void beginFrame();
 
-    // End frame (presents to SDL)
+    // End frame (renders scene through pipeline, presents to SDL)
     void endFrame();
 
     // Get the render scene for client to populate
@@ -50,13 +56,23 @@ public:
     // Check if initialized
     bool isInitialized() const { return initialized_; }
 
+    // Check if model is loaded and in scene
+    bool hasModelInScene() const { return modelLoadedInScene_; }
+
 private:
     eld::platform::SdlContext& sdlContext_;
     eld::render::SoftwareRenderBackend backend_;
     eld::render::RenderPipeline pipeline_;
     eld::render::RenderScene scene_;
     eld::render::RenderCamera camera_;
+    eld::cache::Cache& cache_;
+    eld::model::ModelLoader& modelLoader_;
+    std::optional<eld::model::ModelAsset> modelAsset_;
+    bool modelLoadedInScene_ = false;
     bool initialized_ = false;
+
+    // Helper to load model 147 and add to scene
+    void loadAndAddModel();
 };
 
 } // namespace eldoria::apps::elclient
