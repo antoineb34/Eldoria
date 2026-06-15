@@ -3,6 +3,8 @@
 #include <memory>
 #include <SDL3/SDL.h>
 
+#include "cache/Cache.h"
+
 namespace eld::platform {
 class SdlContext;
 }
@@ -40,6 +42,7 @@ public:
 private:
     std::unique_ptr<eld::platform::SdlContext> sdlContext_;
     std::unique_ptr<ClientRenderContext> renderContext_;
+    eld::cache::Cache cache_;
     bool initialized_ = false;
     bool running_ = false;
 };

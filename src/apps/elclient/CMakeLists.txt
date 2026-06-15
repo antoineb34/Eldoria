@@ -12,6 +12,7 @@ target_include_directories(elclient PRIVATE
 target_link_libraries(elclient PRIVATE
     Eldoria::Platform
     Eldoria::Render
+    Eldoria::Data
 )
 
 set_target_properties(elclient PROPERTIES
