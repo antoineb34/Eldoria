@@ -38,12 +38,19 @@ public:
         highlightTexturedFaces_ = enabled;
     }
 
+    void setClearColor(
+        const ColorPixel& color
+    ) {
+        clearColor_ = color;
+    }
+
 private:
     void destroyTexture();
     void ensureTexture();
 
 private:
     bool highlightTexturedFaces_ = false;
+    ColorPixel clearColor_ = { 20, 30, 60, 255 };
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* texture_ = nullptr;
 
