@@ -238,6 +238,8 @@ void SoftwareRenderBackend::endFrame() {
         nullptr,
         &destination
     );
+
+    SDL_RenderPresent(renderer_);
 }
 
 }
