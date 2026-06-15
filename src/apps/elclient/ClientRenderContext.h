@@ -35,7 +35,7 @@ public:
     // Initialize render resources (called once at startup)
     bool initialize(int width, int height);
 
-    // Begin a new frame (clears framebuffer, sets up camera)
+    // Begin a new frame (clears (clears framebuffer, sets up camera)
     void beginFrame();
 
     // End frame (renders scene through pipeline, presents to SDL)
@@ -56,23 +56,30 @@ public:
     // Check if initialized
     bool isInitialized() const { return initialized_; }
 
-    // Check if model is loaded and in scene
-    bool hasModelInScene() const { return modelLoadedInScene_; }
+private:
+    // Camera configuration
+    void configureCamera(int width, int height);
+
+    // Load model 147 from cache
+    void loadModel147();
+
+    // Add model 147 to the scene
+    void addModel147ToScene();
+
+    // Draw fallback placeholder panel
+    void drawFallbackPlaceholder();
 
 private:
     eld::platform::SdlContext& sdlContext_;
+    eld::cache::Cache& cache_;
+    eld::model::ModelLoader& modelLoader_;
     eld::render::SoftwareRenderBackend backend_;
     eld::render::RenderPipeline pipeline_;
     eld::render::RenderScene scene_;
     eld::render::RenderCamera camera_;
-    eld::cache::Cache& cache_;
-    eld::model::ModelLoader& modelLoader_;
     std::optional<eld::model::ModelAsset> modelAsset_;
     bool modelLoadedInScene_ = false;
     bool initialized_ = false;
-
-    // Helper to load model 147 and add to scene
-    void loadAndAddModel();
 };
 
 } // namespace eldoria::apps::elclient

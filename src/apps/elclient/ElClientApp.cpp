@@ -9,7 +9,8 @@
 namespace eldoria::apps::elclient {
 
 ElClientApp::ElClientApp()
-    : textureLoader_(cache_)
+    : cache_("cache")
+    , textureLoader_(cache_)
     , modelLoader_(cache_, textureLoader_)
 {
 }
@@ -38,8 +39,6 @@ bool ElClientApp::initialize() {
         return false;
     }
 
-    // Initialize cache with default path (./cache)
-    cache_ = eld::cache::Cache("cache");
     std::cout << "ElClient: cache path = " << std::filesystem::absolute("cache") << "\n";
 
     auto cacheRoot = std::filesystem::path("cache");

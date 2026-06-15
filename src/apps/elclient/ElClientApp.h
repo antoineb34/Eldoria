@@ -41,15 +41,12 @@ public:
     // Render management
     ClientRenderContext& renderContext();
 
-    // Cache access
-    eld::cache::Cache& cache() { return cache_; }
-
 private:
     std::unique_ptr<eld::platform::SdlContext> sdlContext_;
-    std::unique_ptr<ClientRenderContext> renderContext_;
     eld::cache::Cache cache_;
     eld::texture::TextureLoader textureLoader_;
     eld::model::ModelLoader modelLoader_;
+    std::unique_ptr<ClientRenderContext> renderContext_;
     bool initialized_ = false;
     bool running_ = false;
 };
