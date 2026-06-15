@@ -4,6 +4,7 @@
 #include "model/ModelAsset.h"
 
 #include <iostream>
+#include <algorithm>
 
 namespace eldoria::apps::elclient {
 
@@ -128,17 +129,9 @@ void ClientRenderContext::addModel147ToScene() {
 
     modelLoadedInScene_ = true;
 
-    std::cout << "ClientRenderContext: added model 147 to scene (objects="
+    std::cout << "ClientRenderContextRenderContext: added model 147 to scene (objects="
               << scene_.objects.size()
               << ")\n";
-
-    std::cout << "ClientRenderContext: model transform position=("
-              << object.transform.position.x << ", "
-              << object.transform.position.y << ", "
-              << object.transform.position.z << ") scale=("
-              << object.transform.scale.x << ", "
-              << object.transform.scale.y << ", "
-              << object.transform.scale.z << ")\n";
 }
 
 void ClientRenderContext::beginFrame() {
@@ -159,46 +152,12 @@ void ClientRenderContext::endFrame() {
     }
 
     if (modelLoadedInScene_) {
-        std::cout << "ClientRenderContext: rendering model scene objects="
-                  << scene_.objects.size()
-                  << "\n";
-
         pipeline_.render(scene_, backend_);
+    } else {
+        drawFallbackPlaceholder();
     }
-
-    drawFallbackPlaceholder();
 
     backend_.endFrame();
-
-    if (!debugLoggedFirstFrame_) {
-        std::cout << "ClientRenderContext debug:\n";
-        std::cout << "  initialized=" << initialized_ << "\n";
-        std::cout << "  modelLoadedInScene=" << modelLoadedInScene_ << "\n";
-        std::cout << "  scene objects=" << scene_.objects.size() << "\n";
-        std::cout << "  camera viewport="
-                  << camera_.viewportWidth << "x" << camera_.viewportHeight << "\n";
-        std::cout << "  camera angleX=" << camera_.angleX
-                  << " angleY=" << camera_.angleY
-                  << " distance=" << camera_.distance
-                  << " fov=" << camera_.fov << "\n";
-
-        if (modelAsset_.has_value()) {
-            std::cout << "  model vertices=" << modelAsset_->vertices.size()
-                      << " faces=" << modelAsset_->faces.size() << "\n";
-
-            if (!modelAsset_->vertices.empty()) {
-                const auto& v = modelAsset_->vertices.front();
-                std::cout << "  first vertex=("
-                          << v.x << ", "
-                          << v.y << ", "
-                          << v.z << ")\n";
-            }
-        } else {
-            std::cout << "  modelAsset=null\n";
-        }
-
-        debugLoggedFirstFrame_ = true;
-    }
 }
 
 void ClientRenderContext::drawFallbackPlaceholder() {
