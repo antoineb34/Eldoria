@@ -33,6 +33,9 @@ bool ClientRenderContext::initialize(int width, int height) {
     scene_.objects.clear();
     scene_.camera = camera_;
 
+    // Set visible baseline clear color (dark blue)
+    backend_.setClearColor({ 20, 30, 60, 255 });
+
     initialized_ = true;
     std::cout << "ClientRenderContext: initialized (" << width << "x" << height << ")\n";
     return true;

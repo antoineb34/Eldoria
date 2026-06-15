@@ -102,7 +102,7 @@ void SoftwareRenderBackend::beginFrame(
         height_
     );
 
-    framebuffer_.clear();
+    framebuffer_.clear(clearColor_);
 
     destroyTexture();
     ensureTexture();
