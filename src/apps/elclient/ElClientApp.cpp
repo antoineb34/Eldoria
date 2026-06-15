@@ -4,6 +4,7 @@
 #include "../../platform/sdl/SdlContext.h"
 
 #include <iostream>
+#include <filesystem>
 
 namespace eldoria::apps::elclient {
 
@@ -31,6 +32,18 @@ bool ElClientApp::initialize() {
         std::cerr << "ElClient: failed to initialize SDL context\n";
         sdlContext_.reset();
         return false;
+    }
+
+    // Initialize cache with default path (./cache)
+    cache_ = eld::cache::Cache("cache");
+    std::cout << "ElClient: cache path = " << std::filesystem::absolute("cache") << "\n";
+
+    if (cache_.isValid()) {
+        std::cout << "ElClient: cache validation passed\n";
+    } else {
+        std::cerr << "ElClient: cache validation failed\n";
+        std::cerr << "ElClient: missing required cache files\n";
+        std::cerr << "ElClient: expected: main_file_cache.dat, main_file_cache.idx0-idx4\n";
     }
 
     // Create and initialize client render context
