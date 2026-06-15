@@ -50,7 +50,7 @@ private:
 
 private:
     bool highlightTexturedFaces_ = false;
-    ColorPixel clearColor_ = { 20, 30, 60, 255 };
+    ColorPixel clearColor_ = { 169, 199, 151, 255 };
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* texture_ = nullptr;
 
