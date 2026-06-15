@@ -16,7 +16,7 @@ public:
     }
 
     void clear(
-        ColorPixel color = { 169, 199, 151, 255 }
+        ColorPixel color = { 20, 30, 60, 255 }
     ) {
         color_.clear(color);
         depth_.clear();
