@@ -38,22 +38,12 @@ public:
         highlightTexturedFaces_ = enabled;
     }
 
-    void setClearColor(
-        const ColorPixel& color
-    ) {
-        clearColor_ = color;
-    }
-
-    // Draw a filled rectangle on the framebuffer (simple visible primitive)
-    void drawRect(int x, int y, int width, int height, const ColorPixel& color);
-
 private:
     void destroyTexture();
     void ensureTexture();
 
 private:
     bool highlightTexturedFaces_ = false;
-    ColorPixel clearColor_ = { 169, 199, 151, 255 };
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* texture_ = nullptr;
 

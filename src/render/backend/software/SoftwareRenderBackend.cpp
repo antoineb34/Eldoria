@@ -102,7 +102,7 @@ void SoftwareRenderBackend::beginFrame(
         height_
     );
 
-    framebuffer_.clear(clearColor_);
+    framebuffer_.clear();
 
     destroyTexture();
     ensureTexture();
@@ -175,28 +175,6 @@ void SoftwareRenderBackend::drawObject(
     }
 }
 
-void SoftwareRenderBackend::drawRect(int x, int y, int width, int height, const ColorPixel& color) {
-    if (width_ <= 0 || height_ <= 0) {
-        return;
-    }
-
-    // Clamp to framebuffer bounds
-    int x0 = std::max(0, x);
-    int y0 = std::max(0, y);
-    int x1 = std::min(width_, x + width);
-    int y1 = std::min(height_, y + height);
-
-    if (x0 >= x1 || y0 >= y1) {
-        return;
-    }
-
-    for (int py = y0; py < y1; ++py) {
-        for (int px = x0; px < x1; ++px) {
-            framebuffer_.color().at(px, py) = color;
-        }
-    }
-}
-
 void SoftwareRenderBackend::endFrame() {
     if (
         renderer_ == nullptr ||
@@ -238,8 +216,6 @@ void SoftwareRenderBackend::endFrame() {
         nullptr,
         &destination
     );
-
-    SDL_RenderPresent(renderer_);
 }
 
 }
