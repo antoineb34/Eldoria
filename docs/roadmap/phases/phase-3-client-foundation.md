@@ -6,9 +6,13 @@ Phase 3 builds the foundation of the player-facing Eldoria client.
 
 The goal is not full gameplay.
 
+The goal is not real world rendering.
+
 The goal is to create a stable client application architecture that can eventually connect to ElServer, render the game world, display interfaces, receive player input, and present server-authoritative gameplay.
 
-ElClient should become the player-facing product.
+ElClient should become the player-facing product shell.
+
+Later phases fill that shell with real data, world representation, networking, and gameplay.
 
 ---
 
@@ -21,13 +25,14 @@ Phase 3 is complete when ElClient has:
 * client state ownership
 * input handling foundation
 * render loop foundation
-* network bootstrap foundation
+* network/bootstrap placeholders
 * login flow skeleton
+* clear ownership boundaries between ElClient and shared modules
 * documentation explaining the client architecture
 
 This phase creates the container for the future player experience.
 
-Later phases fill it with real gameplay.
+Later phases fill it with real world content.
 
 ---
 
@@ -35,19 +40,47 @@ Later phases fill it with real gameplay.
 
 ElClient presents the game.
 
-ElServer owns the game.
+ElServer owns the online game truth.
+
+Shared modules own reusable systems.
 
 ```text
-ElClient
+data
     ↓
-requests actions
-
-ElServer
+world
     ↓
-validates and applies actions
+render
+    ↓
+ElClient presentation
 ```
 
-Do not move server authority into the client.
+ElClient should not decode cache data, define world representation, implement gameplay rules, or replace shared rendering systems.
+
+---
+
+## Current Architectural Realization
+
+A playable client cannot become meaningful until shared data and world systems can describe something real.
+
+Phase 3 may include placeholders or diagnostic render paths, but those paths should remain temporary verification aids.
+
+The real path is:
+
+```text
+Phase 3
+    Client shell
+
+Phase 4
+    Data expansion
+
+Phase 5
+    World foundation
+
+Phase 6
+    Client world visualization
+```
+
+Do not over-invest in fake login/gameplay flows before the shared data/world foundation exists.
 
 ---
 
@@ -78,6 +111,7 @@ Not required:
 
 * gameplay
 * world simulation
+* map loading
 * server authority
 * persistence
 
@@ -88,17 +122,6 @@ Not required:
 * ElClient renders cleanly
 * ElClient shuts down cleanly
 * lifecycle behavior is understandable from code
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-client app lifecycle
-startup/shutdown
-main loop
-error handling
-```
 
 ---
 
@@ -140,25 +163,14 @@ Not required:
 * final login protocol
 * real gameplay UI
 * full interface system
+* real world rendering
 
 ## Exit Criteria
 
 * ElClient can enter a startup screen
 * ElClient can transition to login screen
 * ElClient can transition to game screen placeholder
-* screen flow is documented and testable
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-screen state model
-screen transition flow
-startup screen
-login screen skeleton
-game screen placeholder
-```
+* screen flow is testable
 
 ---
 
@@ -173,11 +185,12 @@ Define where client runtime state lives.
 Client state should represent:
 
 * current screen
-* connection state
-* session state
-* input state
-* render state
-* currently visible world state placeholder
+* connection state placeholder
+* session state placeholder
+* input state placeholder
+* render state placeholder
+* loading/error status
+* currently visible world placeholder or future snapshot reference
 
 ## Required Integration
 
@@ -201,18 +214,7 @@ Not required:
 * screen state is centralized
 * connection/session placeholders exist
 * future systems have obvious places to attach
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-client state container
-connection state
-session state
-screen state
-input state
-```
+* state does not duplicate shared data/world systems
 
 ---
 
@@ -233,7 +235,7 @@ Create a clean foundation for player input.
 ## Required Integration
 
 * platform integration remains in `platform/`
-* client-specific input handling lives in ElClient
+* client-specific input mapping lives in ElClient
 * gameplay requests should eventually be sent to ElServer
 
 ## Not Included
@@ -244,6 +246,7 @@ Not required:
 * combat input
 * inventory dragging
 * camera polish
+* click-to-move gameplay
 
 ## Exit Criteria
 
@@ -251,18 +254,6 @@ Not required:
 * active screen can respond to input
 * input does not bypass screen/client state
 * input handling is ready for future gameplay requests
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-SDL event routing
-input state
-screen input handling
-mouse handling
-keyboard handling
-```
 
 ---
 
@@ -281,7 +272,7 @@ The goal is establishing where and how the client renders.
 * render initialization
 * frame rendering hook
 * clear screen behavior
-* placeholder game rendering
+* placeholder or diagnostic game rendering
 * render ownership rules
 
 ## Required Integration
@@ -300,24 +291,15 @@ Not required:
 * animation rendering
 * minimap
 * final camera system
+* map terrain rendering
 
 ## Exit Criteria
 
 * ElClient has a render path
 * screen rendering works
-* game screen placeholder can render something
+* game screen placeholder or diagnostic render works
 * render responsibilities are clear
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-render bootstrap
-screen rendering
-game placeholder rendering
-render ownership cleanup
-```
+* diagnostic render code does not become permanent world architecture
 
 ---
 
@@ -325,7 +307,7 @@ render ownership cleanup
 
 ## Purpose
 
-Create the first foundation for client/server communication.
+Create the first foundation for future client/server communication.
 
 The goal is not the full gameplay protocol.
 
@@ -333,11 +315,11 @@ The goal is establishing connection structure and future protocol ownership.
 
 ## Required Implementation
 
-* connection state
-* network client skeleton
-* connect/disconnect flow
-* error handling
-* protocol placeholder
+* connection state placeholder
+* network client placeholder or skeleton
+* connect/disconnect flow placeholder
+* error handling placeholder
+* protocol ownership notes
 
 ## Required Integration
 
@@ -357,22 +339,10 @@ Not required:
 
 ## Exit Criteria
 
-* ElClient has a defined place for networking
+* ElClient has a defined place for future networking behavior
 * connection state can be represented
-* connection attempt flow exists
+* connection attempt flow can be attached later
 * net/app boundary is clear
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-network client skeleton
-connection state
-connect/disconnect flow
-protocol placeholder
-net boundary documentation
-```
 
 ---
 
@@ -380,7 +350,7 @@ net boundary documentation
 
 ## Purpose
 
-Create the first player-facing login workflow.
+Create the first player-facing login workflow skeleton.
 
 The goal is not authentication security.
 
@@ -392,7 +362,7 @@ The goal is creating the UI and state flow that future login protocol work will 
 * username/password input placeholders
 * login button
 * login state
-* failed login state
+* failed login state placeholder
 * transition to game placeholder on mock success
 
 ## Required Integration
@@ -409,6 +379,7 @@ Not required:
 * account database
 * encryption
 * production login security
+* real gameplay behind login
 
 ## Exit Criteria
 
@@ -417,18 +388,6 @@ Not required:
 * login action changes state
 * game screen placeholder can be reached
 * boundaries between UI, network, and server authority are clear
-
-## Issue Breakdown Strategy
-
-Good issue categories:
-
-```text
-login screen UI
-login state
-mock login flow
-login error state
-game screen transition
-```
 
 ---
 
@@ -450,6 +409,7 @@ Potential future system docs:
 docs/systems/client-screen-flow.md
 docs/systems/client-network-bootstrap.md
 docs/systems/login-flow.md
+docs/systems/client-world-visualization.md
 ```
 
 Only create system documents when the workflow becomes complex enough to need them.
@@ -463,12 +423,7 @@ Update documentation when ElClient gains:
 * new network behavior
 * new render behavior
 * new ownership boundaries
-
-## Exit Criteria
-
-* ElClient responsibilities are documented
-* client foundation is understandable from docs
-* future agents know where client code belongs
+* permanent state flow changes
 
 ---
 
@@ -477,6 +432,7 @@ Update documentation when ElClient gains:
 Phase 3 does not require:
 
 * real gameplay
+* real map loading
 * authoritative world simulation
 * inventory system
 * combat system
@@ -501,16 +457,19 @@ Phase 3 is complete when:
 * client state ownership is clear
 * input foundation exists
 * rendering integration exists
-* network bootstrap foundation exists
+* network/bootstrap placeholders exist
 * login flow skeleton exists
+* shared-system boundaries are clear
 * client architecture is documented
 
 ---
 
 ## Golden Rule
 
-Phase 3 builds the client foundation.
+Phase 3 builds the client shell.
 
 ElClient presents gameplay.
 
-ElServer owns gameplay truth.
+Shared systems describe gameplay reality.
+
+ElServer owns online gameplay truth.
