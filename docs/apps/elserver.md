@@ -4,13 +4,17 @@
 
 ElServer is the authoritative game server for Eldoria.
 
-It owns the game world and determines what is true.
+It owns online truth.
 
 Clients may request actions.
 
 The server validates and applies those actions.
 
-ElServer is the source of authority for gameplay.
+ElServer is the source of authority for online gameplay.
+
+This does not mean ElServer owns the reusable `world/`, `game/`, `net/`, or `data/` modules.
+
+ElServer composes those shared modules into an authoritative runtime.
 
 ---
 
@@ -31,7 +35,7 @@ ElServer should eventually support:
 * login
 * sessions
 * account management
-* world simulation
+* authoritative world state
 * entity management
 * NPC behavior
 * movement validation
@@ -41,32 +45,38 @@ ElServer should eventually support:
 * administration
 * production server operation
 
-ElServer should become the authoritative runtime for all gameplay.
+ElServer should become the authoritative runtime for all online gameplay.
 
 ---
 
 ## Ownership
 
-ElServer owns:
+ElServer owns server-specific authority and runtime behavior.
+
+Examples:
 
 * gameplay authority
-* world authority
+* online world authority
 * account authority
 * persistence
-* game rules
-* simulation
-* validation
-* entity synchronization
-* administration
+* simulation execution
+* validation execution
+* session management
+* entity synchronization behavior
+* administration behavior
 
-ElServer does not own:
+ElServer does not own reusable shared systems.
 
-* rendering
-* player-facing UI
-* editor workflows
-* content creation tools
+Examples:
 
-Those responsibilities belong to ElClient and ElForge.
+* static data loading belongs in `src/data/`
+* spatial representation belongs in `src/world/`
+* reusable gameplay rules belong in `src/game/`
+* packet definitions/codecs belong in `src/net/`
+* rendering belongs in `src/render/`
+* player-facing UI belongs in ElClient
+* editor workflows belong in ElForge
+* content creation tools belong in ElForge
 
 ---
 
@@ -75,15 +85,15 @@ Those responsibilities belong to ElClient and ElForge.
 ElServer composes shared systems into an authoritative runtime.
 
 ```text
-ElServer
-    ↓
-game
+data
     ↓
 world
     ↓
+game
+    ↓
 net
     ↓
-data
+ElServer authority/runtime
 ```
 
 ElServer consumes systems.
@@ -139,7 +149,7 @@ Synchronization
 ### Persistence
 
 ```text
-World State
+Authoritative State
     ↓
 Persistence
     ↓
@@ -154,9 +164,9 @@ ElServer will consume systems such as:
 
 ```text
 Networking
-World Simulation
+World State
 Entity Management
-Combat
+Combat Rules
 Persistence
 Synchronization
 ```
@@ -175,16 +185,22 @@ Do not:
 * move world authority into ElClient
 * move persistence into ElClient
 * make shared modules depend on ElServer
-* duplicate simulation logic
+* duplicate simulation logic inside app code when it belongs in shared systems
+* define reusable packet language inside ElServer when it belongs in `net/`
+* decode cache data inside ElServer when it belongs in `data/`
 
-ElServer owns the truth.
+ElServer owns online truth.
 
 Clients consume that truth.
+
+Shared modules define reusable building blocks.
 
 ---
 
 ## Golden Rule
 
-ElServer owns the world.
+ElServer owns online authority.
 
-Everyone else observes it.
+Shared modules own reusable systems.
+
+Everyone else observes or tools around that truth.

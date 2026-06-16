@@ -48,10 +48,10 @@ apps
 = runnable products
 
 data
-= what things are
+= what things are and how static content is loaded
 
 world
-= where things are and how they move
+= where things are and how spatial state is represented
 
 game
 = what rules apply
@@ -67,6 +67,75 @@ platform
 ```
 
 This mental model should guide ownership decisions throughout the repository.
+
+---
+
+## Dependency Direction
+
+Development should respect the natural dependency direction of the project.
+
+```text
+data
+    ↓
+world
+    ↓
+game
+    ↓
+net
+    ↓
+apps
+```
+
+Rendering is a presentation system used by tools and the client:
+
+```text
+data/world/app presentation input
+    ↓
+render
+    ↓
+pixels
+```
+
+This does not mean every lower module must be complete before higher modules can exist.
+
+It means higher modules should not duplicate or own responsibilities from lower modules.
+
+Examples:
+
+* `data/` loads static content.
+* `world/` represents spatial reality using data.
+* `game/` defines rules that apply to world state.
+* `net/` defines protocol language used to move state/actions.
+* `apps/` compose shared systems into products.
+* `render/` converts renderable scene input into pixels.
+
+---
+
+## Product Roles
+
+### ElForge
+
+ElForge is the developer-facing tool.
+
+It inspects, validates, debugs, and eventually edits or creates content through shared systems.
+
+It does not own reusable data, world, game, net, render, or platform systems.
+
+### ElClient
+
+ElClient is the player-facing window into Eldoria.
+
+It presents world/game state and sends player intent.
+
+It does not own cache decoding, world authority, game rules, or server truth.
+
+### ElServer
+
+ElServer is the authoritative online runtime.
+
+It owns online truth by composing shared data, world, game, and net systems into server behavior.
+
+It does not own reusable module definitions just because it is authoritative.
 
 ---
 
@@ -104,10 +173,10 @@ Examples:
 
 ```text
 data
-render
 world
 game
 net
+render
 platform
 ```
 
@@ -133,6 +202,7 @@ Examples:
 cache loading
 model loading
 texture loading
+map loading
 rendering
 ```
 
@@ -344,4 +414,4 @@ System documents define implementation.
 
 Application documents define product responsibilities.
 
-AI documents define how development is performed.
+Roadmap documents define sequencing.
