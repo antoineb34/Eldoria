@@ -60,7 +60,9 @@ namespace eld::elforge {
     }
 
     CacheExplorer::CacheExplorer()
-        : textureLoader_(cache_),
+        : cache_("cache"),
+          legacyCache_("cache"),
+          textureLoader_(legacyCache_),
           modelLoader_(
               cache_,
               textureLoader_
@@ -107,12 +109,16 @@ namespace eld::elforge {
         state_.renderOptions.highlightTexturedFaces = false;
         state_.renderOptions.useAlpha = true;
 
-        if (!cache_.isValid()) {
+        if (
+            !legacyCache_.isValid()
+        ) {
             return false;
         }
 
         state_.rootNode =
-            treeBuilder_.build(cache_);
+            treeBuilder_.build(
+                legacyCache_
+            );
 
         return true;
     }

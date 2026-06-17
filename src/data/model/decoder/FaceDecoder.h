@@ -5,7 +5,7 @@
 
 #include "../ModelAsset.h"
 #include "../ModelFile.h"
-#include "binary/ByteBuffer.h"
+#include "binary/ByteReader.h"
 
 namespace eld::model {
 
@@ -49,11 +49,11 @@ private:
 
     const ModelFile& file_;
 
-    binary::ByteBuffer triangleDataBuffer_;
-    binary::ByteBuffer colorBuffer_;
-    binary::ByteBuffer priorityBuffer_;
-    binary::ByteBuffer alphaBuffer_;
-    binary::ByteBuffer textureBuffer_;
+    binary::ByteReader triangleDataBuffer_;
+    binary::ByteReader colorBuffer_;
+    binary::ByteReader priorityBuffer_;
+    binary::ByteReader alphaBuffer_;
+    binary::ByteReader textureBuffer_;
 
     TriangleIndexState indexState_;
 };

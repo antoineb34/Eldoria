@@ -1,6 +1,6 @@
 #include "ModelFileReader.h"
 
-#include "binary/ByteBuffer.h"
+#include "binary/ByteReader.h"
 
 namespace eld::model {
 
@@ -45,7 +45,7 @@ bool ModelFileReader::validatePayload(
 ModelFooter ModelFileReader::readFooter(
     const std::vector<uint8_t>& payload
 ) const {
-    binary::ByteBuffer buffer(payload);
+    binary::ByteReader buffer(payload);
 
     buffer.setPosition(
         static_cast<int>(payload.size()) -

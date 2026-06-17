@@ -1,6 +1,6 @@
 #include "TextureFileReader.h"
 
-#include "binary/ByteBuffer.h"
+#include "binary/ByteReader.h"
 
 namespace eld::texture {
 
@@ -13,7 +13,7 @@ std::optional<TextureFile> TextureFileReader::read(
         return std::nullopt;
     }
 
-    binary::ByteBuffer textureBuffer(textureData);
+    binary::ByteReader textureBuffer(textureData);
 
     int indexOffset =
         textureBuffer.readU16();

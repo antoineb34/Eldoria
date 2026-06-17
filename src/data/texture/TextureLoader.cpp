@@ -1,6 +1,6 @@
 #include "TextureLoader.h"
 
-#include "cache/ArchiveReader.h"
+#include "cache_legacy/ArchiveReader.h"
 
 namespace eld::texture {
 
@@ -11,7 +11,7 @@ constexpr int TextureArchiveId = 6;
 }
 
 TextureLoader::TextureLoader(
-    const eld::cache::Cache& cache
+    const eld::cache_legacy::Cache& cache
 )
     : cache_(cache)
 {
@@ -51,7 +51,7 @@ TextureLoader::getTextureFile(
 ) const {
     auto cacheFile =
         cache_.readFile(
-            eld::cache::CacheIndex::Config,
+            eld::cache_legacy::CacheIndex::Config,
             TextureArchiveId
         );
 
@@ -60,7 +60,7 @@ TextureLoader::getTextureFile(
     }
 
     auto archive =
-        eld::cache::ArchiveReader::read(
+        eld::cache_legacy::ArchiveReader::read(
             cacheFile->payload
         );
 

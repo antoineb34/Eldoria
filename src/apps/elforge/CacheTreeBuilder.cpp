@@ -15,7 +15,7 @@ CacheTreeNode makeRoot() {
 }
 
 CacheTreeNode makeIndexNode(
-    eld::cache::CacheIndex index,
+    eld::cache_legacy::CacheIndex index,
     const std::string& label
 ) {
     CacheTreeNode node;
@@ -33,20 +33,20 @@ CacheTreeNode makeIndexNode(
 }
 
 CacheTreeNode makeFileNode(
-    eld::cache::CacheIndex index,
-    const eld::cache::CacheFile& file
+    eld::cache_legacy::CacheIndex index,
+    const eld::cache_legacy::CacheFile& file
 ) {
     CacheTreeNode node;
 
     node.type =
-        index == eld::cache::CacheIndex::Model
+        index == eld::cache_legacy::CacheIndex::Model
             ? CacheTreeNodeType::Model
             : CacheTreeNodeType::File;
 
     node.label =
         "File " + std::to_string(file.id);
 
-    if (index == eld::cache::CacheIndex::Model) {
+    if (index == eld::cache_legacy::CacheIndex::Model) {
         node.label =
             "Model " + std::to_string(file.id);
     }
@@ -62,8 +62,8 @@ CacheTreeNode makeFileNode(
 
 void addIndex(
     CacheTreeNode& root,
-    const eld::cache::Cache& cache,
-    eld::cache::CacheIndex index,
+    const eld::cache_legacy::Cache& cache,
+    eld::cache_legacy::CacheIndex index,
     const std::string& label
 ) {
     CacheTreeNode indexNode =
@@ -72,10 +72,10 @@ void addIndex(
             label
         );
 
-    std::vector<eld::cache::CacheFile> files =
+    std::vector<eld::cache_legacy::CacheFile> files =
         cache.listFiles(index);
 
-    for (const eld::cache::CacheFile& file : files) {
+    for (const eld::cache_legacy::CacheFile& file : files) {
         indexNode.children.push_back(
             makeFileNode(
                 index,
@@ -92,7 +92,7 @@ void addIndex(
 }
 
 CacheTreeNode CacheTreeBuilder::build(
-    const eld::cache::Cache& cache
+    const eld::cache_legacy::Cache& cache
 ) {
     CacheTreeNode root =
         makeRoot();
@@ -100,35 +100,35 @@ CacheTreeNode CacheTreeBuilder::build(
     addIndex(
         root,
         cache,
-        eld::cache::CacheIndex::Config,
+        eld::cache_legacy::CacheIndex::Config,
         "Index 0 - Config"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache::CacheIndex::Model,
+        eld::cache_legacy::CacheIndex::Model,
         "Index 1 - Models"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache::CacheIndex::Animation,
+        eld::cache_legacy::CacheIndex::Animation,
         "Index 2 - Animations"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache::CacheIndex::Midi,
+        eld::cache_legacy::CacheIndex::Midi,
         "Index 3 - Midi"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache::CacheIndex::Map,
+        eld::cache_legacy::CacheIndex::Map,
         "Index 4 - Maps"
     );
 

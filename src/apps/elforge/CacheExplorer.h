@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
+#include "cache_legacy/Cache.h"
 
 #include "CacheExplorerState.h"
 #include "CacheTreeBuilder.h"
@@ -31,6 +32,8 @@ public:
 
 private:
     eld::cache::Cache cache_;
+    eld::cache_legacy::Cache legacyCache_;
+
     eld::texture::TextureLoader textureLoader_;
     eld::model::ModelLoader modelLoader_;
 

@@ -9,14 +9,14 @@
 #include "TextureFile.h"
 #include "TextureFileReader.h"
 
-#include "cache/Cache.h"
+#include "cache_legacy/Cache.h"
 
 namespace eld::texture {
 
 class TextureLoader {
 public:
     explicit TextureLoader(
-        const eld::cache::Cache& cache
+        const eld::cache_legacy::Cache& cache
     );
 
     std::optional<TextureAsset> load(
@@ -29,7 +29,7 @@ private:
     ) const;
 
 private:
-    const eld::cache::Cache& cache_;
+    const eld::cache_legacy::Cache& cache_;
 
     TextureFileReader fileReader_;
     TextureBuilder textureBuilder_;

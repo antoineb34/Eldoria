@@ -5,7 +5,7 @@
 
 #include "../ModelAsset.h"
 #include "../ModelFile.h"
-#include "binary/ByteBuffer.h"
+#include "binary/ByteReader.h"
 
 namespace eld::model {
 
@@ -20,9 +20,9 @@ private:
 
     const ModelFile& file_;
 
-    binary::ByteBuffer xBuffer_;
-    binary::ByteBuffer yBuffer_;
-    binary::ByteBuffer zBuffer_;
+    binary::ByteReader xBuffer_;
+    binary::ByteReader yBuffer_;
+    binary::ByteReader zBuffer_;
 
     int currentX_ = 0;
     int currentY_ = 0;

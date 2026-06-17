@@ -3,16 +3,16 @@ add_library(eldoria_data STATIC
     binary/ByteWriter.cpp
     binary/Compression.cpp
 
-    cache/Archive.cpp
-    cache/ArchiveReader.cpp
     cache/Cache.cpp
+    cache/File.cpp
+    cache/Payload.cpp
+    cache/Reader.cpp
+    cache/Store.cpp
+    cache/Writer.cpp
 
-    cache2/Cache.cpp
-    cache2/File.cpp
-    cache2/Payload.cpp
-    cache2/Reader.cpp
-    cache2/Store.cpp
-    cache2/Writer.cpp
+    cache_legacy/Archive.cpp
+    cache_legacy/ArchiveReader.cpp
+    cache_legacy/Cache.cpp
 
     model/ModelBuilder.cpp
     model/ModelFileReader.cpp

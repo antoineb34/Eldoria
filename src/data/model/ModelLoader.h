@@ -26,13 +26,14 @@ public:
     );
 
 private:
-    std::optional<std::vector<uint8_t>> getModelFile(
+    std::optional<std::vector<std::uint8_t>>
+    getModelFile(
         std::uint32_t id
     ) const;
 
-    std::optional<std::vector<uint8_t>> decompressPayload(
-        const std::vector<uint8_t>& payload
-    ) const;
+    void loadModelTextures(
+        ModelAsset& asset
+    );
 
 private:
     const eld::cache::Cache& cache_;
@@ -40,7 +41,6 @@ private:
 
     ModelFileReader fileReader_;
     ModelBuilder modelBuilder_;
-    void loadModelTextures(ModelAsset& asset);
 
     std::unordered_map<
         std::uint32_t,

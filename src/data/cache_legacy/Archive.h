@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-namespace eld::cache {
+namespace eld::cache_legacy {
 
 struct ArchiveFile {
     int fileIndex = -1;

@@ -1,6 +1,6 @@
 #include "Archive.h"
 
-namespace eld::cache {
+namespace eld::cache_legacy {
 
 std::optional<ArchiveFile> Archive::findByHash(
     std::uint32_t hash

@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace eld::cache {
+namespace eld::cache_legacy {
 
 enum class CacheIndex {
     Config = 1,

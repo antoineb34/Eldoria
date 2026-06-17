@@ -4,7 +4,7 @@
 #include <string_view>
 #include <vector>
 
-namespace eld::cache {
+namespace eld::cache_legacy {
 
 struct KnownArchiveName {
     uint32_t hash = 0;

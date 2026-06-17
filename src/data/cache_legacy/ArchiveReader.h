@@ -5,7 +5,7 @@
 
 #include "Archive.h"
 
-namespace eld::cache {
+namespace eld::cache_legacy {
 
 class ArchiveReader {
 public:

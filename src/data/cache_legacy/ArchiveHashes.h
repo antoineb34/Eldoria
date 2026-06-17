@@ -4,7 +4,7 @@
 #include <optional>
 #include <string_view>
 
-namespace eld::cache::archive {
+namespace eld::cache_legacy::archive {
 
 constexpr std::uint32_t hashName(
     std::string_view name
