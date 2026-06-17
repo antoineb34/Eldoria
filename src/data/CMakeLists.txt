@@ -1,10 +1,18 @@
 add_library(eldoria_data STATIC
-    binary/ByteBuffer.cpp
+    binary/ByteReader.cpp
+    binary/ByteWriter.cpp
     binary/Compression.cpp
 
     cache/Archive.cpp
     cache/ArchiveReader.cpp
     cache/Cache.cpp
+
+    cache2/Cache.cpp
+    cache2/File.cpp
+    cache2/Payload.cpp
+    cache2/Reader.cpp
+    cache2/Store.cpp
+    cache2/Writer.cpp
 
     model/ModelBuilder.cpp
     model/ModelFileReader.cpp

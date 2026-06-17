@@ -1,65 +1,183 @@
 #include "Compression.h"
 
+#include <array>
+#include <cstddef>
+#include <limits>
+#include <stdexcept>
+#include <vector>
+
 #include <bzlib.h>
 #include <zlib.h>
 
 namespace eld::binary {
 
-CompressionType detectCompression(
-    const std::vector<std::uint8_t>& payload
+namespace {
+
+bool hasGzipHeader(
+    const std::vector<std::uint8_t>& bytes
 ) {
-    if (
-        payload.size() >= 2 &&
-        payload[0] == 0x1F &&
-        payload[1] == 0x8B
-    ) {
-        return CompressionType::Gzip;
-    }
-
-    if (
-        payload.size() >= 3 &&
-        payload[0] == 'B' &&
-        payload[1] == 'Z' &&
-        payload[2] == 'h'
-    ) {
-        return CompressionType::Bzip2;
-    }
-
-    return CompressionType::Unknown;
+    return
+        bytes.size() >= 2 &&
+        bytes[0] == 0x1F &&
+        bytes[1] == 0x8B;
 }
 
-std::vector<std::uint8_t> decompressGzip(
-    const std::vector<std::uint8_t>& payload
+bool hasBzip2Header(
+    const std::vector<std::uint8_t>& bytes
 ) {
-    z_stream stream {};
+    return
+        bytes.size() >= 4 &&
+        bytes[0] == 'B' &&
+        bytes[1] == 'Z' &&
+        bytes[2] == 'h' &&
+        bytes[3] >= '1' &&
+        bytes[3] <= '9';
+}
+
+std::vector<std::uint8_t> compressGzip(
+    const std::vector<std::uint8_t>& bytes
+) {
+    if (
+        bytes.size() >
+        std::numeric_limits<uInt>::max()
+    ) {
+        throw std::runtime_error(
+            "Gzip input is too large"
+        );
+    }
+
+    z_stream stream{};
+
+    const int initializationResult =
+        deflateInit2(
+            &stream,
+            Z_DEFAULT_COMPRESSION,
+            Z_DEFLATED,
+            16 + MAX_WBITS,
+            8,
+            Z_DEFAULT_STRATEGY
+        );
+
+    if (initializationResult != Z_OK) {
+        throw std::runtime_error(
+            "Failed to initialize Gzip compression"
+        );
+    }
 
     stream.next_in =
         const_cast<Bytef*>(
             reinterpret_cast<const Bytef*>(
-                payload.data()
+                bytes.data()
             )
         );
 
     stream.avail_in =
         static_cast<uInt>(
-            payload.size()
+            bytes.size()
         );
 
-    if (inflateInit2(&stream, 16 + MAX_WBITS) != Z_OK) {
-        return {};
+    std::vector<std::uint8_t> output;
+    std::array<std::uint8_t, 4096> buffer{};
+
+    int result = Z_OK;
+
+    while (result != Z_STREAM_END) {
+        stream.next_out =
+            buffer.data();
+
+        stream.avail_out =
+            static_cast<uInt>(
+                buffer.size()
+            );
+
+        result =
+            deflate(
+                &stream,
+                Z_FINISH
+            );
+
+        if (
+            result != Z_OK &&
+            result != Z_STREAM_END
+        ) {
+            deflateEnd(&stream);
+
+            throw std::runtime_error(
+                "Gzip compression failed"
+            );
+        }
+
+        const std::size_t written =
+            buffer.size() -
+            stream.avail_out;
+
+        output.insert(
+            output.end(),
+            buffer.begin(),
+            buffer.begin() +
+                static_cast<std::ptrdiff_t>(
+                    written
+                )
+        );
+    }
+
+    deflateEnd(&stream);
+
+    return output;
+}
+
+std::vector<std::uint8_t> decompressGzip(
+    const std::vector<std::uint8_t>& bytes
+) {
+    if (
+        bytes.empty() ||
+        bytes.size() >
+            std::numeric_limits<uInt>::max()
+    ) {
+        throw std::runtime_error(
+            "Invalid Gzip input"
+        );
+    }
+
+    z_stream stream{};
+
+    stream.next_in =
+        const_cast<Bytef*>(
+            reinterpret_cast<const Bytef*>(
+                bytes.data()
+            )
+        );
+
+    stream.avail_in =
+        static_cast<uInt>(
+            bytes.size()
+        );
+
+    const int initializationResult =
+        inflateInit2(
+            &stream,
+            16 + MAX_WBITS
+        );
+
+    if (initializationResult != Z_OK) {
+        throw std::runtime_error(
+            "Failed to initialize Gzip decompression"
+        );
     }
 
     std::vector<std::uint8_t> output;
-    std::uint8_t buffer[4096];
+    std::array<std::uint8_t, 4096> buffer{};
 
     int result = Z_OK;
 
     while (result == Z_OK) {
         stream.next_out =
-            buffer;
+            buffer.data();
 
         stream.avail_out =
-            sizeof(buffer);
+            static_cast<uInt>(
+                buffer.size()
+            );
 
         result =
             inflate(
@@ -67,82 +185,89 @@ std::vector<std::uint8_t> decompressGzip(
                 Z_NO_FLUSH
             );
 
-        std::size_t written =
-            sizeof(buffer) - stream.avail_out;
+        const std::size_t written =
+            buffer.size() -
+            stream.avail_out;
 
         output.insert(
             output.end(),
-            buffer,
-            buffer + written
+            buffer.begin(),
+            buffer.begin() +
+                static_cast<std::ptrdiff_t>(
+                    written
+                )
         );
     }
 
-    inflateEnd(
-        &stream
-    );
+    inflateEnd(&stream);
 
     if (result != Z_STREAM_END) {
-        return {};
+        throw std::runtime_error(
+            "Gzip decompression failed"
+        );
     }
 
     return output;
 }
 
-std::vector<std::uint8_t> decompressBzip2(
-    const std::vector<std::uint8_t>& payload,
-    std::size_t expectedSize
+std::vector<std::uint8_t> compressBzip2(
+    const std::vector<std::uint8_t>& bytes
 ) {
-    std::vector<std::uint8_t> input;
-
     if (
-        payload.size() >= 3 &&
-        payload[0] == 'B' &&
-        payload[1] == 'Z' &&
-        payload[2] == 'h'
+        bytes.size() >
+        std::numeric_limits<unsigned int>::max()
     ) {
-        input =
-            payload;
-    }
-    else {
-        input =
-            { 'B', 'Z', 'h', '1' };
-
-        input.insert(
-            input.end(),
-            payload.begin(),
-            payload.end()
+        throw std::runtime_error(
+            "Bzip2 input is too large"
         );
     }
 
-    std::vector<std::uint8_t> output(
-        expectedSize
-    );
+    const std::size_t estimatedSize =
+        bytes.size() +
+        bytes.size() / 100 +
+        601;
+
+    if (
+        estimatedSize >
+        std::numeric_limits<unsigned int>::max()
+    ) {
+        throw std::runtime_error(
+            "Bzip2 output would be too large"
+        );
+    }
 
     unsigned int outputSize =
         static_cast<unsigned int>(
-            output.size()
+            estimatedSize
         );
 
-    int result =
-        BZ2_bzBuffToBuffDecompress(
+    std::vector<std::uint8_t> output(
+        outputSize
+    );
+
+    const int result =
+        BZ2_bzBuffToBuffCompress(
             reinterpret_cast<char*>(
                 output.data()
             ),
             &outputSize,
             const_cast<char*>(
                 reinterpret_cast<const char*>(
-                    input.data()
+                    bytes.data()
                 )
             ),
             static_cast<unsigned int>(
-                input.size()
+                bytes.size()
             ),
+            1,
             0,
-            1
+            30
         );
 
     if (result != BZ_OK) {
-        return {};
+        throw std::runtime_error(
+            "Bzip2 compression failed"
+        );
     }
 
     output.resize(
@@ -150,6 +275,174 @@ std::vector<std::uint8_t> decompressBzip2(
     );
 
     return output;
+}
+
+std::vector<std::uint8_t> decompressBzip2(
+    const std::vector<std::uint8_t>& bytes
+) {
+    if (bytes.empty()) {
+        throw std::runtime_error(
+            "Invalid Bzip2 input"
+        );
+    }
+
+    std::vector<std::uint8_t> input;
+
+    if (hasBzip2Header(bytes)) {
+        input = bytes;
+    }
+    else {
+        input.reserve(
+            bytes.size() + 4
+        );
+
+        input.push_back('B');
+        input.push_back('Z');
+        input.push_back('h');
+        input.push_back('1');
+
+        input.insert(
+            input.end(),
+            bytes.begin(),
+            bytes.end()
+        );
+    }
+
+    if (
+        input.size() >
+        std::numeric_limits<unsigned int>::max()
+    ) {
+        throw std::runtime_error(
+            "Bzip2 input is too large"
+        );
+    }
+
+    bz_stream stream{};
+
+    stream.next_in =
+        const_cast<char*>(
+            reinterpret_cast<const char*>(
+                input.data()
+            )
+        );
+
+    stream.avail_in =
+        static_cast<unsigned int>(
+            input.size()
+        );
+
+    const int initializationResult =
+        BZ2_bzDecompressInit(
+            &stream,
+            0,
+            0
+        );
+
+    if (initializationResult != BZ_OK) {
+        throw std::runtime_error(
+            "Failed to initialize Bzip2 decompression"
+        );
+    }
+
+    std::vector<std::uint8_t> output;
+    std::array<char, 4096> buffer{};
+
+    int result = BZ_OK;
+
+    while (result == BZ_OK) {
+        stream.next_out =
+            buffer.data();
+
+        stream.avail_out =
+            static_cast<unsigned int>(
+                buffer.size()
+            );
+
+        result =
+            BZ2_bzDecompress(
+                &stream
+            );
+
+        const std::size_t written =
+            buffer.size() -
+            stream.avail_out;
+
+        output.insert(
+            output.end(),
+            reinterpret_cast<const std::uint8_t*>(
+                buffer.data()
+            ),
+            reinterpret_cast<const std::uint8_t*>(
+                buffer.data() + written
+            )
+        );
+    }
+
+    BZ2_bzDecompressEnd(&stream);
+
+    if (result != BZ_STREAM_END) {
+        throw std::runtime_error(
+            "Bzip2 decompression failed"
+        );
+    }
+
+    return output;
+}
+
+}
+
+CompressionType getCompressionType(
+    const std::vector<std::uint8_t>& bytes
+) {
+    if (hasGzipHeader(bytes)) {
+        return CompressionType::Gzip;
+    }
+
+    if (hasBzip2Header(bytes)) {
+        return CompressionType::Bzip2;
+    }
+
+    return CompressionType::None;
+}
+
+std::vector<std::uint8_t> compress(
+    const std::vector<std::uint8_t>& bytes,
+    CompressionType type
+) {
+    switch (type) {
+        case CompressionType::None:
+            return bytes;
+
+        case CompressionType::Gzip:
+            return compressGzip(bytes);
+
+        case CompressionType::Bzip2:
+            return compressBzip2(bytes);
+    }
+
+    throw std::invalid_argument(
+        "Unsupported compression type"
+    );
+}
+
+std::vector<std::uint8_t> decompress(
+    const std::vector<std::uint8_t>& bytes,
+    CompressionType type
+) {
+    switch (type) {
+        case CompressionType::None:
+            return bytes;
+
+        case CompressionType::Gzip:
+            return decompressGzip(bytes);
+
+        case CompressionType::Bzip2:
+            return decompressBzip2(bytes);
+    }
+
+    throw std::invalid_argument(
+        "Unsupported compression type"
+    );
 }
 
 }
