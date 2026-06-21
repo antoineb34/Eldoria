@@ -8,33 +8,6 @@ namespace eld::render {
 
 namespace {
 
-    bool isTexturedPacket(
-        const RenderPacket& packet,
-        const RenderObject& object
-    ) {
-        if (object.model == nullptr) {
-            return false;
-        }
-
-        const bool texturedRenderType =
-            packet.renderType == 2 ||
-            packet.renderType == 3;
-
-        const bool hasMapping =
-            packet.textureUVMappingIndex >= 0 &&
-            packet.textureUVMappingIndex <
-                static_cast<int>(object.model->textureUVMappings.size());
-
-        const bool hasTexture =
-            object.model->textures.find(packet.color) !=
-            object.model->textures.end();
-
-        return
-            texturedRenderType &&
-            hasMapping &&
-            hasTexture;
-    }
-
     ColorPixel colorFromPacket(
         const RenderPacket& packet
     ) {
@@ -122,48 +95,6 @@ void SoftwareRenderBackend::drawObject(
 
         eld::render::ScreenPoint c =
             mesh.vertices[packet.c].screen;
-
-        if (isTexturedPacket(packet, object)) {
-            const eld::model::TextureUVMapping& mapping =
-                object.model->textureUVMappings[packet.textureUVMappingIndex];
-
-            const eld::texture::TextureAsset& texture =
-                object.model->textures.at(packet.color);
-
-            const eld::render::Vec3& faceA =
-                mesh.vertices[packet.a].world;
-
-            const eld::render::Vec3& faceB =
-                mesh.vertices[packet.b].world;
-
-            const eld::render::Vec3& faceC =
-                mesh.vertices[packet.c].world;
-
-            const eld::render::Vec3& textureOrigin =
-                mesh.vertices[mapping.originVertex].world;
-
-            const eld::render::Vec3& textureU =
-                mesh.vertices[mapping.uVertex].world;
-
-            const eld::render::Vec3& textureV =
-                mesh.vertices[mapping.vVertex].world;
-
-            rasterizer_.drawTexturedTriangle(
-                framebuffer_,
-                a,
-                b,
-                c,
-                faceA,
-                faceB,
-                faceC,
-                textureOrigin,
-                textureU,
-                textureV,
-                texture
-            );
-
-            continue;
-        }
 
         rasterizer_.drawSolidTriangle(
             framebuffer_,

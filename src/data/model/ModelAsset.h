@@ -1,48 +1,46 @@
 #pragma once
 
 #include <cstdint>
-#include <unordered_map>
+#include <optional>
 #include <vector>
-
-#include "../texture/TextureAsset.h"
 
 namespace eld::model {
 
-    struct Vertex {
-        float x = 0.0f;
-        float y = 0.0f;
-        float z = 0.0f;
-    };
+struct Vertex {
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
 
-struct Face {
-    int a = 0;
-    int b = 0;
-    int c = 0;
-
-    uint16_t color = 0;
-
-    uint8_t priority = 0;
-    uint8_t alpha = 0;
-
-    uint8_t triangleType = 0;
-    uint8_t renderType = 0;
-
-    int texturePointer = -1;
-    int textureUVMappingIndex = -1;
+    std::optional<std::uint8_t> skin;
 };
 
-struct TextureUVMapping {
-    int originVertex = 0;
-    int uVertex = 0;
-    int vVertex = 0;
+struct Face {
+    std::uint32_t a = 0;
+    std::uint32_t b = 0;
+    std::uint32_t c = 0;
+
+    std::uint16_t color = 0;
+
+    std::uint8_t priority = 0;
+    std::uint8_t alpha = 0;
+    std::uint8_t renderType = 0;
+
+    std::optional<std::uint8_t> skin;
+
+    std::optional<std::uint16_t> textureId;
+    std::optional<std::uint32_t> textureMappingIndex;
+};
+
+struct TextureMapping {
+    std::uint32_t originVertex = 0;
+    std::uint32_t uVertex = 0;
+    std::uint32_t vVertex = 0;
 };
 
 struct ModelAsset {
     std::vector<Vertex> vertices;
     std::vector<Face> faces;
-    std::vector<TextureUVMapping> textureUVMappings;
-
-    std::unordered_map<int, eld::texture::TextureAsset> textures;
+    std::vector<TextureMapping> textureMappings;
 };
 
 }

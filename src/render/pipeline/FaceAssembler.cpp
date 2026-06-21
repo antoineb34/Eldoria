@@ -56,9 +56,6 @@ RenderPacket makePacket(
         face.renderType,
         face.priority,
 
-        face.texturePointer,
-        face.textureUVMappingIndex,
-
         true
     };
 }

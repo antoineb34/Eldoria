@@ -1,127 +1,146 @@
 #include "CacheExplorer.h"
+
+#include <exception>
+#include <limits>
+#include <optional>
+#include <string>
+#include <utility>
+
 #include <imgui.h>
 
 namespace eld::elforge {
 
-    namespace {
+bool CacheExplorer::hasAlphaFaces(
+    const eld::model::ModelAsset& model
+) const {
+    for (const eld::model::Face& face : model.faces) {
+        if (face.alpha > 0) {
+            return true;
+        }
+    }
 
-    bool hasAlphaFaces(
-        const eld::model::ModelAsset& model
+    return false;
+}
+
+void CacheExplorer::findNextAlphaModel() {
+    int startId = 0;
+
+    if (
+        state_.activeModel &&
+        state_.selection.fileId >= 0
     ) {
-        for (const eld::model::Face& face : model.faces) {
-            if (face.alpha > 0) {
-                return true;
-            }
-        }
-
-        return false;
+        startId =
+            state_.selection.fileId + 1;
     }
 
-    }
+    const std::vector<std::uint16_t> modelIds =
+        modelRepository_.listIds();
 
-    void CacheExplorer::findNextAlphaModel() {
-        int startId = 0;
-
+    for (const std::uint16_t modelId : modelIds) {
         if (
-            state_.activeModel &&
-            state_.selection.fileId >= 0
+            static_cast<int>(modelId) <
+            startId
         ) {
-            startId = state_.selection.fileId + 1;
+            continue;
         }
 
-        constexpr int MaxModelSearchId = 20000;
+        try {
+            eld::model::Model model =
+                modelRepository_.get(modelId);
 
-        for (int modelId = startId; modelId < MaxModelSearchId; modelId++) {
-            std::optional<eld::model::ModelAsset> model =
-                modelLoader_.load(
-                    static_cast<std::uint32_t>(modelId)
-                );
-
-            if (!model) {
+            if (!hasAlphaFaces(model.asset)) {
                 continue;
             }
 
-            if (!hasAlphaFaces(*model)) {
-                continue;
-            }
+            state_.activeModel =
+                std::move(model);
 
-            state_.activeModel = std::move(model);
             state_.activeTexture.reset();
 
-            state_.selection.type = CacheTreeNodeType::Model;
-            state_.selection.fileId = modelId;
-            state_.selection.label =
-                "Model " + std::to_string(modelId);
+            state_.selection.type =
+                CacheTreeNodeType::Model;
 
-            lastSelectedLabel_ = state_.selection.label;
+            state_.selection.fileId =
+                static_cast<int>(modelId);
+
+            state_.selection.label =
+                "Model " +
+                std::to_string(modelId);
+
+            lastSelectedLabel_ =
+                state_.selection.label;
 
             return;
         }
-    }
-
-    CacheExplorer::CacheExplorer()
-        : cache_("cache"),
-          legacyCache_("cache"),
-          textureLoader_(legacyCache_),
-          modelLoader_(
-              cache_,
-              textureLoader_
-          ) {
-    }
-
-    bool CacheExplorer::initialize() {
-
-        state_.camera.angleX = 0.45f;
-        state_.camera.angleY = 0.6f;
-        state_.camera.distance = 1200.0f;
-
-        state_.camera.fov = 0.35f;
-        state_.camera.nearPlane = 1.0f;
-        state_.camera.farPlane = 10000.0f;
-
-        state_.camera.viewportX = 0;
-        state_.camera.viewportY = 0;
-        state_.camera.viewportWidth = 1;
-        state_.camera.viewportHeight = 1;state_.camera.angleX = 0.0f;
-        state_.camera.angleY = 0.0f;
-        state_.camera.distance = 500.0f;
-
-        state_.camera.fov = 1.04719755f;
-        state_.camera.nearPlane = 1.0f;
-        state_.camera.farPlane = 10000.0f;
-
-        state_.camera.viewportX = 0;
-        state_.camera.viewportY = 0;
-        state_.camera.viewportWidth = 1;
-        state_.camera.viewportHeight = 1;
-
-        state_.modelTransform.scale = 1.0f;
-        state_.modelTransform.rotationX = 0.0f;
-        state_.modelTransform.rotationY = 0.0f;
-        state_.modelTransform.rotationZ = 0.0f;
-        state_.modelTransform.offsetX = 0.0f;
-        state_.modelTransform.offsetY = 0.0f;
-        state_.modelTransform.offsetZ = 0.0f;
-
-        state_.renderOptions.fillTriangles = true;
-        state_.renderOptions.showWireframe = false;
-        state_.renderOptions.showVertices = false;
-        state_.renderOptions.highlightTexturedFaces = false;
-        state_.renderOptions.useAlpha = true;
-
-        if (
-            !legacyCache_.isValid()
-        ) {
-            return false;
+        catch (const std::exception&) {
+            continue;
         }
-
-        state_.rootNode =
-            treeBuilder_.build(
-                legacyCache_
-            );
-
-        return true;
     }
+}
+
+CacheExplorer::CacheExplorer()
+    : cache_("cache"),
+      legacyCache_("cache"),
+      textureLoader_(legacyCache_),
+      modelRepository_(
+          cache_.open(
+              eld::cache::IndexId::Models
+          )
+      ) {
+}
+
+bool CacheExplorer::initialize() {
+    state_.camera.angleX = 0.45f;
+    state_.camera.angleY = 0.6f;
+    state_.camera.distance = 1200.0f;
+
+    state_.camera.fov = 0.35f;
+    state_.camera.nearPlane = 1.0f;
+    state_.camera.farPlane = 10000.0f;
+
+    state_.camera.viewportX = 0;
+    state_.camera.viewportY = 0;
+    state_.camera.viewportWidth = 1;
+    state_.camera.viewportHeight = 1;
+
+    state_.camera.angleX = 0.0f;
+    state_.camera.angleY = 0.0f;
+    state_.camera.distance = 500.0f;
+
+    state_.camera.fov = 1.04719755f;
+    state_.camera.nearPlane = 1.0f;
+    state_.camera.farPlane = 10000.0f;
+
+    state_.camera.viewportX = 0;
+    state_.camera.viewportY = 0;
+    state_.camera.viewportWidth = 1;
+    state_.camera.viewportHeight = 1;
+
+    state_.modelTransform.scale = 1.0f;
+    state_.modelTransform.rotationX = 0.0f;
+    state_.modelTransform.rotationY = 0.0f;
+    state_.modelTransform.rotationZ = 0.0f;
+    state_.modelTransform.offsetX = 0.0f;
+    state_.modelTransform.offsetY = 0.0f;
+    state_.modelTransform.offsetZ = 0.0f;
+
+    state_.renderOptions.fillTriangles = true;
+    state_.renderOptions.showWireframe = false;
+    state_.renderOptions.showVertices = false;
+    state_.renderOptions.highlightTexturedFaces = false;
+    state_.renderOptions.useAlpha = true;
+
+    if (!legacyCache_.isValid()) {
+        return false;
+    }
+
+    state_.rootNode =
+        treeBuilder_.build(
+            legacyCache_
+        );
+
+    return true;
+}
 
 void CacheExplorer::handleEvent(
     const SDL_Event& event
@@ -130,7 +149,10 @@ void CacheExplorer::handleEvent(
 }
 
 void CacheExplorer::update() {
-    if (state_.selection.label != lastSelectedLabel_) {
+    if (
+        state_.selection.label !=
+        lastSelectedLabel_
+    ) {
         lastSelectedLabel_ =
             state_.selection.label;
 
@@ -153,16 +175,31 @@ void CacheExplorer::handleSelectionChanged() {
             break;
 
         case CacheTreeNodeType::Model: {
-            if (state_.selection.fileId < 0) {
+            if (
+                state_.selection.fileId < 0 ||
+                state_.selection.fileId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
                 break;
             }
 
-            state_.activeModel =
-                modelLoader_.load(
-                    static_cast<std::uint32_t>(
-                        state_.selection.fileId
-                    )
+            const std::uint16_t modelId =
+                static_cast<std::uint16_t>(
+                    state_.selection.fileId
                 );
+
+            try {
+                std::optional<eld::model::Model> model =
+                    modelRepository_.find(modelId);
+
+                if (model.has_value()) {
+                    state_.activeModel =
+                        std::move(*model);
+                }
+            }
+            catch (const std::exception&) {
+                state_.activeModel.reset();
+            }
 
             break;
         }
@@ -218,7 +255,8 @@ void CacheExplorer::renderUi() {
 
     const float treeWidth = 300.0f;
     const float inspectorWidth = 320.0f;
-    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const float spacing =
+        ImGui::GetStyle().ItemSpacing.x;
 
     const ImVec2 available =
         ImGui::GetContentRegionAvail();
@@ -227,7 +265,10 @@ void CacheExplorer::renderUi() {
         available.y;
 
     float viewportWidth =
-        available.x - treeWidth - inspectorWidth - spacing * 2.0f;
+        available.x -
+        treeWidth -
+        inspectorWidth -
+        spacing * 2.0f;
 
     if (viewportWidth < 100.0f) {
         viewportWidth = 100.0f;

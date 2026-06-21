@@ -1,0 +1,2848 @@
+
+===== src/data/model/decoder/FaceDecoder.cpp =====
+#include "FaceDecoder.h"
+
+#include <utility>
+
+namespace eld::model {
+
+namespace {
+
+constexpr uint32_t OptionalChunkPresent = 1;
+constexpr uint32_t PerFacePriority = 255;
+
+constexpr uint8_t TriangleTypeNew = 1;
+constexpr uint8_t TriangleTypeReuseCAsB = 2;
+constexpr uint8_t TriangleTypeReuseCAsA = 3;
+constexpr uint8_t TriangleTypeSwapAB = 4;
+
+constexpr uint8_t TextureRenderTypeMask = 0x3;
+constexpr uint8_t NoTextureInfo = 0;
+constexpr uint8_t InvalidTextureInfo = 255;
+
+}
+
+FaceDecoder::FaceDecoder(const ModelFile& file)
+    : file_(file),
+      triangleDataBuffer_(file.payload),
+      colorBuffer_(file.payload),
+      priorityBuffer_(file.payload),
+      alphaBuffer_(file.payload),
+      textureBuffer_(file.payload)
+{
+    triangleDataBuffer_.setPosition(file_.layout.triangleDataOffset);
+    colorBuffer_.setPosition(file_.layout.triangleColorsOffset);
+
+    if (file_.footer.priorityFlag == PerFacePriority) {
+        priorityBuffer_.setPosition(file_.layout.trianglePrioritiesOffset);
+    }
+
+    if (file_.footer.alphaFlag == OptionalChunkPresent) {
+        alphaBuffer_.setPosition(file_.layout.triangleAlphasOffset);
+    }
+
+    if (file_.footer.textureFlag == OptionalChunkPresent) {
+        textureBuffer_.setPosition(file_.layout.texturePointersOffset);
+    }
+}
+
+std::vector<Face> FaceDecoder::decode() {
+    std::vector<Face> faces;
+    faces.reserve(file_.footer.triangleCount);
+
+    for (uint32_t i = 0; i < file_.footer.triangleCount; i++) {
+        faces.push_back(decodeFace(i));
+    }
+
+    return faces;
+}
+
+Face FaceDecoder::decodeFace(uint32_t index) {
+    uint8_t triangleType =
+        static_cast<uint8_t>(
+            file_.payload[file_.layout.triangleTypesOffset + index]
+        );
+
+    decodeTriangleIndices(triangleType);
+
+    FaceTextureInfo texture =
+        decodeTextureInfo();
+
+    Face face {};
+
+    face.a = indexState_.a;
+    face.b = indexState_.b;
+    face.c = indexState_.c;
+
+    face.color = decodeColor();
+    face.priority = decodePriority();
+    face.alpha = decodeAlpha();
+
+    face.triangleType = triangleType;
+    face.renderType = texture.renderType;
+    face.texturePointer = texture.texturePointer;
+    face.textureUVMappingIndex = texture.textureUVMappingIndex;
+
+    return face;
+}
+
+void FaceDecoder::decodeTriangleIndices(uint8_t triangleType) {
+    switch (triangleType) {
+        case TriangleTypeNew:
+            indexState_.a = readNextTriangleIndex();
+            indexState_.b = readNextTriangleIndex();
+            indexState_.c = readNextTriangleIndex();
+            break;
+
+        case TriangleTypeReuseCAsB:
+            indexState_.b = indexState_.c;
+            indexState_.c = readNextTriangleIndex();
+            break;
+
+        case TriangleTypeReuseCAsA:
+            indexState_.a = indexState_.c;
+            indexState_.c = readNextTriangleIndex();
+            break;
+
+        case TriangleTypeSwapAB:
+            std::swap(indexState_.a, indexState_.b);
+            indexState_.c = readNextTriangleIndex();
+            break;
+
+        default:
+            break;
+    }
+}
+
+int FaceDecoder::readNextTriangleIndex() {
+    int index =
+        triangleDataBuffer_.readSignedSmart() +
+        indexState_.lastIndex;
+
+    indexState_.lastIndex = index;
+
+    return index;
+}
+
+uint16_t FaceDecoder::decodeColor() {
+    return colorBuffer_.readU16();
+}
+
+uint8_t FaceDecoder::decodePriority() {
+    if (file_.footer.priorityFlag == PerFacePriority) {
+        return priorityBuffer_.readU8();
+    }
+
+    return static_cast<uint8_t>(file_.footer.priorityFlag);
+}
+
+uint8_t FaceDecoder::decodeAlpha() {
+    if (file_.footer.alphaFlag == OptionalChunkPresent) {
+        return alphaBuffer_.readU8();
+    }
+
+    return 0;
+}
+
+FaceTextureInfo FaceDecoder::decodeTextureInfo() {
+    if (file_.footer.textureFlag != OptionalChunkPresent) {
+        return {};
+    }
+
+    uint8_t value =
+        textureBuffer_.readU8();
+
+    if (
+        value == NoTextureInfo ||
+        value == InvalidTextureInfo
+    ) {
+        return {};
+    }
+
+    FaceTextureInfo texture {};
+
+    texture.texturePointer = value;
+    texture.renderType =
+        static_cast<uint8_t>(
+            value & TextureRenderTypeMask
+        );
+    texture.textureUVMappingIndex = value >> 2;
+
+    return texture;
+}
+
+}
+
+===== src/data/model/decoder/FaceDecoder.h =====
+#pragma once
+
+#include <cstdint>
+#include <vector>
+
+#include "../ModelAsset.h"
+#include "../ModelFile.h"
+#include "binary/ByteReader.h"
+
+namespace eld::model {
+
+struct TriangleIndexState {
+    int a = 0;
+    int b = 0;
+    int c = 0;
+    int lastIndex = 0;
+};
+
+struct FaceTextureInfo {
+    int texturePointer = -1;
+    uint8_t renderType = 0;
+    int textureUVMappingIndex = -1;
+};
+
+class FaceDecoder {
+public:
+    explicit FaceDecoder(
+        const ModelFile& file
+    );
+
+    std::vector<Face> decode();
+
+private:
+    Face decodeFace(
+        uint32_t index
+    );
+
+    void decodeTriangleIndices(
+        uint8_t triangleType
+    );
+
+    int readNextTriangleIndex();
+
+    uint16_t decodeColor();
+    uint8_t decodePriority();
+    uint8_t decodeAlpha();
+
+    FaceTextureInfo decodeTextureInfo();
+
+    const ModelFile& file_;
+
+    binary::ByteReader triangleDataBuffer_;
+    binary::ByteReader colorBuffer_;
+    binary::ByteReader priorityBuffer_;
+    binary::ByteReader alphaBuffer_;
+    binary::ByteReader textureBuffer_;
+
+    TriangleIndexState indexState_;
+};
+
+}
+
+===== src/data/model/decoder/TextureUVMappingDecoder.cpp =====
+#include "TextureUVMappingDecoder.h"
+
+namespace eld::model {
+
+TextureUVMappingDecoder::TextureUVMappingDecoder(
+    const ModelFile& file
+)
+    : file_(file),
+      buffer_(file.payload)
+{
+    buffer_.setPosition(
+        file_.layout.textureDataOffset
+    );
+}
+
+std::vector<TextureUVMapping> TextureUVMappingDecoder::decode() {
+    std::vector<TextureUVMapping> mappings;
+
+    mappings.reserve(
+        file_.footer.textureTriangleCount
+    );
+
+    for (
+        uint32_t i = 0;
+        i < file_.footer.textureTriangleCount;
+        i++
+    ) {
+        mappings.push_back(
+            decodeMapping()
+        );
+    }
+
+    return mappings;
+}
+
+TextureUVMapping TextureUVMappingDecoder::decodeMapping() {
+    return {
+        buffer_.readU16(),
+        buffer_.readU16(),
+        buffer_.readU16()
+    };
+}
+
+}
+
+===== src/data/model/decoder/TextureUVMappingDecoder.h =====
+#pragma once
+
+#include <vector>
+
+#include "../ModelAsset.h"
+#include "../ModelFile.h"
+#include "binary/ByteReader.h"
+
+namespace eld::model {
+
+class TextureUVMappingDecoder {
+public:
+    explicit TextureUVMappingDecoder(
+        const ModelFile& file
+    );
+
+    std::vector<TextureUVMapping> decode();
+
+private:
+    TextureUVMapping decodeMapping();
+
+    const ModelFile& file_;
+
+    binary::ByteReader buffer_;
+};
+
+}
+
+===== src/data/model/decoder/VertexDecoder.cpp =====
+#include "VertexDecoder.h"
+
+namespace eld::model {
+
+namespace {
+
+constexpr uint8_t VertexHasXDelta = 1;
+constexpr uint8_t VertexHasYDelta = 2;
+constexpr uint8_t VertexHasZDelta = 4;
+
+}
+
+VertexDecoder::VertexDecoder(const ModelFile& file)
+    : file_(file),
+      xBuffer_(file.payload),
+      yBuffer_(file.payload),
+      zBuffer_(file.payload)
+{
+    xBuffer_.setPosition(file_.layout.xDataOffset);
+    yBuffer_.setPosition(file_.layout.yDataOffset);
+    zBuffer_.setPosition(file_.layout.zDataOffset);
+}
+
+std::vector<Vertex> VertexDecoder::decode() {
+    std::vector<Vertex> vertices;
+    vertices.reserve(file_.footer.vertexCount);
+
+    for (uint32_t i = 0; i < file_.footer.vertexCount; i++) {
+        vertices.push_back(decodeVertex(i));
+    }
+
+    return vertices;
+}
+
+Vertex VertexDecoder::decodeVertex(uint32_t index) {
+    uint8_t flag =
+        file_.payload[file_.layout.vertexFlagsOffset + index];
+
+    int dx = 0;
+    int dy = 0;
+    int dz = 0;
+
+    if (flag & VertexHasXDelta) {
+        dx = xBuffer_.readSignedSmart();
+    }
+
+    if (flag & VertexHasYDelta) {
+        dy = yBuffer_.readSignedSmart();
+    }
+
+    if (flag & VertexHasZDelta) {
+        dz = zBuffer_.readSignedSmart();
+    }
+
+    currentX_ += dx;
+    currentY_ += dy;
+    currentZ_ += dz;
+
+    return Vertex {
+        static_cast<float>(currentX_),
+        static_cast<float>(currentY_),
+        static_cast<float>(currentZ_)
+    };
+}
+
+}
+
+===== src/data/model/decoder/VertexDecoder.h =====
+#pragma once
+
+#include <cstdint>
+#include <vector>
+
+#include "../ModelAsset.h"
+#include "../ModelFile.h"
+#include "binary/ByteReader.h"
+
+namespace eld::model {
+
+class VertexDecoder {
+public:
+    explicit VertexDecoder(const ModelFile& file);
+
+    std::vector<Vertex> decode();
+
+private:
+    Vertex decodeVertex(uint32_t index);
+
+    const ModelFile& file_;
+
+    binary::ByteReader xBuffer_;
+    binary::ByteReader yBuffer_;
+    binary::ByteReader zBuffer_;
+
+    int currentX_ = 0;
+    int currentY_ = 0;
+    int currentZ_ = 0;
+};
+
+}
+
+===== src/data/model/ModelAssetBuilder.cpp =====
+#include "ModelAssetBuilder.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+
+namespace eld::model {
+
+namespace {
+
+constexpr std::uint8_t FlatShadingFlag = 1;
+constexpr std::uint8_t TexturedFaceFlag = 2;
+constexpr std::uint8_t TextureMappingShift = 2;
+
+constexpr std::uint8_t TriangleTypeNew = 1;
+constexpr std::uint8_t TriangleTypeReuseCAsB = 2;
+constexpr std::uint8_t TriangleTypeReuseCAsA = 3;
+constexpr std::uint8_t TriangleTypeSwapAB = 4;
+
+struct TriangleState {
+    std::uint32_t a = 0;
+    std::uint32_t b = 0;
+    std::uint32_t c = 0;
+
+    int lastIndex = 0;
+    std::size_t deltaUnitIndex = 0;
+};
+
+int readTriangleIndex(
+    const ModelSections& sections,
+    TriangleState& state,
+    FaceBuildInfo* info
+) {
+    const std::size_t unitIndex =
+        state.deltaUnitIndex++;
+
+    const int index =
+        state.lastIndex +
+        sections.triangleData.units.at(
+            unitIndex
+        ).delta;
+
+    state.lastIndex =
+        index;
+
+    if (info != nullptr) {
+        info->triangleDeltaUnitIndices.push_back(
+            unitIndex
+        );
+    }
+
+    return index;
+}
+
+void applyTriangleType(
+    std::uint8_t triangleType,
+    const ModelSections& sections,
+    TriangleState& state,
+    FaceBuildInfo* info
+) {
+    switch (triangleType) {
+        case TriangleTypeNew:
+            state.a =
+                static_cast<std::uint32_t>(
+                    readTriangleIndex(
+                        sections,
+                        state,
+                        info
+                    )
+                );
+
+            state.b =
+                static_cast<std::uint32_t>(
+                    readTriangleIndex(
+                        sections,
+                        state,
+                        info
+                    )
+                );
+
+            state.c =
+                static_cast<std::uint32_t>(
+                    readTriangleIndex(
+                        sections,
+                        state,
+                        info
+                    )
+                );
+
+            break;
+
+        case TriangleTypeReuseCAsB:
+            state.b =
+                state.c;
+
+            state.c =
+                static_cast<std::uint32_t>(
+                    readTriangleIndex(
+                        sections,
+                        state,
+                        info
+                    )
+                );
+
+            break;
+
+        case TriangleTypeReuseCAsA:
+            state.a =
+                state.c;
+
+            state.c =
+                static_cast<std::uint32_t>(
+                    readTriangleIndex(
+                        sections,
+                        state,
+                        info
+                    )
+                );
+
+            break;
+
+        case TriangleTypeSwapAB:
+            std::swap(
+                state.a,
+                state.b
+            );
+
+            state.c =
+                static_cast<std::uint32_t>(
+                    readTriangleIndex(
+                        sections,
+                        state,
+                        info
+                    )
+                );
+
+            break;
+
+        default:
+            break;
+    }
+}
+
+std::vector<Vertex> buildVertices(
+    const ModelFile& file,
+    const ModelSections& sections,
+    ModelInfo* info
+) {
+    std::vector<Vertex> vertices;
+
+    vertices.reserve(
+        file.footer.vertexCount
+    );
+
+    if (info != nullptr) {
+        info->vertices.reserve(
+            file.footer.vertexCount
+        );
+    }
+
+    int currentX = 0;
+    int currentY = 0;
+    int currentZ = 0;
+
+    std::size_t xDeltaUnitIndex = 0;
+    std::size_t yDeltaUnitIndex = 0;
+    std::size_t zDeltaUnitIndex = 0;
+
+    for (
+        std::size_t i = 0;
+        i < file.footer.vertexCount;
+        i++
+    ) {
+        const VertexFlagUnit& flag =
+            sections.vertexFlags.units.at(
+                i
+            );
+
+        VertexBuildInfo buildInfo{};
+
+        buildInfo.flagUnitIndex =
+            i;
+
+        int deltaX = 0;
+        int deltaY = 0;
+        int deltaZ = 0;
+
+        if (flag.hasXDelta()) {
+            deltaX =
+                sections.xData.units.at(
+                    xDeltaUnitIndex
+                ).delta;
+
+            buildInfo.xDeltaUnitIndex =
+                xDeltaUnitIndex;
+
+            xDeltaUnitIndex++;
+        }
+
+        if (flag.hasYDelta()) {
+            deltaY =
+                sections.yData.units.at(
+                    yDeltaUnitIndex
+                ).delta;
+
+            buildInfo.yDeltaUnitIndex =
+                yDeltaUnitIndex;
+
+            yDeltaUnitIndex++;
+        }
+
+        if (flag.hasZDelta()) {
+            deltaZ =
+                sections.zData.units.at(
+                    zDeltaUnitIndex
+                ).delta;
+
+            buildInfo.zDeltaUnitIndex =
+                zDeltaUnitIndex;
+
+            zDeltaUnitIndex++;
+        }
+
+        currentX +=
+            deltaX;
+
+        currentY +=
+            deltaY;
+
+        currentZ +=
+            deltaZ;
+
+        Vertex vertex{};
+
+        vertex.x =
+            static_cast<float>(
+                currentX
+            );
+
+        vertex.y =
+            static_cast<float>(
+                currentY
+            );
+
+        vertex.z =
+            static_cast<float>(
+                currentZ
+            );
+
+        if (
+            i <
+            sections.vertexSkins.units.size()
+        ) {
+            vertex.skin =
+                sections.vertexSkins.units.at(
+                    i
+                ).skin;
+
+            buildInfo.skinUnitIndex =
+                i;
+        }
+
+        vertices.push_back(
+            vertex
+        );
+
+        if (info != nullptr) {
+            info->vertices.push_back(
+                std::move(buildInfo)
+            );
+        }
+    }
+
+    return vertices;
+}
+
+std::vector<Face> buildFaces(
+    const ModelFile& file,
+    const ModelSections& sections,
+    ModelInfo* info
+) {
+    std::vector<Face> faces;
+
+    faces.reserve(
+        file.footer.triangleCount
+    );
+
+    if (info != nullptr) {
+        info->faces.reserve(
+            file.footer.triangleCount
+        );
+    }
+
+    TriangleState triangleState{};
+
+    for (
+        std::size_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::uint8_t triangleType =
+            sections.triangleTypes.units.at(
+                i
+            ).type;
+
+        FaceBuildInfo buildInfo{};
+
+        buildInfo.triangleTypeUnitIndex =
+            i;
+
+        buildInfo.colorUnitIndex =
+            i;
+
+        applyTriangleType(
+            triangleType,
+            sections,
+            triangleState,
+            info != nullptr
+                ? &buildInfo
+                : nullptr
+        );
+
+        Face face{};
+
+        face.a =
+            triangleState.a;
+
+        face.b =
+            triangleState.b;
+
+        face.c =
+            triangleState.c;
+
+        face.color =
+            sections.triangleColors.units.at(
+                i
+            ).color;
+
+        if (
+            i <
+            sections.trianglePriorities.units.size()
+        ) {
+            face.priority =
+                sections.trianglePriorities.units.at(
+                    i
+                ).priority;
+
+            buildInfo.priorityUnitIndex =
+                i;
+        }
+        else {
+            face.priority =
+                static_cast<std::uint8_t>(
+                    file.footer.priorityFlag
+                );
+        }
+
+        if (
+            i <
+            sections.triangleAlphas.units.size()
+        ) {
+            face.alpha =
+                sections.triangleAlphas.units.at(
+                    i
+                ).alpha;
+
+            buildInfo.alphaUnitIndex =
+                i;
+        }
+
+        if (
+            i <
+            sections.triangleSkins.units.size()
+        ) {
+            face.skin =
+                sections.triangleSkins.units.at(
+                    i
+                ).skin;
+
+            buildInfo.skinUnitIndex =
+                i;
+        }
+
+        if (
+            i <
+            sections.texturePointers.units.size()
+        ) {
+            const std::uint8_t textureInfo =
+                sections.texturePointers.units.at(
+                    i
+                ).value;
+
+            face.renderType =
+                textureInfo &
+                FlatShadingFlag;
+
+            if (
+                (
+                    textureInfo &
+                    TexturedFaceFlag
+                ) != 0
+            ) {
+                face.textureId =
+                    face.color;
+
+                face.textureMappingIndex =
+                    static_cast<std::uint32_t>(
+                        textureInfo >>
+                        TextureMappingShift
+                    );
+            }
+
+            buildInfo.textureInfoUnitIndex =
+                i;
+        }
+
+        faces.push_back(
+            face
+        );
+
+        if (info != nullptr) {
+            info->faces.push_back(
+                std::move(buildInfo)
+            );
+        }
+    }
+
+    return faces;
+}
+
+std::vector<TextureMapping> buildTextureMappings(
+    const ModelSections& sections,
+    ModelInfo* info
+) {
+    std::vector<TextureMapping> mappings;
+
+    mappings.reserve(
+        sections.textureData.units.size()
+    );
+
+    if (info != nullptr) {
+        info->textureMappings.reserve(
+            sections.textureData.units.size()
+        );
+    }
+
+    for (
+        std::size_t i = 0;
+        i < sections.textureData.units.size();
+        i++
+    ) {
+        const TextureTriangleUnit& unit =
+            sections.textureData.units.at(
+                i
+            );
+
+        mappings.push_back(
+            TextureMapping{
+                static_cast<std::uint32_t>(
+                    unit.originVertex
+                ),
+                static_cast<std::uint32_t>(
+                    unit.uVertex
+                ),
+                static_cast<std::uint32_t>(
+                    unit.vVertex
+                )
+            }
+        );
+
+        if (info != nullptr) {
+            info->textureMappings.push_back(
+                TextureMappingBuildInfo{
+                    i
+                }
+            );
+        }
+    }
+
+    return mappings;
+}
+
+ModelAsset buildAsset(
+    const ModelFile& file,
+    const ModelSections& sections,
+    ModelInfo* info
+) {
+    if (info != nullptr) {
+        *info =
+            ModelInfo{};
+    }
+
+    ModelAsset asset{};
+
+    asset.vertices =
+        buildVertices(
+            file,
+            sections,
+            info
+        );
+
+    asset.faces =
+        buildFaces(
+            file,
+            sections,
+            info
+        );
+
+    asset.textureMappings =
+        buildTextureMappings(
+            sections,
+            info
+        );
+
+    return asset;
+}
+
+}
+
+ModelAsset ModelAssetBuilder::build(
+    const ModelFile& file,
+    const ModelSections& sections
+) const {
+    return buildAsset(
+        file,
+        sections,
+        nullptr
+    );
+}
+
+ModelAsset ModelAssetBuilder::buildWithInfo(
+    const ModelFile& file,
+    const ModelSections& sections,
+    ModelInfo& info
+) const {
+    return buildAsset(
+        file,
+        sections,
+        &info
+    );
+}
+
+}
+
+===== src/data/model/ModelAssetBuilder.h =====
+#pragma once
+
+#include "ModelAsset.h"
+#include "ModelFile.h"
+#include "ModelInfo.h"
+#include "ModelSections.h"
+
+namespace eld::model {
+
+class ModelAssetBuilder {
+public:
+    ModelAsset build(
+        const ModelFile& file,
+        const ModelSections& sections
+    ) const;
+
+    ModelAsset buildWithInfo(
+        const ModelFile& file,
+        const ModelSections& sections,
+        ModelInfo& info
+    ) const;
+};
+
+}
+
+===== src/data/model/ModelAsset.h =====
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+namespace eld::model {
+
+struct Vertex {
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+
+    std::optional<std::uint8_t> skin;
+};
+
+struct Face {
+    std::uint32_t a = 0;
+    std::uint32_t b = 0;
+    std::uint32_t c = 0;
+
+    std::uint16_t color = 0;
+
+    std::uint8_t priority = 0;
+    std::uint8_t alpha = 0;
+    std::uint8_t renderType = 0;
+
+    std::optional<std::uint8_t> skin;
+
+    std::optional<std::uint16_t> textureId;
+    std::optional<std::uint32_t> textureMappingIndex;
+};
+
+struct TextureMapping {
+    std::uint32_t originVertex = 0;
+    std::uint32_t uVertex = 0;
+    std::uint32_t vVertex = 0;
+};
+
+struct ModelAsset {
+    std::vector<Vertex> vertices;
+    std::vector<Face> faces;
+    std::vector<TextureMapping> textureMappings;
+};
+
+}
+
+===== src/data/model/ModelBuilder.cpp =====
+#include "ModelBuilder.h"
+
+#include "decoder/FaceDecoder.h"
+#include "decoder/TextureUVMappingDecoder.h"
+#include "decoder/VertexDecoder.h"
+
+namespace eld::model {
+
+ModelAsset ModelBuilder::build(
+    const ModelFile& file
+) const {
+    VertexDecoder vertexDecoder(file);
+    FaceDecoder faceDecoder(file);
+    TextureUVMappingDecoder textureUVMappingDecoder(file);
+
+    return {
+        vertexDecoder.decode(),
+        faceDecoder.decode(),
+        textureUVMappingDecoder.decode()
+    };
+}
+
+}
+
+===== src/data/model/ModelBuilder.h =====
+#pragma once
+
+#include "ModelAsset.h"
+#include "ModelFile.h"
+
+namespace eld::model {
+
+class ModelBuilder {
+public:
+    ModelAsset build(
+        const ModelFile& file
+    ) const;
+};
+
+}
+
+===== src/data/model/ModelDecoder.cpp =====
+#include "ModelDecoder.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "binary/ByteReader.h"
+
+namespace eld::model {
+
+namespace {
+
+constexpr std::uint32_t OptionalChunkPresent = 1;
+constexpr std::uint32_t PerFacePriority = 255;
+
+constexpr std::size_t FaceColorSize = 2;
+constexpr std::size_t TextureTriangleSize = 6;
+
+ModelUnit makeUnit(
+    std::size_t index,
+    std::size_t offset,
+    std::size_t size
+) {
+    return ModelUnit{
+        index,
+        offset,
+        size
+    };
+}
+
+template <typename TUnit>
+void setSectionSpan(
+    ModelSection<TUnit>& section,
+    int offset,
+    std::size_t size
+) {
+    section.offset =
+        static_cast<std::size_t>(
+            offset
+        );
+
+    section.size =
+        size;
+}
+
+template <typename TUnit>
+void setSectionSpan(
+    ModelSection<TUnit>& section,
+    int offset,
+    std::uint32_t size
+) {
+    setSectionSpan(
+        section,
+        offset,
+        static_cast<std::size_t>(
+            size
+        )
+    );
+}
+
+VertexDeltaUnit readVertexDeltaUnit(
+    eld::binary::ByteReader& reader,
+    std::size_t index
+) {
+    const std::size_t start =
+        reader.position();
+
+    const int delta =
+        reader.readSignedSmart();
+
+    const std::size_t end =
+        reader.position();
+
+    return VertexDeltaUnit{
+        makeUnit(
+            index,
+            start,
+            end - start
+        ),
+        delta
+    };
+}
+
+TriangleIndexDeltaUnit readTriangleIndexDeltaUnit(
+    eld::binary::ByteReader& reader,
+    std::size_t index
+) {
+    const std::size_t start =
+        reader.position();
+
+    const int delta =
+        reader.readSignedSmart();
+
+    const std::size_t end =
+        reader.position();
+
+    return TriangleIndexDeltaUnit{
+        makeUnit(
+            index,
+            start,
+            end - start
+        ),
+        delta
+    };
+}
+
+}
+
+ModelSections ModelDecoder::decode(
+    const ModelFile& file
+) const {
+    ModelSections sections{};
+
+    sections.vertexFlags =
+        decodeVertexFlags(
+            file
+        );
+
+    sections.vertexSkins =
+        decodeVertexSkins(
+            file
+        );
+
+    sections.xData =
+        decodeVertexDeltas(
+            file,
+            file.layout.xDataOffset,
+            file.footer.xDataLength
+        );
+
+    sections.yData =
+        decodeVertexDeltas(
+            file,
+            file.layout.yDataOffset,
+            file.footer.yDataLength
+        );
+
+    sections.zData =
+        decodeVertexDeltas(
+            file,
+            file.layout.zDataOffset,
+            file.footer.zDataLength
+        );
+
+    sections.triangleTypes =
+        decodeTriangleTypes(
+            file
+        );
+
+    sections.trianglePriorities =
+        decodeTrianglePriorities(
+            file
+        );
+
+    sections.triangleSkins =
+        decodeTriangleSkins(
+            file
+        );
+
+    sections.texturePointers =
+        decodeTexturePointers(
+            file
+        );
+
+    sections.triangleAlphas =
+        decodeTriangleAlphas(
+            file
+        );
+
+    sections.triangleColors =
+        decodeTriangleColors(
+            file
+        );
+
+    sections.triangleData =
+        decodeTriangleData(
+            file
+        );
+
+    sections.textureData =
+        decodeTextureData(
+            file
+        );
+
+    return sections;
+}
+
+ModelSection<VertexFlagUnit> ModelDecoder::decodeVertexFlags(
+    const ModelFile& file
+) const {
+    ModelSection<VertexFlagUnit> section{};
+
+    setSectionSpan(
+        section,
+        file.layout.vertexFlagsOffset,
+        file.footer.vertexCount
+    );
+
+    section.units.reserve(
+        file.footer.vertexCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.vertexCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            VertexFlagUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<VertexSkinUnit> ModelDecoder::decodeVertexSkins(
+    const ModelFile& file
+) const {
+    ModelSection<VertexSkinUnit> section{};
+
+    const std::size_t size =
+        file.footer.vertexSkinFlag == OptionalChunkPresent
+            ? static_cast<std::size_t>(
+                file.footer.vertexCount
+            )
+            : 0;
+
+    setSectionSpan(
+        section,
+        file.layout.vertexSkinsOffset,
+        size
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    section.units.reserve(
+        file.footer.vertexCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.vertexCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            VertexSkinUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<VertexDeltaUnit> ModelDecoder::decodeVertexDeltas(
+    const ModelFile& file,
+    int offset,
+    std::uint32_t dataLength
+) const {
+    ModelSection<VertexDeltaUnit> section{};
+
+    setSectionSpan(
+        section,
+        offset,
+        dataLength
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    eld::binary::ByteReader reader(
+        file.payload
+    );
+
+    reader.setPosition(
+        section.offset
+    );
+
+    while (
+        reader.position() <
+        section.end()
+    ) {
+        section.units.push_back(
+            readVertexDeltaUnit(
+                reader,
+                section.units.size()
+            )
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TriangleTypeUnit> ModelDecoder::decodeTriangleTypes(
+    const ModelFile& file
+) const {
+    ModelSection<TriangleTypeUnit> section{};
+
+    setSectionSpan(
+        section,
+        file.layout.triangleTypesOffset,
+        file.footer.triangleCount
+    );
+
+    section.units.reserve(
+        file.footer.triangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            TriangleTypeUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TrianglePriorityUnit> ModelDecoder::decodeTrianglePriorities(
+    const ModelFile& file
+) const {
+    ModelSection<TrianglePriorityUnit> section{};
+
+    const std::size_t size =
+        file.footer.priorityFlag == PerFacePriority
+            ? static_cast<std::size_t>(
+                file.footer.triangleCount
+            )
+            : 0;
+
+    setSectionSpan(
+        section,
+        file.layout.trianglePrioritiesOffset,
+        size
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    section.units.reserve(
+        file.footer.triangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            TrianglePriorityUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TriangleSkinUnit> ModelDecoder::decodeTriangleSkins(
+    const ModelFile& file
+) const {
+    ModelSection<TriangleSkinUnit> section{};
+
+    const std::size_t size =
+        file.footer.triangleSkinFlag == OptionalChunkPresent
+            ? static_cast<std::size_t>(
+                file.footer.triangleCount
+            )
+            : 0;
+
+    setSectionSpan(
+        section,
+        file.layout.triangleSkinsOffset,
+        size
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    section.units.reserve(
+        file.footer.triangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            TriangleSkinUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TexturePointerUnit> ModelDecoder::decodeTexturePointers(
+    const ModelFile& file
+) const {
+    ModelSection<TexturePointerUnit> section{};
+
+    const std::size_t size =
+        file.footer.textureFlag == OptionalChunkPresent
+            ? static_cast<std::size_t>(
+                file.footer.triangleCount
+            )
+            : 0;
+
+    setSectionSpan(
+        section,
+        file.layout.texturePointersOffset,
+        size
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    section.units.reserve(
+        file.footer.triangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            TexturePointerUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TriangleAlphaUnit> ModelDecoder::decodeTriangleAlphas(
+    const ModelFile& file
+) const {
+    ModelSection<TriangleAlphaUnit> section{};
+
+    const std::size_t size =
+        file.footer.alphaFlag == OptionalChunkPresent
+            ? static_cast<std::size_t>(
+                file.footer.triangleCount
+            )
+            : 0;
+
+    setSectionSpan(
+        section,
+        file.layout.triangleAlphasOffset,
+        size
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    section.units.reserve(
+        file.footer.triangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::size_t offset =
+            section.offset +
+            static_cast<std::size_t>(
+                i
+            );
+
+        section.units.push_back(
+            TriangleAlphaUnit{
+                makeUnit(
+                    i,
+                    offset,
+                    1
+                ),
+                file.payload.at(
+                    offset
+                )
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TriangleColorUnit> ModelDecoder::decodeTriangleColors(
+    const ModelFile& file
+) const {
+    ModelSection<TriangleColorUnit> section{};
+
+    setSectionSpan(
+        section,
+        file.layout.triangleColorsOffset,
+        static_cast<std::size_t>(
+            file.footer.triangleCount
+        ) *
+        FaceColorSize
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    eld::binary::ByteReader reader(
+        file.payload
+    );
+
+    reader.setPosition(
+        section.offset
+    );
+
+    section.units.reserve(
+        file.footer.triangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.triangleCount;
+        i++
+    ) {
+        const std::size_t start =
+            reader.position();
+
+        const std::uint16_t color =
+            reader.readU16();
+
+        const std::size_t end =
+            reader.position();
+
+        section.units.push_back(
+            TriangleColorUnit{
+                makeUnit(
+                    i,
+                    start,
+                    end - start
+                ),
+                color
+            }
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TriangleIndexDeltaUnit> ModelDecoder::decodeTriangleData(
+    const ModelFile& file
+) const {
+    ModelSection<TriangleIndexDeltaUnit> section{};
+
+    setSectionSpan(
+        section,
+        file.layout.triangleDataOffset,
+        file.footer.triangleDataLength
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    eld::binary::ByteReader reader(
+        file.payload
+    );
+
+    reader.setPosition(
+        section.offset
+    );
+
+    while (
+        reader.position() <
+        section.end()
+    ) {
+        section.units.push_back(
+            readTriangleIndexDeltaUnit(
+                reader,
+                section.units.size()
+            )
+        );
+    }
+
+    return section;
+}
+
+ModelSection<TextureTriangleUnit> ModelDecoder::decodeTextureData(
+    const ModelFile& file
+) const {
+    ModelSection<TextureTriangleUnit> section{};
+
+    setSectionSpan(
+        section,
+        file.layout.textureDataOffset,
+        static_cast<std::size_t>(
+            file.footer.textureTriangleCount
+        ) *
+        TextureTriangleSize
+    );
+
+    if (!section.present()) {
+        return section;
+    }
+
+    eld::binary::ByteReader reader(
+        file.payload
+    );
+
+    reader.setPosition(
+        section.offset
+    );
+
+    section.units.reserve(
+        file.footer.textureTriangleCount
+    );
+
+    for (
+        std::uint32_t i = 0;
+        i < file.footer.textureTriangleCount;
+        i++
+    ) {
+        const std::size_t start =
+            reader.position();
+
+        const std::uint16_t originVertex =
+            reader.readU16();
+
+        const std::uint16_t uVertex =
+            reader.readU16();
+
+        const std::uint16_t vVertex =
+            reader.readU16();
+
+        const std::size_t end =
+            reader.position();
+
+        section.units.push_back(
+            TextureTriangleUnit{
+                makeUnit(
+                    i,
+                    start,
+                    end - start
+                ),
+                originVertex,
+                uVertex,
+                vVertex
+            }
+        );
+    }
+
+    return section;
+}
+
+}
+
+===== src/data/model/ModelDecoder.h =====
+#pragma once
+
+#include <cstdint>
+
+#include "ModelFile.h"
+#include "ModelSections.h"
+
+namespace eld::model {
+
+class ModelDecoder {
+public:
+    ModelSections decode(
+        const ModelFile& file
+    ) const;
+
+private:
+    ModelSection<VertexFlagUnit> decodeVertexFlags(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<VertexSkinUnit> decodeVertexSkins(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<VertexDeltaUnit> decodeVertexDeltas(
+        const ModelFile& file,
+        int offset,
+        std::uint32_t dataLength
+    ) const;
+
+    ModelSection<TriangleTypeUnit> decodeTriangleTypes(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TrianglePriorityUnit> decodeTrianglePriorities(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TriangleSkinUnit> decodeTriangleSkins(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TexturePointerUnit> decodeTexturePointers(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TriangleAlphaUnit> decodeTriangleAlphas(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TriangleColorUnit> decodeTriangleColors(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TriangleIndexDeltaUnit> decodeTriangleData(
+        const ModelFile& file
+    ) const;
+
+    ModelSection<TextureTriangleUnit> decodeTextureData(
+        const ModelFile& file
+    ) const;
+};
+
+}
+
+===== src/data/model/ModelFile.h =====
+#pragma once
+
+#include <cstdint>
+#include <vector>
+
+namespace eld::model {
+
+struct ModelFooter {
+
+    uint32_t vertexCount = 0;
+    uint32_t triangleCount = 0;
+
+    uint32_t textureTriangleCount = 0;
+
+    uint32_t textureFlag = 0;
+    uint32_t priorityFlag = 0;
+    uint32_t alphaFlag = 0;
+
+    uint32_t triangleSkinFlag = 0;
+    uint32_t vertexSkinFlag = 0;
+
+    uint32_t xDataLength = 0;
+    uint32_t yDataLength = 0;
+    uint32_t zDataLength = 0;
+
+    uint32_t triangleDataLength = 0;
+};
+
+struct ModelLayout {
+
+    int vertexFlagsOffset = 0;
+
+    int triangleTypesOffset = 0;
+
+    int trianglePrioritiesOffset = 0;
+    int triangleSkinsOffset = 0;
+
+    int texturePointersOffset = 0;
+
+    int vertexSkinsOffset = 0;
+
+    int triangleAlphasOffset = 0;
+
+    int triangleDataOffset = 0;
+
+    int triangleColorsOffset = 0;
+
+    int textureDataOffset = 0;
+
+    int xDataOffset = 0;
+    int yDataOffset = 0;
+    int zDataOffset = 0;
+};
+
+struct ModelFile {
+
+    std::vector<uint8_t> payload;
+
+    ModelFooter footer;
+
+    ModelLayout layout;
+};
+
+}
+
+===== src/data/model/ModelFileParser.cpp =====
+#include "ModelFileParser.h"
+
+#include <cstddef>
+#include <exception>
+
+#include "binary/ByteReader.h"
+
+namespace eld::model {
+
+namespace {
+
+constexpr std::size_t ModelFooterSize = 18;
+
+constexpr std::uint32_t OptionalChunkPresent = 1;
+constexpr std::uint32_t PerFacePriority = 255;
+
+constexpr std::size_t FaceColorSize = 2;
+constexpr std::size_t TextureTriangleSize = 6;
+
+}
+
+std::optional<ModelFile> ModelFileParser::parse(
+    const std::vector<std::uint8_t>& payload
+) const {
+    if (!validatePayload(payload)) {
+        return std::nullopt;
+    }
+
+    try {
+        const ModelFooter footer =
+            readFooter(
+                payload
+            );
+
+        const ModelLayout layout =
+            calculateLayout(
+                footer
+            );
+
+        if (
+            !validateLayout(
+                payload,
+                footer,
+                layout
+            )
+        ) {
+            return std::nullopt;
+        }
+
+        return ModelFile{
+            payload,
+            footer,
+            layout
+        };
+    }
+    catch (const std::exception&) {
+        return std::nullopt;
+    }
+}
+
+bool ModelFileParser::validatePayload(
+    const std::vector<std::uint8_t>& payload
+) const {
+    return payload.size() >= ModelFooterSize;
+}
+
+ModelFooter ModelFileParser::readFooter(
+    const std::vector<std::uint8_t>& payload
+) const {
+    eld::binary::ByteReader reader(
+        payload
+    );
+
+    reader.setPosition(
+        payload.size() - ModelFooterSize
+    );
+
+    ModelFooter footer{};
+
+    footer.vertexCount =
+        reader.readU16();
+
+    footer.triangleCount =
+        reader.readU16();
+
+    footer.textureTriangleCount =
+        reader.readU8();
+
+    footer.textureFlag =
+        reader.readU8();
+
+    footer.priorityFlag =
+        reader.readU8();
+
+    footer.alphaFlag =
+        reader.readU8();
+
+    footer.triangleSkinFlag =
+        reader.readU8();
+
+    footer.vertexSkinFlag =
+        reader.readU8();
+
+    footer.xDataLength =
+        reader.readU16();
+
+    footer.yDataLength =
+        reader.readU16();
+
+    footer.zDataLength =
+        reader.readU16();
+
+    footer.triangleDataLength =
+        reader.readU16();
+
+    return footer;
+}
+
+ModelLayout ModelFileParser::calculateLayout(
+    const ModelFooter& footer
+) const {
+    ModelLayout layout{};
+
+    int offset = 0;
+
+    layout.vertexFlagsOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.vertexCount
+        );
+
+    layout.triangleTypesOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.triangleCount
+        );
+
+    layout.trianglePrioritiesOffset =
+        offset;
+
+    if (
+        footer.priorityFlag ==
+        PerFacePriority
+    ) {
+        offset +=
+            static_cast<int>(
+                footer.triangleCount
+            );
+    }
+
+    layout.triangleSkinsOffset =
+        offset;
+
+    if (
+        footer.triangleSkinFlag ==
+        OptionalChunkPresent
+    ) {
+        offset +=
+            static_cast<int>(
+                footer.triangleCount
+            );
+    }
+
+    layout.texturePointersOffset =
+        offset;
+
+    if (
+        footer.textureFlag ==
+        OptionalChunkPresent
+    ) {
+        offset +=
+            static_cast<int>(
+                footer.triangleCount
+            );
+    }
+
+    layout.vertexSkinsOffset =
+        offset;
+
+    if (
+        footer.vertexSkinFlag ==
+        OptionalChunkPresent
+    ) {
+        offset +=
+            static_cast<int>(
+                footer.vertexCount
+            );
+    }
+
+    layout.triangleAlphasOffset =
+        offset;
+
+    if (
+        footer.alphaFlag ==
+        OptionalChunkPresent
+    ) {
+        offset +=
+            static_cast<int>(
+                footer.triangleCount
+            );
+    }
+
+    layout.triangleDataOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.triangleDataLength
+        );
+
+    layout.triangleColorsOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.triangleCount *
+            FaceColorSize
+        );
+
+    layout.textureDataOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.textureTriangleCount *
+            TextureTriangleSize
+        );
+
+    layout.xDataOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.xDataLength
+        );
+
+    layout.yDataOffset =
+        offset;
+
+    offset +=
+        static_cast<int>(
+            footer.yDataLength
+        );
+
+    layout.zDataOffset =
+        offset;
+
+    return layout;
+}
+
+bool ModelFileParser::validateLayout(
+    const std::vector<std::uint8_t>& payload,
+    const ModelFooter& footer,
+    const ModelLayout& layout
+) const {
+    const std::size_t encodedDataSize =
+        payload.size() - ModelFooterSize;
+
+    const std::size_t usedDataSize =
+        static_cast<std::size_t>(
+            layout.zDataOffset
+        ) +
+        static_cast<std::size_t>(
+            footer.zDataLength
+        );
+
+    return usedDataSize <= encodedDataSize;
+}
+
+}
+
+===== src/data/model/ModelFileParser.h =====
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+#include "ModelFile.h"
+
+namespace eld::model {
+
+class ModelFileParser {
+public:
+    std::optional<ModelFile> parse(
+        const std::vector<std::uint8_t>& payload
+    ) const;
+
+private:
+    bool validatePayload(
+        const std::vector<std::uint8_t>& payload
+    ) const;
+
+    ModelFooter readFooter(
+        const std::vector<std::uint8_t>& payload
+    ) const;
+
+    ModelLayout calculateLayout(
+        const ModelFooter& footer
+    ) const;
+
+    bool validateLayout(
+        const std::vector<std::uint8_t>& payload,
+        const ModelFooter& footer,
+        const ModelLayout& layout
+    ) const;
+};
+
+}
+
+===== src/data/model/ModelFileReader.cpp =====
+#include "ModelFileReader.h"
+
+#include "binary/ByteReader.h"
+
+namespace eld::model {
+
+namespace {
+
+constexpr int ModelFooterSize = 18;
+
+constexpr uint32_t OptionalChunkPresent = 1;
+constexpr uint32_t PerFacePriority = 255;
+
+constexpr int FaceColorSize = 2;
+constexpr int TextureTriangleSize = 6;
+
+}
+
+std::optional<ModelFile> ModelFileReader::read(
+    const std::vector<uint8_t>& payload
+) const {
+    if (!validatePayload(payload)) {
+        return std::nullopt;
+    }
+
+    ModelFooter footer =
+        readFooter(payload);
+
+    ModelLayout layout =
+        calculateLayout(footer);
+
+    return ModelFile {
+        payload,
+        footer,
+        layout
+    };
+}
+
+bool ModelFileReader::validatePayload(
+    const std::vector<uint8_t>& payload
+) const {
+    return payload.size() >= ModelFooterSize;
+}
+
+ModelFooter ModelFileReader::readFooter(
+    const std::vector<uint8_t>& payload
+) const {
+    binary::ByteReader buffer(payload);
+
+    buffer.setPosition(
+        static_cast<int>(payload.size()) -
+        ModelFooterSize
+    );
+
+    ModelFooter footer {};
+
+    footer.vertexCount = buffer.readU16();
+    footer.triangleCount = buffer.readU16();
+
+    footer.textureTriangleCount = buffer.readU8();
+
+    footer.textureFlag = buffer.readU8();
+    footer.priorityFlag = buffer.readU8();
+    footer.alphaFlag = buffer.readU8();
+
+    footer.triangleSkinFlag = buffer.readU8();
+    footer.vertexSkinFlag = buffer.readU8();
+
+    footer.xDataLength = buffer.readU16();
+    footer.yDataLength = buffer.readU16();
+    footer.zDataLength = buffer.readU16();
+
+    footer.triangleDataLength = buffer.readU16();
+
+    return footer;
+}
+
+ModelLayout ModelFileReader::calculateLayout(
+    const ModelFooter& footer
+) const {
+    ModelLayout layout {};
+
+    int offset = 0;
+
+    layout.vertexFlagsOffset = offset;
+    offset += footer.vertexCount;
+
+    layout.triangleTypesOffset = offset;
+    offset += footer.triangleCount;
+
+    layout.trianglePrioritiesOffset = offset;
+
+    if (footer.priorityFlag == PerFacePriority) {
+        offset += footer.triangleCount;
+    }
+
+    layout.triangleSkinsOffset = offset;
+
+    if (footer.triangleSkinFlag == OptionalChunkPresent) {
+        offset += footer.triangleCount;
+    }
+
+    layout.texturePointersOffset = offset;
+
+    if (footer.textureFlag == OptionalChunkPresent) {
+        offset += footer.triangleCount;
+    }
+
+    layout.vertexSkinsOffset = offset;
+
+    if (footer.vertexSkinFlag == OptionalChunkPresent) {
+        offset += footer.vertexCount;
+    }
+
+    layout.triangleAlphasOffset = offset;
+
+    if (footer.alphaFlag == OptionalChunkPresent) {
+        offset += footer.triangleCount;
+    }
+
+    layout.triangleDataOffset = offset;
+    offset += footer.triangleDataLength;
+
+    layout.triangleColorsOffset = offset;
+    offset += footer.triangleCount * FaceColorSize;
+
+    layout.textureDataOffset = offset;
+    offset +=
+        footer.textureTriangleCount *
+        TextureTriangleSize;
+
+    layout.xDataOffset = offset;
+    offset += footer.xDataLength;
+
+    layout.yDataOffset = offset;
+    offset += footer.yDataLength;
+
+    layout.zDataOffset = offset;
+    offset += footer.zDataLength;
+
+    return layout;
+}
+
+}
+
+===== src/data/model/ModelFileReader.h =====
+#pragma once
+
+#include <optional>
+#include <vector>
+#include <cstdint>
+
+#include "ModelFile.h"
+
+namespace eld::model {
+
+class ModelFileReader {
+public:
+    std::optional<ModelFile> read(
+        const std::vector<uint8_t>& payload
+    ) const;
+
+private:
+    bool validatePayload(
+        const std::vector<uint8_t>& payload
+    ) const;
+
+    ModelFooter readFooter(
+        const std::vector<uint8_t>& payload
+    ) const;
+
+    ModelLayout calculateLayout(
+        const ModelFooter& footer
+    ) const;
+};
+
+}
+
+===== src/data/model/ModelInfo.h =====
+#pragma once
+
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+#include "ModelAsset.h"
+
+namespace eld::model {
+
+struct VertexBuildInfo {
+    std::size_t flagUnitIndex = 0;
+
+    std::optional<std::size_t> xDeltaUnitIndex;
+    std::optional<std::size_t> yDeltaUnitIndex;
+    std::optional<std::size_t> zDeltaUnitIndex;
+    std::optional<std::size_t> skinUnitIndex;
+};
+
+struct FaceBuildInfo {
+    std::size_t triangleTypeUnitIndex = 0;
+    std::vector<std::size_t> triangleDeltaUnitIndices;
+
+    std::size_t colorUnitIndex = 0;
+
+    std::optional<std::size_t> priorityUnitIndex;
+    std::optional<std::size_t> alphaUnitIndex;
+    std::optional<std::size_t> skinUnitIndex;
+    std::optional<std::size_t> textureInfoUnitIndex;
+};
+
+struct TextureMappingBuildInfo {
+    std::size_t textureDataUnitIndex = 0;
+};
+
+struct ModelInfo {
+    std::vector<VertexBuildInfo> vertices;
+    std::vector<FaceBuildInfo> faces;
+    std::vector<TextureMappingBuildInfo> textureMappings;
+};
+
+struct ModelAssetWithInfo {
+    ModelAsset asset;
+    ModelInfo info;
+};
+
+}
+
+===== src/data/model/ModelLoader.cpp =====
+#include "ModelLoader.h"
+
+#include <exception>
+#include <limits>
+
+namespace eld::model {
+
+ModelLoader::ModelLoader(
+    const eld::cache::Cache& cache,
+    eld::texture::TextureLoader& textureLoader
+)
+    : cache_(cache),
+      textureLoader_(textureLoader) {
+}
+
+std::optional<ModelAsset> ModelLoader::load(
+    std::uint32_t id
+) {
+    const auto cached =
+        modelCache_.find(id);
+
+    if (cached != modelCache_.end()) {
+        return cached->second;
+    }
+
+    std::optional<std::vector<std::uint8_t>> payload =
+        getModelFile(id);
+
+    if (!payload.has_value()) {
+        return std::nullopt;
+    }
+
+    std::optional<ModelFile> file =
+        fileReader_.read(
+            *payload
+        );
+
+    if (!file.has_value()) {
+        return std::nullopt;
+    }
+
+    ModelAsset asset =
+        modelBuilder_.build(
+            *file
+        );
+
+    loadModelTextures(
+        asset
+    );
+
+    modelCache_.emplace(
+        id,
+        asset
+    );
+
+    return asset;
+}
+
+void ModelLoader::loadModelTextures(
+    ModelAsset& asset
+) {
+    for (const Face& face : asset.faces) {
+        const bool isTexturedRenderType =
+            face.renderType == 2 ||
+            face.renderType == 3;
+
+        if (!isTexturedRenderType) {
+            continue;
+        }
+
+        const bool hasValidMapping =
+            face.textureUVMappingIndex >= 0 &&
+            face.textureUVMappingIndex <
+                static_cast<int>(
+                    asset.textureUVMappings.size()
+                );
+
+        if (!hasValidMapping) {
+            continue;
+        }
+
+        const int textureId =
+            static_cast<int>(
+                face.color
+            );
+
+        if (
+            asset.textures.contains(
+                textureId
+            )
+        ) {
+            continue;
+        }
+
+        const std::optional<
+            eld::texture::TextureAsset
+        > texture =
+            textureLoader_.load(
+                static_cast<std::uint32_t>(
+                    textureId
+                )
+            );
+
+        if (texture.has_value()) {
+            asset.textures.emplace(
+                textureId,
+                *texture
+            );
+        }
+    }
+}
+
+std::optional<std::vector<std::uint8_t>>
+ModelLoader::getModelFile(
+    std::uint32_t id
+) const {
+    if (
+        id >
+        std::numeric_limits<
+            std::uint16_t
+        >::max()
+    ) {
+        return std::nullopt;
+    }
+
+    try {
+        eld::cache::Store models =
+            cache_.open(
+                eld::cache::IndexId::Models
+            );
+
+        eld::cache::File file =
+            models.get(
+                static_cast<std::uint16_t>(
+                    id
+                )
+            );
+
+        return file.getBytes();
+    }
+    catch (const std::exception&) {
+        return std::nullopt;
+    }
+}
+
+}
+
+===== src/data/model/ModelLoader.h =====
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <unordered_map>
+#include <vector>
+
+#include "ModelAsset.h"
+#include "ModelBuilder.h"
+#include "ModelFileReader.h"
+
+#include "cache/Cache.h"
+#include "../texture/TextureLoader.h"
+
+namespace eld::model {
+
+class ModelLoader {
+public:
+    ModelLoader(
+        const eld::cache::Cache& cache,
+        eld::texture::TextureLoader& textureLoader
+    );
+
+    std::optional<ModelAsset> load(
+        std::uint32_t id
+    );
+
+private:
+    std::optional<std::vector<std::uint8_t>>
+    getModelFile(
+        std::uint32_t id
+    ) const;
+
+    void loadModelTextures(
+        ModelAsset& asset
+    );
+
+private:
+    const eld::cache::Cache& cache_;
+    eld::texture::TextureLoader& textureLoader_;
+
+    ModelFileReader fileReader_;
+    ModelBuilder modelBuilder_;
+
+    std::unordered_map<
+        std::uint32_t,
+        ModelAsset
+    > modelCache_;
+};
+
+}
+
+===== src/data/model/ModelRepository.cpp =====
+
+===== src/data/model/ModelRepository.h =====
+
+===== src/data/model/ModelSections.h =====
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+namespace eld::model {
+
+struct ModelUnit {
+    std::size_t index = 0;
+    std::size_t offset = 0;
+    std::size_t size = 0;
+
+    std::size_t end() const {
+        return offset + size;
+    }
+
+    bool present() const {
+        return size > 0;
+    }
+};
+
+template <typename TUnit>
+struct ModelSection {
+    std::size_t offset = 0;
+    std::size_t size = 0;
+
+    std::vector<TUnit> units;
+
+    std::size_t end() const {
+        return offset + size;
+    }
+
+    bool present() const {
+        return size > 0;
+    }
+
+    std::size_t unitCount() const {
+        return units.size();
+    }
+};
+
+struct VertexFlagUnit {
+    ModelUnit source;
+
+    std::uint8_t flags = 0;
+
+    bool hasXDelta() const {
+        return (flags & 0x1) != 0;
+    }
+
+    bool hasYDelta() const {
+        return (flags & 0x2) != 0;
+    }
+
+    bool hasZDelta() const {
+        return (flags & 0x4) != 0;
+    }
+};
+
+struct VertexSkinUnit {
+    ModelUnit source;
+
+    std::uint8_t skin = 0;
+};
+
+struct VertexDeltaUnit {
+    ModelUnit source;
+
+    int delta = 0;
+};
+
+struct TriangleTypeUnit {
+    ModelUnit source;
+
+    std::uint8_t type = 0;
+};
+
+struct TrianglePriorityUnit {
+    ModelUnit source;
+
+    std::uint8_t priority = 0;
+};
+
+struct TriangleSkinUnit {
+    ModelUnit source;
+
+    std::uint8_t skin = 0;
+};
+
+struct TexturePointerUnit {
+    ModelUnit source;
+
+    std::uint8_t value = 0;
+};
+
+struct TriangleAlphaUnit {
+    ModelUnit source;
+
+    std::uint8_t alpha = 0;
+};
+
+struct TriangleColorUnit {
+    ModelUnit source;
+
+    std::uint16_t color = 0;
+};
+
+struct TriangleIndexDeltaUnit {
+    ModelUnit source;
+
+    int delta = 0;
+};
+
+struct TextureTriangleUnit {
+    ModelUnit source;
+
+    std::uint16_t originVertex = 0;
+    std::uint16_t uVertex = 0;
+    std::uint16_t vVertex = 0;
+};
+
+struct ModelSections {
+    ModelSection<VertexFlagUnit> vertexFlags;
+    ModelSection<VertexSkinUnit> vertexSkins;
+
+    ModelSection<VertexDeltaUnit> xData;
+    ModelSection<VertexDeltaUnit> yData;
+    ModelSection<VertexDeltaUnit> zData;
+
+    ModelSection<TriangleTypeUnit> triangleTypes;
+    ModelSection<TrianglePriorityUnit> trianglePriorities;
+    ModelSection<TriangleSkinUnit> triangleSkins;
+    ModelSection<TexturePointerUnit> texturePointers;
+    ModelSection<TriangleAlphaUnit> triangleAlphas;
+    ModelSection<TriangleColorUnit> triangleColors;
+    ModelSection<TriangleIndexDeltaUnit> triangleData;
+
+    ModelSection<TextureTriangleUnit> textureData;
+};
+
+}

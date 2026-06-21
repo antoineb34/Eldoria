@@ -7,7 +7,7 @@
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
 
-#include "model/ModelAsset.h"
+#include "model/Model.h"
 #include "texture/TextureAsset.h"
 
 #include "../../render/camera/Camera.h"
@@ -31,7 +31,7 @@ struct CacheExplorerState {
     CacheTreeNode rootNode;
     bool debugHighlightTexturedFaces = false;
 
-    std::optional<eld::model::ModelAsset> activeModel;
+    std::optional<eld::model::Model> activeModel;
     std::optional<eld::texture::TextureAsset> activeTexture;
 
     std::unordered_map<std::string, bool> expandedNodes;

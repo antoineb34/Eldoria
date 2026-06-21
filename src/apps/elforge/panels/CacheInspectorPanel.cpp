@@ -36,15 +36,18 @@ const char* getNodeTypeName(
 
 std::string buildModelDebugText(
     const CacheExplorerState& state,
-    const eld::model::ModelAsset& model
+    const eld::model::Model& model
 ) {
+    const eld::model::ModelAsset& asset =
+        model.asset;
+
     std::array<int, 12> priorityCounts {};
     std::array<int, 4> renderTypeCounts {};
 
     int alphaFaces = 0;
     int texturedFaces = 0;
 
-    for (const eld::model::Face& face : model.faces) {
+    for (const eld::model::Face& face : asset.faces) {
         if (face.priority < priorityCounts.size()) {
             priorityCounts[face.priority]++;
         }
@@ -57,7 +60,7 @@ std::string buildModelDebugText(
             alphaFaces++;
         }
 
-        if (face.texturePointer >= 0) {
+        if (face.textureId.has_value()) {
             texturedFaces++;
         }
     }
@@ -88,19 +91,23 @@ std::string buildModelDebugText(
         "\n\n";
 
     debug += "Vertices: " +
-        std::to_string(model.vertices.size()) +
+        std::to_string(asset.vertices.size()) +
         "\n";
 
     debug += "Faces: " +
-        std::to_string(model.faces.size()) +
+        std::to_string(asset.faces.size()) +
         "\n";
 
-    debug += "Texture UV mappings: " +
-        std::to_string(model.textureUVMappings.size()) +
+    debug += "Texture mappings: " +
+        std::to_string(asset.textureMappings.size()) +
         "\n";
 
-    debug += "Loaded textures: " +
-        std::to_string(model.textures.size()) +
+    debug += "Source vertices: " +
+        std::to_string(model.sourceMap.vertices.size()) +
+        "\n";
+
+    debug += "Source faces: " +
+        std::to_string(model.sourceMap.faces.size()) +
         "\n";
 
     debug += "Alpha faces: " +
@@ -182,8 +189,11 @@ void CacheInspectorPanel::render(
     );
 
     if (state.activeModel) {
-        const eld::model::ModelAsset& model =
+        const eld::model::Model& model =
             *state.activeModel;
+
+        const eld::model::ModelAsset& asset =
+            model.asset;
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -203,27 +213,32 @@ void CacheInspectorPanel::render(
 
         ImGui::Text(
             "Vertices: %zu",
-            model.vertices.size()
+            asset.vertices.size()
         );
 
         ImGui::Text(
             "Faces: %zu",
-            model.faces.size()
+            asset.faces.size()
         );
 
         ImGui::Text(
-            "Texture UV mappings: %zu",
-            model.textureUVMappings.size()
+            "Texture mappings: %zu",
+            asset.textureMappings.size()
         );
 
         ImGui::Text(
-            "Loaded textures: %zu",
-            model.textures.size()
+            "Source vertices: %zu",
+            model.sourceMap.vertices.size()
+        );
+
+        ImGui::Text(
+            "Source faces: %zu",
+            model.sourceMap.faces.size()
         );
 
         std::array<int, 12> priorityCounts {};
 
-        for (const eld::model::Face& face : model.faces) {
+        for (const eld::model::Face& face : asset.faces) {
             if (face.priority < priorityCounts.size()) {
                 priorityCounts[face.priority]++;
             }

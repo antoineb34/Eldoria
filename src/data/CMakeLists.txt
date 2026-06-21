@@ -14,12 +14,9 @@ add_library(eldoria_data STATIC
     cache_legacy/ArchiveReader.cpp
     cache_legacy/Cache.cpp
 
-    model/ModelBuilder.cpp
-    model/ModelFileReader.cpp
-    model/ModelLoader.cpp
-    model/decoder/FaceDecoder.cpp
-    model/decoder/TextureUVMappingDecoder.cpp
-    model/decoder/VertexDecoder.cpp
+    model/ModelAssetBuilder.cpp
+    model/ModelFileParser.cpp
+    model/ModelRepository.cpp
 
     texture/TextureBuilder.cpp
     texture/TextureFileReader.cpp

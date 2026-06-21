@@ -182,7 +182,8 @@ void CacheViewportPanel::renderViewport(
     updateViewportControls(state);
 
     eld::render::RenderObject object;
-    object.model = &state.activeModel.value();
+    object.model =
+        &state.activeModel->asset;
     object.transform.position = {
         state.modelTransform.offsetX,
         state.modelTransform.offsetY,
