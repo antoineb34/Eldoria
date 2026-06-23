@@ -26,6 +26,7 @@ eldoria_add_module(game src/game)
 eldoria_add_module(network src/net)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
+eldoria_add_module(graphics src/graphics)
 
 # Target Eldoria applications.
 eldoria_add_app(elforge src/apps/elforge)

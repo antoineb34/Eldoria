@@ -10,8 +10,6 @@ add_library(eldoria_render STATIC
 
     color/Color.cpp
 
-    model/ModelRenderBuilder.cpp
-
     pipeline/RenderQueueBuilder.cpp
 
     scene/Transform.cpp

@@ -1,4 +1,4 @@
-#include "TextureStore.h"
+#include "TextureRegistry.h"
 
 #include <cstdint>
 #include <limits>
@@ -7,15 +7,15 @@
 
 namespace eld::graphics {
 
-TextureHandle TextureStore::add(
-    RenderTexture texture
+TextureHandle TextureRegistry::registerTexture(
+    GraphicsTexture texture
 ) {
     if (
         textures_.size() >
         std::numeric_limits<std::uint32_t>::max()
     ) {
         throw std::overflow_error(
-            "Texture store capacity exceeded"
+            "Texture registry capacity exceeded"
         );
     }
 
@@ -32,7 +32,7 @@ TextureHandle TextureStore::add(
     return handle;
 }
 
-const RenderTexture& TextureStore::get(
+const GraphicsTexture& TextureRegistry::get(
     TextureHandle handle
 ) const {
     return textures_.at(
@@ -42,7 +42,7 @@ const RenderTexture& TextureStore::get(
     );
 }
 
-bool TextureStore::contains(
+bool TextureRegistry::contains(
     TextureHandle handle
 ) const {
     return
@@ -52,7 +52,7 @@ bool TextureStore::contains(
         textures_.size();
 }
 
-std::size_t TextureStore::count() const {
+std::size_t TextureRegistry::count() const {
     return textures_.size();
 }
 

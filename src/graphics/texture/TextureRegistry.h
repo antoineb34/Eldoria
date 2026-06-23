@@ -3,18 +3,18 @@
 #include <cstddef>
 #include <vector>
 
-#include "RenderTexture.h"
+#include "GraphicsTexture.h"
 #include "TextureHandle.h"
 
 namespace eld::graphics {
 
-class TextureStore {
+class TextureRegistry {
 public:
-    TextureHandle add(
-        RenderTexture texture
+    TextureHandle registerTexture(
+        GraphicsTexture texture
     );
 
-    const RenderTexture& get(
+    const GraphicsTexture& get(
         TextureHandle handle
     ) const;
 
@@ -25,7 +25,7 @@ public:
     std::size_t count() const;
 
 private:
-    std::vector<RenderTexture> textures_;
+    std::vector<GraphicsTexture> textures_;
 };
 
 }
