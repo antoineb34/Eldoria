@@ -1,28 +1,28 @@
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 #include <vector>
 
 namespace eld::binary {
 
 enum class CompressionType {
-    Unknown,
+    None,
     Gzip,
     Bzip2
 };
 
-CompressionType detectCompression(
-    const std::vector<std::uint8_t>& payload
+CompressionType getCompressionType(
+    const std::vector<std::uint8_t>& bytes
 );
 
-std::vector<std::uint8_t> decompressGzip(
-    const std::vector<std::uint8_t>& payload
+std::vector<std::uint8_t> compress(
+    const std::vector<std::uint8_t>& bytes,
+    CompressionType type
 );
 
-std::vector<std::uint8_t> decompressBzip2(
-    const std::vector<std::uint8_t>& payload,
-    std::size_t expectedSize
+std::vector<std::uint8_t> decompress(
+    const std::vector<std::uint8_t>& bytes,
+    CompressionType type
 );
 
 }

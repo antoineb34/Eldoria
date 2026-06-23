@@ -26,8 +26,14 @@ eldoria_add_module(game src/game)
 eldoria_add_module(network src/net)
 eldoria_add_module(platform src/platform)
 eldoria_add_module(render src/render)
+eldoria_add_module(graphics src/graphics)
+eldoria_add_module(math src/math)
 
 # Target Eldoria applications.
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

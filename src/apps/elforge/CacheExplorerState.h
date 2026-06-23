@@ -1,26 +1,24 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <unordered_map>
-#include <optional>
 
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
 
-#include "model/ModelAsset.h"
-#include "texture/TextureAsset.h"
+#include "graphics/model/ModelHandle.h"
+#include "model/Model.h"
+#include "texture/Texture.h"
 
-#include "../../render/camera/Camera.h"
-#include "../../render/viewport/RenderOptions.h"
-#include "../../render/viewport/ModelTransform.h"
+#include "render/camera/Camera.h"
+#include "render/scene/Transform.h"
 
 namespace eld::elforge {
 
 struct CacheExplorerState {
-
     eld::render::Camera camera;
-    eld::render::RenderOptions renderOptions;
-    eld::render::ModelTransform modelTransform;
+    eld::render::Transform modelTransform;
 
     int viewportX = 0;
     int viewportY = 0;
@@ -29,12 +27,16 @@ struct CacheExplorerState {
 
     CacheSelection selection;
     CacheTreeNode rootNode;
-    bool debugHighlightTexturedFaces = false;
 
-    std::optional<eld::model::ModelAsset> activeModel;
-    std::optional<eld::texture::TextureAsset> activeTexture;
+    std::optional<eld::model::Model> activeModel;
 
-    std::unordered_map<std::string, bool> expandedNodes;
+    std::optional<eld::graphics::ModelHandle>
+        activeModelHandle;
+
+    std::optional<eld::texture::Texture> activeTexture;
+
+    std::unordered_map<std::string, bool>
+        expandedNodes;
 };
 
 }

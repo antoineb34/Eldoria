@@ -1,61 +1,10 @@
 #include "SoftwareRenderBackend.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <vector>
 
-#include "../../../render/color/Color.h"
-
 namespace eld::render {
-
-namespace {
-
-    bool isTexturedPacket(
-        const RenderPacket& packet,
-        const RenderObject& object
-    ) {
-        if (object.model == nullptr) {
-            return false;
-        }
-
-        const bool texturedRenderType =
-            packet.renderType == 2 ||
-            packet.renderType == 3;
-
-        const bool hasMapping =
-            packet.textureUVMappingIndex >= 0 &&
-            packet.textureUVMappingIndex <
-                static_cast<int>(object.model->textureUVMappings.size());
-
-        const bool hasTexture =
-            object.model->textures.find(packet.color) !=
-            object.model->textures.end();
-
-        return
-            texturedRenderType &&
-            hasMapping &&
-            hasTexture;
-    }
-
-    ColorPixel colorFromPacket(
-        const RenderPacket& packet
-    ) {
-        eld::render::RgbColor rgb =
-            eld::render::rsColorToRgb(packet.color);
-
-        uint8_t alpha = 255;
-
-        if (packet.alpha > 0) {
-            alpha = static_cast<uint8_t>(255 - packet.alpha);
-        }
-
-        return {
-            rgb.r,
-            rgb.g,
-            rgb.b,
-            alpha
-        };
-    }
-
-}
 
 SoftwareRenderBackend::SoftwareRenderBackend(
     SDL_Renderer* renderer
@@ -68,14 +17,21 @@ SoftwareRenderBackend::~SoftwareRenderBackend() {
 }
 
 void SoftwareRenderBackend::destroyTexture() {
-    if (texture_ != nullptr) {
-        SDL_DestroyTexture(texture_);
-        texture_ = nullptr;
+    if (texture_ == nullptr) {
+        return;
     }
+
+    SDL_DestroyTexture(texture_);
+    texture_ = nullptr;
 }
 
 void SoftwareRenderBackend::ensureTexture() {
-    if (texture_ != nullptr) {
+    if (
+        texture_ != nullptr ||
+        renderer_ == nullptr ||
+        width_ == 0 ||
+        height_ == 0
+    ) {
         return;
     }
 
@@ -84,94 +40,164 @@ void SoftwareRenderBackend::ensureTexture() {
             renderer_,
             SDL_PIXELFORMAT_RGBA32,
             SDL_TEXTUREACCESS_STREAMING,
-            width_,
-            height_
+            static_cast<int>(width_),
+            static_cast<int>(height_)
         );
+
+    if (texture_ != nullptr) {
+        SDL_SetTextureScaleMode(
+            texture_,
+            SDL_SCALEMODE_NEAREST
+        );
+    }
 }
 
 void SoftwareRenderBackend::beginFrame(
-    const RenderCamera& camera
+    const Camera& camera
 ) {
-    viewportX_ = camera.viewportX;
-    viewportY_ = camera.viewportY;
-    width_ = camera.viewportWidth;
-    height_ = camera.viewportHeight;
+    camera_ = camera;
+
+    if (
+        width_ != camera.viewportWidth ||
+        height_ != camera.viewportHeight
+    ) {
+        width_ = camera.viewportWidth;
+        height_ = camera.viewportHeight;
+
+        destroyTexture();
+    }
 
     framebuffer_.resize(
         width_,
         height_
     );
 
-    framebuffer_.clear();
+    framebuffer_.clear(
+        clearColor_
+    );
 
-    destroyTexture();
     ensureTexture();
 }
 
-void SoftwareRenderBackend::drawObject(
-    const RenderObject& object,
-    const ProjectedMesh& mesh,
-    const RenderQueue& queue
+void SoftwareRenderBackend::draw(
+    const eld::graphics::RenderModel& model,
+    const Transform& transform,
+    const eld::graphics::GraphicsResources& resources
 ) {
-    for (const RenderPacket& packet : queue.packets) {
-        eld::render::ScreenPoint a =
-            mesh.vertices[packet.a].screen;
-
-        eld::render::ScreenPoint b =
-            mesh.vertices[packet.b].screen;
-
-        eld::render::ScreenPoint c =
-            mesh.vertices[packet.c].screen;
-
-        if (isTexturedPacket(packet, object)) {
-            const eld::model::TextureUVMapping& mapping =
-                object.model->textureUVMappings[packet.textureUVMappingIndex];
-
-            const eld::texture::TextureAsset& texture =
-                object.model->textures.at(packet.color);
-
-            const eld::render::Vec3& faceA =
-                mesh.vertices[packet.a].world;
-
-            const eld::render::Vec3& faceB =
-                mesh.vertices[packet.b].world;
-
-            const eld::render::Vec3& faceC =
-                mesh.vertices[packet.c].world;
-
-            const eld::render::Vec3& textureOrigin =
-                mesh.vertices[mapping.originVertex].world;
-
-            const eld::render::Vec3& textureU =
-                mesh.vertices[mapping.uVertex].world;
-
-            const eld::render::Vec3& textureV =
-                mesh.vertices[mapping.vVertex].world;
-
-            rasterizer_.drawTexturedTriangle(
-                framebuffer_,
-                a,
-                b,
-                c,
-                faceA,
-                faceB,
-                faceC,
-                textureOrigin,
-                textureU,
-                textureV,
-                texture
+    for (
+        const eld::graphics::RenderMesh& mesh :
+        model.meshes
+    ) {
+        const SoftwareProjectedMesh projected =
+            projector_.project(
+                mesh,
+                transform,
+                camera_
             );
 
-            continue;
+        std::vector<
+            const eld::graphics::RenderMeshSection*
+        > sections;
+
+        sections.reserve(
+            mesh.sections.size()
+        );
+
+        for (
+            const eld::graphics::RenderMeshSection& section :
+            mesh.sections
+        ) {
+            sections.push_back(
+                &section
+            );
         }
 
-        rasterizer_.drawSolidTriangle(
-            framebuffer_,
-            a,
-            b,
-            c,
-            colorFromPacket(packet)
+        std::stable_sort(
+            sections.begin(),
+            sections.end(),
+            [](
+                const auto* left,
+                const auto* right
+            ) {
+                return
+                    left->sortOrder <
+                    right->sortOrder;
+            }
         );
+
+        for (
+            const eld::graphics::RenderMeshSection* section :
+            sections
+        ) {
+            if (
+                section == nullptr ||
+                section->materialIndex >=
+                    model.materials.size() ||
+                section->firstIndex >
+                    mesh.indices.size() ||
+                section->indexCount >
+                    mesh.indices.size() -
+                    section->firstIndex
+            ) {
+                continue;
+            }
+
+            const eld::graphics::RenderMaterial& material =
+                model.materials.at(
+                    section->materialIndex
+                );
+
+            const eld::graphics::GraphicsTexture* texture =
+                nullptr;
+
+            if (material.texture.has_value()) {
+                texture =
+                    &resources.getTexture(
+                        *material.texture
+                    );
+            }
+
+            const std::size_t endIndex =
+                static_cast<std::size_t>(
+                    section->firstIndex
+                ) +
+                static_cast<std::size_t>(
+                    section->indexCount
+                );
+
+            for (
+                std::size_t index =
+                    section->firstIndex;
+                index + 2 < endIndex;
+                index += 3
+            ) {
+                const std::uint32_t a =
+                    mesh.indices.at(index);
+
+                const std::uint32_t b =
+                    mesh.indices.at(index + 1);
+
+                const std::uint32_t c =
+                    mesh.indices.at(index + 2);
+
+                if (
+                    a >= projected.vertices.size() ||
+                    b >= projected.vertices.size() ||
+                    c >= projected.vertices.size()
+                ) {
+                    continue;
+                }
+
+                rasterizer_.drawTriangle(
+                    framebuffer_,
+                    projected.vertices.at(a),
+                    projected.vertices.at(b),
+                    projected.vertices.at(c),
+                    material,
+                    texture
+                );
+            }
+        }
     }
 }
 
@@ -179,33 +205,24 @@ void SoftwareRenderBackend::endFrame() {
     if (
         renderer_ == nullptr ||
         texture_ == nullptr ||
-        width_ <= 0 ||
-        height_ <= 0
+        width_ == 0 ||
+        height_ == 0
     ) {
         return;
-    }
-
-    std::vector<ColorPixel> pixels;
-    pixels.reserve(width_ * height_);
-
-    for (int y = 0; y < height_; y++) {
-        for (int x = 0; x < width_; x++) {
-            pixels.push_back(
-                framebuffer_.color().at(x, y)
-            );
-        }
     }
 
     SDL_UpdateTexture(
         texture_,
         nullptr,
-        pixels.data(),
-        width_ * static_cast<int>(sizeof(ColorPixel))
+        framebuffer_.color().data(),
+        static_cast<int>(
+            width_ * sizeof(ColorPixel)
+        )
     );
 
-    SDL_FRect destination {
-        static_cast<float>(viewportX_),
-        static_cast<float>(viewportY_),
+    const SDL_FRect destination{
+        static_cast<float>(outputX_),
+        static_cast<float>(outputY_),
         static_cast<float>(width_),
         static_cast<float>(height_)
     };
@@ -216,6 +233,25 @@ void SoftwareRenderBackend::endFrame() {
         nullptr,
         &destination
     );
+}
+
+void SoftwareRenderBackend::setOutputPosition(
+    int x,
+    int y
+) {
+    outputX_ = x;
+    outputY_ = y;
+}
+
+void SoftwareRenderBackend::setClearColor(
+    ColorPixel color
+) {
+    clearColor_ = color;
+}
+
+const Framebuffer&
+SoftwareRenderBackend::framebuffer() const {
+    return framebuffer_;
 }
 
 }

@@ -1,13 +1,14 @@
 #pragma once
 
-#include "model/ModelAsset.h"
+#include "graphics/model/ModelHandle.h"
 #include "Transform.h"
 
 namespace eld::render {
 
 struct RenderObject {
-    const eld::model::ModelAsset* model = nullptr;
+    eld::graphics::ModelHandle model;
     Transform transform;
+    bool visible = true;
 };
 
 }

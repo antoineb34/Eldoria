@@ -4,40 +4,27 @@ namespace eld::render {
 
 void RenderPipeline::render(
     const RenderScene& scene,
+    const eld::graphics::GraphicsResources& resources,
     IRenderBackend& backend
-) {
-    backend.beginFrame(scene.camera);
+) const {
+    backend.beginFrame(
+        scene.camera
+    );
 
-    for (int objectIndex = 0;
-         objectIndex < static_cast<int>(scene.objects.size());
-         objectIndex++) {
-        const RenderObject& object =
-            scene.objects[objectIndex];
+    for (const RenderObject& object : scene.objects) {
+        if (!object.visible) {
+            continue;
+        }
 
-        ProjectedMesh mesh =
-            projector_.project(
-                object,
-                scene.camera
+        const eld::graphics::RenderModel& model =
+            resources.getModel(
+                object.model
             );
 
-        RenderQueue queue =
-            faceAssembler_.assemble(
-                objectIndex,
-                object,
-                mesh
-            );
-
-        visibilityStage_.apply(
-            queue,
-            mesh
-        );
-
-        depthSorter_.sort(queue);
-
-        backend.drawObject(
-            object,
-            mesh,
-            queue
+        backend.draw(
+            model,
+            object.transform,
+            resources
         );
     }
 

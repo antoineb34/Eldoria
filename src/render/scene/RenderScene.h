@@ -2,13 +2,13 @@
 
 #include <vector>
 
-#include "RenderCamera.h"
+#include "camera/Camera.h"
 #include "RenderObject.h"
 
 namespace eld::render {
 
 struct RenderScene {
-    RenderCamera camera;
+    Camera camera;
     std::vector<RenderObject> objects;
 };
 

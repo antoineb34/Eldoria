@@ -7,7 +7,9 @@ namespace eld::elforge {
 
 class CacheTreeBuilder {
 public:
-    CacheTreeNode build(const eld::cache::Cache& cache);
+    CacheTreeNode build(
+        const eld::cache::Cache& cache
+    ) const;
 };
 
 }

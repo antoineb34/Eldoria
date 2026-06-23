@@ -1,21 +1,12 @@
 add_library(eldoria_render STATIC
     RenderPipeline.cpp
 
+    backend/software/SoftwareMeshProjector.cpp
     backend/software/SoftwareRenderBackend.cpp
+    backend/software/TextureSampler.cpp
     backend/software/TriangleRasterizer.cpp
 
     camera/Projection.cpp
-
-    color/Color.cpp
-
-    geometry/MeshProjector.cpp
-
-    material/MaterialResolver.cpp
-    material/TextureSampler.cpp
-
-    pipeline/DepthSorter.cpp
-    pipeline/FaceAssembler.cpp
-    pipeline/VisibilityStage.cpp
 
     scene/Transform.cpp
 )
@@ -27,6 +18,7 @@ target_include_directories(eldoria_render PUBLIC
 )
 
 target_link_libraries(eldoria_render PUBLIC
-    Eldoria::Data
+    Eldoria::Math
+    Eldoria::Graphics
     SDL3::SDL3
 )

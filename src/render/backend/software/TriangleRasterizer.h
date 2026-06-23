@@ -1,40 +1,21 @@
 #pragma once
 
-#include "../../../render/camera/Projection.h"
 #include "Framebuffer.h"
-#include "texture/TextureAsset.h"
-#include "../../material/TextureSampler.h"
+#include "SoftwareMeshProjector.h"
+#include "graphics/model/RenderModel.h"
+#include "graphics/texture/GraphicsTexture.h"
 
 namespace eld::render {
 
 class TriangleRasterizer {
 public:
-    void drawSolidTriangle(
+    void drawTriangle(
         Framebuffer& framebuffer,
-
-        const eld::render::ScreenPoint& a,
-        const eld::render::ScreenPoint& b,
-        const eld::render::ScreenPoint& c,
-
-        ColorPixel color
-    ) const;
-
-    void drawTexturedTriangle(
-        Framebuffer& framebuffer,
-
-        const eld::render::ScreenPoint& a,
-        const eld::render::ScreenPoint& b,
-        const eld::render::ScreenPoint& c,
-
-        const eld::render::Vec3& faceA,
-        const eld::render::Vec3& faceB,
-        const eld::render::Vec3& faceC,
-
-        const eld::render::Vec3& textureOrigin,
-        const eld::render::Vec3& textureU,
-        const eld::render::Vec3& textureV,
-
-        const eld::texture::TextureAsset& texture
+        const SoftwareProjectedVertex& a,
+        const SoftwareProjectedVertex& b,
+        const SoftwareProjectedVertex& c,
+        const eld::graphics::RenderMaterial& material,
+        const eld::graphics::GraphicsTexture* texture
     ) const;
 };
 

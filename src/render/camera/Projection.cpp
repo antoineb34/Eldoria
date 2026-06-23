@@ -1,57 +1,54 @@
 #include "Projection.h"
-#include <iostream>
 
 namespace eld::render {
 
-Vec3 toVec3(
-    const eld::model::Vertex& vertex
-) {
-    return {
-        static_cast<float>(vertex.x),
-        -static_cast<float>(vertex.y),
-        static_cast<float>(vertex.z)
-    };
-}
-
-Mat4 buildViewMatrix(
+eld::math::Mat4 buildViewMatrix(
     const Camera& camera
 ) {
-    Mat4 rotationX =
-        Mat4::rotationX(
-            camera.angleX
-        );
-
-    Mat4 rotationY =
-        Mat4::rotationY(
-            camera.angleY
-        );
-
-    Mat4 translation =
-        Mat4::translation({
-            0.0f,
-            0.0f,
-            camera.distance
+    const eld::math::Mat4 translation =
+        eld::math::Mat4::translation({
+            -camera.position.x,
+            -camera.position.y,
+            -camera.position.z
         });
 
-    return
-        rotationX *
-        rotationY *
-        translation;
-}
-
-Mat4 buildProjectionMatrix(
-    const Camera& camera
-) {
-    float aspectRatio =
-        static_cast<float>(
-            camera.viewportWidth
-        ) /
-        static_cast<float>(
-            camera.viewportHeight
+    const eld::math::Mat4 rotationZ =
+        eld::math::Mat4::rotationZ(
+            -camera.rotation.z
         );
 
-    return Mat4::perspective(
-        camera.fov,
+    const eld::math::Mat4 rotationY =
+        eld::math::Mat4::rotationY(
+            -camera.rotation.y
+        );
+
+    const eld::math::Mat4 rotationX =
+        eld::math::Mat4::rotationX(
+            -camera.rotation.x
+        );
+
+    return
+        translation *
+        rotationZ *
+        rotationY *
+        rotationX;
+}
+
+eld::math::Mat4 buildProjectionMatrix(
+    const Camera& camera
+) {
+    const float aspectRatio =
+        camera.viewportHeight == 0
+            ? 1.0f
+            : static_cast<float>(
+                  camera.viewportWidth
+              ) /
+              static_cast<float>(
+                  camera.viewportHeight
+              );
+
+    return eld::math::Mat4::perspective(
+        camera.verticalFov,
         aspectRatio,
         camera.nearPlane,
         camera.farPlane
@@ -59,47 +56,36 @@ Mat4 buildProjectionMatrix(
 }
 
 ScreenPoint projectPoint(
-    const Vec3& point,
-    const Mat4& view,
-    const Mat4& projection,
+    const eld::math::Vec3& worldPoint,
+    const eld::math::Mat4& viewMatrix,
+    const eld::math::Mat4& projectionMatrix,
     const Camera& camera
 ) {
-    Vec3 viewPoint =
-        view.transformPoint(point);
+    const eld::math::Vec3 viewPoint =
+        viewMatrix.transformPoint(
+            worldPoint
+        );
 
-    Vec3 projected =
-        projection.transformPoint(viewPoint);
+    const eld::math::Vec3 projected =
+        projectionMatrix.transformPoint(
+            viewPoint
+        );
 
-    ScreenPoint screenPoint {};
+    return {
+        (projected.x + 1.0f) *
+            0.5f *
+            static_cast<float>(
+                camera.viewportWidth
+            ),
 
-    screenPoint.x =
-        static_cast<float>(camera.viewportX) +
-        (projected.x + 1.0f) * 0.5f *
-        static_cast<float>(camera.viewportWidth);
+        (1.0f - projected.y) *
+            0.5f *
+            static_cast<float>(
+                camera.viewportHeight
+            ),
 
-    screenPoint.y =
-        static_cast<float>(camera.viewportY) +
-        (1.0f - projected.y) * 0.5f *
-        static_cast<float>(camera.viewportHeight);
-
-    screenPoint.z =
-        viewPoint.z;
-
-    return screenPoint;
-}
-
-ScreenPoint projectVertex(
-    const eld::model::Vertex& vertex,
-    const Mat4& view,
-    const Mat4& projection,
-    const Camera& camera
-) {
-    return projectPoint(
-        toVec3(vertex),
-        view,
-        projection,
-        camera
-    );
+        viewPoint.z
+    };
 }
 
 }

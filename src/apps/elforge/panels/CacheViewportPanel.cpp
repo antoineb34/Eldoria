@@ -1,98 +1,100 @@
 #include "CacheViewportPanel.h"
 
+#include <algorithm>
+#include <cstdint>
+
 #include <imgui.h>
 
 #include "../CacheExplorerState.h"
 
+#include "graphics/GraphicsResources.h"
 #include "../../../render/RenderPipeline.h"
 #include "../../../render/backend/software/SoftwareRenderBackend.h"
 
 namespace eld::elforge {
 
-    namespace {
+namespace {
 
-        void updateViewportControls(CacheExplorerState& state) {
-            const bool* keys = SDL_GetKeyboardState(nullptr);
+void updateViewportControls(
+    CacheExplorerState& state
+) {
+    const bool* keys =
+        SDL_GetKeyboardState(nullptr);
 
-            auto& transform = state.modelTransform;
+    eld::render::Transform& transform =
+        state.modelTransform;
 
-            constexpr float rotationSpeed = 0.03f;
-            constexpr float moveSpeed = 8.0f;
-            constexpr float zoomSpeed = 0.02f;
+    constexpr float rotationSpeed = 0.03f;
+    constexpr float moveSpeed = 8.0f;
+    constexpr float zoomSpeed = 0.02f;
 
-            if (keys[SDL_SCANCODE_LEFT]) {
-                transform.rotationY -= rotationSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_RIGHT]) {
-                transform.rotationY += rotationSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_UP]) {
-                transform.rotationX -= rotationSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_DOWN]) {
-                transform.rotationX += rotationSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_Q]) {
-                transform.rotationZ -= rotationSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_E]) {
-                transform.rotationZ += rotationSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_EQUALS]) {
-                transform.scale += zoomSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_MINUS]) {
-                transform.scale -= zoomSpeed;
-            }
-
-            if (transform.scale < 0.1f) {
-                transform.scale = 0.1f;
-            }
-
-            if (keys[SDL_SCANCODE_W]) {
-                transform.offsetY -= moveSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_S]) {
-                transform.offsetY += moveSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_A]) {
-                transform.offsetX -= moveSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_D]) {
-                transform.offsetX += moveSpeed;
-            }
-
-            if (keys[SDL_SCANCODE_R]) {
-                transform.offsetX = 0.0f;
-                transform.offsetY = 0.0f;
-                transform.offsetZ = 0.0f;
-                transform.scale = 1.0f;
-                transform.rotationX = 0.0f;
-                transform.rotationY = 0.0f;
-                transform.rotationZ = 0.0f;
-            }
-
-            static bool previousT = false;
-            bool currentT = keys[SDL_SCANCODE_T];
-
-            if (currentT && !previousT) {
-                state.debugHighlightTexturedFaces =
-                    !state.debugHighlightTexturedFaces;
-            }
-
-            previousT = currentT;
-        }
+    if (keys[SDL_SCANCODE_LEFT]) {
+        transform.rotation.y -= rotationSpeed;
     }
+
+    if (keys[SDL_SCANCODE_RIGHT]) {
+        transform.rotation.y += rotationSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_UP]) {
+        transform.rotation.x -= rotationSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_DOWN]) {
+        transform.rotation.x += rotationSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_Q]) {
+        transform.rotation.z -= rotationSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_E]) {
+        transform.rotation.z += rotationSpeed;
+    }
+
+    float scale = transform.scale.x;
+
+    if (keys[SDL_SCANCODE_EQUALS]) {
+        scale += zoomSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_MINUS]) {
+        scale -= zoomSpeed;
+    }
+
+    scale = std::max(
+        scale,
+        0.1f
+    );
+
+    transform.scale = {
+        scale,
+        scale,
+        scale
+    };
+
+    if (keys[SDL_SCANCODE_W]) {
+        transform.position.y -= moveSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_S]) {
+        transform.position.y += moveSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_A]) {
+        transform.position.x -= moveSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_D]) {
+        transform.position.x += moveSpeed;
+    }
+
+    if (keys[SDL_SCANCODE_R]) {
+        transform = {};
+    }
+}
+
+}
 
 void CacheViewportPanel::render(
     CacheExplorerState& state,
@@ -108,23 +110,37 @@ void CacheViewportPanel::render(
     ImGui::TextUnformatted("VIEWPORT");
     ImGui::Separator();
 
-    ImVec2 viewportPos =
+    const ImVec2 viewportPosition =
         ImGui::GetCursorScreenPos();
 
-    ImVec2 viewportSize =
+    const ImVec2 viewportSize =
         ImGui::GetContentRegionAvail();
 
     state.viewportX =
-        static_cast<int>(viewportPos.x);
+        static_cast<int>(
+            viewportPosition.x
+        );
 
     state.viewportY =
-        static_cast<int>(viewportPos.y);
+        static_cast<int>(
+            viewportPosition.y
+        );
 
     state.viewportWidth =
-        static_cast<int>(viewportSize.x);
+        std::max(
+            static_cast<int>(
+                viewportSize.x
+            ),
+            1
+        );
 
     state.viewportHeight =
-        static_cast<int>(viewportSize.y);
+        std::max(
+            static_cast<int>(
+                viewportSize.y
+            ),
+            1
+        );
 
     ImGui::Dummy(
         viewportSize
@@ -135,19 +151,24 @@ void CacheViewportPanel::render(
 
 void CacheViewportPanel::renderViewport(
     SDL_Renderer* renderer,
-    CacheExplorerState& state
+    CacheExplorerState& state,
+    const eld::graphics::GraphicsResources& resources
 ) {
-
-    if (!state.activeModel) {
+    if (!state.activeModelHandle.has_value()) {
         return;
     }
 
-    state.camera.viewportX = state.viewportX;
-    state.camera.viewportY = state.viewportY;
-    state.camera.viewportWidth = state.viewportWidth;
-    state.camera.viewportHeight = state.viewportHeight;
+    state.camera.viewportWidth =
+        static_cast<std::uint32_t>(
+            state.viewportWidth
+        );
 
-    SDL_Rect clip {
+    state.camera.viewportHeight =
+        static_cast<std::uint32_t>(
+            state.viewportHeight
+        );
+
+    const SDL_Rect clip{
         state.viewportX,
         state.viewportY,
         state.viewportWidth,
@@ -159,60 +180,46 @@ void CacheViewportPanel::renderViewport(
         &clip
     );
 
-    SDL_SetRenderDrawColor(
-        renderer,
+    updateViewportControls(
+        state
+    );
+
+    eld::render::RenderObject object;
+
+    object.model =
+        *state.activeModelHandle;
+
+    object.transform =
+        state.modelTransform;
+
+    eld::render::RenderScene scene;
+    scene.camera = state.camera;
+
+    scene.objects.push_back(
+        object
+    );
+
+    eld::render::SoftwareRenderBackend backend(
+        renderer
+    );
+
+    backend.setOutputPosition(
+        state.viewportX,
+        state.viewportY
+    );
+
+    backend.setClearColor({
         68,
         88,
         68,
         255
-    );
-
-    SDL_FRect rect {
-        static_cast<float>(state.viewportX),
-        static_cast<float>(state.viewportY),
-        static_cast<float>(state.viewportWidth),
-        static_cast<float>(state.viewportHeight)
-    };
-
-    SDL_RenderFillRect(
-        renderer,
-        &rect
-    );
-
-    updateViewportControls(state);
-
-    eld::render::RenderObject object;
-    object.model = &state.activeModel.value();
-    object.transform.position = {
-        state.modelTransform.offsetX,
-        state.modelTransform.offsetY,
-        state.modelTransform.offsetZ
-    };
-    object.transform.rotation = {
-        state.modelTransform.rotationX,
-        state.modelTransform.rotationY,
-        state.modelTransform.rotationZ
-    };
-    object.transform.scale = {
-        state.modelTransform.scale,
-        state.modelTransform.scale,
-        state.modelTransform.scale
-    };
-
-    eld::render::RenderScene scene;
-    scene.camera = state.camera;
-    scene.objects.push_back(object);
-
-    eld::render::SoftwareRenderBackend backend(renderer);
-
-    backend.setHighlightTexturedFaces(
-        state.debugHighlightTexturedFaces
-    );
+    });
 
     eld::render::RenderPipeline pipeline;
 
     pipeline.render(
         scene,
+        resources,
         backend
     );
 

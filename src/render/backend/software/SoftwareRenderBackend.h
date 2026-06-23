@@ -1,9 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
 #include <SDL3/SDL.h>
 
 #include "../IRenderBackend.h"
 #include "Framebuffer.h"
+#include "SoftwareMeshProjector.h"
 #include "TriangleRasterizer.h"
 
 namespace eld::render {
@@ -16,43 +19,53 @@ public:
 
     ~SoftwareRenderBackend() override;
 
-    const Framebuffer& framebuffer() const {
-        return framebuffer_;
-    }
-
     void beginFrame(
-        const RenderCamera& camera
+        const Camera& camera
     ) override;
 
-    void drawObject(
-        const RenderObject& object,
-        const ProjectedMesh& mesh,
-        const RenderQueue& queue
+    void draw(
+        const eld::graphics::RenderModel& model,
+        const Transform& transform,
+        const eld::graphics::GraphicsResources& resources
     ) override;
 
     void endFrame() override;
 
-    void setHighlightTexturedFaces(
-        bool enabled
-    ) {
-        highlightTexturedFaces_ = enabled;
-    }
+    void setOutputPosition(
+        int x,
+        int y
+    );
+
+    void setClearColor(
+        ColorPixel color
+    );
+
+    const Framebuffer& framebuffer() const;
 
 private:
     void destroyTexture();
     void ensureTexture();
 
-private:
-    bool highlightTexturedFaces_ = false;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* texture_ = nullptr;
 
-    int viewportX_ = 0;
-    int viewportY_ = 0;
-    int width_ = 0;
-    int height_ = 0;
+    int outputX_ = 0;
+    int outputY_ = 0;
+
+    std::uint32_t width_ = 0;
+    std::uint32_t height_ = 0;
+
+    ColorPixel clearColor_{
+        0,
+        0,
+        0,
+        255
+    };
+
+    Camera camera_;
 
     Framebuffer framebuffer_;
+    SoftwareMeshProjector projector_;
     TriangleRasterizer rasterizer_;
 };
 

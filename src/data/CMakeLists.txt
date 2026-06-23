@@ -1,23 +1,25 @@
 add_library(eldoria_data STATIC
-    binary/ByteBuffer.cpp
+    binary/ByteReader.cpp
+    binary/ByteWriter.cpp
     binary/Compression.cpp
 
-    cache/Archive.cpp
-    cache/ArchiveReader.cpp
     cache/Cache.cpp
+    cache/File.cpp
+    cache/Payload.cpp
+    cache/Reader.cpp
+    cache/Store.cpp
+    cache/Writer.cpp
 
-    model/ModelBuilder.cpp
-    model/ModelFileReader.cpp
-    model/ModelLoader.cpp
-    model/decoder/FaceDecoder.cpp
-    model/decoder/TextureUVMappingDecoder.cpp
-    model/decoder/VertexDecoder.cpp
+    archive/Archive.cpp
+    archive/ArchiveParser.cpp
 
-    texture/TextureBuilder.cpp
-    texture/TextureFileReader.cpp
-    texture/TextureLoader.cpp
-    texture/decoder/TextureCanvasDecoder.cpp
-    texture/decoder/TexturePixelDecoder.cpp
+    model/ModelDecoder.cpp
+    model/ModelFileParser.cpp
+    model/ModelRepository.cpp
+
+    texture/TextureDecoder.cpp
+    texture/TextureFileParser.cpp
+    texture/TextureRepository.cpp
 )
 
 add_library(Eldoria::Data ALIAS eldoria_data)
