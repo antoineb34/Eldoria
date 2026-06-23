@@ -10,6 +10,7 @@
 #include "TextureDecoder.h"
 #include "TextureFileParser.h"
 #include "archive/Archive.h"
+#include "cache/Store.h"
 
 namespace eld::texture {
 
@@ -19,7 +20,7 @@ using TexturePredicate =
 class TextureRepository {
 public:
     explicit TextureRepository(
-        eld::archive::Archive archive
+        eld::cache::Store store
     );
 
     Texture get(
@@ -55,6 +56,10 @@ public:
     ) const;
 
 private:
+    static eld::archive::Archive loadArchive(
+        const eld::cache::Store& store
+    );
+
     const eld::archive::ArchiveFile& getIndexFile() const;
 
     const eld::archive::ArchiveFile& getDataFile(

@@ -4,31 +4,13 @@
 #include <optional>
 #include <vector>
 
-#include "../texture/TextureHandle.h"
+#include "math/Vec2.h"
+#include "math/Vec3.h"
+#include "math/Vec4.h"
+#include "texture/SamplerState.h"
+#include "texture/TextureHandle.h"
 
 namespace eld::graphics {
-
-struct RenderColor {
-    float red = 1.0f;
-    float green = 1.0f;
-    float blue = 1.0f;
-    float alpha = 1.0f;
-};
-
-struct RenderVertex {
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
-
-    float normalX = 0.0f;
-    float normalY = 0.0f;
-    float normalZ = 1.0f;
-
-    float u = 0.0f;
-    float v = 0.0f;
-
-    RenderColor color;
-};
 
 enum class AlphaMode : std::uint8_t {
     Opaque,
@@ -36,10 +18,30 @@ enum class AlphaMode : std::uint8_t {
     Blended
 };
 
+struct RenderVertex {
+    eld::math::Vec3 position;
+    eld::math::Vec3 normal;
+
+    eld::math::Vec2 uv;
+
+    eld::math::Vec4 color{
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f
+    };
+};
+
 struct RenderMaterial {
-    RenderColor baseColor;
+    eld::math::Vec4 baseColor{
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f
+    };
 
     std::optional<TextureHandle> texture;
+    SamplerState sampler;
 
     AlphaMode alphaMode =
         AlphaMode::Opaque;
@@ -52,7 +54,7 @@ struct RenderMeshSection {
     std::uint32_t indexCount = 0;
     std::uint32_t materialIndex = 0;
 
-    int sortOrder = 0;
+    std::uint8_t sortOrder = 0;
 };
 
 struct RenderMesh {

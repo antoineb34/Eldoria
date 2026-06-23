@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "ColorBuffer.h"
 #include "DepthBuffer.h"
 
@@ -8,15 +10,20 @@ namespace eld::render {
 class Framebuffer {
 public:
     void resize(
-        int width,
-        int height
+        std::uint32_t width,
+        std::uint32_t height
     ) {
         color_.resize(width, height);
         depth_.resize(width, height);
     }
 
     void clear(
-        ColorPixel color = { 169, 199, 151, 255 }
+        ColorPixel color = {
+            0,
+            0,
+            0,
+            255
+        }
     ) {
         color_.clear(color);
         depth_.clear();

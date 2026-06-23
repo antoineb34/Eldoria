@@ -2,118 +2,78 @@
 
 #include <cmath>
 
-#include "../../math/Mat4.h"
-#include "../../scene/Transform.h"
+#include "math/Mat4.h"
 
 namespace eld::render {
 
 namespace {
 
-bool isFinite(
-    const ScreenPoint& point
+bool isVisible(
+    const ScreenPoint& point,
+    const Camera& camera
 ) {
     return
         std::isfinite(point.x) &&
         std::isfinite(point.y) &&
-        std::isfinite(point.z);
-}
-
-ScreenPoint toScreenPoint(
-    const Vec3& projected,
-    const Vec3& view,
-    const RenderCamera& camera
-) {
-    return ScreenPoint{
-        .x =
-            (projected.x + 1.0f) *
-            0.5f *
-            static_cast<float>(
-                camera.viewportWidth
-            ),
-        .y =
-            (1.0f - projected.y) *
-            0.5f *
-            static_cast<float>(
-                camera.viewportHeight
-            ),
-        .z = view.z
-    };
+        std::isfinite(point.depth) &&
+        point.depth >= camera.nearPlane &&
+        point.depth <= camera.farPlane;
 }
 
 }
 
-SoftwareProjectedMesh
-SoftwareMeshProjector::project(
-    const RenderObject& object,
-    const RenderCamera& camera
+SoftwareProjectedMesh SoftwareMeshProjector::project(
+    const eld::graphics::RenderMesh& mesh,
+    const Transform& transform,
+    const Camera& camera
 ) const {
-    SoftwareProjectedMesh projectedMesh;
+    SoftwareProjectedMesh result;
 
-    if (object.model == nullptr) {
-        return projectedMesh;
-    }
-
-    const Mat4 modelMatrix =
+    const eld::math::Mat4 modelMatrix =
         buildModelMatrix(
-            object.transform
+            transform
         );
 
-    const Mat4 viewMatrix =
+    const eld::math::Mat4 viewMatrix =
         buildViewMatrix(
             camera
         );
 
-    const Mat4 projectionMatrix =
+    const eld::math::Mat4 projectionMatrix =
         buildProjectionMatrix(
             camera
         );
 
-    const RenderMesh& mesh =
-        object.model->mesh;
-
-    projectedMesh.vertices.reserve(
+    result.vertices.reserve(
         mesh.vertices.size()
     );
 
     for (
-        const RenderVertex& vertex :
+        const eld::graphics::RenderVertex& vertex :
         mesh.vertices
     ) {
-        const Vec3 world =
+        const eld::math::Vec3 worldPosition =
             modelMatrix.transformPoint(
                 vertex.position
             );
 
-        const Vec3 view =
-            viewMatrix.transformPoint(
-                world
-            );
-
-        const Vec3 projected =
-            projectionMatrix.transformPoint(
-                view
-            );
-
         const ScreenPoint screen =
-            toScreenPoint(
-                projected,
-                view,
+            projectPoint(
+                worldPosition,
+                viewMatrix,
+                projectionMatrix,
                 camera
             );
 
-        projectedMesh.vertices.push_back(
-            SoftwareProjectedVertex{
-                .world = world,
-                .view = view,
-                .screen = screen,
-                .uv = vertex.uv,
-                .color = vertex.color,
-                .valid = isFinite(screen)
-            }
-        );
+        result.vertices.push_back({
+            screen,
+            vertex.uv,
+            vertex.color,
+            isVisible(screen, camera)
+        });
     }
 
-    return projectedMesh;
+    return result;
 }
 
 }

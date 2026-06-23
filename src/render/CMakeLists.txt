@@ -8,10 +8,6 @@ add_library(eldoria_render STATIC
 
     camera/Projection.cpp
 
-    color/Color.cpp
-
-    pipeline/RenderQueueBuilder.cpp
-
     scene/Transform.cpp
 )
 
@@ -22,6 +18,7 @@ target_include_directories(eldoria_render PUBLIC
 )
 
 target_link_libraries(eldoria_render PUBLIC
-    Eldoria::Data
+    Eldoria::Math
+    Eldoria::Graphics
     SDL3::SDL3
 )

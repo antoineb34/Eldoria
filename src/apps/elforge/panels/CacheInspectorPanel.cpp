@@ -193,7 +193,7 @@ void CacheInspectorPanel::render(
             *state.activeModel;
 
         const eld::model::ModelMesh& asset =
-            model.asset;
+            model.mesh;
 
         ImGui::Spacing();
         ImGui::Separator();

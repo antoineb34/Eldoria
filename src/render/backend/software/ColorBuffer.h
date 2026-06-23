@@ -1,26 +1,32 @@
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
 namespace eld::render {
 
 struct ColorPixel {
-    uint8_t r = 0;
-    uint8_t g = 0;
-    uint8_t b = 0;
-    uint8_t a = 255;
+    std::uint8_t red = 0;
+    std::uint8_t green = 0;
+    std::uint8_t blue = 0;
+    std::uint8_t alpha = 255;
 };
 
 class ColorBuffer {
 public:
     void resize(
-        int width,
-        int height
+        std::uint32_t width,
+        std::uint32_t height
     ) {
         width_ = width;
         height_ = height;
-        pixels_.resize(width * height);
+
+        pixels_.resize(
+            static_cast<std::size_t>(width) *
+            static_cast<std::size_t>(height)
+        );
     }
 
     void clear(
@@ -34,30 +40,38 @@ public:
     }
 
     ColorPixel& at(
-        int x,
-        int y
+        std::uint32_t x,
+        std::uint32_t y
     ) {
-        return pixels_[y * width_ + x];
+        return pixels_.at(
+            static_cast<std::size_t>(y) * width_ + x
+        );
     }
 
     const ColorPixel& at(
-        int x,
-        int y
+        std::uint32_t x,
+        std::uint32_t y
     ) const {
-        return pixels_[y * width_ + x];
+        return pixels_.at(
+            static_cast<std::size_t>(y) * width_ + x
+        );
     }
 
-    int width() const {
+    const ColorPixel* data() const {
+        return pixels_.data();
+    }
+
+    std::uint32_t width() const {
         return width_;
     }
 
-    int height() const {
+    std::uint32_t height() const {
         return height_;
     }
 
 private:
-    int width_ = 0;
-    int height_ = 0;
+    std::uint32_t width_ = 0;
+    std::uint32_t height_ = 0;
 
     std::vector<ColorPixel> pixels_;
 };

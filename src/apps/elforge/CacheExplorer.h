@@ -17,6 +17,8 @@
 #include "model/ModelRepository.h"
 #include "texture/TextureRepository.h"
 
+#include "graphics/GraphicsResources.h"
+
 namespace eld::elforge {
 
 class CacheExplorer {
@@ -49,6 +51,8 @@ private:
 
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;
+
+    eld::graphics::GraphicsResources graphicsResources_;
 
     CacheExplorerState state_;
     CacheTreeBuilder treeBuilder_;

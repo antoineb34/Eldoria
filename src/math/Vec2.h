@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eld::render {
+namespace eld::math {
 
 struct Vec2 {
 

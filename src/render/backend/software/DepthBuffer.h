@@ -1,6 +1,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
 #include <vector>
 
@@ -9,12 +11,16 @@ namespace eld::render {
 class DepthBuffer {
 public:
     void resize(
-        int width,
-        int height
+        std::uint32_t width,
+        std::uint32_t height
     ) {
         width_ = width;
         height_ = height;
-        depths_.resize(width * height);
+
+        depths_.resize(
+            static_cast<std::size_t>(width) *
+            static_cast<std::size_t>(height)
+        );
     }
 
     void clear() {
@@ -33,14 +39,17 @@ public:
         if (
             x < 0 ||
             y < 0 ||
-            x >= width_ ||
-            y >= height_
+            static_cast<std::uint32_t>(x) >= width_ ||
+            static_cast<std::uint32_t>(y) >= height_
         ) {
             return false;
         }
 
         float& current =
-            depths_[y * width_ + x];
+            depths_.at(
+                static_cast<std::size_t>(y) * width_ +
+                static_cast<std::size_t>(x)
+            );
 
         if (depth >= current) {
             return false;
@@ -51,23 +60,25 @@ public:
     }
 
     float at(
-        int x,
-        int y
+        std::uint32_t x,
+        std::uint32_t y
     ) const {
-        return depths_[y * width_ + x];
+        return depths_.at(
+            static_cast<std::size_t>(y) * width_ + x
+        );
     }
 
-    int width() const {
+    std::uint32_t width() const {
         return width_;
     }
 
-    int height() const {
+    std::uint32_t height() const {
         return height_;
     }
 
 private:
-    int width_ = 0;
-    int height_ = 0;
+    std::uint32_t width_ = 0;
+    std::uint32_t height_ = 0;
 
     std::vector<float> depths_;
 };

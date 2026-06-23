@@ -12,23 +12,36 @@ namespace {
 int addressIndex(
     int index,
     int size,
-    TextureAddressMode mode
+    eld::graphics::TextureAddressMode mode
 ) {
-    if (mode == TextureAddressMode::Clamp) {
-        return std::clamp(
-            index,
-            0,
-            size - 1
-        );
+    if (mode == eld::graphics::TextureAddressMode::Clamp) {
+        return std::clamp(index, 0, size - 1);
     }
 
-    const int remainder =
-        index % size;
+    const int remainder = index % size;
 
-    return
-        remainder < 0
-            ? remainder + size
-            : remainder;
+    return remainder < 0
+        ? remainder + size
+        : remainder;
+}
+
+ColorPixel readPixel(
+    const eld::graphics::GraphicsTexture& texture,
+    std::size_t x,
+    std::size_t y
+) {
+    const std::size_t index =
+        (
+            y * texture.width +
+            x
+        ) * 4;
+
+    return {
+        texture.pixels.at(index),
+        texture.pixels.at(index + 1),
+        texture.pixels.at(index + 2),
+        texture.pixels.at(index + 3)
+    };
 }
 
 std::uint8_t interpolate(
@@ -65,9 +78,9 @@ std::uint8_t interpolate(
 
 float TextureSampler::address(
     float coordinate,
-    TextureAddressMode mode
+    eld::graphics::TextureAddressMode mode
 ) const {
-    if (mode == TextureAddressMode::Clamp) {
+    if (mode == eld::graphics::TextureAddressMode::Clamp) {
         return std::clamp(
             coordinate,
             0.0f,
@@ -75,54 +88,42 @@ float TextureSampler::address(
         );
     }
 
-    return
-        coordinate -
-        std::floor(coordinate);
+    return coordinate - std::floor(coordinate);
 }
 
-eld::texture::RgbaPixel
-TextureSampler::sample(
-    const eld::texture::TextureAsset& texture,
+ColorPixel TextureSampler::sample(
+    const eld::graphics::GraphicsTexture& texture,
     float u,
     float v,
-    const SamplerState& state
+    const eld::graphics::SamplerState& state
 ) const {
-    const std::size_t expectedPixelCount =
-        static_cast<std::size_t>(
-            texture.width
-        ) *
-        static_cast<std::size_t>(
-            texture.height
-        );
+    const std::size_t expectedSize =
+        static_cast<std::size_t>(texture.width) *
+        static_cast<std::size_t>(texture.height) *
+        4;
 
     if (
+        texture.format !=
+            eld::graphics::TextureFormat::Rgba8 ||
         texture.width == 0 ||
         texture.height == 0 ||
-        texture.pixels.size() <
-            expectedPixelCount
+        texture.pixels.size() < expectedSize
     ) {
         return {};
     }
 
-    u = address(
-        u,
-        state.addressU
-    );
-
-    v = address(
-        v,
-        state.addressV
-    );
+    u = address(u, state.addressU);
+    v = address(v, state.addressV);
 
     switch (state.filter) {
-        case TextureFilter::Nearest:
+        case eld::graphics::TextureFilter::Nearest:
             return sampleNearest(
                 texture,
                 u,
                 v
             );
 
-        case TextureFilter::Linear:
+        case eld::graphics::TextureFilter::Linear:
             return sampleLinear(
                 texture,
                 u,
@@ -134,23 +135,18 @@ TextureSampler::sample(
     return {};
 }
 
-eld::texture::RgbaPixel
-TextureSampler::sampleNearest(
-    const eld::texture::TextureAsset& texture,
+ColorPixel TextureSampler::sampleNearest(
+    const eld::graphics::GraphicsTexture& texture,
     float u,
     float v
 ) const {
-    const std::size_t width =
-        texture.width;
-
-    const std::size_t height =
-        texture.height;
+    const std::size_t width = texture.width;
+    const std::size_t height = texture.height;
 
     const std::size_t x =
         std::min(
             static_cast<std::size_t>(
-                u *
-                static_cast<float>(width)
+                u * static_cast<float>(width)
             ),
             width - 1
         );
@@ -158,29 +154,29 @@ TextureSampler::sampleNearest(
     const std::size_t y =
         std::min(
             static_cast<std::size_t>(
-                v *
-                static_cast<float>(height)
+                v * static_cast<float>(height)
             ),
             height - 1
         );
 
-    return texture.pixels[
-        y * width + x
-    ];
+    return readPixel(
+        texture,
+        x,
+        y
+    );
 }
 
-eld::texture::RgbaPixel
-TextureSampler::sampleLinear(
-    const eld::texture::TextureAsset& texture,
+ColorPixel TextureSampler::sampleLinear(
+    const eld::graphics::GraphicsTexture& texture,
     float u,
     float v,
-    const SamplerState& state
+    const eld::graphics::SamplerState& state
 ) const {
     const int width =
-        texture.width;
+        static_cast<int>(texture.width);
 
     const int height =
-        texture.height;
+        static_cast<int>(texture.height);
 
     const float sourceX =
         u * static_cast<float>(width) -
@@ -204,12 +200,10 @@ TextureSampler::sampleLinear(
     const int y1 = y0 + 1;
 
     const float horizontal =
-        sourceX -
-        std::floor(sourceX);
+        sourceX - std::floor(sourceX);
 
     const float vertical =
-        sourceY -
-        std::floor(sourceY);
+        sourceY - std::floor(sourceY);
 
     const int addressedX0 =
         addressIndex(
@@ -239,32 +233,36 @@ TextureSampler::sampleLinear(
             state.addressV
         );
 
-    const auto& topLeft =
-        texture.pixels[
-            addressedY0 * width +
-            addressedX0
-        ];
+    const ColorPixel topLeft =
+        readPixel(
+            texture,
+            addressedX0,
+            addressedY0
+        );
 
-    const auto& topRight =
-        texture.pixels[
-            addressedY0 * width +
-            addressedX1
-        ];
+    const ColorPixel topRight =
+        readPixel(
+            texture,
+            addressedX1,
+            addressedY0
+        );
 
-    const auto& bottomLeft =
-        texture.pixels[
-            addressedY1 * width +
-            addressedX0
-        ];
+    const ColorPixel bottomLeft =
+        readPixel(
+            texture,
+            addressedX0,
+            addressedY1
+        );
 
-    const auto& bottomRight =
-        texture.pixels[
-            addressedY1 * width +
-            addressedX1
-        ];
+    const ColorPixel bottomRight =
+        readPixel(
+            texture,
+            addressedX1,
+            addressedY1
+        );
 
-    return eld::texture::RgbaPixel{
-        .red = interpolate(
+    return {
+        interpolate(
             topLeft.red,
             topRight.red,
             bottomLeft.red,
@@ -272,7 +270,7 @@ TextureSampler::sampleLinear(
             horizontal,
             vertical
         ),
-        .green = interpolate(
+        interpolate(
             topLeft.green,
             topRight.green,
             bottomLeft.green,
@@ -280,7 +278,7 @@ TextureSampler::sampleLinear(
             horizontal,
             vertical
         ),
-        .blue = interpolate(
+        interpolate(
             topLeft.blue,
             topRight.blue,
             bottomLeft.blue,
@@ -288,7 +286,7 @@ TextureSampler::sampleLinear(
             horizontal,
             vertical
         ),
-        .alpha = interpolate(
+        interpolate(
             topLeft.alpha,
             topRight.alpha,
             bottomLeft.alpha,

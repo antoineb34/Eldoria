@@ -10,6 +10,8 @@ namespace eld::render {
 
 namespace {
 
+constexpr float Epsilon = 0.0001f;
+
 float edgeFunction(
     float ax,
     float ay,
@@ -35,74 +37,50 @@ std::uint8_t toByte(
     );
 }
 
-void drawPixel(
+void blendPixel(
     Framebuffer& framebuffer,
     int x,
     int y,
-    ColorPixel source
+    const ColorPixel& source
 ) {
-    if (source.a == 0) {
-        return;
-    }
-
-    if (source.a == 255) {
-        framebuffer.color().at(
-            x,
-            y
-        ) = source;
-
+    if (source.alpha == 0) {
         return;
     }
 
     ColorPixel& destination =
         framebuffer.color().at(
-            x,
-            y
+            static_cast<std::uint32_t>(x),
+            static_cast<std::uint32_t>(y)
         );
+
+    if (source.alpha == 255) {
+        destination = source;
+        return;
+    }
 
     const float alpha =
-        static_cast<float>(
-            source.a
-        ) /
+        static_cast<float>(source.alpha) /
         255.0f;
 
-    destination.r =
+    destination.red =
         static_cast<std::uint8_t>(
-            static_cast<float>(
-                source.r
-            ) *
-                alpha +
-            static_cast<float>(
-                destination.r
-            ) *
-                (1.0f - alpha)
+            source.red * alpha +
+            destination.red * (1.0f - alpha)
         );
 
-    destination.g =
+    destination.green =
         static_cast<std::uint8_t>(
-            static_cast<float>(
-                source.g
-            ) *
-                alpha +
-            static_cast<float>(
-                destination.g
-            ) *
-                (1.0f - alpha)
+            source.green * alpha +
+            destination.green * (1.0f - alpha)
         );
 
-    destination.b =
+    destination.blue =
         static_cast<std::uint8_t>(
-            static_cast<float>(
-                source.b
-            ) *
-                alpha +
-            static_cast<float>(
-                destination.b
-            ) *
-                (1.0f - alpha)
+            source.blue * alpha +
+            destination.blue * (1.0f - alpha)
         );
 
-    destination.a = 255;
+    destination.alpha = 255;
 }
 
 }
@@ -112,27 +90,10 @@ void TriangleRasterizer::drawTriangle(
     const SoftwareProjectedVertex& a,
     const SoftwareProjectedVertex& b,
     const SoftwareProjectedVertex& c,
-    const Material& material
+    const eld::graphics::RenderMaterial& material,
+    const eld::graphics::GraphicsTexture* texture
 ) const {
-    if (
-        !a.valid ||
-        !b.valid ||
-        !c.valid
-    ) {
-        return;
-    }
-
-    constexpr float MinimumDepth =
-        0.0001f;
-
-    if (
-        std::abs(a.screen.z) <
-            MinimumDepth ||
-        std::abs(b.screen.z) <
-            MinimumDepth ||
-        std::abs(c.screen.z) <
-            MinimumDepth
-    ) {
+    if (!a.valid || !b.valid || !c.valid) {
         return;
     }
 
@@ -146,23 +107,21 @@ void TriangleRasterizer::drawTriangle(
             c.screen.y
         );
 
-    if (
-        std::abs(area) <
-        0.0001f
-    ) {
+    if (std::abs(area) < Epsilon) {
         return;
     }
 
-    const int framebufferWidth =
-        framebuffer.color().width();
+    const int width =
+        static_cast<int>(
+            framebuffer.color().width()
+        );
 
-    const int framebufferHeight =
-        framebuffer.color().height();
+    const int height =
+        static_cast<int>(
+            framebuffer.color().height()
+        );
 
-    if (
-        framebufferWidth <= 0 ||
-        framebufferHeight <= 0
-    ) {
+    if (width <= 0 || height <= 0) {
         return;
     }
 
@@ -182,7 +141,7 @@ void TriangleRasterizer::drawTriangle(
 
     const int maxX =
         std::min(
-            framebufferWidth - 1,
+            width - 1,
             static_cast<int>(
                 std::ceil(
                     std::max({
@@ -210,7 +169,7 @@ void TriangleRasterizer::drawTriangle(
 
     const int maxY =
         std::min(
-            framebufferHeight - 1,
+            height - 1,
             static_cast<int>(
                 std::ceil(
                     std::max({
@@ -222,41 +181,28 @@ void TriangleRasterizer::drawTriangle(
             )
         );
 
-    if (
-        minX > maxX ||
-        minY > maxY
-    ) {
+    if (minX > maxX || minY > maxY) {
         return;
     }
 
     const float inverseDepthA =
-        1.0f / a.screen.z;
+        1.0f / a.screen.depth;
 
     const float inverseDepthB =
-        1.0f / b.screen.z;
+        1.0f / b.screen.depth;
 
     const float inverseDepthC =
-        1.0f / c.screen.z;
+        1.0f / c.screen.depth;
 
     TextureSampler sampler;
 
-    for (
-        int y = minY;
-        y <= maxY;
-        y++
-    ) {
-        for (
-            int x = minX;
-            x <= maxX;
-            x++
-        ) {
+    for (int y = minY; y <= maxY; y++) {
+        for (int x = minX; x <= maxX; x++) {
             const float pixelX =
-                static_cast<float>(x) +
-                0.5f;
+                static_cast<float>(x) + 0.5f;
 
             const float pixelY =
-                static_cast<float>(y) +
-                0.5f;
+                static_cast<float>(y) + 0.5f;
 
             const float weightA =
                 edgeFunction(
@@ -266,8 +212,7 @@ void TriangleRasterizer::drawTriangle(
                     c.screen.y,
                     pixelX,
                     pixelY
-                ) /
-                area;
+                ) / area;
 
             const float weightB =
                 edgeFunction(
@@ -277,8 +222,7 @@ void TriangleRasterizer::drawTriangle(
                     a.screen.y,
                     pixelX,
                     pixelY
-                ) /
-                area;
+                ) / area;
 
             const float weightC =
                 edgeFunction(
@@ -288,8 +232,7 @@ void TriangleRasterizer::drawTriangle(
                     b.screen.y,
                     pixelX,
                     pixelY
-                ) /
-                area;
+                ) / area;
 
             if (
                 weightA < 0.0f ||
@@ -304,119 +247,114 @@ void TriangleRasterizer::drawTriangle(
                 weightB * inverseDepthB +
                 weightC * inverseDepthC;
 
-            if (
-                std::abs(inverseDepth) <
-                MinimumDepth
-            ) {
+            if (std::abs(inverseDepth) < Epsilon) {
                 continue;
             }
 
             const float correctedA =
-                weightA *
-                inverseDepthA /
+                weightA * inverseDepthA /
                 inverseDepth;
 
             const float correctedB =
-                weightB *
-                inverseDepthB /
+                weightB * inverseDepthB /
                 inverseDepth;
 
             const float correctedC =
-                weightC *
-                inverseDepthC /
+                weightC * inverseDepthC /
                 inverseDepth;
 
             const float depth =
-                1.0f /
-                inverseDepth;
+                1.0f / inverseDepth;
 
-            const Vec2 uv{
+            const eld::math::Vec2 uv{
                 a.uv.x * correctedA +
                     b.uv.x * correctedB +
                     c.uv.x * correctedC,
+
                 a.uv.y * correctedA +
                     b.uv.y * correctedB +
                     c.uv.y * correctedC
             };
 
-            const Vec4 vertexColor{
+            const eld::math::Vec4 vertexColor{
                 a.color.x * correctedA +
                     b.color.x * correctedB +
                     c.color.x * correctedC,
+
                 a.color.y * correctedA +
                     b.color.y * correctedB +
                     c.color.y * correctedC,
+
                 a.color.z * correctedA +
                     b.color.z * correctedB +
                     c.color.z * correctedC,
+
                 a.color.w * correctedA +
                     b.color.w * correctedB +
                     c.color.w * correctedC
             };
 
-            float textureRed = 1.0f;
-            float textureGreen = 1.0f;
-            float textureBlue = 1.0f;
-            float textureAlpha = 1.0f;
+            ColorPixel sampled{
+                255,
+                255,
+                255,
+                255
+            };
 
-            if (material.textured()) {
-                const auto sampled =
+            if (texture != nullptr) {
+                sampled =
                     sampler.sample(
-                        *material.albedoTexture,
+                        *texture,
                         uv.x,
                         uv.y,
                         material.sampler
                     );
-
-                textureRed =
-                    static_cast<float>(
-                        sampled.red
-                    ) /
-                    255.0f;
-
-                textureGreen =
-                    static_cast<float>(
-                        sampled.green
-                    ) /
-                    255.0f;
-
-                textureBlue =
-                    static_cast<float>(
-                        sampled.blue
-                    ) /
-                    255.0f;
-
-                textureAlpha =
-                    static_cast<float>(
-                        sampled.alpha
-                    ) /
-                    255.0f;
             }
 
-            const ColorPixel color{
+            ColorPixel color{
                 toByte(
                     vertexColor.x *
                     material.baseColor.x *
-                    textureRed
+                    sampled.red / 255.0f
                 ),
+
                 toByte(
                     vertexColor.y *
                     material.baseColor.y *
-                    textureGreen
+                    sampled.green / 255.0f
                 ),
+
                 toByte(
                     vertexColor.z *
                     material.baseColor.z *
-                    textureBlue
+                    sampled.blue / 255.0f
                 ),
+
                 toByte(
                     vertexColor.w *
                     material.baseColor.w *
-                    textureAlpha
+                    sampled.alpha / 255.0f
                 )
             };
 
-            if (color.a == 0) {
+            if (
+                material.alphaMode ==
+                    eld::graphics::AlphaMode::Masked
+            ) {
+                if (color.alpha < 128) {
+                    continue;
+                }
+
+                color.alpha = 255;
+            }
+            else if (
+                material.alphaMode ==
+                    eld::graphics::AlphaMode::Opaque
+            ) {
+                color.alpha = 255;
+            }
+
+            if (color.alpha == 0) {
                 continue;
             }
 
@@ -430,7 +368,7 @@ void TriangleRasterizer::drawTriangle(
                 continue;
             }
 
-            drawPixel(
+            blendPixel(
                 framebuffer,
                 x,
                 y,

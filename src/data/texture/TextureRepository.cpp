@@ -6,12 +6,46 @@
 #include <string>
 #include <utility>
 
+#include "archive/ArchiveParser.h"
+
 namespace eld::texture {
 
+namespace {
+
+constexpr std::uint16_t TextureArchiveId = 6;
+
+}
+
+eld::archive::Archive TextureRepository::loadArchive(
+    const eld::cache::Store& store
+) {
+    const eld::cache::File cacheFile =
+        store.get(
+            TextureArchiveId
+        );
+
+    eld::archive::ArchiveParser parser;
+
+    std::optional<eld::archive::Archive> archive =
+        parser.parse(
+            cacheFile.getBytes()
+        );
+
+    if (!archive.has_value()) {
+        throw std::runtime_error(
+            "Failed to parse texture archive"
+        );
+    }
+
+    return std::move(*archive);
+}
+
 TextureRepository::TextureRepository(
-    eld::archive::Archive archive
+    eld::cache::Store store
 )
-    : archive_(std::move(archive)) {
+    : archive_(
+          loadArchive(store)
+      ) {
 }
 
 const eld::archive::ArchiveFile&

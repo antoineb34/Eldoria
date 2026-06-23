@@ -4,23 +4,27 @@ namespace eld::render {
 
 void RenderPipeline::render(
     const RenderScene& scene,
+    const eld::graphics::GraphicsResources& resources,
     IRenderBackend& backend
-) {
+) const {
     backend.beginFrame(
         scene.camera
     );
 
-    const RenderQueue queue =
-        queueBuilder_.build(
-            scene
-        );
+    for (const RenderObject& object : scene.objects) {
+        if (!object.visible) {
+            continue;
+        }
 
-    for (
-        const RenderItem& item :
-        queue.items
-    ) {
+        const eld::graphics::RenderModel& model =
+            resources.getModel(
+                object.model
+            );
+
         backend.draw(
-            item
+            model,
+            object.transform,
+            resources
         );
     }
 

@@ -21,10 +21,7 @@ void SoftwareRenderBackend::destroyTexture() {
         return;
     }
 
-    SDL_DestroyTexture(
-        texture_
-    );
-
+    SDL_DestroyTexture(texture_);
     texture_ = nullptr;
 }
 
@@ -32,8 +29,8 @@ void SoftwareRenderBackend::ensureTexture() {
     if (
         texture_ != nullptr ||
         renderer_ == nullptr ||
-        width_ <= 0 ||
-        height_ <= 0
+        width_ == 0 ||
+        height_ == 0
     ) {
         return;
     }
@@ -43,148 +40,164 @@ void SoftwareRenderBackend::ensureTexture() {
             renderer_,
             SDL_PIXELFORMAT_RGBA32,
             SDL_TEXTUREACCESS_STREAMING,
-            width_,
-            height_
+            static_cast<int>(width_),
+            static_cast<int>(height_)
         );
+
+    if (texture_ != nullptr) {
+        SDL_SetTextureScaleMode(
+            texture_,
+            SDL_SCALEMODE_NEAREST
+        );
+    }
 }
 
 void SoftwareRenderBackend::beginFrame(
-    const RenderCamera& camera
+    const Camera& camera
 ) {
     camera_ = camera;
 
-    viewportX_ =
-        camera.viewportX;
+    if (
+        width_ != camera.viewportWidth ||
+        height_ != camera.viewportHeight
+    ) {
+        width_ = camera.viewportWidth;
+        height_ = camera.viewportHeight;
 
-    viewportY_ =
-        camera.viewportY;
-
-    width_ =
-        std::max(
-            camera.viewportWidth,
-            0
-        );
-
-    height_ =
-        std::max(
-            camera.viewportHeight,
-            0
-        );
-
-    projectedMeshes_.clear();
+        destroyTexture();
+    }
 
     framebuffer_.resize(
         width_,
         height_
     );
 
-    framebuffer_.clear();
+    framebuffer_.clear(
+        clearColor_
+    );
 
-    destroyTexture();
     ensureTexture();
 }
 
-const SoftwareProjectedMesh&
-SoftwareRenderBackend::project(
-    const RenderObject& object
-) {
-    const auto existing =
-        projectedMeshes_.find(
-            &object
-        );
-
-    if (
-        existing !=
-        projectedMeshes_.end()
-    ) {
-        return existing->second;
-    }
-
-    auto inserted =
-        projectedMeshes_.emplace(
-            &object,
-            projector_.project(
-                object,
-                camera_
-            )
-        );
-
-    return inserted.first->second;
-}
-
 void SoftwareRenderBackend::draw(
-    const RenderItem& item
+    const eld::graphics::RenderModel& model,
+    const Transform& transform,
+    const eld::graphics::GraphicsResources& resources
 ) {
-    if (
-        item.object == nullptr ||
-        item.submesh == nullptr ||
-        item.material == nullptr ||
-        item.object->model == nullptr
-    ) {
-        return;
-    }
-
-    const RenderObject& object =
-        *item.object;
-
-    const RenderMesh& mesh =
-        object.model->mesh;
-
-    const RenderSubmesh& submesh =
-        *item.submesh;
-
-    if (
-        submesh.firstIndex >
-        mesh.indices.size()
-    ) {
-        return;
-    }
-
-    const std::size_t endIndex =
-        submesh.firstIndex +
-        submesh.indexCount;
-
-    if (
-        endIndex >
-        mesh.indices.size()
-    ) {
-        return;
-    }
-
-    const SoftwareProjectedMesh&
-        projectedMesh =
-            project(object);
-
     for (
-        std::size_t index =
-            submesh.firstIndex;
-        index + 2 < endIndex;
-        index += 3
+        const eld::graphics::RenderMesh& mesh :
+        model.meshes
     ) {
-        const std::uint32_t a =
-            mesh.indices[index];
+        const SoftwareProjectedMesh projected =
+            projector_.project(
+                mesh,
+                transform,
+                camera_
+            );
 
-        const std::uint32_t b =
-            mesh.indices[index + 1];
+        std::vector<
+            const eld::graphics::RenderMeshSection*
+        > sections;
 
-        const std::uint32_t c =
-            mesh.indices[index + 2];
+        sections.reserve(
+            mesh.sections.size()
+        );
 
-        if (
-            a >= projectedMesh.vertices.size() ||
-            b >= projectedMesh.vertices.size() ||
-            c >= projectedMesh.vertices.size()
+        for (
+            const eld::graphics::RenderMeshSection& section :
+            mesh.sections
         ) {
-            continue;
+            sections.push_back(
+                &section
+            );
         }
 
-        rasterizer_.drawTriangle(
-            framebuffer_,
-            projectedMesh.vertices[a],
-            projectedMesh.vertices[b],
-            projectedMesh.vertices[c],
-            *item.material
+        std::stable_sort(
+            sections.begin(),
+            sections.end(),
+            [](
+                const auto* left,
+                const auto* right
+            ) {
+                return
+                    left->sortOrder <
+                    right->sortOrder;
+            }
         );
+
+        for (
+            const eld::graphics::RenderMeshSection* section :
+            sections
+        ) {
+            if (
+                section == nullptr ||
+                section->materialIndex >=
+                    model.materials.size() ||
+                section->firstIndex >
+                    mesh.indices.size() ||
+                section->indexCount >
+                    mesh.indices.size() -
+                    section->firstIndex
+            ) {
+                continue;
+            }
+
+            const eld::graphics::RenderMaterial& material =
+                model.materials.at(
+                    section->materialIndex
+                );
+
+            const eld::graphics::GraphicsTexture* texture =
+                nullptr;
+
+            if (material.texture.has_value()) {
+                texture =
+                    &resources.getTexture(
+                        *material.texture
+                    );
+            }
+
+            const std::size_t endIndex =
+                static_cast<std::size_t>(
+                    section->firstIndex
+                ) +
+                static_cast<std::size_t>(
+                    section->indexCount
+                );
+
+            for (
+                std::size_t index =
+                    section->firstIndex;
+                index + 2 < endIndex;
+                index += 3
+            ) {
+                const std::uint32_t a =
+                    mesh.indices.at(index);
+
+                const std::uint32_t b =
+                    mesh.indices.at(index + 1);
+
+                const std::uint32_t c =
+                    mesh.indices.at(index + 2);
+
+                if (
+                    a >= projected.vertices.size() ||
+                    b >= projected.vertices.size() ||
+                    c >= projected.vertices.size()
+                ) {
+                    continue;
+                }
+
+                rasterizer_.drawTriangle(
+                    framebuffer_,
+                    projected.vertices.at(a),
+                    projected.vertices.at(b),
+                    projected.vertices.at(c),
+                    material,
+                    texture
+                );
+            }
+        }
     }
 }
 
@@ -192,65 +205,26 @@ void SoftwareRenderBackend::endFrame() {
     if (
         renderer_ == nullptr ||
         texture_ == nullptr ||
-        width_ <= 0 ||
-        height_ <= 0
+        width_ == 0 ||
+        height_ == 0
     ) {
         return;
-    }
-
-    std::vector<ColorPixel> pixels;
-
-    pixels.reserve(
-        static_cast<std::size_t>(
-            width_
-        ) *
-        static_cast<std::size_t>(
-            height_
-        )
-    );
-
-    for (
-        int y = 0;
-        y < height_;
-        y++
-    ) {
-        for (
-            int x = 0;
-            x < width_;
-            x++
-        ) {
-            pixels.push_back(
-                framebuffer_.color().at(
-                    x,
-                    y
-                )
-            );
-        }
     }
 
     SDL_UpdateTexture(
         texture_,
         nullptr,
-        pixels.data(),
-        width_ *
-            static_cast<int>(
-                sizeof(ColorPixel)
-            )
+        framebuffer_.color().data(),
+        static_cast<int>(
+            width_ * sizeof(ColorPixel)
+        )
     );
 
-    SDL_FRect destination{
-        static_cast<float>(
-            viewportX_
-        ),
-        static_cast<float>(
-            viewportY_
-        ),
-        static_cast<float>(
-            width_
-        ),
-        static_cast<float>(
-            height_
-        )
+    const SDL_FRect destination{
+        static_cast<float>(outputX_),
+        static_cast<float>(outputY_),
+        static_cast<float>(width_),
+        static_cast<float>(height_)
     };
 
     SDL_RenderTexture(
@@ -259,6 +233,25 @@ void SoftwareRenderBackend::endFrame() {
         nullptr,
         &destination
     );
+}
+
+void SoftwareRenderBackend::setOutputPosition(
+    int x,
+    int y
+) {
+    outputX_ = x;
+    outputY_ = y;
+}
+
+void SoftwareRenderBackend::setClearColor(
+    ColorPixel color
+) {
+    clearColor_ = color;
+}
+
+const Framebuffer&
+SoftwareRenderBackend::framebuffer() const {
+    return framebuffer_;
 }
 
 }

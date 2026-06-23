@@ -5,7 +5,7 @@
 #include "Vec3.h"
 #include "Vec4.h"
 
-namespace eld::render {
+namespace eld::math {
 
 struct Mat4 {
 

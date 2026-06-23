@@ -37,10 +37,7 @@ void CacheExplorer::findNextAlphaModel() {
         modelRepository_.listIds();
 
     for (const std::uint16_t modelId : modelIds) {
-        if (
-            static_cast<int>(modelId) <
-            startId
-        ) {
+        if (static_cast<int>(modelId) < startId) {
             continue;
         }
 
@@ -52,8 +49,16 @@ void CacheExplorer::findNextAlphaModel() {
                 continue;
             }
 
+            const eld::graphics::ModelHandle handle =
+                graphicsResources_.resolveModel(
+                    modelId
+                );
+
             state_.activeModel =
                 std::move(model);
+
+            state_.activeModelHandle =
+                handle;
 
             state_.activeTexture.reset();
 
@@ -81,53 +86,43 @@ void CacheExplorer::findNextAlphaModel() {
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
       legacyCache_("cache"),
+      textureRepository_(
+          cache_.open(
+              eld::cache::IndexId::Config
+          )
+      ),
       modelRepository_(
           cache_.open(
               eld::cache::IndexId::Models
           )
+      ),
+      graphicsResources_(
+          modelRepository_,
+          textureRepository_
       ) {
 }
 
 bool CacheExplorer::initialize() {
-    state_.camera.angleX = 0.45f;
-    state_.camera.angleY = 0.6f;
-    state_.camera.distance = 1200.0f;
+    state_.camera.position = {
+        0.0f,
+        0.0f,
+        -500.0f
+    };
 
-    state_.camera.fov = 0.35f;
+    state_.camera.rotation = {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    state_.camera.verticalFov =
+        1.04719755f;
+
     state_.camera.nearPlane = 1.0f;
     state_.camera.farPlane = 10000.0f;
 
-    state_.camera.viewportX = 0;
-    state_.camera.viewportY = 0;
     state_.camera.viewportWidth = 1;
     state_.camera.viewportHeight = 1;
-
-    state_.camera.angleX = 0.0f;
-    state_.camera.angleY = 0.0f;
-    state_.camera.distance = 500.0f;
-
-    state_.camera.fov = 1.04719755f;
-    state_.camera.nearPlane = 1.0f;
-    state_.camera.farPlane = 10000.0f;
-
-    state_.camera.viewportX = 0;
-    state_.camera.viewportY = 0;
-    state_.camera.viewportWidth = 1;
-    state_.camera.viewportHeight = 1;
-
-    state_.modelTransform.scale = 1.0f;
-    state_.modelTransform.rotationX = 0.0f;
-    state_.modelTransform.rotationY = 0.0f;
-    state_.modelTransform.rotationZ = 0.0f;
-    state_.modelTransform.offsetX = 0.0f;
-    state_.modelTransform.offsetY = 0.0f;
-    state_.modelTransform.offsetZ = 0.0f;
-
-    state_.renderOptions.fillTriangles = true;
-    state_.renderOptions.showWireframe = false;
-    state_.renderOptions.showVertices = false;
-    state_.renderOptions.highlightTexturedFaces = false;
-    state_.renderOptions.useAlpha = true;
 
     if (!legacyCache_.isValid()) {
         return false;
@@ -161,15 +156,12 @@ void CacheExplorer::update() {
 
 void CacheExplorer::handleSelectionChanged() {
     state_.activeModel.reset();
+    state_.activeModelHandle.reset();
     state_.activeTexture.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
-            break;
-
         case CacheTreeNodeType::Index:
-            break;
-
         case CacheTreeNodeType::File:
             break;
 
@@ -189,15 +181,26 @@ void CacheExplorer::handleSelectionChanged() {
 
             try {
                 std::optional<eld::model::Model> model =
-                    modelRepository_.find(modelId);
+                    modelRepository_.find(
+                        modelId
+                    );
 
                 if (model.has_value()) {
+                    const eld::graphics::ModelHandle handle =
+                        graphicsResources_.resolveModel(
+                            modelId
+                        );
+
                     state_.activeModel =
                         std::move(*model);
+
+                    state_.activeModelHandle =
+                        handle;
                 }
             }
             catch (const std::exception&) {
                 state_.activeModel.reset();
+                state_.activeModelHandle.reset();
             }
 
             break;
@@ -213,7 +216,8 @@ void CacheExplorer::renderViewport(
 ) {
     viewportPanel_.renderViewport(
         renderer,
-        state_
+        state_,
+        graphicsResources_
     );
 }
 
@@ -229,7 +233,7 @@ void CacheExplorer::renderUi() {
         viewport->WorkSize
     );
 
-    ImGuiWindowFlags shellFlags =
+    const ImGuiWindowFlags shellFlags =
         ImGuiWindowFlags_NoTitleBar |
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove |

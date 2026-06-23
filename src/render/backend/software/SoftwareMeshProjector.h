@@ -2,25 +2,22 @@
 
 #include <vector>
 
-#include "../../camera/Projection.h"
-#include "../../math/Vec2.h"
-#include "../../math/Vec3.h"
-#include "../../math/Vec4.h"
-#include "../../scene/RenderCamera.h"
-#include "../../scene/RenderObject.h"
+#include "camera/Camera.h"
+#include "camera/Projection.h"
+#include "graphics/model/RenderModel.h"
+#include "math/Vec2.h"
+#include "math/Vec4.h"
+#include "scene/Transform.h"
 
 namespace eld::render {
 
 struct SoftwareProjectedVertex {
-    Vec3 world;
-    Vec3 view;
-
     ScreenPoint screen;
 
-    Vec2 uv;
-    Vec4 color;
+    eld::math::Vec2 uv;
+    eld::math::Vec4 color;
 
-    bool valid = true;
+    bool valid = false;
 };
 
 struct SoftwareProjectedMesh {
@@ -30,8 +27,9 @@ struct SoftwareProjectedMesh {
 class SoftwareMeshProjector {
 public:
     SoftwareProjectedMesh project(
-        const RenderObject& object,
-        const RenderCamera& camera
+        const eld::graphics::RenderMesh& mesh,
+        const Transform& transform,
+        const Camera& camera
     ) const;
 };
 

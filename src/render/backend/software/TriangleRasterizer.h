@@ -2,8 +2,8 @@
 
 #include "Framebuffer.h"
 #include "SoftwareMeshProjector.h"
-
-#include "../../material/Material.h"
+#include "graphics/model/RenderModel.h"
+#include "graphics/texture/GraphicsTexture.h"
 
 namespace eld::render {
 
@@ -14,7 +14,8 @@ public:
         const SoftwareProjectedVertex& a,
         const SoftwareProjectedVertex& b,
         const SoftwareProjectedVertex& c,
-        const Material& material
+        const eld::graphics::RenderMaterial& material,
+        const eld::graphics::GraphicsTexture* texture
     ) const;
 };
 

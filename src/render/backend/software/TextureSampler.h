@@ -1,37 +1,37 @@
 #pragma once
 
-#include "../../material/SamplerState.h"
-
-#include "texture/TextureAsset.h"
+#include "ColorBuffer.h"
+#include "graphics/texture/GraphicsTexture.h"
+#include "graphics/texture/SamplerState.h"
 
 namespace eld::render {
 
 class TextureSampler {
 public:
-    eld::texture::RgbaPixel sample(
-        const eld::texture::TextureAsset& texture,
+    ColorPixel sample(
+        const eld::graphics::GraphicsTexture& texture,
         float u,
         float v,
-        const SamplerState& state
+        const eld::graphics::SamplerState& state
     ) const;
 
 private:
     float address(
         float coordinate,
-        TextureAddressMode mode
+        eld::graphics::TextureAddressMode mode
     ) const;
 
-    eld::texture::RgbaPixel sampleNearest(
-        const eld::texture::TextureAsset& texture,
+    ColorPixel sampleNearest(
+        const eld::graphics::GraphicsTexture& texture,
         float u,
         float v
     ) const;
 
-    eld::texture::RgbaPixel sampleLinear(
-        const eld::texture::TextureAsset& texture,
+    ColorPixel sampleLinear(
+        const eld::graphics::GraphicsTexture& texture,
         float u,
         float v,
-        const SamplerState& state
+        const eld::graphics::SamplerState& state
     ) const;
 };
 

@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace eld::render {
+namespace eld::math {
 
 struct Vec3 {
 

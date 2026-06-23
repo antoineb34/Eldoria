@@ -1,43 +1,29 @@
 #pragma once
 
-#include "../math/Vec3.h"
-#include "../math/Mat4.h"
 #include "Camera.h"
-#include "model/ModelAsset.h"
+#include "math/Mat4.h"
+#include "math/Vec3.h"
 
 namespace eld::render {
 
 struct ScreenPoint {
-
     float x = 0.0f;
     float y = 0.0f;
-    float z = 0.0f;
+    float depth = 0.0f;
 };
 
-Vec3 toVec3(
-    const eld::model::Vertex& vertex
-);
-
-Mat4 buildViewMatrix(
+eld::math::Mat4 buildViewMatrix(
     const Camera& camera
 );
 
-Mat4 buildProjectionMatrix(
+eld::math::Mat4 buildProjectionMatrix(
     const Camera& camera
 );
 
 ScreenPoint projectPoint(
-    const Vec3& point,
-    const Mat4& view,
-    const Mat4& projection,
-    const Camera& camera
-
-);
-
-ScreenPoint projectVertex(
-    const eld::model::Vertex& vertex,
-    const Mat4& view,
-    const Mat4& projection,
+    const eld::math::Vec3& worldPoint,
+    const eld::math::Mat4& viewMatrix,
+    const eld::math::Mat4& projectionMatrix,
     const Camera& camera
 );
 
