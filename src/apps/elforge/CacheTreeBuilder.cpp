@@ -158,6 +158,14 @@ CacheTreeNode makeArchiveFileNode(
         );
 
     if (name.has_value()) {
+        if (
+            archiveId == 1 &&
+            *name == "title.dat"
+        ) {
+            node.type =
+                CacheTreeNodeType::Image;
+        }
+
         node.label =
             std::string(*name);
 

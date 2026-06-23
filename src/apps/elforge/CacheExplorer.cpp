@@ -106,6 +106,12 @@ CacheExplorer::CacheExplorer()
           1
       ),
 
+      titleJpegRepository_(
+          cache_.open(
+              eld::cache::IndexId::Config
+          ),
+          1
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -165,6 +171,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeModelHandle.reset();
     state_.activeTexture.reset();
     state_.activeSprite.reset();
+    state_.activeImage.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -217,6 +224,20 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::Texture:
             break;
+
+        case CacheTreeNodeType::Image: {
+            if (
+                state_.selection.archiveId == 1 &&
+                !state_.selection.name.empty()
+            ) {
+                state_.activeImage =
+                    titleJpegRepository_.find(
+                        state_.selection.name
+                    );
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::Sprite:
         case CacheTreeNodeType::SpriteFrame: {

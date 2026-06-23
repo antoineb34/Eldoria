@@ -15,6 +15,7 @@ namespace eld::elforge {
         Texture,
         Sprite,
         SpriteFrame,
+        Image,
     };
 
 struct CacheTreeNode {

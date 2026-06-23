@@ -18,6 +18,7 @@ include(EldoriaTargets)
 find_package(ZLIB REQUIRED)
 find_package(SDL3 REQUIRED CONFIG)
 find_package(BZip2 REQUIRED)
+find_package(JPEG REQUIRED)
 
 # Shared modules.
 eldoria_add_module(data src/data)

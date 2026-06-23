@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 
 #include <imgui.h>
@@ -357,6 +356,16 @@ void CacheViewportPanel::renderViewport(
     CacheExplorerState& state,
     const eld::graphics::GraphicsResources& resources
 ) {
+    if (state.activeImage.has_value()) {
+        renderImage(
+            renderer,
+            state,
+            *state.activeImage
+        );
+
+        return;
+    }
+
     if (state.activeSprite.has_value()) {
         renderImage(
             renderer,

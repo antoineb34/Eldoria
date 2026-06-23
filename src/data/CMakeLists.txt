@@ -18,6 +18,8 @@ add_library(eldoria_data STATIC
     model/ModelRepository.cpp
 
     image/IndexedImageDecoder.cpp
+    image/JpegDecoder.cpp
+    image/JpegRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp
@@ -33,4 +35,5 @@ target_include_directories(eldoria_data PUBLIC
 target_link_libraries(eldoria_data PUBLIC
     BZip2::BZip2
     ZLIB::ZLIB
+    JPEG::JPEG
 )

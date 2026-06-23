@@ -39,6 +39,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::Sprite:
             return "Sprite";
 
+        case CacheTreeNodeType::Image:
+            return "Image";
+
         case CacheTreeNodeType::SpriteFrame:
             return "Sprite Frame";
     }
