@@ -5,18 +5,21 @@
 
 namespace eld::elforge {
 
-enum class CacheTreeNodeType {
-    Root,
-    Index,
-    File,
-    Model,
-    Texture
-};
+    enum class CacheTreeNodeType {
+        Root,
+        Index,
+        Archive,
+        File,
+        ArchiveFile,
+        Model,
+        Texture
+    };
 
 struct CacheTreeNode {
     CacheTreeNodeType type = CacheTreeNodeType::File;
 
     std::string label;
+    std::string key;
 
     int indexId = -1;
     int archiveId = -1;

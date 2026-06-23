@@ -45,7 +45,10 @@ void CacheTreePanel::render(
         ImVec2(0.0f, 4.0f)
     );
 
-    for (const CacheTreeNode& child : state.rootNode.children) {
+    for (
+        const CacheTreeNode& child :
+        state.rootNode.children
+    ) {
         renderNode(
             state,
             child,
@@ -67,10 +70,10 @@ void CacheTreePanel::renderNode(
         !node.children.empty();
 
     bool& expanded =
-        state.expandedNodes[node.label];
+        state.expandedNodes[node.key];
 
     const bool selected =
-        state.selection.label == node.label;
+        state.selection.key == node.key;
 
     const char* icon =
         getNodeIcon(
@@ -78,24 +81,34 @@ void CacheTreePanel::renderNode(
             expanded
         );
 
-    std::string rowText =
+    const std::string rowText =
         std::string(icon) +
         " " +
         node.label;
 
     ImGui::SetCursorPosX(
-        ImGui::GetCursorPosX() + depth * 18.0f
+        ImGui::GetCursorPosX() +
+        depth * 18.0f
     );
 
-    bool clicked =
+    ImGui::PushID(
+        node.key.c_str()
+    );
+
+    const bool clicked =
         ImGui::Selectable(
             rowText.c_str(),
             selected
         );
 
+    ImGui::PopID();
+
     if (clicked) {
         state.selection.type =
             node.type;
+
+        state.selection.key =
+            node.key;
 
         state.selection.label =
             node.label;
@@ -119,7 +132,10 @@ void CacheTreePanel::renderNode(
         hasChildren &&
         expanded
     ) {
-        for (const CacheTreeNode& child : node.children) {
+        for (
+            const CacheTreeNode& child :
+            node.children
+        ) {
             renderNode(
                 state,
                 child,

@@ -72,8 +72,12 @@ void CacheExplorer::findNextAlphaModel() {
                 "Model " +
                 std::to_string(modelId);
 
-            lastSelectedLabel_ =
-                state_.selection.label;
+            state_.selection.key =
+                "index/1/file/" +
+                std::to_string(modelId);
+
+            lastSelectedKey_ =
+                state_.selection.key;
 
             return;
         }
@@ -139,11 +143,11 @@ void CacheExplorer::handleEvent(
 
 void CacheExplorer::update() {
     if (
-        state_.selection.label !=
-        lastSelectedLabel_
+        state_.selection.key !=
+        lastSelectedKey_
     ) {
-        lastSelectedLabel_ =
-            state_.selection.label;
+        lastSelectedKey_ =
+            state_.selection.key;
 
         handleSelectionChanged();
     }
@@ -157,7 +161,9 @@ void CacheExplorer::handleSelectionChanged() {
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
         case CacheTreeNodeType::Index:
+        case CacheTreeNodeType::Archive:
         case CacheTreeNodeType::File:
+        case CacheTreeNodeType::ArchiveFile:
             break;
 
         case CacheTreeNodeType::Model: {

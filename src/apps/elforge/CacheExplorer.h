@@ -59,7 +59,7 @@ private:
     CacheViewportPanel viewportPanel_;
     CacheInspectorPanel inspectorPanel_;
 
-    std::string lastSelectedLabel_;
+    std::string lastSelectedKey_;
 };
 
 }

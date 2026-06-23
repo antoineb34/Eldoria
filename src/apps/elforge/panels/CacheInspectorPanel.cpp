@@ -29,6 +29,12 @@ const char* getNodeTypeName(
 
         case CacheTreeNodeType::Texture:
             return "Texture";
+
+        case CacheTreeNodeType::Archive:
+            return "Archive";
+
+        case CacheTreeNodeType::ArchiveFile:
+            return "Archive File";
     }
 
     return "Unknown";

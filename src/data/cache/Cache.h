@@ -18,6 +18,8 @@ public:
         IndexId indexId
     ) const;
 
+    const std::vector<Index>& list() const;
+
 private:
     std::filesystem::path dataPath_;
     std::vector<Index> indexes_;
