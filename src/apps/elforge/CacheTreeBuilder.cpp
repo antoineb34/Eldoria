@@ -3,19 +3,23 @@
 #include <string>
 #include <vector>
 
+#include "cache/Store.h"
+
 namespace eld::elforge {
 
 namespace {
 
 CacheTreeNode makeRoot() {
     CacheTreeNode node;
+
     node.type = CacheTreeNodeType::Root;
     node.label = "Cache";
+
     return node;
 }
 
 CacheTreeNode makeIndexNode(
-    eld::cache_legacy::CacheIndex index,
+    eld::cache::IndexId index,
     const std::string& label
 ) {
     CacheTreeNode node;
@@ -26,44 +30,40 @@ CacheTreeNode makeIndexNode(
     node.indexId =
         static_cast<int>(index);
 
-    node.archiveId = -1;
-    node.fileId = -1;
-
     return node;
 }
 
 CacheTreeNode makeFileNode(
-    eld::cache_legacy::CacheIndex index,
-    const eld::cache_legacy::CacheFile& file
+    eld::cache::IndexId index,
+    const eld::cache::FileEntry& entry
 ) {
     CacheTreeNode node;
 
     node.type =
-        index == eld::cache_legacy::CacheIndex::Model
+        index == eld::cache::IndexId::Models
             ? CacheTreeNodeType::Model
             : CacheTreeNodeType::File;
 
     node.label =
-        "File " + std::to_string(file.id);
-
-    if (index == eld::cache_legacy::CacheIndex::Model) {
-        node.label =
-            "Model " + std::to_string(file.id);
-    }
+        index == eld::cache::IndexId::Models
+            ? "Model " +
+                std::to_string(entry.fileId)
+            : "File " +
+                std::to_string(entry.fileId);
 
     node.indexId =
         static_cast<int>(index);
 
-    node.archiveId = -1;
-    node.fileId = file.id;
+    node.fileId =
+        static_cast<int>(entry.fileId);
 
     return node;
 }
 
 void addIndex(
     CacheTreeNode& root,
-    const eld::cache_legacy::Cache& cache,
-    eld::cache_legacy::CacheIndex index,
+    const eld::cache::Cache& cache,
+    eld::cache::IndexId index,
     const std::string& label
 ) {
     CacheTreeNode indexNode =
@@ -72,63 +72,71 @@ void addIndex(
             label
         );
 
-    std::vector<eld::cache_legacy::CacheFile> files =
-        cache.listFiles(index);
+    const eld::cache::Store store =
+        cache.open(
+            index
+        );
 
-    for (const eld::cache_legacy::CacheFile& file : files) {
+    const std::vector<eld::cache::FileEntry> entries =
+        store.list();
+
+    for (
+        const eld::cache::FileEntry& entry :
+        entries
+    ) {
         indexNode.children.push_back(
             makeFileNode(
                 index,
-                file
+                entry
             )
         );
     }
 
     root.children.push_back(
-        indexNode
+        std::move(indexNode)
     );
 }
 
 }
 
 CacheTreeNode CacheTreeBuilder::build(
-    const eld::cache_legacy::Cache& cache
-) {
+    const eld::cache::Cache& cache
+) const {
     CacheTreeNode root =
         makeRoot();
 
     addIndex(
         root,
         cache,
-        eld::cache_legacy::CacheIndex::Config,
+        eld::cache::IndexId::Config,
         "Index 0 - Config"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache_legacy::CacheIndex::Model,
+        eld::cache::IndexId::Models,
         "Index 1 - Models"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache_legacy::CacheIndex::Animation,
+        eld::cache::IndexId::Animations,
         "Index 2 - Animations"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache_legacy::CacheIndex::Midi,
+        eld::cache::IndexId::Midi,
         "Index 3 - Midi"
     );
 
     addIndex(
         root,
         cache,
-        eld::cache_legacy::CacheIndex::Map,
+        eld::cache::IndexId::Maps,
         "Index 4 - Maps"
     );
 

@@ -13,10 +13,6 @@ add_library(eldoria_data STATIC
     archive/Archive.cpp
     archive/ArchiveParser.cpp
 
-    cache_legacy/Archive.cpp
-    cache_legacy/ArchiveReader.cpp
-    cache_legacy/Cache.cpp
-
     model/ModelDecoder.cpp
     model/ModelFileParser.cpp
     model/ModelRepository.cpp

@@ -5,7 +5,6 @@
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
-#include "cache_legacy/Cache.h"
 
 #include "CacheExplorerState.h"
 #include "CacheTreeBuilder.h"
@@ -47,7 +46,6 @@ private:
     void findNextAlphaModel();
 
     eld::cache::Cache cache_;
-    eld::cache_legacy::Cache legacyCache_;
 
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;

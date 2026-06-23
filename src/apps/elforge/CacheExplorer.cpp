@@ -85,7 +85,6 @@ void CacheExplorer::findNextAlphaModel() {
 
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
-      legacyCache_("cache"),
       textureRepository_(
           cache_.open(
               eld::cache::IndexId::Config
@@ -124,13 +123,9 @@ bool CacheExplorer::initialize() {
     state_.camera.viewportWidth = 1;
     state_.camera.viewportHeight = 1;
 
-    if (!legacyCache_.isValid()) {
-        return false;
-    }
-
     state_.rootNode =
         treeBuilder_.build(
-            legacyCache_
+            cache_
         );
 
     return true;
