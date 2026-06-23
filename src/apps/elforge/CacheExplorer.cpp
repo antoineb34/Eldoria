@@ -99,6 +99,13 @@ CacheExplorer::CacheExplorer()
               eld::cache::IndexId::Models
           )
       ),
+      titleSpriteRepository_(
+          cache_.open(
+              eld::cache::IndexId::Config
+          ),
+          1
+      ),
+
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -157,6 +164,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeModel.reset();
     state_.activeModelHandle.reset();
     state_.activeTexture.reset();
+    state_.activeSprite.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -209,6 +217,38 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::Texture:
             break;
+
+        case CacheTreeNodeType::Sprite:
+        case CacheTreeNodeType::SpriteFrame: {
+            if (
+                state_.selection.archiveId != 1 ||
+                state_.selection.name.empty()
+                ) {
+                    break;
+                }
+
+                const int selectedFrame =
+                    state_.selection.frameId >= 0
+                        ? state_.selection.frameId
+                        : 0;
+
+                if (
+                    selectedFrame >
+                    std::numeric_limits<std::uint16_t>::max()
+                ) {
+                    break;
+                }
+
+                state_.activeSprite =
+                    titleSpriteRepository_.find(
+                        state_.selection.name,
+                        static_cast<std::uint16_t>(
+                            selectedFrame
+                        )
+                    );
+
+                break;
+            }
     }
 }
 

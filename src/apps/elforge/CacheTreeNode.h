@@ -12,7 +12,9 @@ namespace eld::elforge {
         File,
         ArchiveFile,
         Model,
-        Texture
+        Texture,
+        Sprite,
+        SpriteFrame,
     };
 
 struct CacheTreeNode {
@@ -20,6 +22,9 @@ struct CacheTreeNode {
 
     std::string label;
     std::string key;
+
+    std::string name;
+    int frameId = -1;
 
     int indexId = -1;
     int archiveId = -1;

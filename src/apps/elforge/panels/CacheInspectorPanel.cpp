@@ -35,6 +35,12 @@ const char* getNodeTypeName(
 
         case CacheTreeNodeType::ArchiveFile:
             return "Archive File";
+
+        case CacheTreeNodeType::Sprite:
+            return "Sprite";
+
+        case CacheTreeNodeType::SpriteFrame:
+            return "Sprite Frame";
     }
 
     return "Unknown";

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "Sprite.h"
 
@@ -43,6 +44,14 @@ public:
     bool contains(
         std::string_view groupName,
         std::uint16_t frameId = 0
+    ) const;
+
+    std::vector<std::uint16_t> listFrameIds(
+        std::string_view groupName
+    ) const;
+
+    std::size_t countFrames(
+        std::string_view groupName
     ) const;
 
 private:

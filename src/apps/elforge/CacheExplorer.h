@@ -15,6 +15,7 @@
 
 #include "model/ModelRepository.h"
 #include "texture/TextureRepository.h"
+#include "sprite/SpriteRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -49,8 +50,10 @@ private:
 
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;
+    eld::sprite::SpriteRepository titleSpriteRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
+    std::optional<eld::sprite::Sprite> activeSprite;
 
     CacheExplorerState state_;
     CacheTreeBuilder treeBuilder_;

@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <limits>
+#include <vector>
 
 #include "archive/ArchiveParser.h"
 
@@ -185,6 +187,48 @@ bool SpriteRepository::contains(
         indexFile->payload,
         frameId
     ).has_value();
+}
+
+std::vector<std::uint16_t>
+SpriteRepository::listFrameIds(
+    std::string_view groupName
+) const {
+    std::vector<std::uint16_t> frameIds;
+
+    for (
+        std::uint32_t candidate = 0;
+        candidate <=
+            std::numeric_limits<std::uint16_t>::max();
+        candidate++
+    ) {
+        const std::uint16_t frameId =
+            static_cast<std::uint16_t>(
+                candidate
+            );
+
+        if (
+            !contains(
+                groupName,
+                frameId
+            )
+        ) {
+            break;
+        }
+
+        frameIds.push_back(
+            frameId
+        );
+    }
+
+    return frameIds;
+}
+
+std::size_t SpriteRepository::countFrames(
+    std::string_view groupName
+) const {
+    return listFrameIds(
+        groupName
+    ).size();
 }
 
 }

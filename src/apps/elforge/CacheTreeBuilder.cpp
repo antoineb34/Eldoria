@@ -1,13 +1,17 @@
 #include "CacheTreeBuilder.h"
 
+#include <array>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "archive/ArchiveHashes.h"
 #include "archive/ArchiveParser.h"
 #include "cache/Store.h"
+#include "sprite/SpriteRepository.h"
 
 namespace eld::elforge {
 
@@ -36,12 +40,36 @@ std::string getIndexLabel(
     return "Unknown Index";
 }
 
+bool isTitleSprite(
+    std::string_view name
+) {
+    static constexpr std::array names{
+        std::string_view{"logo.dat"},
+        std::string_view{"titlebox.dat"},
+        std::string_view{"titlebutton.dat"},
+        std::string_view{"runes.dat"}
+    };
+
+    for (const std::string_view candidate : names) {
+        if (candidate == name) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 CacheTreeNode makeRoot() {
     CacheTreeNode node;
 
-    node.type = CacheTreeNodeType::Root;
-    node.key = "cache";
-    node.label = "Cache";
+    node.type =
+        CacheTreeNodeType::Root;
+
+    node.key =
+        "cache";
+
+    node.label =
+        "Cache";
 
     return node;
 }
@@ -51,7 +79,9 @@ CacheTreeNode makeIndexNode(
 ) {
     CacheTreeNode node;
 
-    node.type = CacheTreeNodeType::Index;
+    node.type =
+        CacheTreeNodeType::Index;
+
     node.key =
         "index/" +
         std::to_string(
@@ -130,6 +160,9 @@ CacheTreeNode makeArchiveFileNode(
     if (name.has_value()) {
         node.label =
             std::string(*name);
+
+        node.name =
+            std::string(*name);
     }
     else {
         node.label =
@@ -147,6 +180,138 @@ CacheTreeNode makeArchiveFileNode(
 
     node.fileId =
         static_cast<int>(file.id);
+
+    return node;
+}
+
+CacheTreeNode makeSpriteFrameNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    std::string_view groupName,
+    std::uint16_t frameId
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::SpriteFrame;
+
+    node.key =
+        "index/" +
+        std::to_string(
+            static_cast<int>(index)
+        ) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/sprite/" +
+        std::to_string(fileId) +
+        "/frame/" +
+        std::to_string(frameId);
+
+    node.label =
+        "Frame " +
+        std::to_string(frameId);
+
+    node.name =
+        std::string(groupName);
+
+    node.indexId =
+        static_cast<int>(index);
+
+    node.archiveId =
+        static_cast<int>(archiveId);
+
+    node.fileId =
+        static_cast<int>(fileId);
+
+    node.frameId =
+        static_cast<int>(frameId);
+
+    return node;
+}
+
+CacheTreeNode makeSpriteNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    std::string_view groupName,
+    const eld::sprite::SpriteRepository& repository
+) {
+    const std::vector<std::uint16_t> frameIds =
+        repository.listFrameIds(
+            groupName
+        );
+
+    if (frameIds.size() == 1) {
+        CacheTreeNode node =
+            makeSpriteFrameNode(
+                index,
+                archiveId,
+                file.id,
+                groupName,
+                frameIds.front()
+            );
+
+        node.key =
+            "index/" +
+            std::to_string(
+                static_cast<int>(index)
+            ) +
+            "/archive/" +
+            std::to_string(archiveId) +
+            "/sprite/" +
+            std::to_string(file.id);
+
+        node.label =
+            std::string(groupName);
+
+        return node;
+    }
+
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::Sprite;
+
+    node.key =
+        "index/" +
+        std::to_string(
+            static_cast<int>(index)
+        ) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/sprite/" +
+        std::to_string(file.id);
+
+    node.label =
+        std::string(groupName) +
+        " (" +
+        std::to_string(frameIds.size()) +
+        " frames)";
+
+    node.name =
+        std::string(groupName);
+
+    node.indexId =
+        static_cast<int>(index);
+
+    node.archiveId =
+        static_cast<int>(archiveId);
+
+    node.fileId =
+        static_cast<int>(file.id);
+
+    for (const std::uint16_t frameId : frameIds) {
+        node.children.push_back(
+            makeSpriteFrameNode(
+                index,
+                archiveId,
+                file.id,
+                groupName,
+                frameId
+            )
+        );
+    }
 
     return node;
 }
@@ -198,10 +363,44 @@ std::optional<CacheTreeNode> makeArchiveNode(
     node.archiveId =
         static_cast<int>(entry.fileId);
 
+    std::optional<
+        eld::sprite::SpriteRepository
+    > spriteRepository;
+
+    if (entry.fileId == 1) {
+        spriteRepository.emplace(
+            store,
+            entry.fileId
+        );
+    }
+
     for (
         const eld::archive::ArchiveFile& file :
         archive->list()
     ) {
+        const std::optional<std::string_view> name =
+            eld::archive::findName(
+                file.nameHash
+            );
+
+        if (
+            spriteRepository.has_value() &&
+            name.has_value() &&
+            isTitleSprite(*name)
+        ) {
+            node.children.push_back(
+                makeSpriteNode(
+                    index,
+                    entry.fileId,
+                    file,
+                    *name,
+                    *spriteRepository
+                )
+            );
+
+            continue;
+        }
+
         node.children.push_back(
             makeArchiveFileNode(
                 index,
