@@ -68,12 +68,12 @@ TextureRepository::getDataFile(
 Texture TextureRepository::get(
     std::uint16_t id
 ) const {
-    TextureFile file =
+    eld::image::IndexedImageFile file =
         getFile(id);
 
-    TextureSourceMap sourceMap;
+    eld::image::IndexedImageSourceMap sourceMap;
 
-    TextureImage image =
+    eld::image::Image image =
         decoder_.decode(
             file,
             sourceMap
@@ -97,7 +97,7 @@ std::optional<Texture> TextureRepository::find(
     return get(id);
 }
 
-TextureFile TextureRepository::getFile(
+eld::image::IndexedImageFile TextureRepository::getFile(
     std::uint16_t id
 ) const {
     const eld::archive::ArchiveFile& indexFile =
@@ -106,7 +106,7 @@ TextureFile TextureRepository::getFile(
     const eld::archive::ArchiveFile& dataFile =
         getDataFile(id);
 
-    std::optional<TextureFile> file =
+    std::optional<eld::image::IndexedImageFile> file =
         parser_.parse(
             dataFile.payload,
             indexFile.payload
@@ -122,10 +122,10 @@ TextureFile TextureRepository::getFile(
     return std::move(*file);
 }
 
-TextureImage TextureRepository::getImage(
+eld::image::Image TextureRepository::getImage(
     std::uint16_t id
 ) const {
-    const TextureFile file =
+    const eld::image::IndexedImageFile file =
         getFile(id);
 
     return decoder_.decode(

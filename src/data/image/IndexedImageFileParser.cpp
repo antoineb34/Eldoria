@@ -1,4 +1,4 @@
-#include "TextureFileParser.h"
+#include "IndexedImageFileParser.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -7,11 +7,11 @@
 
 #include "binary/ByteReader.h"
 
-namespace eld::texture {
+namespace eld::image {
 
 namespace {
 
-std::vector<TextureColor> readPalette(
+std::vector<IndexedImageColor> readPalette(
     eld::binary::ByteReader& reader
 ) {
     const std::uint8_t colorCount =
@@ -21,14 +21,14 @@ std::vector<TextureColor> readPalette(
         return {};
     }
 
-    std::vector<TextureColor> palette;
+    std::vector<IndexedImageColor> palette;
 
     palette.reserve(
         colorCount
     );
 
     palette.push_back(
-        TextureColor{}
+        IndexedImageColor{}
     );
 
     for (
@@ -40,7 +40,7 @@ std::vector<TextureColor> readPalette(
             reader.readU24();
 
         palette.push_back(
-            TextureColor{
+            IndexedImageColor{
                 static_cast<std::uint8_t>(
                     (color >> 16) & 0xFF
                 ),
@@ -57,7 +57,7 @@ std::vector<TextureColor> readPalette(
     return palette;
 }
 
-std::optional<TexturePixelOrder> readPixelOrder(
+std::optional<IndexedImagePixelOrder> readPixelOrder(
     eld::binary::ByteReader& reader
 ) {
     const std::uint8_t value =
@@ -65,21 +65,21 @@ std::optional<TexturePixelOrder> readPixelOrder(
 
     switch (value) {
         case 0:
-            return TexturePixelOrder::RowMajor;
+            return IndexedImagePixelOrder::RowMajor;
 
         case 1:
-            return TexturePixelOrder::ColumnMajor;
+            return IndexedImagePixelOrder::ColumnMajor;
 
         default:
             return std::nullopt;
     }
 }
 
-std::vector<TexturePixel> readPixels(
+std::vector<IndexedImagePixel> readPixels(
     eld::binary::ByteReader& reader,
     std::size_t pixelCount
 ) {
-    std::vector<TexturePixel> pixels;
+    std::vector<IndexedImagePixel> pixels;
 
     pixels.reserve(
         pixelCount
@@ -94,7 +94,7 @@ std::vector<TexturePixel> readPixels(
             reader.position();
 
         pixels.push_back(
-            TexturePixel{
+            IndexedImagePixel{
                 sourceOffset,
                 reader.readU8()
             }
@@ -106,9 +106,10 @@ std::vector<TexturePixel> readPixels(
 
 }
 
-std::optional<TextureFile> TextureFileParser::parse(
+std::optional<IndexedImageFile> IndexedImageFileParser::parse(
     const std::vector<std::uint8_t>& dataPayload,
-    const std::vector<std::uint8_t>& indexPayload
+    const std::vector<std::uint8_t>& indexPayload,
+    std::uint16_t frameId
 ) const {
     try {
         eld::binary::ByteReader dataReader(
@@ -126,7 +127,7 @@ std::optional<TextureFile> TextureFileParser::parse(
             indexOffset
         );
 
-        TextureMetadata metadata{};
+        IndexedImageMetadata metadata{};
 
         metadata.indexOffset =
             indexOffset;
@@ -137,7 +138,7 @@ std::optional<TextureFile> TextureFileParser::parse(
         metadata.canvasHeight =
             indexReader.readU16();
 
-        std::vector<TextureColor> palette =
+        std::vector<IndexedImageColor> palette =
             readPalette(
                 indexReader
             );
@@ -145,6 +146,41 @@ std::optional<TextureFile> TextureFileParser::parse(
         if (palette.empty()) {
             return std::nullopt;
         }
+
+        for (
+            std::uint16_t currentFrame = 0;
+            currentFrame < frameId;
+            currentFrame++
+        ) {
+            indexReader.skip(2);
+
+            const std::size_t previousWidth =
+                indexReader.readU16();
+
+            const std::size_t previousHeight =
+                indexReader.readU16();
+
+            indexReader.skip(1);
+
+            const std::size_t previousPixelCount =
+                previousWidth *
+                previousHeight;
+
+            if (
+                !dataReader.canRead(
+                    previousPixelCount
+                )
+            ) {
+                return std::nullopt;
+            }
+
+            dataReader.skip(
+                previousPixelCount
+            );
+        }
+
+        metadata.frameId =
+            frameId;
 
         metadata.offsetX =
             indexReader.readU8();
@@ -158,7 +194,7 @@ std::optional<TextureFile> TextureFileParser::parse(
         metadata.height =
             indexReader.readU16();
 
-        const std::optional<TexturePixelOrder> pixelOrder =
+        const std::optional<IndexedImagePixelOrder> pixelOrder =
             readPixelOrder(
                 indexReader
             );
@@ -182,13 +218,13 @@ std::optional<TextureFile> TextureFileParser::parse(
             return std::nullopt;
         }
 
-        std::vector<TexturePixel> pixels =
+        std::vector<IndexedImagePixel> pixels =
             readPixels(
                 dataReader,
                 pixelCount
             );
 
-        for (const TexturePixel& pixel : pixels) {
+        for (const IndexedImagePixel& pixel : pixels) {
             if (
                 pixel.paletteIndex >=
                 palette.size()
@@ -197,7 +233,7 @@ std::optional<TextureFile> TextureFileParser::parse(
             }
         }
 
-        return TextureFile{
+        return IndexedImageFile{
             .dataPayload = dataPayload,
             .indexPayload = indexPayload,
             .metadata = metadata,

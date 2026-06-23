@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "Texture.h"
-#include "TextureDecoder.h"
-#include "TextureFileParser.h"
+#include "image/IndexedImageDecoder.h"
+#include "image/IndexedImageFileParser.h"
 #include "archive/Archive.h"
 #include "cache/Store.h"
 
@@ -31,11 +31,11 @@ public:
         std::uint16_t id
     ) const;
 
-    TextureFile getFile(
+    eld::image::IndexedImageFile getFile(
         std::uint16_t id
     ) const;
 
-    TextureImage getImage(
+    eld::image::Image getImage(
         std::uint16_t id
     ) const;
 
@@ -68,8 +68,8 @@ private:
 
     eld::archive::Archive archive_;
 
-    TextureFileParser parser_;
-    TextureDecoder decoder_;
+    eld::image::IndexedImageFileParser parser_;
+    eld::image::IndexedImageDecoder decoder_;
 };
 
 }

@@ -4,14 +4,14 @@
 #include <cstdint>
 #include <vector>
 
-namespace eld::texture {
+namespace eld::image {
 
-enum class TexturePixelOrder : std::uint8_t {
+enum class IndexedImagePixelOrder : std::uint8_t {
     RowMajor = 0,
     ColumnMajor = 1
 };
 
-struct TextureMetadata {
+struct IndexedImageMetadata {
     std::uint16_t indexOffset = 0;
 
     std::uint16_t canvasWidth = 0;
@@ -23,28 +23,30 @@ struct TextureMetadata {
     std::uint16_t width = 0;
     std::uint16_t height = 0;
 
-    TexturePixelOrder pixelOrder =
-        TexturePixelOrder::RowMajor;
+    std::uint16_t frameId = 0;
+
+    IndexedImagePixelOrder pixelOrder =
+        IndexedImagePixelOrder::RowMajor;
 };
 
-struct TextureColor {
+struct IndexedImageColor {
     std::uint8_t red = 0;
     std::uint8_t green = 0;
     std::uint8_t blue = 0;
 };
 
-struct TexturePixel {
+struct IndexedImagePixel {
     std::size_t sourceOffset = 0;
     std::uint8_t paletteIndex = 0;
 };
 
-struct TextureFile {
+struct IndexedImageFile {
     std::vector<std::uint8_t> dataPayload;
     std::vector<std::uint8_t> indexPayload;
 
-    TextureMetadata metadata;
-    std::vector<TextureColor> palette;
-    std::vector<TexturePixel> pixels;
+    IndexedImageMetadata metadata;
+    std::vector<IndexedImageColor> palette;
+    std::vector<IndexedImagePixel> pixels;
 };
 
 }

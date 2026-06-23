@@ -1,15 +1,17 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
-#include "image/IndexedImageFile.h"
 #include "image/Image.h"
+#include "image/IndexedImageFile.h"
 #include "image/IndexedImageSourceMap.h"
 
-namespace eld::texture {
+namespace eld::sprite {
 
-struct Texture {
-    std::uint16_t id = 0;
+struct Sprite {
+    std::string groupName;
+    std::uint16_t frameId = 0;
 
     eld::image::IndexedImageFile file;
     eld::image::Image image;

@@ -27,7 +27,7 @@ TextureHandle TextureResolver::resolve(
         return existing->second;
     }
 
-    eld::texture::TextureImage source =
+    eld::image::Image source =
         repository_.getImage(
             sourceTextureId
         );

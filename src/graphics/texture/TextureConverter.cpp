@@ -6,7 +6,7 @@
 namespace eld::graphics {
 
 GraphicsTexture TextureConverter::convert(
-    const eld::texture::TextureImage& source
+    const eld::image::Image& source
 ) const {
     if (
         source.width == 0 ||
@@ -50,7 +50,7 @@ GraphicsTexture TextureConverter::convert(
     );
 
     for (
-        const eld::texture::RgbaPixel& pixel :
+        const eld::image::RgbaPixel& pixel :
         source.pixels
     ) {
         texture.pixels.push_back(

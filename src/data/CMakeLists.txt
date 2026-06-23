@@ -17,9 +17,11 @@ add_library(eldoria_data STATIC
     model/ModelFileParser.cpp
     model/ModelRepository.cpp
 
-    texture/TextureDecoder.cpp
-    texture/TextureFileParser.cpp
+    image/IndexedImageDecoder.cpp
+    image/IndexedImageFileParser.cpp
+
     texture/TextureRepository.cpp
+    sprite/SpriteRepository.cpp
 )
 
 add_library(Eldoria::Data ALIAS eldoria_data)
