@@ -1,9 +1,13 @@
 #pragma once
 
+#include <unordered_map>
+
 #include <SDL3/SDL.h>
 
 #include "../IRenderBackend.h"
+
 #include "Framebuffer.h"
+#include "SoftwareMeshProjector.h"
 #include "TriangleRasterizer.h"
 
 namespace eld::render {
@@ -24,10 +28,8 @@ public:
         const RenderCamera& camera
     ) override;
 
-    void drawObject(
-        const RenderObject& object,
-        const ProjectedMesh& mesh,
-        const RenderQueue& queue
+    void draw(
+        const RenderItem& item
     ) override;
 
     void endFrame() override;
@@ -35,15 +37,18 @@ public:
     void setHighlightTexturedFaces(
         bool enabled
     ) {
-        highlightTexturedFaces_ = enabled;
+        highlightTexturedFaces_ =
+            enabled;
     }
 
 private:
+    const SoftwareProjectedMesh& project(
+        const RenderObject& object
+    );
+
     void destroyTexture();
     void ensureTexture();
 
-private:
-    bool highlightTexturedFaces_ = false;
     SDL_Renderer* renderer_ = nullptr;
     SDL_Texture* texture_ = nullptr;
 
@@ -52,8 +57,18 @@ private:
     int width_ = 0;
     int height_ = 0;
 
+    bool highlightTexturedFaces_ = false;
+
+    RenderCamera camera_;
+
     Framebuffer framebuffer_;
+    SoftwareMeshProjector projector_;
     TriangleRasterizer rasterizer_;
+
+    std::unordered_map<
+        const RenderObject*,
+        SoftwareProjectedMesh
+    > projectedMeshes_;
 };
 
 }

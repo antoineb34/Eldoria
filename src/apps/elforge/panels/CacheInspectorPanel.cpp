@@ -38,8 +38,8 @@ std::string buildModelDebugText(
     const CacheExplorerState& state,
     const eld::model::Model& model
 ) {
-    const eld::model::ModelAsset& asset =
-        model.asset;
+    const eld::model::ModelMesh& asset =
+        model.mesh;
 
     std::array<int, 12> priorityCounts {};
     std::array<int, 4> renderTypeCounts {};
@@ -192,7 +192,7 @@ void CacheInspectorPanel::render(
         const eld::model::Model& model =
             *state.activeModel;
 
-        const eld::model::ModelAsset& asset =
+        const eld::model::ModelMesh& asset =
             model.asset;
 
         ImGui::Spacing();

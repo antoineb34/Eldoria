@@ -10,19 +10,20 @@ add_library(eldoria_data STATIC
     cache/Store.cpp
     cache/Writer.cpp
 
+    archive/Archive.cpp
+    archive/ArchiveParser.cpp
+
     cache_legacy/Archive.cpp
     cache_legacy/ArchiveReader.cpp
     cache_legacy/Cache.cpp
 
-    model/ModelAssetBuilder.cpp
+    model/ModelDecoder.cpp
     model/ModelFileParser.cpp
     model/ModelRepository.cpp
 
-    texture/TextureBuilder.cpp
-    texture/TextureFileReader.cpp
-    texture/TextureLoader.cpp
-    texture/decoder/TextureCanvasDecoder.cpp
-    texture/decoder/TexturePixelDecoder.cpp
+    texture/TextureDecoder.cpp
+    texture/TextureFileParser.cpp
+    texture/TextureRepository.cpp
 )
 
 add_library(Eldoria::Data ALIAS eldoria_data)

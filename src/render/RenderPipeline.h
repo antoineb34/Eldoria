@@ -1,10 +1,7 @@
 #pragma once
 
 #include "backend/IRenderBackend.h"
-#include "geometry/MeshProjector.h"
-#include "pipeline/FaceAssembler.h"
-#include "pipeline/VisibilityStage.h"
-#include "pipeline/DepthSorter.h"
+#include "pipeline/RenderQueueBuilder.h"
 #include "scene/RenderScene.h"
 
 namespace eld::render {
@@ -17,10 +14,7 @@ public:
     );
 
 private:
-    MeshProjector projector_;
-    FaceAssembler faceAssembler_;
-    VisibilityStage visibilityStage_;
-    DepthSorter depthSorter_;
+    RenderQueueBuilder queueBuilder_;
 };
 
 }

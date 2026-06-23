@@ -1,24 +1,25 @@
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
-#include "RenderPacket.h"
+#include "RenderItem.h"
 
 namespace eld::render {
 
 struct RenderQueue {
-    std::vector<RenderPacket> packets;
+    std::vector<RenderItem> items;
 
     void clear() {
-        packets.clear();
+        items.clear();
     }
 
     bool empty() const {
-        return packets.empty();
+        return items.empty();
     }
 
-    size_t size() const {
-        return packets.size();
+    std::size_t size() const {
+        return items.size();
     }
 };
 

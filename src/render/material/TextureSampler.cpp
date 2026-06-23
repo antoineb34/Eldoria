@@ -2,53 +2,69 @@
 
 #include <algorithm>
 #include <cmath>
-
+#include <cstddef>
 
 namespace eld::render {
 
-const eld::texture::RgbaColor* TextureSampler::sample(
+const eld::texture::RgbaPixel*
+TextureSampler::sample(
     const eld::texture::TextureAsset& texture,
     float u,
     float v
 ) const {
-    const int width =
-        texture.metadata.canvasWidth;
+    const std::size_t width =
+        texture.width;
 
-    const int height =
-        texture.metadata.canvasHeight;
+    const std::size_t height =
+        texture.height;
 
     if (
-        width <= 0 ||
-        height <= 0 ||
+        width == 0 ||
+        height == 0 ||
         texture.pixels.empty()
     ) {
         return nullptr;
     }
 
-    u = std::clamp(u, 0.0f, 1.0f);
-    v = v - std::floor(v);
+    u = std::clamp(
+        u,
+        0.0f,
+        1.0f
+    );
 
-    const int tx =
-        static_cast<int>(
-            u * static_cast<float>(width - 1)
+    v =
+        v -
+        std::floor(v);
+
+    const std::size_t x =
+        static_cast<std::size_t>(
+            u *
+            static_cast<float>(
+                width - 1
+            )
         );
 
-    const int ty =
-        static_cast<int>(
-            v * static_cast<float>(height - 1)
+    const std::size_t y =
+        static_cast<std::size_t>(
+            v *
+            static_cast<float>(
+                height - 1
+            )
         );
 
-    const int pixelIndex =
-        ty * width + tx;
+    const std::size_t pixelIndex =
+        y * width + x;
 
     if (
-        pixelIndex < 0 ||
-        pixelIndex >= static_cast<int>(texture.pixels.size())
+        pixelIndex >=
+        texture.pixels.size()
     ) {
         return nullptr;
     }
 
-    return &texture.pixels[pixelIndex];
+    return &texture.pixels[
+        pixelIndex
+    ];
 }
 
 }

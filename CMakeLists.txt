@@ -31,3 +31,7 @@ eldoria_add_module(render src/render)
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
+
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

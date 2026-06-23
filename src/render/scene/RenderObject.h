@@ -1,12 +1,12 @@
 #pragma once
 
-#include "model/ModelAsset.h"
+#include "../model/RenderModel.h"
 #include "Transform.h"
 
 namespace eld::render {
 
 struct RenderObject {
-    const eld::model::ModelAsset* model = nullptr;
+    const RenderModel* model = nullptr;
     Transform transform;
 };
 

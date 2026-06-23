@@ -1,21 +1,18 @@
 add_library(eldoria_render STATIC
     RenderPipeline.cpp
 
+    backend/software/SoftwareMeshProjector.cpp
     backend/software/SoftwareRenderBackend.cpp
+    backend/software/TextureSampler.cpp
     backend/software/TriangleRasterizer.cpp
 
     camera/Projection.cpp
 
     color/Color.cpp
 
-    geometry/MeshProjector.cpp
+    model/ModelRenderBuilder.cpp
 
-    material/MaterialResolver.cpp
-    material/TextureSampler.cpp
-
-    pipeline/DepthSorter.cpp
-    pipeline/FaceAssembler.cpp
-    pipeline/VisibilityStage.cpp
+    pipeline/RenderQueueBuilder.cpp
 
     scene/Transform.cpp
 )

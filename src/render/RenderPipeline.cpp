@@ -6,38 +6,21 @@ void RenderPipeline::render(
     const RenderScene& scene,
     IRenderBackend& backend
 ) {
-    backend.beginFrame(scene.camera);
+    backend.beginFrame(
+        scene.camera
+    );
 
-    for (int objectIndex = 0;
-         objectIndex < static_cast<int>(scene.objects.size());
-         objectIndex++) {
-        const RenderObject& object =
-            scene.objects[objectIndex];
-
-        ProjectedMesh mesh =
-            projector_.project(
-                object,
-                scene.camera
-            );
-
-        RenderQueue queue =
-            faceAssembler_.assemble(
-                objectIndex,
-                object,
-                mesh
-            );
-
-        visibilityStage_.apply(
-            queue,
-            mesh
+    const RenderQueue queue =
+        queueBuilder_.build(
+            scene
         );
 
-        depthSorter_.sort(queue);
-
-        backend.drawObject(
-            object,
-            mesh,
-            queue
+    for (
+        const RenderItem& item :
+        queue.items
+    ) {
+        backend.draw(
+            item
         );
     }
 

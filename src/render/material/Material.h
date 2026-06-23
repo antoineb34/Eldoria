@@ -1,16 +1,42 @@
 #pragma once
 
-#include <cstdint>
+#include "SamplerState.h"
+
+#include "texture/TextureAsset.h"
+
+#include "../math/Vec4.h"
 
 namespace eld::render {
 
-struct Material {
-    uint8_t r = 255;
-    uint8_t g = 255;
-    uint8_t b = 255;
-    uint8_t a = 255;
+enum class BlendMode {
+    Opaque,
+    Alpha
+};
 
-    bool textured = false;
+struct Material {
+    Vec4 baseColor{
+        1.0f,
+        1.0f,
+        1.0f,
+        1.0f
+    };
+
+    const eld::texture::TextureAsset*
+        albedoTexture = nullptr;
+
+    SamplerState sampler;
+    BlendMode blendMode =
+        BlendMode::Opaque;
+
+    bool textured() const {
+        return albedoTexture != nullptr;
+    }
+
+    bool transparent() const {
+        return
+            blendMode ==
+            BlendMode::Alpha;
+    }
 };
 
 }

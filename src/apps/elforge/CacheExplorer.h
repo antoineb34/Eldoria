@@ -15,7 +15,7 @@
 #include "panels/CacheViewportPanel.h"
 
 #include "model/ModelRepository.h"
-#include "texture/TextureLoader.h"
+#include "texture/TextureRepository.h"
 
 namespace eld::elforge {
 
@@ -38,7 +38,7 @@ public:
 
 private:
     bool hasAlphaFaces(
-        const eld::model::ModelAsset& model
+        const eld::model::ModelMesh& model
     ) const;
 
     void handleSelectionChanged();
@@ -47,7 +47,7 @@ private:
     eld::cache::Cache cache_;
     eld::cache_legacy::Cache legacyCache_;
 
-    eld::texture::TextureLoader textureLoader_;
+    eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;
 
     CacheExplorerState state_;

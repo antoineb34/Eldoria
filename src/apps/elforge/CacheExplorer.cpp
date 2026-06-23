@@ -11,7 +11,7 @@
 namespace eld::elforge {
 
 bool CacheExplorer::hasAlphaFaces(
-    const eld::model::ModelAsset& model
+    const eld::model::ModelMesh& model
 ) const {
     for (const eld::model::Face& face : model.faces) {
         if (face.alpha > 0) {
@@ -48,7 +48,7 @@ void CacheExplorer::findNextAlphaModel() {
             eld::model::Model model =
                 modelRepository_.get(modelId);
 
-            if (!hasAlphaFaces(model.asset)) {
+            if (!hasAlphaFaces(model.mesh)) {
                 continue;
             }
 
@@ -81,7 +81,6 @@ void CacheExplorer::findNextAlphaModel() {
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
       legacyCache_("cache"),
-      textureLoader_(legacyCache_),
       modelRepository_(
           cache_.open(
               eld::cache::IndexId::Models

@@ -1,34 +1,10 @@
 #include "SoftwareRenderBackend.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <vector>
 
-#include "../../../render/color/Color.h"
-
 namespace eld::render {
-
-namespace {
-
-    ColorPixel colorFromPacket(
-        const RenderPacket& packet
-    ) {
-        eld::render::RgbColor rgb =
-            eld::render::rsColorToRgb(packet.color);
-
-        uint8_t alpha = 255;
-
-        if (packet.alpha > 0) {
-            alpha = static_cast<uint8_t>(255 - packet.alpha);
-        }
-
-        return {
-            rgb.r,
-            rgb.g,
-            rgb.b,
-            alpha
-        };
-    }
-
-}
 
 SoftwareRenderBackend::SoftwareRenderBackend(
     SDL_Renderer* renderer
@@ -41,14 +17,24 @@ SoftwareRenderBackend::~SoftwareRenderBackend() {
 }
 
 void SoftwareRenderBackend::destroyTexture() {
-    if (texture_ != nullptr) {
-        SDL_DestroyTexture(texture_);
-        texture_ = nullptr;
+    if (texture_ == nullptr) {
+        return;
     }
+
+    SDL_DestroyTexture(
+        texture_
+    );
+
+    texture_ = nullptr;
 }
 
 void SoftwareRenderBackend::ensureTexture() {
-    if (texture_ != nullptr) {
+    if (
+        texture_ != nullptr ||
+        renderer_ == nullptr ||
+        width_ <= 0 ||
+        height_ <= 0
+    ) {
         return;
     }
 
@@ -65,10 +51,27 @@ void SoftwareRenderBackend::ensureTexture() {
 void SoftwareRenderBackend::beginFrame(
     const RenderCamera& camera
 ) {
-    viewportX_ = camera.viewportX;
-    viewportY_ = camera.viewportY;
-    width_ = camera.viewportWidth;
-    height_ = camera.viewportHeight;
+    camera_ = camera;
+
+    viewportX_ =
+        camera.viewportX;
+
+    viewportY_ =
+        camera.viewportY;
+
+    width_ =
+        std::max(
+            camera.viewportWidth,
+            0
+        );
+
+    height_ =
+        std::max(
+            camera.viewportHeight,
+            0
+        );
+
+    projectedMeshes_.clear();
 
     framebuffer_.resize(
         width_,
@@ -81,27 +84,106 @@ void SoftwareRenderBackend::beginFrame(
     ensureTexture();
 }
 
-void SoftwareRenderBackend::drawObject(
-    const RenderObject& object,
-    const ProjectedMesh& mesh,
-    const RenderQueue& queue
+const SoftwareProjectedMesh&
+SoftwareRenderBackend::project(
+    const RenderObject& object
 ) {
-    for (const RenderPacket& packet : queue.packets) {
-        eld::render::ScreenPoint a =
-            mesh.vertices[packet.a].screen;
+    const auto existing =
+        projectedMeshes_.find(
+            &object
+        );
 
-        eld::render::ScreenPoint b =
-            mesh.vertices[packet.b].screen;
+    if (
+        existing !=
+        projectedMeshes_.end()
+    ) {
+        return existing->second;
+    }
 
-        eld::render::ScreenPoint c =
-            mesh.vertices[packet.c].screen;
+    auto inserted =
+        projectedMeshes_.emplace(
+            &object,
+            projector_.project(
+                object,
+                camera_
+            )
+        );
 
-        rasterizer_.drawSolidTriangle(
+    return inserted.first->second;
+}
+
+void SoftwareRenderBackend::draw(
+    const RenderItem& item
+) {
+    if (
+        item.object == nullptr ||
+        item.submesh == nullptr ||
+        item.material == nullptr ||
+        item.object->model == nullptr
+    ) {
+        return;
+    }
+
+    const RenderObject& object =
+        *item.object;
+
+    const RenderMesh& mesh =
+        object.model->mesh;
+
+    const RenderSubmesh& submesh =
+        *item.submesh;
+
+    if (
+        submesh.firstIndex >
+        mesh.indices.size()
+    ) {
+        return;
+    }
+
+    const std::size_t endIndex =
+        submesh.firstIndex +
+        submesh.indexCount;
+
+    if (
+        endIndex >
+        mesh.indices.size()
+    ) {
+        return;
+    }
+
+    const SoftwareProjectedMesh&
+        projectedMesh =
+            project(object);
+
+    for (
+        std::size_t index =
+            submesh.firstIndex;
+        index + 2 < endIndex;
+        index += 3
+    ) {
+        const std::uint32_t a =
+            mesh.indices[index];
+
+        const std::uint32_t b =
+            mesh.indices[index + 1];
+
+        const std::uint32_t c =
+            mesh.indices[index + 2];
+
+        if (
+            a >= projectedMesh.vertices.size() ||
+            b >= projectedMesh.vertices.size() ||
+            c >= projectedMesh.vertices.size()
+        ) {
+            continue;
+        }
+
+        rasterizer_.drawTriangle(
             framebuffer_,
-            a,
-            b,
-            c,
-            colorFromPacket(packet)
+            projectedMesh.vertices[a],
+            projectedMesh.vertices[b],
+            projectedMesh.vertices[c],
+            *item.material
         );
     }
 }
@@ -117,12 +199,31 @@ void SoftwareRenderBackend::endFrame() {
     }
 
     std::vector<ColorPixel> pixels;
-    pixels.reserve(width_ * height_);
 
-    for (int y = 0; y < height_; y++) {
-        for (int x = 0; x < width_; x++) {
+    pixels.reserve(
+        static_cast<std::size_t>(
+            width_
+        ) *
+        static_cast<std::size_t>(
+            height_
+        )
+    );
+
+    for (
+        int y = 0;
+        y < height_;
+        y++
+    ) {
+        for (
+            int x = 0;
+            x < width_;
+            x++
+        ) {
             pixels.push_back(
-                framebuffer_.color().at(x, y)
+                framebuffer_.color().at(
+                    x,
+                    y
+                )
             );
         }
     }
@@ -131,14 +232,25 @@ void SoftwareRenderBackend::endFrame() {
         texture_,
         nullptr,
         pixels.data(),
-        width_ * static_cast<int>(sizeof(ColorPixel))
+        width_ *
+            static_cast<int>(
+                sizeof(ColorPixel)
+            )
     );
 
-    SDL_FRect destination {
-        static_cast<float>(viewportX_),
-        static_cast<float>(viewportY_),
-        static_cast<float>(width_),
-        static_cast<float>(height_)
+    SDL_FRect destination{
+        static_cast<float>(
+            viewportX_
+        ),
+        static_cast<float>(
+            viewportY_
+        ),
+        static_cast<float>(
+            width_
+        ),
+        static_cast<float>(
+            height_
+        )
     };
 
     SDL_RenderTexture(

@@ -1,9 +1,7 @@
 #pragma once
 
-#include "../geometry/ProjectedMesh.h"
-#include "../pipeline/RenderQueue.h"
+#include "../pipeline/RenderItem.h"
 #include "../scene/RenderCamera.h"
-#include "../scene/RenderObject.h"
 
 namespace eld::render {
 
@@ -15,10 +13,8 @@ public:
         const RenderCamera& camera
     ) = 0;
 
-    virtual void drawObject(
-        const RenderObject& object,
-        const ProjectedMesh& mesh,
-        const RenderQueue& queue
+    virtual void draw(
+        const RenderItem& item
     ) = 0;
 
     virtual void endFrame() = 0;
