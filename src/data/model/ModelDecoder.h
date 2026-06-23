@@ -4,19 +4,19 @@
 #include <cstdint>
 #include <vector>
 
-#include "ModelAsset.h"
 #include "ModelFile.h"
+#include "ModelMesh.h"
 #include "ModelSourceMap.h"
 
 namespace eld::model {
 
-class ModelAssetBuilder {
+class ModelDecoder {
 public:
-    ModelAsset build(
+    ModelMesh decode(
         const ModelFile& file
     ) const;
 
-    ModelAsset build(
+    ModelMesh decode(
         const ModelFile& file,
         ModelSourceMap& sourceMap
     ) const;
@@ -44,22 +44,22 @@ private:
         FaceSource* faceSource
     ) const;
 
-    std::vector<Vertex> buildVertices(
+    std::vector<Vertex> decodeVertices(
         const ModelFile& file,
         ModelSourceMap* sourceMap
     ) const;
 
-    std::vector<Face> buildFaces(
+    std::vector<Face> decodeFaces(
         const ModelFile& file,
         ModelSourceMap* sourceMap
     ) const;
 
-    std::vector<TextureMapping> buildTextureMappings(
+    std::vector<TextureMapping> decodeTextureMappings(
         const ModelFile& file,
         ModelSourceMap* sourceMap
     ) const;
 
-    ModelAsset buildAsset(
+    ModelMesh decodeMesh(
         const ModelFile& file,
         ModelSourceMap* sourceMap
     ) const;

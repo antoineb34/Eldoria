@@ -37,7 +37,7 @@ struct TextureMapping {
     std::uint32_t vVertex = 0;
 };
 
-struct ModelAsset {
+struct ModelMesh {
     std::vector<Vertex> vertices;
     std::vector<Face> faces;
     std::vector<TextureMapping> textureMappings;

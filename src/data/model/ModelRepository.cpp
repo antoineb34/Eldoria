@@ -20,8 +20,8 @@ Model ModelRepository::get(
 
     ModelSourceMap sourceMap;
 
-    ModelAsset asset =
-        builder_.build(
+    ModelMesh mesh =
+        decoder_.decode(
             file,
             sourceMap
         );
@@ -29,7 +29,7 @@ Model ModelRepository::get(
     return Model{
         .id = id,
         .file = std::move(file),
-        .asset = std::move(asset),
+        .mesh = std::move(mesh),
         .sourceMap = std::move(sourceMap)
     };
 }
@@ -65,13 +65,13 @@ ModelFile ModelRepository::getFile(
     return std::move(*file);
 }
 
-ModelAsset ModelRepository::getAsset(
+ModelMesh ModelRepository::getMesh(
     std::uint16_t id
 ) const {
     const ModelFile file =
         getFile(id);
 
-    return builder_.build(
+    return decoder_.decode(
         file
     );
 }

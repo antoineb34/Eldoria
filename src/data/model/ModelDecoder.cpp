@@ -1,4 +1,4 @@
-#include "ModelAssetBuilder.h"
+#include "ModelDecoder.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -6,7 +6,7 @@
 
 namespace eld::model {
 
-int ModelAssetBuilder::readTriangleIndex(
+int ModelDecoder::readTriangleIndex(
     const ModelSections& sections,
     TriangleState& state,
     FaceSource* faceSource
@@ -32,7 +32,7 @@ int ModelAssetBuilder::readTriangleIndex(
     return index;
 }
 
-void ModelAssetBuilder::applyTriangleType(
+void ModelDecoder::applyTriangleType(
     std::uint8_t triangleType,
     const ModelSections& sections,
     TriangleState& state,
@@ -42,6 +42,7 @@ void ModelAssetBuilder::applyTriangleType(
     constexpr std::uint8_t TriangleTypeReuseCAsB = 2;
     constexpr std::uint8_t TriangleTypeReuseCAsA = 3;
     constexpr std::uint8_t TriangleTypeSwapAB = 4;
+
     switch (triangleType) {
         case TriangleTypeNew:
             state.a =
@@ -125,12 +126,13 @@ void ModelAssetBuilder::applyTriangleType(
     }
 }
 
-std::vector<Vertex> ModelAssetBuilder::buildVertices(
+std::vector<Vertex> ModelDecoder::decodeVertices(
     const ModelFile& file,
     ModelSourceMap* sourceMap
 ) const {
     const ModelSections& sections =
         file.sections;
+
     std::vector<Vertex> vertices;
 
     vertices.reserve(
@@ -259,7 +261,7 @@ std::vector<Vertex> ModelAssetBuilder::buildVertices(
     return vertices;
 }
 
-std::vector<Face> ModelAssetBuilder::buildFaces(
+std::vector<Face> ModelDecoder::decodeFaces(
     const ModelFile& file,
     ModelSourceMap* sourceMap
 ) const {
@@ -269,6 +271,7 @@ std::vector<Face> ModelAssetBuilder::buildFaces(
 
     const ModelSections& sections =
         file.sections;
+
     std::vector<Face> faces;
 
     faces.reserve(
@@ -418,12 +421,13 @@ std::vector<Face> ModelAssetBuilder::buildFaces(
     return faces;
 }
 
-std::vector<TextureMapping> ModelAssetBuilder::buildTextureMappings(
+std::vector<TextureMapping> ModelDecoder::decodeTextureMappings(
     const ModelFile& file,
     ModelSourceMap* sourceMap
 ) const {
     const ModelSections& sections =
         file.sections;
+
     std::vector<TextureMapping> mappings;
 
     mappings.reserve(
@@ -472,7 +476,7 @@ std::vector<TextureMapping> ModelAssetBuilder::buildTextureMappings(
     return mappings;
 }
 
-ModelAsset ModelAssetBuilder::buildAsset(
+ModelMesh ModelDecoder::decodeMesh(
     const ModelFile& file,
     ModelSourceMap* sourceMap
 ) const {
@@ -481,43 +485,43 @@ ModelAsset ModelAssetBuilder::buildAsset(
             ModelSourceMap{};
     }
 
-    ModelAsset asset{};
+    ModelMesh mesh{};
 
-    asset.vertices =
-        buildVertices(
+    mesh.vertices =
+        decodeVertices(
             file,
             sourceMap
         );
 
-    asset.faces =
-        buildFaces(
+    mesh.faces =
+        decodeFaces(
             file,
             sourceMap
         );
 
-    asset.textureMappings =
-        buildTextureMappings(
+    mesh.textureMappings =
+        decodeTextureMappings(
             file,
             sourceMap
         );
 
-    return asset;
+    return mesh;
 }
 
-ModelAsset ModelAssetBuilder::build(
+ModelMesh ModelDecoder::decode(
     const ModelFile& file
 ) const {
-    return buildAsset(
+    return decodeMesh(
         file,
         nullptr
     );
 }
 
-ModelAsset ModelAssetBuilder::build(
+ModelMesh ModelDecoder::decode(
     const ModelFile& file,
     ModelSourceMap& sourceMap
 ) const {
-    return buildAsset(
+    return decodeMesh(
         file,
         &sourceMap
     );

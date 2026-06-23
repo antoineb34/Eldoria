@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "Model.h"
-#include "ModelAssetBuilder.h"
+#include "ModelDecoder.h"
 #include "ModelFileParser.h"
 #include "cache/Store.h"
 
@@ -23,12 +23,12 @@ public:
     );
 
     std::uint16_t create(
-        const ModelAsset& asset
+        const ModelMesh& mesh
     );
 
     void create(
         std::uint16_t id,
-        const ModelAsset& asset
+        const ModelMesh& mesh
     );
 
     Model get(
@@ -43,13 +43,13 @@ public:
         std::uint16_t id
     ) const;
 
-    ModelAsset getAsset(
+    ModelMesh getMesh(
         std::uint16_t id
     ) const;
 
     void update(
         std::uint16_t id,
-        const ModelAsset& asset
+        const ModelMesh& mesh
     );
 
     void remove(
@@ -76,7 +76,7 @@ private:
     eld::cache::Store store_;
 
     ModelFileParser parser_;
-    ModelAssetBuilder builder_;
+    ModelDecoder decoder_;
 };
 
 }
