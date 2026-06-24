@@ -246,6 +246,12 @@ CacheExplorer::CacheExplorer()
       parameterRepository_(
           definitionRepository_.get("param")
       ),
+      messageRepository_(
+          definitionRepository_.get("mes")
+      ),
+      messageAnimationRepository_(
+          definitionRepository_.get("mesanim")
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -317,6 +323,8 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeVarp.reset();
     state_.activeVarbit.reset();
     state_.activeParameter.reset();
+    state_.activeMessage.reset();
+    state_.activeMessageAnimation.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -397,6 +405,41 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::MessageDefinition: {
+            if (state_.selection.definitionId >= 0) {
+                const auto* definition =
+                    messageRepository_.find(
+                        static_cast<std::uint16_t>(
+                            state_.selection.definitionId
+                        )
+                    );
+
+                if (definition != nullptr) {
+                    state_.activeMessage = *definition;
+                }
+            }
+
+            break;
+        }
+
+        case CacheTreeNodeType::MessageAnimationDefinition: {
+            if (state_.selection.definitionId >= 0) {
+                const auto* definition =
+                    messageAnimationRepository_.find(
+                        static_cast<std::uint16_t>(
+                            state_.selection.definitionId
+                        )
+                    );
+
+                if (definition != nullptr) {
+                    state_.activeMessageAnimation =
+                        *definition;
+                }
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::ParameterDefinition: {
             if (state_.selection.definitionId >= 0) {

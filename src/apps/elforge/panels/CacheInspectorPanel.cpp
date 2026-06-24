@@ -72,6 +72,12 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::ParameterDefinition:
             return "Parameter";
 
+        case CacheTreeNodeType::MessageDefinition:
+            return "Message";
+
+        case CacheTreeNodeType::MessageAnimationDefinition:
+            return "Message Animation";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -238,6 +244,40 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeMessage.has_value()) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("MESSAGE");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(
+                state.activeMessage->id
+            )
+        );
+
+        ImGui::TextUnformatted(
+            "This cache contains no message fields."
+        );
+    }
+
+    if (state.activeMessageAnimation.has_value()) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("MESSAGE ANIMATION");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(
+                state.activeMessageAnimation->id
+            )
+        );
+
+        ImGui::TextUnformatted(
+            "This cache contains no animation fields."
+        );
+    }
 
     if (state.activeParameter.has_value()) {
         const auto& parameter =

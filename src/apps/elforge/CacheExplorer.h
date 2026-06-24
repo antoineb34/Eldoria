@@ -29,6 +29,8 @@
 #include "definition/varp/VarpRepository.h"
 #include "definition/varbit/VarbitRepository.h"
 #include "definition/parameter/ParameterRepository.h"
+#include "definition/message/MessageRepository.h"
+#include "definition/message_animation/MessageAnimationRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -77,6 +79,8 @@ private:
     eld::definition::VarpRepository varpRepository_;
     eld::definition::VarbitRepository varbitRepository_;
     eld::definition::ParameterRepository parameterRepository_;
+    eld::definition::MessageRepository messageRepository_;
+    eld::definition::MessageAnimationRepository messageAnimationRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
     std::optional<eld::sprite::Sprite> activeSprite;
