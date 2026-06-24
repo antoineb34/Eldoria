@@ -8,6 +8,7 @@
 #include "definition/spot_animation/SpotAnimationRepository.h"
 #include "definition/varp/VarpRepository.h"
 #include "definition/varbit/VarbitRepository.h"
+#include "definition/parameter/ParameterRepository.h"
 
 #include <array>
 #include <cstdint>
@@ -348,6 +349,91 @@ CacheTreeNode makeSpriteNode(
     return node;
 }
 
+
+CacheTreeNode makeParameterNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    const eld::definition::ParameterDefinition& definition
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::ParameterDefinition;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/param/" +
+        std::to_string(definition.id);
+
+    node.label =
+        "Parameter " +
+        std::to_string(definition.id);
+
+    if (definition.type.has_value()) {
+        node.label +=
+            " (" +
+            std::string(1, *definition.type) +
+            ")";
+    }
+
+    node.name = "param";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(fileId);
+    node.definitionId =
+        static_cast<int>(definition.id);
+
+    return node;
+}
+
+CacheTreeNode makeParameterGroupNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    const eld::definition::ParameterRepository& repository
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::DefinitionGroup;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/param";
+
+    node.label =
+        "Parameters (" +
+        std::to_string(repository.count()) +
+        " definitions)";
+
+    node.name = "param";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(file.id);
+
+    for (
+        const eld::definition::ParameterDefinition& definition :
+        repository.list()
+    ) {
+        node.children.push_back(
+            makeParameterNode(
+                index,
+                archiveId,
+                file.id,
+                definition
+            )
+        );
+    }
+
+    return node;
+}
 
 template<typename Definition>
 CacheTreeNode makeVariableNode(
@@ -1131,6 +1217,10 @@ std::optional<CacheTreeNode> makeArchiveNode(
         eld::definition::VarbitRepository
     > varbitRepository;
 
+    std::optional<
+        eld::definition::ParameterRepository
+    > parameterRepository;
+
     if (entry.fileId == 2) {
         definitionRepository.emplace(
             store,
@@ -1186,6 +1276,10 @@ std::optional<CacheTreeNode> makeArchiveNode(
         varbitRepository.emplace(
             definitionRepository->get("varbit")
         );
+
+        parameterRepository.emplace(
+            definitionRepository->get("param")
+        );
     }
 
     for (
@@ -1196,6 +1290,30 @@ std::optional<CacheTreeNode> makeArchiveNode(
             eld::archive::findName(
                 file.nameHash
             );
+
+        if (
+            parameterRepository.has_value() &&
+            name.has_value() &&
+            *name == "param.dat"
+        ) {
+            node.children.push_back(
+                makeParameterGroupNode(
+                    index,
+                    entry.fileId,
+                    file,
+                    *parameterRepository
+                )
+            );
+
+            continue;
+        }
+
+        if (
+            name.has_value() &&
+            *name == "param.idx"
+        ) {
+            continue;
+        }
 
         if (
             varpRepository.has_value() &&

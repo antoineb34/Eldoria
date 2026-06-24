@@ -27,6 +27,7 @@ namespace eld::elforge {
         SpotAnimationDefinition,
         VarpDefinition,
         VarbitDefinition,
+        ParameterDefinition,
     };
 
 struct CacheTreeNode {

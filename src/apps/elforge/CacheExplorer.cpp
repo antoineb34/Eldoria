@@ -243,6 +243,9 @@ CacheExplorer::CacheExplorer()
       varbitRepository_(
           definitionRepository_.get("varbit")
       ),
+      parameterRepository_(
+          definitionRepository_.get("param")
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -313,6 +316,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeSpotAnimation.reset();
     state_.activeVarp.reset();
     state_.activeVarbit.reset();
+    state_.activeParameter.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -393,6 +397,24 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::ParameterDefinition: {
+            if (state_.selection.definitionId >= 0) {
+                const auto* definition =
+                    parameterRepository_.find(
+                        static_cast<std::uint16_t>(
+                            state_.selection.definitionId
+                        )
+                    );
+
+                if (definition != nullptr) {
+                    state_.activeParameter =
+                        *definition;
+                }
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::VarpDefinition: {
             if (state_.selection.definitionId >= 0) {

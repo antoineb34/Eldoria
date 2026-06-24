@@ -43,6 +43,8 @@ add_library(eldoria_data STATIC
     definition/varp/VarpRepository.cpp
     definition/varbit/VarbitDefinitionParser.cpp
     definition/varbit/VarbitRepository.cpp
+    definition/parameter/ParameterDefinitionParser.cpp
+    definition/parameter/ParameterRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp

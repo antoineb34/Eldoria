@@ -28,6 +28,7 @@
 #include "definition/spot_animation/SpotAnimationRepository.h"
 #include "definition/varp/VarpRepository.h"
 #include "definition/varbit/VarbitRepository.h"
+#include "definition/parameter/ParameterRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -75,6 +76,7 @@ private:
     eld::definition::SpotAnimationRepository spotAnimationRepository_;
     eld::definition::VarpRepository varpRepository_;
     eld::definition::VarbitRepository varbitRepository_;
+    eld::definition::ParameterRepository parameterRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
     std::optional<eld::sprite::Sprite> activeSprite;
