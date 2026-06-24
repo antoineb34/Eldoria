@@ -2,6 +2,7 @@
 #include "IdentityKitPreviewBuilder.h"
 #include "LocationPreviewBuilder.h"
 #include "NpcPreviewBuilder.h"
+#include "ItemPreviewBuilder.h"
 #include "FontPreviewBuilder.h"
 
 #include <exception>
@@ -220,6 +221,11 @@ CacheExplorer::CacheExplorer()
               "npc"
           )
       ),
+      itemRepository_(
+          definitionRepository_.get(
+              "obj"
+          )
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -285,6 +291,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeIdentityKit.reset();
     state_.activeLocation.reset();
     state_.activeNpc.reset();
+    state_.activeItem.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -365,6 +372,48 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::ItemDefinition: {
+            if (
+                state_.selection.definitionId < 0 ||
+                state_.selection.definitionId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            const eld::definition::ItemDefinition* definition =
+                itemRepository_.find(
+                    static_cast<std::uint16_t>(
+                        state_.selection.definitionId
+                    )
+                );
+
+            if (definition != nullptr) {
+                state_.activeItem =
+                    *definition;
+
+                const ItemPreviewBuilder previewBuilder;
+
+                std::optional<eld::model::Model> preview =
+                    previewBuilder.build(
+                        *definition,
+                        modelRepository_
+                    );
+
+                if (preview.has_value()) {
+                    state_.activeModelHandle =
+                        graphicsResources_.resolveModel(
+                            preview->mesh
+                        );
+
+                    state_.activeModel =
+                        std::move(*preview);
+                }
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::NpcDefinition: {
             if (
