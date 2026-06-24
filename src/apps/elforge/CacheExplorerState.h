@@ -12,6 +12,7 @@
 #include "texture/Texture.h"
 #include "sprite/Sprite.h"
 #include "image/Image.h"
+#include "font/Font.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -39,6 +40,7 @@ struct CacheExplorerState {
 
     std::optional<eld::sprite::Sprite> activeSprite;
     std::optional<eld::image::Image> activeImage;
+    std::optional<eld::font::Font> activeFont;
 
     std::unordered_map<std::string, bool>
         expandedNodes;

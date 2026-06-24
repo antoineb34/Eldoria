@@ -20,6 +20,9 @@ add_library(eldoria_data STATIC
     image/IndexedImageDecoder.cpp
     image/JpegDecoder.cpp
     image/JpegRepository.cpp
+    font/FontFileParser.cpp
+    font/FontDecoder.cpp
+    font/FontRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp

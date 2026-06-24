@@ -166,6 +166,19 @@ CacheTreeNode makeArchiveFileNode(
                 CacheTreeNodeType::Image;
         }
 
+        if (
+            archiveId == 1 &&
+            (
+                *name == "p11_full.dat" ||
+                *name == "p12_full.dat" ||
+                *name == "b12_full.dat" ||
+                *name == "q8_full.dat"
+            )
+        ) {
+            node.type =
+                CacheTreeNodeType::Font;
+        }
+
         node.label =
             std::string(*name);
 

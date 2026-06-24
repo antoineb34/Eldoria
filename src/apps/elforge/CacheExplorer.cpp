@@ -1,4 +1,5 @@
 #include "CacheExplorer.h"
+#include "FontPreviewBuilder.h"
 
 #include <exception>
 #include <limits>
@@ -112,6 +113,12 @@ CacheExplorer::CacheExplorer()
           ),
           1
       ),
+      titleFontRepository_(
+          cache_.open(
+              eld::cache::IndexId::Config
+          ),
+          1
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -172,6 +179,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeTexture.reset();
     state_.activeSprite.reset();
     state_.activeImage.reset();
+    state_.activeFont.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -224,6 +232,31 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::Texture:
             break;
+
+        case CacheTreeNodeType::Font: {
+            if (
+                state_.selection.archiveId != 1 ||
+                state_.selection.name.empty()
+            ) {
+                break;
+            }
+
+            state_.activeFont =
+                titleFontRepository_.find(
+                    state_.selection.name
+                );
+
+            if (state_.activeFont.has_value()) {
+                const FontPreviewBuilder previewBuilder;
+
+                state_.activeImage =
+                    previewBuilder.build(
+                        *state_.activeFont
+                    );
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::Image: {
             if (
