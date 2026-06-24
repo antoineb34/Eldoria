@@ -1,6 +1,7 @@
 #include "CacheTreeBuilder.h"
 
 #include "definition/idk/IdentityKitRepository.h"
+#include "definition/location/LocationRepository.h"
 
 #include <array>
 #include <cstdint>
@@ -342,6 +343,93 @@ CacheTreeNode makeSpriteNode(
 }
 
 
+CacheTreeNode makeLocationNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    const eld::definition::LocationDefinition& definition
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::LocationDefinition;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/loc/" +
+        std::to_string(definition.id);
+
+    node.label =
+        "Location " +
+        std::to_string(definition.id);
+
+    if (
+        !definition.name.empty() &&
+        definition.name != "null"
+    ) {
+        node.label +=
+            " - " +
+            definition.name;
+    }
+
+    node.name = "loc";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(fileId);
+    node.definitionId =
+        static_cast<int>(definition.id);
+
+    return node;
+}
+
+CacheTreeNode makeLocationGroupNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    const eld::definition::LocationRepository& repository
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::DefinitionGroup;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/loc";
+
+    node.label =
+        "Locations (" +
+        std::to_string(repository.count()) +
+        " definitions)";
+
+    node.name = "loc";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(file.id);
+
+    for (
+        const eld::definition::LocationDefinition& definition :
+        repository.list()
+    ) {
+        node.children.push_back(
+            makeLocationNode(
+                index,
+                archiveId,
+                file.id,
+                definition
+            )
+        );
+    }
+
+    return node;
+}
+
 CacheTreeNode makeIdentityKitNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
@@ -581,6 +669,10 @@ std::optional<CacheTreeNode> makeArchiveNode(
         eld::definition::IdentityKitRepository
     > identityKitRepository;
 
+    std::optional<
+        eld::definition::LocationRepository
+    > locationRepository;
+
     if (entry.fileId == 2) {
         definitionRepository.emplace(
             store,
@@ -598,6 +690,12 @@ std::optional<CacheTreeNode> makeArchiveNode(
                 "idk"
             )
         );
+
+        locationRepository.emplace(
+            definitionRepository->get(
+                "loc"
+            )
+        );
     }
 
     for (
@@ -608,6 +706,28 @@ std::optional<CacheTreeNode> makeArchiveNode(
             eld::archive::findName(
                 file.nameHash
             );
+
+        if (
+            locationRepository.has_value() &&
+            name.has_value()
+        ) {
+            if (*name == "loc.dat") {
+                node.children.push_back(
+                    makeLocationGroupNode(
+                        index,
+                        entry.fileId,
+                        file,
+                        *locationRepository
+                    )
+                );
+
+                continue;
+            }
+
+            if (*name == "loc.idx") {
+                continue;
+            }
+        }
 
         if (
             identityKitRepository.has_value() &&

@@ -20,6 +20,7 @@ namespace eld::elforge {
         DefinitionGroup,
         FloorDefinition,
         IdentityKitDefinition,
+        LocationDefinition,
     };
 
 struct CacheTreeNode {

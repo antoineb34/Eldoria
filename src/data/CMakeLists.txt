@@ -29,6 +29,8 @@ add_library(eldoria_data STATIC
     definition/floor/FloorRepository.cpp
     definition/idk/IdentityKitDefinitionParser.cpp
     definition/idk/IdentityKitRepository.cpp
+    definition/location/LocationDefinitionParser.cpp
+    definition/location/LocationRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp
