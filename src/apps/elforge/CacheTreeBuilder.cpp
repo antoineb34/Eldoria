@@ -12,6 +12,8 @@
 #include "archive/ArchiveParser.h"
 #include "cache/Store.h"
 #include "sprite/SpriteRepository.h"
+#include "definition/DefinitionRepository.h"
+#include "definition/floor/FloorRepository.h"
 
 namespace eld::elforge {
 
@@ -337,6 +339,91 @@ CacheTreeNode makeSpriteNode(
     return node;
 }
 
+
+CacheTreeNode makeFloorNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    const eld::definition::FloorDefinition& definition
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::FloorDefinition;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/flo/" +
+        std::to_string(definition.id);
+
+    node.label =
+        "Floor " +
+        std::to_string(definition.id);
+
+    if (!definition.name.empty()) {
+        node.label +=
+            " - " +
+            definition.name;
+    }
+
+    node.name = "flo";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(fileId);
+    node.definitionId =
+        static_cast<int>(definition.id);
+
+    return node;
+}
+
+CacheTreeNode makeFloorGroupNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    const eld::definition::FloorRepository& repository
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::DefinitionGroup;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/flo";
+
+    node.label =
+        "Floors (" +
+        std::to_string(repository.count()) +
+        " definitions)";
+
+    node.name = "flo";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(file.id);
+
+    for (
+        const eld::definition::FloorDefinition& definition :
+        repository.list()
+    ) {
+        node.children.push_back(
+            makeFloorNode(
+                index,
+                archiveId,
+                file.id,
+                definition
+            )
+        );
+    }
+
+    return node;
+}
+
 std::optional<CacheTreeNode> makeArchiveNode(
     eld::cache::IndexId index,
     const eld::cache::Store& store,
@@ -395,6 +482,27 @@ std::optional<CacheTreeNode> makeArchiveNode(
         );
     }
 
+    std::optional<
+        eld::definition::DefinitionRepository
+    > definitionRepository;
+
+    std::optional<
+        eld::definition::FloorRepository
+    > floorRepository;
+
+    if (entry.fileId == 2) {
+        definitionRepository.emplace(
+            store,
+            entry.fileId
+        );
+
+        floorRepository.emplace(
+            definitionRepository->get(
+                "flo"
+            )
+        );
+    }
+
     for (
         const eld::archive::ArchiveFile& file :
         archive->list()
@@ -403,6 +511,28 @@ std::optional<CacheTreeNode> makeArchiveNode(
             eld::archive::findName(
                 file.nameHash
             );
+
+        if (
+            floorRepository.has_value() &&
+            name.has_value()
+        ) {
+            if (*name == "flo.dat") {
+                node.children.push_back(
+                    makeFloorGroupNode(
+                        index,
+                        entry.fileId,
+                        file,
+                        *floorRepository
+                    )
+                );
+
+                continue;
+            }
+
+            if (*name == "flo.idx") {
+                continue;
+            }
+        }
 
         if (
             spriteRepository.has_value() &&

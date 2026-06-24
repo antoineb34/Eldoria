@@ -39,6 +39,12 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::Sprite:
             return "Sprite";
 
+        case CacheTreeNodeType::DefinitionGroup:
+            return "Definition Group";
+
+        case CacheTreeNodeType::FloorDefinition:
+            return "Floor Definition";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -205,6 +211,120 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeFloor.has_value()) {
+        const eld::definition::FloorDefinition& floor =
+            *state.activeFloor;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("FLOOR");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(
+                floor.id
+            )
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            floor.name.empty()
+                ? "(none)"
+                : floor.name.c_str()
+        );
+
+        if (floor.rgb.has_value()) {
+            const std::uint32_t rgb =
+                *floor.rgb;
+
+            ImGui::Text(
+                "Primary RGB: #%06X",
+                static_cast<unsigned int>(
+                    rgb
+                )
+            );
+
+            ImGui::ColorButton(
+                "##FloorPrimaryColor",
+                ImVec4(
+                    static_cast<float>(
+                        (rgb >> 16) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        (rgb >> 8) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        rgb & 0xFF
+                    ) / 255.0f,
+                    1.0f
+                ),
+                ImGuiColorEditFlags_NoTooltip,
+                ImVec2(80.0f, 32.0f)
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Primary RGB: (none)"
+            );
+        }
+
+        if (floor.textureId.has_value()) {
+            ImGui::Text(
+                "Texture ID: %u",
+                static_cast<unsigned int>(
+                    *floor.textureId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Texture ID: (none)"
+            );
+        }
+
+        if (floor.secondaryRgb.has_value()) {
+            const std::uint32_t rgb =
+                *floor.secondaryRgb;
+
+            ImGui::Text(
+                "Secondary RGB: #%06X",
+                static_cast<unsigned int>(
+                    rgb
+                )
+            );
+
+            ImGui::ColorButton(
+                "##FloorSecondaryColor",
+                ImVec4(
+                    static_cast<float>(
+                        (rgb >> 16) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        (rgb >> 8) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        rgb & 0xFF
+                    ) / 255.0f,
+                    1.0f
+                ),
+                ImGuiColorEditFlags_NoTooltip,
+                ImVec2(80.0f, 32.0f)
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Secondary RGB: (none)"
+            );
+        }
+
+        ImGui::Text(
+            "Occlude: %s",
+            floor.occlude
+                ? "true"
+                : "false"
+        );
+    }
 
     if (state.activeModel) {
         const eld::model::Model& model =
