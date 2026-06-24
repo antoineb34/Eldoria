@@ -45,6 +45,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::FloorDefinition:
             return "Floor Definition";
 
+        case CacheTreeNodeType::IdentityKitDefinition:
+            return "Identity Kit";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -211,6 +214,100 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeIdentityKit.has_value()) {
+        const eld::definition::IdentityKitDefinition& kit =
+            *state.activeIdentityKit;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("IDENTITY KIT");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(kit.id)
+        );
+
+        if (kit.bodyPartId.has_value()) {
+            ImGui::Text(
+                "Body part: %u",
+                static_cast<unsigned int>(*kit.bodyPartId)
+            );
+        }
+        else {
+            ImGui::TextUnformatted("Body part: (none)");
+        }
+
+        ImGui::Text(
+            "Selectable: %s",
+            kit.selectable ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Body models: %zu",
+            kit.modelIds.size()
+        );
+
+        for (const std::uint16_t modelId : kit.modelIds) {
+            ImGui::BulletText(
+                "Model %u",
+                static_cast<unsigned int>(modelId)
+            );
+        }
+
+        ImGui::TextUnformatted("Recolors:");
+
+        bool hasRecolors = false;
+
+        for (
+            std::size_t index = 0;
+            index < kit.recolorSources.size();
+            ++index
+        ) {
+            if (
+                kit.recolorSources[index].has_value() &&
+                kit.recolorDestinations[index].has_value()
+            ) {
+                hasRecolors = true;
+
+                ImGui::BulletText(
+                    "%u -> %u",
+                    static_cast<unsigned int>(
+                        *kit.recolorSources[index]
+                    ),
+                    static_cast<unsigned int>(
+                        *kit.recolorDestinations[index]
+                    )
+                );
+            }
+        }
+
+        if (!hasRecolors) {
+            ImGui::TextUnformatted("(none)");
+        }
+
+        ImGui::TextUnformatted("Head models:");
+
+        bool hasHeadModels = false;
+
+        for (
+            const std::optional<std::uint16_t>& modelId :
+            kit.headModelIds
+        ) {
+            if (modelId.has_value()) {
+                hasHeadModels = true;
+
+                ImGui::BulletText(
+                    "Model %u",
+                    static_cast<unsigned int>(*modelId)
+                );
+            }
+        }
+
+        if (!hasHeadModels) {
+            ImGui::TextUnformatted("(none)");
+        }
+    }
 
     if (state.activeFloor.has_value()) {
         const eld::definition::FloorDefinition& floor =

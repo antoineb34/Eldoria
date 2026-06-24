@@ -5,6 +5,7 @@
 #include "model/ModelHandle.h"
 #include "model/ModelRegistry.h"
 #include "model/ModelResolver.h"
+#include "model/ModelMesh.h"
 #include "texture/GraphicsTexture.h"
 #include "texture/TextureHandle.h"
 #include "texture/TextureRegistry.h"
@@ -21,6 +22,10 @@ public:
 
     ModelHandle resolveModel(
         std::uint16_t sourceModelId
+    );
+
+    ModelHandle resolveModel(
+        const eld::model::ModelMesh& source
     );
 
     TextureHandle resolveTexture(

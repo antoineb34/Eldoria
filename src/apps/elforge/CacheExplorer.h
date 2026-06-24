@@ -20,6 +20,7 @@
 #include "font/FontRepository.h"
 #include "definition/DefinitionRepository.h"
 #include "definition/floor/FloorRepository.h"
+#include "definition/idk/IdentityKitRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -59,6 +60,7 @@ private:
     eld::font::FontRepository titleFontRepository_;
     eld::definition::DefinitionRepository definitionRepository_;
     eld::definition::FloorRepository floorRepository_;
+    eld::definition::IdentityKitRepository identityKitRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
     std::optional<eld::sprite::Sprite> activeSprite;

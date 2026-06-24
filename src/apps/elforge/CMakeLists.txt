@@ -5,6 +5,7 @@ add_executable(elforge
     CacheExplorer.cpp
     CacheTreeBuilder.cpp
     FontPreviewBuilder.cpp
+    IdentityKitPreviewBuilder.cpp
 
     panels/CacheInspectorPanel.cpp
     panels/CacheTreePanel.cpp

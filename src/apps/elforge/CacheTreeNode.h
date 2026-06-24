@@ -19,6 +19,7 @@ namespace eld::elforge {
         Font,
         DefinitionGroup,
         FloorDefinition,
+        IdentityKitDefinition,
     };
 
 struct CacheTreeNode {
