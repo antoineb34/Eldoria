@@ -28,6 +28,8 @@ namespace eld::elforge {
         VarpDefinition,
         VarbitDefinition,
         ParameterDefinition,
+        MessageDefinition,
+        MessageAnimationDefinition,
     };
 
 struct CacheTreeNode {

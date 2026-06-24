@@ -9,6 +9,8 @@
 #include "definition/varp/VarpRepository.h"
 #include "definition/varbit/VarbitRepository.h"
 #include "definition/parameter/ParameterRepository.h"
+#include "definition/message/MessageRepository.h"
+#include "definition/message_animation/MessageAnimationRepository.h"
 
 #include <array>
 #include <cstdint>
@@ -349,6 +351,97 @@ CacheTreeNode makeSpriteNode(
     return node;
 }
 
+
+template<typename Definition>
+CacheTreeNode makeEmptyDefinitionNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    CacheTreeNodeType type,
+    std::string_view keyName,
+    std::string_view labelName,
+    const Definition& definition
+) {
+    CacheTreeNode node;
+
+    node.type = type;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/" +
+        std::string(keyName) +
+        "/" +
+        std::to_string(definition.id);
+
+    node.label =
+        std::string(labelName) +
+        " " +
+        std::to_string(definition.id);
+
+    node.name = std::string(keyName);
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(fileId);
+    node.definitionId =
+        static_cast<int>(definition.id);
+
+    return node;
+}
+
+template<typename Repository>
+CacheTreeNode makeEmptyDefinitionGroupNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    CacheTreeNodeType childType,
+    std::string_view keyName,
+    std::string_view groupLabel,
+    std::string_view childLabel,
+    const Repository& repository
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::DefinitionGroup;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/" +
+        std::string(keyName);
+
+    node.label =
+        std::string(groupLabel) +
+        " (" +
+        std::to_string(repository.count()) +
+        " empty definitions)";
+
+    node.name = std::string(keyName);
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(file.id);
+
+    for (const auto& definition : repository.list()) {
+        node.children.push_back(
+            makeEmptyDefinitionNode(
+                index,
+                archiveId,
+                file.id,
+                childType,
+                keyName,
+                childLabel,
+                definition
+            )
+        );
+    }
+
+    return node;
+}
 
 CacheTreeNode makeParameterNode(
     eld::cache::IndexId index,
@@ -1221,6 +1314,14 @@ std::optional<CacheTreeNode> makeArchiveNode(
         eld::definition::ParameterRepository
     > parameterRepository;
 
+    std::optional<
+        eld::definition::MessageRepository
+    > messageRepository;
+
+    std::optional<
+        eld::definition::MessageAnimationRepository
+    > messageAnimationRepository;
+
     if (entry.fileId == 2) {
         definitionRepository.emplace(
             store,
@@ -1280,6 +1381,14 @@ std::optional<CacheTreeNode> makeArchiveNode(
         parameterRepository.emplace(
             definitionRepository->get("param")
         );
+
+        messageRepository.emplace(
+            definitionRepository->get("mes")
+        );
+
+        messageAnimationRepository.emplace(
+            definitionRepository->get("mesanim")
+        );
     }
 
     for (
@@ -1290,6 +1399,62 @@ std::optional<CacheTreeNode> makeArchiveNode(
             eld::archive::findName(
                 file.nameHash
             );
+
+        if (
+            messageAnimationRepository.has_value() &&
+            name.has_value() &&
+            *name == "mesanim.dat"
+        ) {
+            node.children.push_back(
+                makeEmptyDefinitionGroupNode(
+                    index,
+                    entry.fileId,
+                    file,
+                    CacheTreeNodeType::MessageAnimationDefinition,
+                    "mesanim",
+                    "Message Animations",
+                    "Message Animation",
+                    *messageAnimationRepository
+                )
+            );
+
+            continue;
+        }
+
+        if (
+            name.has_value() &&
+            *name == "mesanim.idx"
+        ) {
+            continue;
+        }
+
+        if (
+            messageRepository.has_value() &&
+            name.has_value() &&
+            *name == "mes.dat"
+        ) {
+            node.children.push_back(
+                makeEmptyDefinitionGroupNode(
+                    index,
+                    entry.fileId,
+                    file,
+                    CacheTreeNodeType::MessageDefinition,
+                    "mes",
+                    "Messages",
+                    "Message",
+                    *messageRepository
+                )
+            );
+
+            continue;
+        }
+
+        if (
+            name.has_value() &&
+            *name == "mes.idx"
+        ) {
+            continue;
+        }
 
         if (
             parameterRepository.has_value() &&

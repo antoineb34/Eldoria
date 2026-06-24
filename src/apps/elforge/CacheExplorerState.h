@@ -23,6 +23,8 @@
 #include "definition/varp/VarpDefinition.h"
 #include "definition/varbit/VarbitDefinition.h"
 #include "definition/parameter/ParameterDefinition.h"
+#include "definition/message/MessageDefinition.h"
+#include "definition/message_animation/MessageAnimationDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -78,6 +80,12 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::ParameterDefinition>
         activeParameter;
+
+    std::optional<eld::definition::MessageDefinition>
+        activeMessage;
+
+    std::optional<eld::definition::MessageAnimationDefinition>
+        activeMessageAnimation;
 
     std::unordered_map<std::string, bool>
         expandedNodes;
