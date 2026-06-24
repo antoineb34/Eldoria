@@ -128,6 +128,9 @@ void CacheTreePanel::renderNode(
         state.selection.frameId =
             node.frameId;
 
+        state.selection.definitionId =
+            node.definitionId;
+
         if (hasChildren) {
             expanded =
                 !expanded;

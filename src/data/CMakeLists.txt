@@ -23,6 +23,10 @@ add_library(eldoria_data STATIC
     font/FontFileParser.cpp
     font/FontDecoder.cpp
     font/FontRepository.cpp
+    definition/DefinitionTableParser.cpp
+    definition/DefinitionRepository.cpp
+    definition/floor/FloorDefinitionParser.cpp
+    definition/floor/FloorRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp

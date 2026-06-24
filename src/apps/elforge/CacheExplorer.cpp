@@ -119,6 +119,17 @@ CacheExplorer::CacheExplorer()
           ),
           1
       ),
+      definitionRepository_(
+          cache_.open(
+              eld::cache::IndexId::Config
+          ),
+          2
+      ),
+      floorRepository_(
+          definitionRepository_.get(
+              "flo"
+          )
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_

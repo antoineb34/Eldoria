@@ -18,6 +18,8 @@
 #include "sprite/SpriteRepository.h"
 #include "image/JpegRepository.h"
 #include "font/FontRepository.h"
+#include "definition/DefinitionRepository.h"
+#include "definition/floor/FloorRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -55,6 +57,8 @@ private:
     eld::sprite::SpriteRepository titleSpriteRepository_;
     eld::image::JpegRepository titleJpegRepository_;
     eld::font::FontRepository titleFontRepository_;
+    eld::definition::DefinitionRepository definitionRepository_;
+    eld::definition::FloorRepository floorRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
     std::optional<eld::sprite::Sprite> activeSprite;

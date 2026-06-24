@@ -190,12 +190,14 @@ ByteReader ByteReader::readSubReader(
     );
 }
 
-std::string ByteReader::readNullTerminatedString() {
+std::string ByteReader::readTerminatedString(
+    std::uint8_t terminator
+) {
     const std::size_t start =
         position_;
 
     while (!atEnd()) {
-        if (readU8() == 0) {
+        if (readU8() == terminator) {
             const std::size_t length =
                 position_ - start - 1;
 
@@ -209,8 +211,12 @@ std::string ByteReader::readNullTerminatedString() {
     }
 
     throw std::runtime_error(
-        "Null-terminated string terminator was not found"
+        "String terminator was not found"
     );
+}
+
+std::string ByteReader::readNullTerminatedString() {
+    return readTerminatedString(0);
 }
 
 std::uint8_t ByteReader::peekU8() const {

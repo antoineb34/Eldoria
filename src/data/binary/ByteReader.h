@@ -44,6 +44,10 @@ public:
         std::size_t amount
     );
 
+    std::string readTerminatedString(
+        std::uint8_t terminator
+    );
+
     std::string readNullTerminatedString();
 
     std::uint8_t peekU8() const;
