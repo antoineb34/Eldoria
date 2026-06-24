@@ -20,6 +20,7 @@
 #include "definition/item/ItemDefinition.h"
 #include "definition/sequence/SequenceDefinition.h"
 #include "definition/spot_animation/SpotAnimationDefinition.h"
+#include "definition/varp/VarpDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -66,6 +67,9 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::SpotAnimationDefinition>
         activeSpotAnimation;
+
+    std::optional<eld::definition::VarpDefinition>
+        activeVarp;
 
     std::unordered_map<std::string, bool>
         expandedNodes;

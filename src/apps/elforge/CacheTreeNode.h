@@ -25,6 +25,7 @@ namespace eld::elforge {
         ItemDefinition,
         SequenceDefinition,
         SpotAnimationDefinition,
+        VarpDefinition,
     };
 
 struct CacheTreeNode {

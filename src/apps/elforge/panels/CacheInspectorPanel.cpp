@@ -63,6 +63,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::SpotAnimationDefinition:
             return "Spot Animation";
 
+        case CacheTreeNodeType::VarpDefinition:
+            return "Varp";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -229,6 +232,97 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeVarp.has_value()) {
+        const eld::definition::VarpDefinition& varp =
+            *state.activeVarp;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("VARP");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(varp.id)
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            varp.name.empty()
+                ? "(none)"
+                : varp.name.c_str()
+        );
+
+        if (varp.clientCode.has_value()) {
+            ImGui::Text(
+                "Client code: %u",
+                static_cast<unsigned int>(
+                    *varp.clientCode
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Client code: (none)"
+            );
+        }
+
+        if (varp.opcode1Value.has_value()) {
+            ImGui::Text(
+                "Opcode 1 value: %u",
+                static_cast<unsigned int>(
+                    *varp.opcode1Value
+                )
+            );
+        }
+
+        if (varp.opcode2Value.has_value()) {
+            ImGui::Text(
+                "Opcode 2 value: %u",
+                static_cast<unsigned int>(
+                    *varp.opcode2Value
+                )
+            );
+        }
+
+        if (varp.opcode7Value.has_value()) {
+            ImGui::Text(
+                "Opcode 7 value: %u",
+                static_cast<unsigned int>(
+                    *varp.opcode7Value
+                )
+            );
+        }
+
+        if (varp.opcode12Value.has_value()) {
+            ImGui::Text(
+                "Opcode 12 value: %u",
+                static_cast<unsigned int>(
+                    *varp.opcode12Value
+                )
+            );
+        }
+
+        ImGui::Text(
+            "Tracked: %s",
+            varp.tracked ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Persistent: %s",
+            varp.persistent ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Active: %s",
+            varp.active ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Mode: %d",
+            static_cast<int>(varp.mode)
+        );
+    }
 
     if (state.activeSpotAnimation.has_value()) {
         const eld::definition::SpotAnimationDefinition& effect =

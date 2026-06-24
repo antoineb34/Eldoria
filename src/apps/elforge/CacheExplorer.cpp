@@ -237,6 +237,11 @@ CacheExplorer::CacheExplorer()
               "spotanim"
           )
       ),
+      varpRepository_(
+          definitionRepository_.get(
+              "varp"
+          )
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -305,6 +310,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeItem.reset();
     state_.activeSequence.reset();
     state_.activeSpotAnimation.reset();
+    state_.activeVarp.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -385,6 +391,30 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::VarpDefinition: {
+            if (
+                state_.selection.definitionId < 0 ||
+                state_.selection.definitionId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            const eld::definition::VarpDefinition* definition =
+                varpRepository_.find(
+                    static_cast<std::uint16_t>(
+                        state_.selection.definitionId
+                    )
+                );
+
+            if (definition != nullptr) {
+                state_.activeVarp =
+                    *definition;
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::SpotAnimationDefinition: {
             if (

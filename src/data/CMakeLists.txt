@@ -39,6 +39,8 @@ add_library(eldoria_data STATIC
     definition/sequence/SequenceRepository.cpp
     definition/spot_animation/SpotAnimationDefinitionParser.cpp
     definition/spot_animation/SpotAnimationRepository.cpp
+    definition/varp/VarpDefinitionParser.cpp
+    definition/varp/VarpRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp
