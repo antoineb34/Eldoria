@@ -78,6 +78,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::MessageAnimationDefinition:
             return "Message Animation";
 
+        case CacheTreeNodeType::InterfaceDefinition:
+            return "Interface";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -244,6 +247,118 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeInterface.has_value()) {
+        const auto& widget =
+            *state.activeInterface;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("INTERFACE");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(widget.id)
+        );
+
+        if (widget.parentId.has_value()) {
+            ImGui::Text(
+                "Parent: %u",
+                static_cast<unsigned int>(
+                    *widget.parentId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted("Parent: (root)");
+        }
+
+        ImGui::Text(
+            "Type: %u",
+            static_cast<unsigned int>(widget.type)
+        );
+
+        ImGui::Text(
+            "Action type: %u",
+            static_cast<unsigned int>(
+                widget.actionType
+            )
+        );
+
+        ImGui::Text(
+            "Content type: %u",
+            static_cast<unsigned int>(
+                widget.contentType
+            )
+        );
+
+        ImGui::Text(
+            "Size: %u x %u",
+            static_cast<unsigned int>(widget.width),
+            static_cast<unsigned int>(widget.height)
+        );
+
+        ImGui::Text(
+            "Children: %zu",
+            widget.children.size()
+        );
+
+        ImGui::Text(
+            "Conditions: %zu",
+            widget.conditions.size()
+        );
+
+        ImGui::Text(
+            "Scripts: %zu",
+            widget.scripts.size()
+        );
+
+        if (!widget.text.empty()) {
+            ImGui::TextWrapped(
+                "Text: %s",
+                widget.text.c_str()
+            );
+        }
+
+        if (!widget.secondaryText.empty()) {
+            ImGui::TextWrapped(
+                "Secondary text: %s",
+                widget.secondaryText.c_str()
+            );
+        }
+
+        if (!widget.sprite.empty()) {
+            ImGui::Text(
+                "Sprite: %s",
+                widget.sprite.c_str()
+            );
+        }
+
+        if (widget.modelId.has_value()) {
+            ImGui::Text(
+                "Model: %u",
+                static_cast<unsigned int>(
+                    *widget.modelId
+                )
+            );
+        }
+
+        if (widget.animationId.has_value()) {
+            ImGui::Text(
+                "Animation: %u",
+                static_cast<unsigned int>(
+                    *widget.animationId
+                )
+            );
+        }
+
+        if (!widget.tooltip.empty()) {
+            ImGui::Text(
+                "Tooltip: %s",
+                widget.tooltip.c_str()
+            );
+        }
+    }
 
     if (state.activeMessage.has_value()) {
         ImGui::Spacing();

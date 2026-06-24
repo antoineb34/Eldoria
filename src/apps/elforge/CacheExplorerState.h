@@ -25,6 +25,7 @@
 #include "definition/parameter/ParameterDefinition.h"
 #include "definition/message/MessageDefinition.h"
 #include "definition/message_animation/MessageAnimationDefinition.h"
+#include "interface/InterfaceDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -86,6 +87,9 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::MessageAnimationDefinition>
         activeMessageAnimation;
+
+    std::optional<eld::interface::InterfaceDefinition>
+        activeInterface;
 
     std::unordered_map<std::string, bool>
         expandedNodes;

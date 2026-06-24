@@ -31,6 +31,7 @@
 #include "definition/parameter/ParameterRepository.h"
 #include "definition/message/MessageRepository.h"
 #include "definition/message_animation/MessageAnimationRepository.h"
+#include "interface/InterfaceRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -81,6 +82,7 @@ private:
     eld::definition::ParameterRepository parameterRepository_;
     eld::definition::MessageRepository messageRepository_;
     eld::definition::MessageAnimationRepository messageAnimationRepository_;
+    eld::interface::InterfaceRepository interfaceRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
     std::optional<eld::sprite::Sprite> activeSprite;
