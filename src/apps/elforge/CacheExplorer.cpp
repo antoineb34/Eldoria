@@ -4,6 +4,7 @@
 #include "NpcPreviewBuilder.h"
 #include "ItemPreviewBuilder.h"
 #include "SpotAnimationPreviewBuilder.h"
+#include "InterfacePreviewBuilder.h"
 #include "FontPreviewBuilder.h"
 
 #include <exception>
@@ -252,6 +253,12 @@ CacheExplorer::CacheExplorer()
       messageAnimationRepository_(
           definitionRepository_.get("mesanim")
       ),
+      interfaceRepository_(
+          cache_.open(
+              eld::cache::IndexId::Config
+          ),
+          3
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -325,6 +332,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeParameter.reset();
     state_.activeMessage.reset();
     state_.activeMessageAnimation.reset();
+    state_.activeInterface.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -405,6 +413,32 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::InterfaceDefinition: {
+            if (state_.selection.definitionId >= 0) {
+                const auto* definition =
+                    interfaceRepository_.find(
+                        static_cast<std::uint16_t>(
+                            state_.selection.definitionId
+                        )
+                    );
+
+                if (definition != nullptr) {
+                    state_.activeInterface =
+                        *definition;
+
+                    const InterfacePreviewBuilder previewBuilder;
+
+                    state_.activeImage =
+                        previewBuilder.build(
+                            *definition,
+                            interfaceRepository_
+                        );
+                }
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::MessageDefinition: {
             if (state_.selection.definitionId >= 0) {

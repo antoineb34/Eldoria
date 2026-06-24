@@ -11,6 +11,7 @@
 #include "definition/parameter/ParameterRepository.h"
 #include "definition/message/MessageRepository.h"
 #include "definition/message_animation/MessageAnimationRepository.h"
+#include "interface/InterfaceRepository.h"
 
 #include <array>
 #include <cstdint>
@@ -19,6 +20,7 @@
 #include <string_view>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 
 #include "archive/ArchiveHashes.h"
 #include "archive/ArchiveParser.h"
@@ -71,6 +73,186 @@ bool isTitleSprite(
     }
 
     return false;
+}
+
+std::string_view getInterfaceTypeName(
+    std::uint8_t type
+) {
+    switch (type) {
+        case 0:
+            return "Container";
+        case 1:
+            return "Unknown";
+        case 2:
+            return "Inventory";
+        case 3:
+            return "Rectangle";
+        case 4:
+            return "Text";
+        case 5:
+            return "Sprite";
+        case 6:
+            return "Model";
+        case 7:
+            return "Item List";
+        case 8:
+            return "Tooltip";
+        default:
+            return "Widget";
+    }
+}
+
+CacheTreeNode makeInterfaceNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    const eld::interface::InterfaceDefinition& definition,
+    const eld::interface::InterfaceRepository& repository,
+    std::unordered_set<std::uint16_t>& visited
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::InterfaceDefinition;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/interfaces/" +
+        std::to_string(definition.id);
+
+    node.label =
+        std::string(getInterfaceTypeName(definition.type)) +
+        " " +
+        std::to_string(definition.id);
+
+    if (!definition.text.empty()) {
+        node.label +=
+            " - " +
+            definition.text.substr(0, 40);
+    }
+
+    node.name = "data";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(fileId);
+    node.definitionId =
+        static_cast<int>(definition.id);
+
+    if (!visited.insert(definition.id).second) {
+        return node;
+    }
+
+    for (
+        const eld::interface::InterfaceChild& child :
+        definition.children
+    ) {
+        const auto* childDefinition =
+            repository.find(child.id);
+
+        if (
+            childDefinition != nullptr &&
+            !visited.contains(child.id)
+        ) {
+            node.children.push_back(
+                makeInterfaceNode(
+                    index,
+                    archiveId,
+                    fileId,
+                    *childDefinition,
+                    repository,
+                    visited
+                )
+            );
+        }
+    }
+
+    return node;
+}
+
+CacheTreeNode makeInterfaceGroupNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    const eld::interface::InterfaceRepository& repository
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::DefinitionGroup;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/interfaces";
+
+    node.label =
+        "Interfaces (" +
+        std::to_string(repository.count()) +
+        " widgets)";
+
+    node.name = "data";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(file.id);
+
+    std::unordered_set<std::uint16_t> referenced;
+
+    for (
+        const auto& definition :
+        repository.list()
+    ) {
+        for (
+            const auto& child :
+            definition.children
+        ) {
+            referenced.insert(child.id);
+        }
+    }
+
+    std::unordered_set<std::uint16_t> visited;
+
+    for (
+        const auto& definition :
+        repository.list()
+    ) {
+        if (!referenced.contains(definition.id)) {
+            node.children.push_back(
+                makeInterfaceNode(
+                    index,
+                    archiveId,
+                    file.id,
+                    definition,
+                    repository,
+                    visited
+                )
+            );
+        }
+    }
+
+    for (
+        const auto& definition :
+        repository.list()
+    ) {
+        if (!visited.contains(definition.id)) {
+            node.children.push_back(
+                makeInterfaceNode(
+                    index,
+                    archiveId,
+                    file.id,
+                    definition,
+                    repository,
+                    visited
+                )
+            );
+        }
+    }
+
+    return node;
 }
 
 CacheTreeNode makeRoot() {
@@ -1271,6 +1453,17 @@ std::optional<CacheTreeNode> makeArchiveNode(
     }
 
     std::optional<
+        eld::interface::InterfaceRepository
+    > interfaceRepository;
+
+    if (entry.fileId == 3) {
+        interfaceRepository.emplace(
+            store,
+            entry.fileId
+        );
+    }
+
+    std::optional<
         eld::definition::DefinitionRepository
     > definitionRepository;
 
@@ -1399,6 +1592,23 @@ std::optional<CacheTreeNode> makeArchiveNode(
             eld::archive::findName(
                 file.nameHash
             );
+
+        if (
+            interfaceRepository.has_value() &&
+            name.has_value() &&
+            *name == "data"
+        ) {
+            node.children.push_back(
+                makeInterfaceGroupNode(
+                    index,
+                    entry.fileId,
+                    file,
+                    *interfaceRepository
+                )
+            );
+
+            continue;
+        }
 
         if (
             messageAnimationRepository.has_value() &&

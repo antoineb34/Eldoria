@@ -41,6 +41,7 @@ struct FileName {
 
 inline constexpr std::array FileNames{
     FileName{"index.dat", "shared index"},
+    FileName{"data", "interface definitions"},
 
     FileName{"anim_index", "animation index"},
     FileName{"anim_crc", "animation checksums"},

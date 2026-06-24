@@ -30,6 +30,7 @@ namespace eld::elforge {
         ParameterDefinition,
         MessageDefinition,
         MessageAnimationDefinition,
+        InterfaceDefinition,
     };
 
 struct CacheTreeNode {
