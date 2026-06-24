@@ -31,6 +31,8 @@ add_library(eldoria_data STATIC
     definition/idk/IdentityKitRepository.cpp
     definition/location/LocationDefinitionParser.cpp
     definition/location/LocationRepository.cpp
+    definition/npc/NpcDefinitionParser.cpp
+    definition/npc/NpcRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp

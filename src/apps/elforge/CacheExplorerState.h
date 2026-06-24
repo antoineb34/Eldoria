@@ -16,6 +16,7 @@
 #include "definition/floor/FloorDefinition.h"
 #include "definition/idk/IdentityKitDefinition.h"
 #include "definition/location/LocationDefinition.h"
+#include "definition/npc/NpcDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -50,6 +51,9 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::LocationDefinition>
         activeLocation;
+
+    std::optional<eld::definition::NpcDefinition>
+        activeNpc;
 
     std::unordered_map<std::string, bool>
         expandedNodes;
