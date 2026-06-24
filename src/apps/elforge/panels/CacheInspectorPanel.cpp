@@ -60,6 +60,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::SequenceDefinition:
             return "Sequence";
 
+        case CacheTreeNodeType::SpotAnimationDefinition:
+            return "Spot Animation";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -226,6 +229,96 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeSpotAnimation.has_value()) {
+        const eld::definition::SpotAnimationDefinition& effect =
+            *state.activeSpotAnimation;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("SPOT ANIMATION");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(effect.id)
+        );
+
+        if (effect.modelId.has_value()) {
+            ImGui::Text(
+                "Model: %u",
+                static_cast<unsigned int>(
+                    *effect.modelId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted("Model: (none)");
+        }
+
+        if (effect.sequenceId.has_value()) {
+            ImGui::Text(
+                "Sequence: %u",
+                static_cast<unsigned int>(
+                    *effect.sequenceId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted("Sequence: (none)");
+        }
+
+        ImGui::Text(
+            "Scale: %u, %u",
+            static_cast<unsigned int>(effect.scaleX),
+            static_cast<unsigned int>(effect.scaleY)
+        );
+
+        ImGui::Text(
+            "Rotation: %u",
+            static_cast<unsigned int>(effect.rotation)
+        );
+
+        ImGui::Text(
+            "Ambient: %u",
+            static_cast<unsigned int>(effect.ambient)
+        );
+
+        ImGui::Text(
+            "Contrast: %u",
+            static_cast<unsigned int>(effect.contrast)
+        );
+
+        ImGui::TextUnformatted("Recolors:");
+
+        bool hasRecolors = false;
+
+        for (
+            std::size_t index = 0;
+            index < effect.recolorSources.size();
+            ++index
+        ) {
+            if (
+                effect.recolorSources[index].has_value() &&
+                effect.recolorDestinations[index].has_value()
+            ) {
+                hasRecolors = true;
+
+                ImGui::BulletText(
+                    "%u -> %u",
+                    static_cast<unsigned int>(
+                        *effect.recolorSources[index]
+                    ),
+                    static_cast<unsigned int>(
+                        *effect.recolorDestinations[index]
+                    )
+                );
+            }
+        }
+
+        if (!hasRecolors) {
+            ImGui::TextUnformatted("(none)");
+        }
+    }
 
     if (state.activeSequence.has_value()) {
         const eld::definition::SequenceDefinition& sequence =

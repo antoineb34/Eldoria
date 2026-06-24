@@ -5,6 +5,7 @@
 #include "definition/npc/NpcRepository.h"
 #include "definition/item/ItemRepository.h"
 #include "definition/sequence/SequenceRepository.h"
+#include "definition/spot_animation/SpotAnimationRepository.h"
 
 #include <array>
 #include <cstdint>
@@ -345,6 +346,84 @@ CacheTreeNode makeSpriteNode(
     return node;
 }
 
+
+CacheTreeNode makeSpotAnimationNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    std::uint16_t fileId,
+    const eld::definition::SpotAnimationDefinition& definition
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::SpotAnimationDefinition;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/spotanim/" +
+        std::to_string(definition.id);
+
+    node.label =
+        "Spot Animation " +
+        std::to_string(definition.id);
+
+    node.name = "spotanim";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(fileId);
+    node.definitionId =
+        static_cast<int>(definition.id);
+
+    return node;
+}
+
+CacheTreeNode makeSpotAnimationGroupNode(
+    eld::cache::IndexId index,
+    std::uint16_t archiveId,
+    const eld::archive::ArchiveFile& file,
+    const eld::definition::SpotAnimationRepository& repository
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::DefinitionGroup;
+
+    node.key =
+        "index/" +
+        std::to_string(static_cast<int>(index)) +
+        "/archive/" +
+        std::to_string(archiveId) +
+        "/definitions/spotanim";
+
+    node.label =
+        "Spot Animations (" +
+        std::to_string(repository.count()) +
+        " definitions)";
+
+    node.name = "spotanim";
+    node.indexId = static_cast<int>(index);
+    node.archiveId = static_cast<int>(archiveId);
+    node.fileId = static_cast<int>(file.id);
+
+    for (
+        const eld::definition::SpotAnimationDefinition& definition :
+        repository.list()
+    ) {
+        node.children.push_back(
+            makeSpotAnimationNode(
+                index,
+                archiveId,
+                file.id,
+                definition
+            )
+        );
+    }
+
+    return node;
+}
 
 CacheTreeNode makeSequenceNode(
     eld::cache::IndexId index,
@@ -943,6 +1022,10 @@ std::optional<CacheTreeNode> makeArchiveNode(
         eld::definition::SequenceRepository
     > sequenceRepository;
 
+    std::optional<
+        eld::definition::SpotAnimationRepository
+    > spotAnimationRepository;
+
     if (entry.fileId == 2) {
         definitionRepository.emplace(
             store,
@@ -984,6 +1067,12 @@ std::optional<CacheTreeNode> makeArchiveNode(
                 "seq"
             )
         );
+
+        spotAnimationRepository.emplace(
+            definitionRepository->get(
+                "spotanim"
+            )
+        );
     }
 
     for (
@@ -994,6 +1083,28 @@ std::optional<CacheTreeNode> makeArchiveNode(
             eld::archive::findName(
                 file.nameHash
             );
+
+        if (
+            spotAnimationRepository.has_value() &&
+            name.has_value()
+        ) {
+            if (*name == "spotanim.dat") {
+                node.children.push_back(
+                    makeSpotAnimationGroupNode(
+                        index,
+                        entry.fileId,
+                        file,
+                        *spotAnimationRepository
+                    )
+                );
+
+                continue;
+            }
+
+            if (*name == "spotanim.idx") {
+                continue;
+            }
+        }
 
         if (
             sequenceRepository.has_value() &&

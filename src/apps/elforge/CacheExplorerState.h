@@ -19,6 +19,7 @@
 #include "definition/npc/NpcDefinition.h"
 #include "definition/item/ItemDefinition.h"
 #include "definition/sequence/SequenceDefinition.h"
+#include "definition/spot_animation/SpotAnimationDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -62,6 +63,9 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::SequenceDefinition>
         activeSequence;
+
+    std::optional<eld::definition::SpotAnimationDefinition>
+        activeSpotAnimation;
 
     std::unordered_map<std::string, bool>
         expandedNodes;
