@@ -48,6 +48,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::IdentityKitDefinition:
             return "Identity Kit";
 
+        case CacheTreeNodeType::LocationDefinition:
+            return "Location";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -214,6 +217,108 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeLocation.has_value()) {
+        const eld::definition::LocationDefinition& location =
+            *state.activeLocation;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("LOCATION");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(location.id)
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            location.name.c_str()
+        );
+
+        ImGui::Text(
+            "Size: %u x %u",
+            static_cast<unsigned int>(location.width),
+            static_cast<unsigned int>(location.length)
+        );
+
+        ImGui::Text(
+            "Models: %zu",
+            location.models.size()
+        );
+
+        for (
+            const eld::definition::LocationModel& model :
+            location.models
+        ) {
+            if (model.type.has_value()) {
+                ImGui::BulletText(
+                    "Model %u, type %u",
+                    static_cast<unsigned int>(model.id),
+                    static_cast<unsigned int>(*model.type)
+                );
+            }
+            else {
+                ImGui::BulletText(
+                    "Model %u",
+                    static_cast<unsigned int>(model.id)
+                );
+            }
+        }
+
+        ImGui::Text(
+            "Solid: %s",
+            location.solid ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Impenetrable: %s",
+            location.impenetrable ? "yes" : "no"
+        );
+
+        if (location.animationId.has_value()) {
+            ImGui::Text(
+                "Animation: %u",
+                static_cast<unsigned int>(
+                    *location.animationId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Animation: (none)"
+            );
+        }
+
+        ImGui::Text(
+            "Scale: %u, %u, %u",
+            static_cast<unsigned int>(location.scaleX),
+            static_cast<unsigned int>(location.scaleY),
+            static_cast<unsigned int>(location.scaleZ)
+        );
+
+        ImGui::Text(
+            "Offset: %d, %d, %d",
+            static_cast<int>(location.offsetX),
+            static_cast<int>(location.offsetY),
+            static_cast<int>(location.offsetZ)
+        );
+
+        ImGui::TextUnformatted("Actions:");
+
+        bool hasActions = false;
+
+        for (const std::string& action : location.actions) {
+            if (!action.empty()) {
+                hasActions = true;
+                ImGui::BulletText("%s", action.c_str());
+            }
+        }
+
+        if (!hasActions) {
+            ImGui::TextUnformatted("(none)");
+        }
+    }
 
     if (state.activeIdentityKit.has_value()) {
         const eld::definition::IdentityKitDefinition& kit =

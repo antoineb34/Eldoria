@@ -15,6 +15,7 @@
 #include "font/Font.h"
 #include "definition/floor/FloorDefinition.h"
 #include "definition/idk/IdentityKitDefinition.h"
+#include "definition/location/LocationDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -46,6 +47,9 @@ struct CacheExplorerState {
     std::optional<eld::definition::FloorDefinition> activeFloor;
     std::optional<eld::definition::IdentityKitDefinition>
         activeIdentityKit;
+
+    std::optional<eld::definition::LocationDefinition>
+        activeLocation;
 
     std::unordered_map<std::string, bool>
         expandedNodes;
