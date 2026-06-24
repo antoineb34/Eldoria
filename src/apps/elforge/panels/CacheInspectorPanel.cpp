@@ -69,6 +69,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::VarbitDefinition:
             return "Varbit";
 
+        case CacheTreeNodeType::ParameterDefinition:
+            return "Parameter";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -235,6 +238,48 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeParameter.has_value()) {
+        const auto& parameter =
+            *state.activeParameter;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("PARAMETER");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(parameter.id)
+        );
+
+        if (parameter.type.has_value()) {
+            ImGui::Text(
+                "Type: %c",
+                *parameter.type
+            );
+        }
+        else {
+            ImGui::TextUnformatted("Type: (none)");
+        }
+
+        if (parameter.isString()) {
+            ImGui::Text(
+                "Default: %s",
+                parameter.defaultString.c_str()
+            );
+        }
+        else {
+            ImGui::Text(
+                "Default: %d",
+                parameter.defaultInteger
+            );
+        }
+
+        ImGui::Text(
+            "Auto disable: %s",
+            parameter.autoDisable ? "yes" : "no"
+        );
+    }
 
     if (state.activeVarbit.has_value()) {
         const auto& varbit =

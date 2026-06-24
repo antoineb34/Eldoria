@@ -22,6 +22,7 @@
 #include "definition/spot_animation/SpotAnimationDefinition.h"
 #include "definition/varp/VarpDefinition.h"
 #include "definition/varbit/VarbitDefinition.h"
+#include "definition/parameter/ParameterDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -74,6 +75,9 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::VarbitDefinition>
         activeVarbit;
+
+    std::optional<eld::definition::ParameterDefinition>
+        activeParameter;
 
     std::unordered_map<std::string, bool>
         expandedNodes;
