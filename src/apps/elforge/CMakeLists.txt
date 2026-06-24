@@ -8,6 +8,7 @@ add_executable(elforge
     IdentityKitPreviewBuilder.cpp
     LocationPreviewBuilder.cpp
     NpcPreviewBuilder.cpp
+    ItemPreviewBuilder.cpp
 
     panels/CacheInspectorPanel.cpp
     panels/CacheTreePanel.cpp

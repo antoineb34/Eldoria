@@ -17,6 +17,7 @@
 #include "definition/idk/IdentityKitDefinition.h"
 #include "definition/location/LocationDefinition.h"
 #include "definition/npc/NpcDefinition.h"
+#include "definition/item/ItemDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -54,6 +55,9 @@ struct CacheExplorerState {
 
     std::optional<eld::definition::NpcDefinition>
         activeNpc;
+
+    std::optional<eld::definition::ItemDefinition>
+        activeItem;
 
     std::unordered_map<std::string, bool>
         expandedNodes;

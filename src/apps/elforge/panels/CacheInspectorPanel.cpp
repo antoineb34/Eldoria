@@ -54,6 +54,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::NpcDefinition:
             return "NPC";
 
+        case CacheTreeNodeType::ItemDefinition:
+            return "Item";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -220,6 +223,102 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeItem.has_value()) {
+        const eld::definition::ItemDefinition& item =
+            *state.activeItem;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("ITEM");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(item.id)
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            item.name.c_str()
+        );
+
+        if (item.inventoryModelId.has_value()) {
+            ImGui::Text(
+                "Inventory model: %u",
+                static_cast<unsigned int>(
+                    *item.inventoryModelId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Inventory model: (none)"
+            );
+        }
+
+        ImGui::Text(
+            "Value: %u",
+            static_cast<unsigned int>(item.value)
+        );
+
+        ImGui::Text(
+            "Stackable: %s",
+            item.stackable ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Members only: %s",
+            item.membersOnly ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Zoom: %u",
+            static_cast<unsigned int>(item.zoom)
+        );
+
+        ImGui::Text(
+            "Rotation: %u, %u, %u",
+            static_cast<unsigned int>(item.rotationX),
+            static_cast<unsigned int>(item.rotationY),
+            static_cast<unsigned int>(item.rotationZ)
+        );
+
+        ImGui::Text(
+            "Offset: %d, %d",
+            static_cast<int>(item.offsetX),
+            static_cast<int>(item.offsetY)
+        );
+
+        ImGui::TextUnformatted("Inventory actions:");
+
+        bool hasInventoryActions = false;
+
+        for (const std::string& action : item.inventoryActions) {
+            if (!action.empty()) {
+                hasInventoryActions = true;
+                ImGui::BulletText("%s", action.c_str());
+            }
+        }
+
+        if (!hasInventoryActions) {
+            ImGui::TextUnformatted("(none)");
+        }
+
+        ImGui::TextUnformatted("Ground actions:");
+
+        bool hasGroundActions = false;
+
+        for (const std::string& action : item.groundActions) {
+            if (!action.empty()) {
+                hasGroundActions = true;
+                ImGui::BulletText("%s", action.c_str());
+            }
+        }
+
+        if (!hasGroundActions) {
+            ImGui::TextUnformatted("(none)");
+        }
+    }
 
     if (state.activeNpc.has_value()) {
         const eld::definition::NpcDefinition& npc =
