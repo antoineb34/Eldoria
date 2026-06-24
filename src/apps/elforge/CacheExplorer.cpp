@@ -238,9 +238,10 @@ CacheExplorer::CacheExplorer()
           )
       ),
       varpRepository_(
-          definitionRepository_.get(
-              "varp"
-          )
+          definitionRepository_.get("varp")
+      ),
+      varbitRepository_(
+          definitionRepository_.get("varbit")
       ),
       graphicsResources_(
           modelRepository_,
@@ -311,6 +312,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeSequence.reset();
     state_.activeSpotAnimation.reset();
     state_.activeVarp.reset();
+    state_.activeVarbit.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -393,24 +395,34 @@ void CacheExplorer::handleSelectionChanged() {
             break;
 
         case CacheTreeNodeType::VarpDefinition: {
-            if (
-                state_.selection.definitionId < 0 ||
-                state_.selection.definitionId >
-                    std::numeric_limits<std::uint16_t>::max()
-            ) {
-                break;
+            if (state_.selection.definitionId >= 0) {
+                const auto* definition =
+                    varpRepository_.find(
+                        static_cast<std::uint16_t>(
+                            state_.selection.definitionId
+                        )
+                    );
+
+                if (definition != nullptr) {
+                    state_.activeVarp = *definition;
+                }
             }
 
-            const eld::definition::VarpDefinition* definition =
-                varpRepository_.find(
-                    static_cast<std::uint16_t>(
-                        state_.selection.definitionId
-                    )
-                );
+            break;
+        }
 
-            if (definition != nullptr) {
-                state_.activeVarp =
-                    *definition;
+        case CacheTreeNodeType::VarbitDefinition: {
+            if (state_.selection.definitionId >= 0) {
+                const auto* definition =
+                    varbitRepository_.find(
+                        static_cast<std::uint16_t>(
+                            state_.selection.definitionId
+                        )
+                    );
+
+                if (definition != nullptr) {
+                    state_.activeVarbit = *definition;
+                }
             }
 
             break;

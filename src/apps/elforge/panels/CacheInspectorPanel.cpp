@@ -66,6 +66,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::VarpDefinition:
             return "Varp";
 
+        case CacheTreeNodeType::VarbitDefinition:
+            return "Varbit";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -233,8 +236,69 @@ void CacheInspectorPanel::render(
         state.selection.fileId
     );
 
+    if (state.activeVarbit.has_value()) {
+        const auto& varbit =
+            *state.activeVarbit;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("VARBIT");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(varbit.id)
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            varbit.name.empty()
+                ? "(none)"
+                : varbit.name.c_str()
+        );
+
+        if (varbit.varpId.has_value()) {
+            ImGui::Text(
+                "Varp: %u",
+                static_cast<unsigned int>(
+                    *varbit.varpId
+                )
+            );
+        }
+
+        ImGui::Text(
+            "Bit range: %u to %u",
+            static_cast<unsigned int>(
+                varbit.leastSignificantBit
+            ),
+            static_cast<unsigned int>(
+                varbit.mostSignificantBit
+            )
+        );
+
+        const unsigned int bitCount =
+            varbit.mostSignificantBit >=
+                varbit.leastSignificantBit
+                ? varbit.mostSignificantBit -
+                    varbit.leastSignificantBit
+                : 0;
+
+        ImGui::Text("Bit count: %u", bitCount);
+
+        ImGui::Text(
+            "Maximum value: %u",
+            bitCount < 32
+                ? ((1u << bitCount) - 1u)
+                : 0xFFFFFFFFu
+        );
+
+        ImGui::Text(
+            "Tracked: %s",
+            varbit.tracked ? "yes" : "no"
+        );
+    }
+
     if (state.activeVarp.has_value()) {
-        const eld::definition::VarpDefinition& varp =
+        const auto& varp =
             *state.activeVarp;
 
         ImGui::Spacing();
@@ -258,47 +322,6 @@ void CacheInspectorPanel::render(
                 "Client code: %u",
                 static_cast<unsigned int>(
                     *varp.clientCode
-                )
-            );
-        }
-        else {
-            ImGui::TextUnformatted(
-                "Client code: (none)"
-            );
-        }
-
-        if (varp.opcode1Value.has_value()) {
-            ImGui::Text(
-                "Opcode 1 value: %u",
-                static_cast<unsigned int>(
-                    *varp.opcode1Value
-                )
-            );
-        }
-
-        if (varp.opcode2Value.has_value()) {
-            ImGui::Text(
-                "Opcode 2 value: %u",
-                static_cast<unsigned int>(
-                    *varp.opcode2Value
-                )
-            );
-        }
-
-        if (varp.opcode7Value.has_value()) {
-            ImGui::Text(
-                "Opcode 7 value: %u",
-                static_cast<unsigned int>(
-                    *varp.opcode7Value
-                )
-            );
-        }
-
-        if (varp.opcode12Value.has_value()) {
-            ImGui::Text(
-                "Opcode 12 value: %u",
-                static_cast<unsigned int>(
-                    *varp.opcode12Value
                 )
             );
         }
