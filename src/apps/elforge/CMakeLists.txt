@@ -9,6 +9,7 @@ add_executable(elforge
     LocationPreviewBuilder.cpp
     NpcPreviewBuilder.cpp
     ItemPreviewBuilder.cpp
+    SpotAnimationPreviewBuilder.cpp
 
     panels/CacheInspectorPanel.cpp
     panels/CacheTreePanel.cpp

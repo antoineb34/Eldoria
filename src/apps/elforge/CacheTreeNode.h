@@ -24,6 +24,7 @@ namespace eld::elforge {
         NpcDefinition,
         ItemDefinition,
         SequenceDefinition,
+        SpotAnimationDefinition,
     };
 
 struct CacheTreeNode {

@@ -3,6 +3,7 @@
 #include "LocationPreviewBuilder.h"
 #include "NpcPreviewBuilder.h"
 #include "ItemPreviewBuilder.h"
+#include "SpotAnimationPreviewBuilder.h"
 #include "FontPreviewBuilder.h"
 
 #include <exception>
@@ -231,6 +232,11 @@ CacheExplorer::CacheExplorer()
               "seq"
           )
       ),
+      spotAnimationRepository_(
+          definitionRepository_.get(
+              "spotanim"
+          )
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -298,6 +304,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeNpc.reset();
     state_.activeItem.reset();
     state_.activeSequence.reset();
+    state_.activeSpotAnimation.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -378,6 +385,48 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::SpotAnimationDefinition: {
+            if (
+                state_.selection.definitionId < 0 ||
+                state_.selection.definitionId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            const eld::definition::SpotAnimationDefinition* definition =
+                spotAnimationRepository_.find(
+                    static_cast<std::uint16_t>(
+                        state_.selection.definitionId
+                    )
+                );
+
+            if (definition != nullptr) {
+                state_.activeSpotAnimation =
+                    *definition;
+
+                const SpotAnimationPreviewBuilder previewBuilder;
+
+                std::optional<eld::model::Model> preview =
+                    previewBuilder.build(
+                        *definition,
+                        modelRepository_
+                    );
+
+                if (preview.has_value()) {
+                    state_.activeModelHandle =
+                        graphicsResources_.resolveModel(
+                            preview->mesh
+                        );
+
+                    state_.activeModel =
+                        std::move(*preview);
+                }
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::SequenceDefinition: {
             if (
