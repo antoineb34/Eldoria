@@ -226,6 +226,11 @@ CacheExplorer::CacheExplorer()
               "obj"
           )
       ),
+      sequenceRepository_(
+          definitionRepository_.get(
+              "seq"
+          )
+      ),
       graphicsResources_(
           modelRepository_,
           textureRepository_
@@ -292,6 +297,7 @@ void CacheExplorer::handleSelectionChanged() {
     state_.activeLocation.reset();
     state_.activeNpc.reset();
     state_.activeItem.reset();
+    state_.activeSequence.reset();
 
     switch (state_.selection.type) {
         case CacheTreeNodeType::Root:
@@ -372,6 +378,30 @@ void CacheExplorer::handleSelectionChanged() {
 
         case CacheTreeNodeType::DefinitionGroup:
             break;
+
+        case CacheTreeNodeType::SequenceDefinition: {
+            if (
+                state_.selection.definitionId < 0 ||
+                state_.selection.definitionId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            const eld::definition::SequenceDefinition* definition =
+                sequenceRepository_.find(
+                    static_cast<std::uint16_t>(
+                        state_.selection.definitionId
+                    )
+                );
+
+            if (definition != nullptr) {
+                state_.activeSequence =
+                    *definition;
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::ItemDefinition: {
             if (

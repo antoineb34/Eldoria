@@ -57,6 +57,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::ItemDefinition:
             return "Item";
 
+        case CacheTreeNodeType::SequenceDefinition:
+            return "Sequence";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -223,6 +226,95 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeSequence.has_value()) {
+        const eld::definition::SequenceDefinition& sequence =
+            *state.activeSequence;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("SEQUENCE");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(sequence.id)
+        );
+
+        ImGui::Text(
+            "Frames: %zu",
+            sequence.frames.size()
+        );
+
+        if (sequence.frameStep.has_value()) {
+            ImGui::Text(
+                "Frame step: %u",
+                static_cast<unsigned int>(
+                    *sequence.frameStep
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Frame step: (none)"
+            );
+        }
+
+        ImGui::Text(
+            "Priority: %u",
+            static_cast<unsigned int>(
+                sequence.priority
+            )
+        );
+
+        ImGui::Text(
+            "Maximum loops: %u",
+            static_cast<unsigned int>(
+                sequence.maximumLoops
+            )
+        );
+
+        ImGui::Text(
+            "Stretches: %s",
+            sequence.stretches ? "yes" : "no"
+        );
+
+        for (
+            std::size_t index = 0;
+            index < sequence.frames.size();
+            ++index
+        ) {
+            const eld::definition::SequenceFrame& frame =
+                sequence.frames[index];
+
+            if (frame.secondaryFrameId.has_value()) {
+                ImGui::BulletText(
+                    "%zu: primary %u, secondary %u, duration %u",
+                    index,
+                    static_cast<unsigned int>(
+                        frame.primaryFrameId
+                    ),
+                    static_cast<unsigned int>(
+                        *frame.secondaryFrameId
+                    ),
+                    static_cast<unsigned int>(
+                        frame.duration
+                    )
+                );
+            }
+            else {
+                ImGui::BulletText(
+                    "%zu: frame %u, duration %u",
+                    index,
+                    static_cast<unsigned int>(
+                        frame.primaryFrameId
+                    ),
+                    static_cast<unsigned int>(
+                        frame.duration
+                    )
+                );
+            }
+        }
+    }
 
     if (state.activeItem.has_value()) {
         const eld::definition::ItemDefinition& item =

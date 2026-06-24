@@ -24,6 +24,7 @@
 #include "definition/location/LocationRepository.h"
 #include "definition/npc/NpcRepository.h"
 #include "definition/item/ItemRepository.h"
+#include "definition/sequence/SequenceRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -67,6 +68,7 @@ private:
     eld::definition::LocationRepository locationRepository_;
     eld::definition::NpcRepository npcRepository_;
     eld::definition::ItemRepository itemRepository_;
+    eld::definition::SequenceRepository sequenceRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
     std::optional<eld::sprite::Sprite> activeSprite;

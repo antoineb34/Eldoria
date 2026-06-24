@@ -35,6 +35,8 @@ add_library(eldoria_data STATIC
     definition/npc/NpcRepository.cpp
     definition/item/ItemDefinitionParser.cpp
     definition/item/ItemRepository.cpp
+    definition/sequence/SequenceDefinitionParser.cpp
+    definition/sequence/SequenceRepository.cpp
     image/IndexedImageFileParser.cpp
 
     texture/TextureRepository.cpp
