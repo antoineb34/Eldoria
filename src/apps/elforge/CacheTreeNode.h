@@ -21,6 +21,7 @@ namespace eld::elforge {
         FloorDefinition,
         IdentityKitDefinition,
         LocationDefinition,
+        NpcDefinition,
     };
 
 struct CacheTreeNode {

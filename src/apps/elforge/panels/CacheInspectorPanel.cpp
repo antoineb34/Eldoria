@@ -51,6 +51,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::LocationDefinition:
             return "Location";
 
+        case CacheTreeNodeType::NpcDefinition:
+            return "NPC";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -217,6 +220,94 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeNpc.has_value()) {
+        const eld::definition::NpcDefinition& npc =
+            *state.activeNpc;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("NPC");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(npc.id)
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            npc.name.c_str()
+        );
+
+        ImGui::Text(
+            "Combat level: %s",
+            npc.combatLevel.has_value()
+                ? std::to_string(*npc.combatLevel).c_str()
+                : "(none)"
+        );
+
+        ImGui::Text(
+            "Size: %d",
+            static_cast<int>(npc.size)
+        );
+
+        ImGui::Text(
+            "Models: %zu",
+            npc.modelIds.size()
+        );
+
+        for (const std::uint16_t modelId : npc.modelIds) {
+            ImGui::BulletText(
+                "Model %u",
+                static_cast<unsigned int>(modelId)
+            );
+        }
+
+        ImGui::Text(
+            "Idle animation: %s",
+            npc.idleAnimationId.has_value()
+                ? std::to_string(*npc.idleAnimationId).c_str()
+                : "(none)"
+        );
+
+        ImGui::Text(
+            "Walk animation: %s",
+            npc.walkAnimationId.has_value()
+                ? std::to_string(*npc.walkAnimationId).c_str()
+                : "(none)"
+        );
+
+        ImGui::Text(
+            "Scale: %u, %u",
+            static_cast<unsigned int>(npc.scaleX),
+            static_cast<unsigned int>(npc.scaleY)
+        );
+
+        ImGui::Text(
+            "Minimap: %s",
+            npc.visibleOnMinimap ? "visible" : "hidden"
+        );
+
+        ImGui::Text(
+            "Clickable: %s",
+            npc.clickable ? "yes" : "no"
+        );
+
+        ImGui::TextUnformatted("Actions:");
+
+        bool hasActions = false;
+
+        for (const std::string& action : npc.actions) {
+            if (!action.empty()) {
+                hasActions = true;
+                ImGui::BulletText("%s", action.c_str());
+            }
+        }
+
+        if (!hasActions) {
+            ImGui::TextUnformatted("(none)");
+        }
+    }
 
     if (state.activeLocation.has_value()) {
         const eld::definition::LocationDefinition& location =
