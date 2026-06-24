@@ -1,14 +1,14 @@
 #pragma once
 
 #include "GraphicsTexture.h"
-#include "texture/TextureImage.h"
+#include "image/Image.h"
 
 namespace eld::graphics {
 
 class TextureConverter {
 public:
     GraphicsTexture convert(
-        const eld::texture::TextureImage& source
+        const eld::image::Image& source
     ) const;
 };
 

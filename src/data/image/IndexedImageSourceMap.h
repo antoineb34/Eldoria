@@ -4,16 +4,16 @@
 #include <optional>
 #include <vector>
 
-namespace eld::texture {
+namespace eld::image {
 
-struct TexturePixelSource {
+struct IndexedImagePixelSource {
     std::size_t filePixelIndex = 0;
     std::size_t paletteIndex = 0;
 };
 
-struct TextureSourceMap {
+struct IndexedImageSourceMap {
     std::vector<
-        std::optional<TexturePixelSource>
+        std::optional<IndexedImagePixelSource>
     > pixels;
 };
 

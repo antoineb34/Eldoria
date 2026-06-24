@@ -4,13 +4,13 @@
 #include <optional>
 #include <vector>
 
-#include "TextureFile.h"
+#include "DefinitionTable.h"
 
-namespace eld::texture {
+namespace eld::definition {
 
-class TextureFileParser {
+class DefinitionTableParser {
 public:
-    std::optional<TextureFile> parse(
+    std::optional<DefinitionTable> parse(
         const std::vector<std::uint8_t>& dataPayload,
         const std::vector<std::uint8_t>& indexPayload
     ) const;

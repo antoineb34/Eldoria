@@ -1,6 +1,7 @@
 #include "CacheViewportPanel.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 #include <imgui.h>
@@ -52,7 +53,8 @@ void updateViewportControls(
         transform.rotation.z += rotationSpeed;
     }
 
-    float scale = transform.scale.x;
+    float scale =
+        transform.scale.x;
 
     if (keys[SDL_SCANCODE_EQUALS]) {
         scale += zoomSpeed;
@@ -62,10 +64,11 @@ void updateViewportControls(
         scale -= zoomSpeed;
     }
 
-    scale = std::max(
-        scale,
-        0.1f
-    );
+    scale =
+        std::max(
+            scale,
+            0.1f
+        );
 
     transform.scale = {
         scale,
@@ -92,6 +95,205 @@ void updateViewportControls(
     if (keys[SDL_SCANCODE_R]) {
         transform = {};
     }
+}
+
+void renderCheckerboard(
+    SDL_Renderer* renderer,
+    const CacheExplorerState& state
+) {
+    constexpr int CellSize = 16;
+
+    for (
+        int y = 0;
+        y < state.viewportHeight;
+        y += CellSize
+    ) {
+        for (
+            int x = 0;
+            x < state.viewportWidth;
+            x += CellSize
+        ) {
+            const bool light =
+                (
+                    x / CellSize +
+                    y / CellSize
+                ) %
+                2 ==
+                0;
+
+            const std::uint8_t color =
+                light
+                    ? 180
+                    : 130;
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                color,
+                color,
+                color,
+                255
+            );
+
+            const SDL_FRect cell{
+                static_cast<float>(
+                    state.viewportX + x
+                ),
+                static_cast<float>(
+                    state.viewportY + y
+                ),
+                static_cast<float>(
+                    std::min(
+                        CellSize,
+                        state.viewportWidth - x
+                    )
+                ),
+                static_cast<float>(
+                    std::min(
+                        CellSize,
+                        state.viewportHeight - y
+                    )
+                )
+            };
+
+            SDL_RenderFillRect(
+                renderer,
+                &cell
+            );
+        }
+    }
+}
+
+void renderImage(
+    SDL_Renderer* renderer,
+    const CacheExplorerState& state,
+    const eld::image::Image& image
+) {
+    if (
+        image.width == 0 ||
+        image.height == 0 ||
+        image.pixels.empty()
+    ) {
+        return;
+    }
+
+    const SDL_Rect clip{
+        state.viewportX,
+        state.viewportY,
+        state.viewportWidth,
+        state.viewportHeight
+    };
+
+    SDL_SetRenderClipRect(
+        renderer,
+        &clip
+    );
+
+    renderCheckerboard(
+        renderer,
+        state
+    );
+
+    SDL_Texture* texture =
+        SDL_CreateTexture(
+            renderer,
+            SDL_PIXELFORMAT_RGBA32,
+            SDL_TEXTUREACCESS_STATIC,
+            image.width,
+            image.height
+        );
+
+    if (texture == nullptr) {
+        SDL_SetRenderClipRect(
+            renderer,
+            nullptr
+        );
+
+        return;
+    }
+
+    SDL_UpdateTexture(
+        texture,
+        nullptr,
+        image.pixels.data(),
+        static_cast<int>(
+            image.width *
+            sizeof(eld::image::RgbaPixel)
+        )
+    );
+
+    SDL_SetTextureBlendMode(
+        texture,
+        SDL_BLENDMODE_BLEND
+    );
+
+    SDL_SetTextureScaleMode(
+        texture,
+        SDL_SCALEMODE_NEAREST
+    );
+
+    float scale =
+        std::min(
+            static_cast<float>(
+                state.viewportWidth
+            ) /
+                image.width,
+            static_cast<float>(
+                state.viewportHeight
+            ) /
+                image.height
+        );
+
+    if (scale >= 1.0f) {
+        scale =
+            std::floor(scale);
+    }
+
+    scale =
+        std::max(
+            scale,
+            0.01f
+        );
+
+    const float width =
+        image.width *
+        scale;
+
+    const float height =
+        image.height *
+        scale;
+
+    const SDL_FRect destination{
+        state.viewportX +
+            (
+                state.viewportWidth -
+                width
+            ) /
+            2.0f,
+        state.viewportY +
+            (
+                state.viewportHeight -
+                height
+            ) /
+            2.0f,
+        width,
+        height
+    };
+
+    SDL_RenderTexture(
+        renderer,
+        texture,
+        nullptr,
+        &destination
+    );
+
+    SDL_DestroyTexture(
+        texture
+    );
+
+    SDL_SetRenderClipRect(
+        renderer,
+        nullptr
+    );
 }
 
 }
@@ -154,6 +356,36 @@ void CacheViewportPanel::renderViewport(
     CacheExplorerState& state,
     const eld::graphics::GraphicsResources& resources
 ) {
+    if (state.activeImage.has_value()) {
+        renderImage(
+            renderer,
+            state,
+            *state.activeImage
+        );
+
+        return;
+    }
+
+    if (state.activeSprite.has_value()) {
+        renderImage(
+            renderer,
+            state,
+            state.activeSprite->image
+        );
+
+        return;
+    }
+
+    if (state.activeTexture.has_value()) {
+        renderImage(
+            renderer,
+            state,
+            state.activeTexture->image
+        );
+
+        return;
+    }
+
     if (!state.activeModelHandle.has_value()) {
         return;
     }
@@ -193,7 +425,9 @@ void CacheViewportPanel::renderViewport(
         state.modelTransform;
 
     eld::render::RenderScene scene;
-    scene.camera = state.camera;
+
+    scene.camera =
+        state.camera;
 
     scene.objects.push_back(
         object

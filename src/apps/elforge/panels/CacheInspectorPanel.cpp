@@ -29,6 +29,33 @@ const char* getNodeTypeName(
 
         case CacheTreeNodeType::Texture:
             return "Texture";
+
+        case CacheTreeNodeType::Archive:
+            return "Archive";
+
+        case CacheTreeNodeType::ArchiveFile:
+            return "Archive File";
+
+        case CacheTreeNodeType::Sprite:
+            return "Sprite";
+
+        case CacheTreeNodeType::DefinitionGroup:
+            return "Definition Group";
+
+        case CacheTreeNodeType::FloorDefinition:
+            return "Floor Definition";
+
+        case CacheTreeNodeType::IdentityKitDefinition:
+            return "Identity Kit";
+
+        case CacheTreeNodeType::Font:
+            return "Font";
+
+        case CacheTreeNodeType::Image:
+            return "Image";
+
+        case CacheTreeNodeType::SpriteFrame:
+            return "Sprite Frame";
     }
 
     return "Unknown";
@@ -187,6 +214,214 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.activeIdentityKit.has_value()) {
+        const eld::definition::IdentityKitDefinition& kit =
+            *state.activeIdentityKit;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("IDENTITY KIT");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(kit.id)
+        );
+
+        if (kit.bodyPartId.has_value()) {
+            ImGui::Text(
+                "Body part: %u",
+                static_cast<unsigned int>(*kit.bodyPartId)
+            );
+        }
+        else {
+            ImGui::TextUnformatted("Body part: (none)");
+        }
+
+        ImGui::Text(
+            "Selectable: %s",
+            kit.selectable ? "yes" : "no"
+        );
+
+        ImGui::Text(
+            "Body models: %zu",
+            kit.modelIds.size()
+        );
+
+        for (const std::uint16_t modelId : kit.modelIds) {
+            ImGui::BulletText(
+                "Model %u",
+                static_cast<unsigned int>(modelId)
+            );
+        }
+
+        ImGui::TextUnformatted("Recolors:");
+
+        bool hasRecolors = false;
+
+        for (
+            std::size_t index = 0;
+            index < kit.recolorSources.size();
+            ++index
+        ) {
+            if (
+                kit.recolorSources[index].has_value() &&
+                kit.recolorDestinations[index].has_value()
+            ) {
+                hasRecolors = true;
+
+                ImGui::BulletText(
+                    "%u -> %u",
+                    static_cast<unsigned int>(
+                        *kit.recolorSources[index]
+                    ),
+                    static_cast<unsigned int>(
+                        *kit.recolorDestinations[index]
+                    )
+                );
+            }
+        }
+
+        if (!hasRecolors) {
+            ImGui::TextUnformatted("(none)");
+        }
+
+        ImGui::TextUnformatted("Head models:");
+
+        bool hasHeadModels = false;
+
+        for (
+            const std::optional<std::uint16_t>& modelId :
+            kit.headModelIds
+        ) {
+            if (modelId.has_value()) {
+                hasHeadModels = true;
+
+                ImGui::BulletText(
+                    "Model %u",
+                    static_cast<unsigned int>(*modelId)
+                );
+            }
+        }
+
+        if (!hasHeadModels) {
+            ImGui::TextUnformatted("(none)");
+        }
+    }
+
+    if (state.activeFloor.has_value()) {
+        const eld::definition::FloorDefinition& floor =
+            *state.activeFloor;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("FLOOR");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(
+                floor.id
+            )
+        );
+
+        ImGui::Text(
+            "Name: %s",
+            floor.name.empty()
+                ? "(none)"
+                : floor.name.c_str()
+        );
+
+        if (floor.rgb.has_value()) {
+            const std::uint32_t rgb =
+                *floor.rgb;
+
+            ImGui::Text(
+                "Primary RGB: #%06X",
+                static_cast<unsigned int>(
+                    rgb
+                )
+            );
+
+            ImGui::ColorButton(
+                "##FloorPrimaryColor",
+                ImVec4(
+                    static_cast<float>(
+                        (rgb >> 16) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        (rgb >> 8) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        rgb & 0xFF
+                    ) / 255.0f,
+                    1.0f
+                ),
+                ImGuiColorEditFlags_NoTooltip,
+                ImVec2(80.0f, 32.0f)
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Primary RGB: (none)"
+            );
+        }
+
+        if (floor.textureId.has_value()) {
+            ImGui::Text(
+                "Texture ID: %u",
+                static_cast<unsigned int>(
+                    *floor.textureId
+                )
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Texture ID: (none)"
+            );
+        }
+
+        if (floor.secondaryRgb.has_value()) {
+            const std::uint32_t rgb =
+                *floor.secondaryRgb;
+
+            ImGui::Text(
+                "Secondary RGB: #%06X",
+                static_cast<unsigned int>(
+                    rgb
+                )
+            );
+
+            ImGui::ColorButton(
+                "##FloorSecondaryColor",
+                ImVec4(
+                    static_cast<float>(
+                        (rgb >> 16) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        (rgb >> 8) & 0xFF
+                    ) / 255.0f,
+                    static_cast<float>(
+                        rgb & 0xFF
+                    ) / 255.0f,
+                    1.0f
+                ),
+                ImGuiColorEditFlags_NoTooltip,
+                ImVec2(80.0f, 32.0f)
+            );
+        }
+        else {
+            ImGui::TextUnformatted(
+                "Secondary RGB: (none)"
+            );
+        }
+
+        ImGui::Text(
+            "Occlude: %s",
+            floor.occlude
+                ? "true"
+                : "false"
+        );
+    }
 
     if (state.activeModel) {
         const eld::model::Model& model =

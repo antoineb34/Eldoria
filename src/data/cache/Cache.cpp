@@ -81,4 +81,8 @@ Store Cache::open(
     };
 }
 
+const std::vector<Index>& Cache::list() const {
+    return indexes_;
+}
+
 }

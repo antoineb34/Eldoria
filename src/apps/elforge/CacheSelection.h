@@ -10,6 +10,11 @@ struct CacheSelection {
     CacheTreeNodeType type = CacheTreeNodeType::Root;
 
     std::string label = "Nothing selected";
+    std::string key;
+
+    std::string name;
+    int frameId = -1;
+    int definitionId = -1;
 
     int indexId = -1;
     int archiveId = -1;

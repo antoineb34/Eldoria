@@ -23,6 +23,10 @@ public:
         std::uint16_t sourceModelId
     );
 
+    ModelHandle resolve(
+        const eld::model::ModelMesh& source
+    );
+
 private:
     eld::model::ModelRepository& modelRepository_;
     ModelRegistry& modelRegistry_;

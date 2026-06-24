@@ -10,6 +10,11 @@
 #include "graphics/model/ModelHandle.h"
 #include "model/Model.h"
 #include "texture/Texture.h"
+#include "sprite/Sprite.h"
+#include "image/Image.h"
+#include "font/Font.h"
+#include "definition/floor/FloorDefinition.h"
+#include "definition/idk/IdentityKitDefinition.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -34,6 +39,13 @@ struct CacheExplorerState {
         activeModelHandle;
 
     std::optional<eld::texture::Texture> activeTexture;
+
+    std::optional<eld::sprite::Sprite> activeSprite;
+    std::optional<eld::image::Image> activeImage;
+    std::optional<eld::font::Font> activeFont;
+    std::optional<eld::definition::FloorDefinition> activeFloor;
+    std::optional<eld::definition::IdentityKitDefinition>
+        activeIdentityKit;
 
     std::unordered_map<std::string, bool>
         expandedNodes;

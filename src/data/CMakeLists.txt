@@ -17,9 +17,22 @@ add_library(eldoria_data STATIC
     model/ModelFileParser.cpp
     model/ModelRepository.cpp
 
-    texture/TextureDecoder.cpp
-    texture/TextureFileParser.cpp
+    image/IndexedImageDecoder.cpp
+    image/JpegDecoder.cpp
+    image/JpegRepository.cpp
+    font/FontFileParser.cpp
+    font/FontDecoder.cpp
+    font/FontRepository.cpp
+    definition/DefinitionTableParser.cpp
+    definition/DefinitionRepository.cpp
+    definition/floor/FloorDefinitionParser.cpp
+    definition/floor/FloorRepository.cpp
+    definition/idk/IdentityKitDefinitionParser.cpp
+    definition/idk/IdentityKitRepository.cpp
+    image/IndexedImageFileParser.cpp
+
     texture/TextureRepository.cpp
+    sprite/SpriteRepository.cpp
 )
 
 add_library(Eldoria::Data ALIAS eldoria_data)
@@ -31,4 +44,5 @@ target_include_directories(eldoria_data PUBLIC
 target_link_libraries(eldoria_data PUBLIC
     BZip2::BZip2
     ZLIB::ZLIB
+    JPEG::JPEG
 )

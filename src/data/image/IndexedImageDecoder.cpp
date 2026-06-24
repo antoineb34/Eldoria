@@ -1,13 +1,13 @@
-#include "TextureDecoder.h"
+#include "IndexedImageDecoder.h"
 
 #include <cstddef>
 #include <stdexcept>
 
-namespace eld::texture {
+namespace eld::image {
 
-TextureImage TextureDecoder::decodeImage(
-    const TextureFile& file,
-    TextureSourceMap* sourceMap
+Image IndexedImageDecoder::decodeImage(
+    const IndexedImageFile& file,
+    IndexedImageSourceMap* sourceMap
 ) const {
     const std::size_t canvasWidth =
         file.metadata.canvasWidth;
@@ -62,7 +62,7 @@ TextureImage TextureDecoder::decodeImage(
         );
     }
 
-    TextureImage image{};
+    Image image{};
 
     image.width =
         file.metadata.canvasWidth;
@@ -77,7 +77,7 @@ TextureImage TextureDecoder::decodeImage(
 
     if (sourceMap != nullptr) {
         *sourceMap =
-            TextureSourceMap{};
+            IndexedImageSourceMap{};
 
         sourceMap->pixels.resize(
             image.pixels.size()
@@ -93,7 +93,7 @@ TextureImage TextureDecoder::decodeImage(
         std::size_t sourceY = 0;
 
         switch (file.metadata.pixelOrder) {
-            case TexturePixelOrder::RowMajor:
+            case IndexedImagePixelOrder::RowMajor:
                 sourceX =
                     filePixelIndex %
                     imageWidth;
@@ -104,7 +104,7 @@ TextureImage TextureDecoder::decodeImage(
 
                 break;
 
-            case TexturePixelOrder::ColumnMajor:
+            case IndexedImagePixelOrder::ColumnMajor:
                 sourceX =
                     filePixelIndex /
                     imageHeight;
@@ -133,7 +133,7 @@ TextureImage TextureDecoder::decodeImage(
             canvasWidth +
             canvasX;
 
-        const TexturePixel& filePixel =
+        const IndexedImagePixel& filePixel =
             file.pixels.at(
                 filePixelIndex
             );
@@ -151,7 +151,7 @@ TextureImage TextureDecoder::decodeImage(
         }
 
         if (paletteIndex != 0) {
-            const TextureColor& color =
+            const IndexedImageColor& color =
                 file.palette.at(
                     paletteIndex
                 );
@@ -171,7 +171,7 @@ TextureImage TextureDecoder::decodeImage(
             sourceMap->pixels.at(
                 canvasPixelIndex
             ) =
-                TexturePixelSource{
+                IndexedImagePixelSource{
                     filePixelIndex,
                     paletteIndex
                 };
@@ -181,8 +181,8 @@ TextureImage TextureDecoder::decodeImage(
     return image;
 }
 
-TextureImage TextureDecoder::decode(
-    const TextureFile& file
+Image IndexedImageDecoder::decode(
+    const IndexedImageFile& file
 ) const {
     return decodeImage(
         file,
@@ -190,9 +190,9 @@ TextureImage TextureDecoder::decode(
     );
 }
 
-TextureImage TextureDecoder::decode(
-    const TextureFile& file,
-    TextureSourceMap& sourceMap
+Image IndexedImageDecoder::decode(
+    const IndexedImageFile& file,
+    IndexedImageSourceMap& sourceMap
 ) const {
     return decodeImage(
         file,

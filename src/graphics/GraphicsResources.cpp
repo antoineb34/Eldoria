@@ -25,6 +25,14 @@ ModelHandle GraphicsResources::resolveModel(
     );
 }
 
+ModelHandle GraphicsResources::resolveModel(
+    const eld::model::ModelMesh& source
+) {
+    return modelResolver_.resolve(
+        source
+    );
+}
+
 TextureHandle GraphicsResources::resolveTexture(
     std::uint16_t sourceTextureId
 ) {

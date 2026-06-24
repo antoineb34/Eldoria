@@ -15,6 +15,12 @@
 
 #include "model/ModelRepository.h"
 #include "texture/TextureRepository.h"
+#include "sprite/SpriteRepository.h"
+#include "image/JpegRepository.h"
+#include "font/FontRepository.h"
+#include "definition/DefinitionRepository.h"
+#include "definition/floor/FloorRepository.h"
+#include "definition/idk/IdentityKitRepository.h"
 
 #include "graphics/GraphicsResources.h"
 
@@ -49,8 +55,15 @@ private:
 
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;
+    eld::sprite::SpriteRepository titleSpriteRepository_;
+    eld::image::JpegRepository titleJpegRepository_;
+    eld::font::FontRepository titleFontRepository_;
+    eld::definition::DefinitionRepository definitionRepository_;
+    eld::definition::FloorRepository floorRepository_;
+    eld::definition::IdentityKitRepository identityKitRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
+    std::optional<eld::sprite::Sprite> activeSprite;
 
     CacheExplorerState state_;
     CacheTreeBuilder treeBuilder_;
@@ -59,7 +72,7 @@ private:
     CacheViewportPanel viewportPanel_;
     CacheInspectorPanel inspectorPanel_;
 
-    std::string lastSelectedLabel_;
+    std::string lastSelectedKey_;
 };
 
 }
