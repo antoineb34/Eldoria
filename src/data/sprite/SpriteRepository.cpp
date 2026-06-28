@@ -1,11 +1,10 @@
 #include "SpriteRepository.h"
 
 #include <exception>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
-#include <limits>
-#include <vector>
 
 #include "archive/ArchiveParser.h"
 
@@ -49,45 +48,38 @@ SpriteRepository::SpriteRepository(
 
 const eld::archive::ArchiveFile&
 SpriteRepository::getIndexFile() const {
-    return archive_.get(
-        "index.dat"
-    );
+    return archive_.get("index.dat");
 }
 
 const eld::archive::ArchiveFile&
 SpriteRepository::getDataFile(
     std::string_view groupName
 ) const {
-    return archive_.get(
-        groupName
-    );
+    return archive_.get(groupName);
+}
+
+const eld::archive::ArchiveFile&
+SpriteRepository::getDataFile(
+    std::uint16_t fileId
+) const {
+    return archive_.get(fileId);
 }
 
 eld::image::IndexedImageFile
-SpriteRepository::getFile(
-    std::string_view groupName,
+SpriteRepository::parseFile(
+    const eld::archive::ArchiveFile& dataFile,
     std::uint16_t frameId
 ) const {
-    const eld::archive::ArchiveFile& indexFile =
-        getIndexFile();
-
-    const eld::archive::ArchiveFile& dataFile =
-        getDataFile(
-            groupName
-        );
-
     std::optional<eld::image::IndexedImageFile> file =
         parser_.parse(
             dataFile.payload,
-            indexFile.payload,
+            getIndexFile().payload,
             frameId
         );
 
     if (!file.has_value()) {
         throw std::runtime_error(
-            "Failed to parse sprite " +
-            std::string(groupName) +
-            " frame " +
+            "Failed to parse sprite frame " +
             std::to_string(frameId)
         );
     }
@@ -95,28 +87,34 @@ SpriteRepository::getFile(
     return std::move(*file);
 }
 
-eld::image::Image SpriteRepository::getImage(
+eld::image::IndexedImageFile SpriteRepository::getFile(
     std::string_view groupName,
     std::uint16_t frameId
 ) const {
-    const eld::image::IndexedImageFile file =
-        getFile(
-            groupName,
-            frameId
-        );
-
-    return decoder_.decode(
-        file
+    return parseFile(
+        getDataFile(groupName),
+        frameId
     );
 }
 
-Sprite SpriteRepository::get(
+eld::image::IndexedImageFile SpriteRepository::getFile(
+    std::uint16_t fileId,
+    std::uint16_t frameId
+) const {
+    return parseFile(
+        getDataFile(fileId),
+        frameId
+    );
+}
+
+Sprite SpriteRepository::decodeSprite(
+    const eld::archive::ArchiveFile& dataFile,
     std::string_view groupName,
     std::uint16_t frameId
 ) const {
     eld::image::IndexedImageFile file =
-        getFile(
-            groupName,
+        parseFile(
+            dataFile,
             frameId
         );
 
@@ -137,24 +135,49 @@ Sprite SpriteRepository::get(
     };
 }
 
+Sprite SpriteRepository::get(
+    std::string_view groupName,
+    std::uint16_t frameId
+) const {
+    return decodeSprite(
+        getDataFile(groupName),
+        groupName,
+        frameId
+    );
+}
+
+Sprite SpriteRepository::get(
+    std::uint16_t fileId,
+    std::uint16_t frameId
+) const {
+    const eld::archive::ArchiveFile& file =
+        getDataFile(fileId);
+
+    return decodeSprite(
+        file,
+        "file-" + std::to_string(fileId),
+        frameId
+    );
+}
+
 std::optional<Sprite> SpriteRepository::find(
     std::string_view groupName,
     std::uint16_t frameId
 ) const {
-    if (
-        !contains(
-            groupName,
-            frameId
-        )
-    ) {
+    try {
+        return get(groupName, frameId);
+    }
+    catch (const std::exception&) {
         return std::nullopt;
     }
+}
 
+std::optional<Sprite> SpriteRepository::find(
+    std::uint16_t fileId,
+    std::uint16_t frameId
+) const {
     try {
-        return get(
-            groupName,
-            frameId
-        );
+        return get(fileId, frameId);
     }
     catch (const std::exception&) {
         return std::nullopt;
@@ -165,70 +188,76 @@ bool SpriteRepository::contains(
     std::string_view groupName,
     std::uint16_t frameId
 ) const {
-    const eld::archive::ArchiveFile* indexFile =
-        archive_.find(
-            "index.dat"
-        );
+    return find(groupName, frameId).has_value();
+}
 
-    const eld::archive::ArchiveFile* dataFile =
-        archive_.find(
-            groupName
-        );
-
-    if (
-        indexFile == nullptr ||
-        dataFile == nullptr
-    ) {
-        return false;
-    }
-
-    return parser_.parse(
-        dataFile->payload,
-        indexFile->payload,
-        frameId
-    ).has_value();
+bool SpriteRepository::contains(
+    std::uint16_t fileId,
+    std::uint16_t frameId
+) const {
+    return find(fileId, frameId).has_value();
 }
 
 std::vector<std::uint16_t>
 SpriteRepository::listFrameIds(
     std::string_view groupName
 ) const {
-    std::vector<std::uint16_t> frameIds;
+    std::vector<std::uint16_t> ids;
 
     for (
         std::uint32_t candidate = 0;
         candidate <=
             std::numeric_limits<std::uint16_t>::max();
-        candidate++
+        ++candidate
     ) {
-        const std::uint16_t frameId =
-            static_cast<std::uint16_t>(
-                candidate
-            );
+        const auto frameId =
+            static_cast<std::uint16_t>(candidate);
 
-        if (
-            !contains(
-                groupName,
-                frameId
-            )
-        ) {
+        if (!contains(groupName, frameId)) {
             break;
         }
 
-        frameIds.push_back(
-            frameId
-        );
+        ids.push_back(frameId);
     }
 
-    return frameIds;
+    return ids;
+}
+
+std::vector<std::uint16_t>
+SpriteRepository::listFrameIds(
+    std::uint16_t fileId
+) const {
+    std::vector<std::uint16_t> ids;
+
+    for (
+        std::uint32_t candidate = 0;
+        candidate <=
+            std::numeric_limits<std::uint16_t>::max();
+        ++candidate
+    ) {
+        const auto frameId =
+            static_cast<std::uint16_t>(candidate);
+
+        if (!contains(fileId, frameId)) {
+            break;
+        }
+
+        ids.push_back(frameId);
+    }
+
+    return ids;
 }
 
 std::size_t SpriteRepository::countFrames(
     std::string_view groupName
 ) const {
-    return listFrameIds(
-        groupName
-    ).size();
+    return listFrameIds(groupName).size();
+}
+
+std::size_t SpriteRepository::countFrames(
+    std::uint16_t fileId
+) const {
+    return listFrameIds(fileId).size();
 }
 
 }

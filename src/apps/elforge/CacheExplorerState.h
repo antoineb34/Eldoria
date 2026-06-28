@@ -91,6 +91,8 @@ struct CacheExplorerState {
     std::optional<eld::interface::InterfaceDefinition>
         activeInterface;
 
+    std::string activeInterfaceDump;
+
     std::unordered_map<std::string, bool>
         expandedNodes;
 };

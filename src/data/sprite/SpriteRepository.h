@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "Sprite.h"
-
 #include "archive/Archive.h"
 #include "cache/Store.h"
 #include "image/IndexedImageDecoder.h"
@@ -26,8 +25,18 @@ public:
         std::uint16_t frameId = 0
     ) const;
 
+    Sprite get(
+        std::uint16_t fileId,
+        std::uint16_t frameId = 0
+    ) const;
+
     std::optional<Sprite> find(
         std::string_view groupName,
+        std::uint16_t frameId = 0
+    ) const;
+
+    std::optional<Sprite> find(
+        std::uint16_t fileId,
         std::uint16_t frameId = 0
     ) const;
 
@@ -36,8 +45,8 @@ public:
         std::uint16_t frameId = 0
     ) const;
 
-    eld::image::Image getImage(
-        std::string_view groupName,
+    eld::image::IndexedImageFile getFile(
+        std::uint16_t fileId,
         std::uint16_t frameId = 0
     ) const;
 
@@ -46,12 +55,25 @@ public:
         std::uint16_t frameId = 0
     ) const;
 
+    bool contains(
+        std::uint16_t fileId,
+        std::uint16_t frameId = 0
+    ) const;
+
     std::vector<std::uint16_t> listFrameIds(
         std::string_view groupName
     ) const;
 
+    std::vector<std::uint16_t> listFrameIds(
+        std::uint16_t fileId
+    ) const;
+
     std::size_t countFrames(
         std::string_view groupName
+    ) const;
+
+    std::size_t countFrames(
+        std::uint16_t fileId
     ) const;
 
 private:
@@ -66,9 +88,23 @@ private:
         std::string_view groupName
     ) const;
 
+    const eld::archive::ArchiveFile& getDataFile(
+        std::uint16_t fileId
+    ) const;
+
+    eld::image::IndexedImageFile parseFile(
+        const eld::archive::ArchiveFile& dataFile,
+        std::uint16_t frameId
+    ) const;
+
+    Sprite decodeSprite(
+        const eld::archive::ArchiveFile& dataFile,
+        std::string_view groupName,
+        std::uint16_t frameId
+    ) const;
+
 private:
     eld::archive::Archive archive_;
-
     eld::image::IndexedImageFileParser parser_;
     eld::image::IndexedImageDecoder decoder_;
 };
