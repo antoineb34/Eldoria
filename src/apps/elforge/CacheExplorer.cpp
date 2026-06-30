@@ -4,7 +4,6 @@
 #include "NpcPreviewBuilder.h"
 #include "ItemPreviewBuilder.h"
 #include "SpotAnimationPreviewBuilder.h"
-#include "InterfacePreviewBuilder.h"
 #include "FontPreviewBuilder.h"
 
 #include <exception>
@@ -39,7 +38,7 @@ eld::image::RgbaPixel makeColorPixel(
 
 void appendInterfaceDump(
     std::ostringstream& stream,
-    const eld::interface::InterfaceDefinition& widget,
+    const eld::interface::InterfaceWidget& widget,
     const eld::interface::InterfaceRepository& repository,
     int depth,
     int x,
@@ -125,7 +124,7 @@ void appendInterfaceDump(
             << "  inventorySprites=" << widget.inventorySprites.size()
             << "\n";
 
-        for (const eld::interface::InterfaceSpriteSlot& slot : widget.inventorySprites) {
+        for (const eld::interface::InterfaceFileSpriteSlot& slot : widget.inventorySprites) {
             stream
                 << indent
                 << "    slot=" << static_cast<int>(slot.slot)
@@ -134,8 +133,8 @@ void appendInterfaceDump(
         }
     }
 
-    for (const eld::interface::InterfaceChild& child : widget.children) {
-        const eld::interface::InterfaceDefinition* childWidget =
+    for (const eld::interface::InterfaceFileChild& child : widget.children) {
+        const eld::interface::InterfaceWidget* childWidget =
             repository.find(child.id);
 
         if (childWidget == nullptr) {
@@ -160,7 +159,7 @@ void appendInterfaceDump(
 }
 
 std::string buildInterfaceDump(
-    const eld::interface::InterfaceDefinition& root,
+    const eld::interface::InterfaceWidget& root,
     const eld::interface::InterfaceRepository& repository
 ) {
     std::ostringstream stream;
@@ -608,16 +607,7 @@ void CacheExplorer::handleSelectionChanged() {
                     }
 
                     if (!state_.activeModelHandle.has_value()) {
-                        const InterfacePreviewBuilder previewBuilder;
-
-                        state_.activeImage =
-                            previewBuilder.build(
-                                *definition,
-                                interfaceRepository_,
-                                mediaSpriteRepository_,
-                                titleFontRepository_,
-                                graphicsResources_
-                            );
+                        state_.activeImage.reset();
                     }
                 }
             }

@@ -88,7 +88,7 @@ struct CacheExplorerState {
     std::optional<eld::definition::MessageAnimationDefinition>
         activeMessageAnimation;
 
-    std::optional<eld::interface::InterfaceDefinition>
+    std::optional<eld::interface::InterfaceWidget>
         activeInterface;
 
     std::string activeInterfaceDump;

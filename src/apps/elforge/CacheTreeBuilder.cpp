@@ -192,7 +192,7 @@ CacheTreeNode makeInterfaceNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::interface::InterfaceDefinition& definition,
+    const eld::interface::InterfaceWidget& definition,
     const eld::interface::InterfaceRepository& repository,
     std::unordered_set<std::uint16_t>& visited
 ) {
@@ -232,7 +232,7 @@ CacheTreeNode makeInterfaceNode(
     }
 
     for (
-        const eld::interface::InterfaceChild& child :
+        const eld::interface::InterfaceFileChild& child :
         definition.children
     ) {
         const auto* childDefinition =

@@ -10,8 +10,6 @@ add_executable(elforge
     NpcPreviewBuilder.cpp
     ItemPreviewBuilder.cpp
     SpotAnimationPreviewBuilder.cpp
-    InterfacePreviewBuilder.cpp
-    ModelThumbnailRenderer.cpp
 
     panels/CacheInspectorPanel.cpp
     panels/CacheTreePanel.cpp
