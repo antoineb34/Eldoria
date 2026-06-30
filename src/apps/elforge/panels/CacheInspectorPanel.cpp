@@ -1,7 +1,10 @@
 #include "CacheInspectorPanel.h"
 
 #include <array>
+#include <charconv>
+#include <optional>
 #include <string>
+#include <utility>
 
 #include <imgui.h>
 
@@ -10,6 +13,56 @@
 namespace eld::elforge {
 
 namespace {
+
+std::optional<std::pair<std::string, std::uint16_t>>
+parseSpriteReference(
+    const std::string& reference
+) {
+    const std::size_t comma =
+        reference.rfind(',');
+
+    if (comma == std::string::npos) {
+        return std::nullopt;
+    }
+
+    std::string name =
+        reference.substr(0, comma);
+
+    if (
+        name.size() < 4 ||
+        name.substr(name.size() - 4) != ".dat"
+    ) {
+        name += ".dat";
+    }
+
+    std::uint16_t frameId = 0;
+
+    const std::string frameText =
+        reference.substr(comma + 1);
+
+    const char* begin =
+        frameText.data();
+
+    const char* end =
+        frameText.data() +
+        frameText.size();
+
+    const std::from_chars_result result =
+        std::from_chars(
+            begin,
+            end,
+            frameId
+        );
+
+    if (result.ec != std::errc{} || result.ptr != end) {
+        return std::nullopt;
+    }
+
+    return std::pair<std::string, std::uint16_t>{
+        name,
+        frameId
+    };
+}
 
 const char* getNodeTypeName(
     CacheTreeNodeType type
@@ -261,6 +314,32 @@ void CacheInspectorPanel::render(
             static_cast<unsigned int>(widget.id)
         );
 
+        if (!state.activeInterfaceDump.empty()) {
+            if (ImGui::Button("Copy interface dump")) {
+                ImGui::SetClipboardText(
+                    state.activeInterfaceDump.c_str()
+                );
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Print interface dump")) {
+                ImGui::LogToTTY();
+                ImGui::LogText(
+                    "%s",
+                    state.activeInterfaceDump.c_str()
+                );
+                ImGui::LogFinish();
+            }
+
+            if (ImGui::CollapsingHeader("Interface Dump")) {
+                ImGui::TextUnformatted(
+                    state.activeInterfaceDump.c_str()
+                );
+            }
+        }
+
+
         if (widget.parentId.has_value()) {
             ImGui::Text(
                 "Parent: %u",
@@ -332,6 +411,49 @@ void CacheInspectorPanel::render(
                 "Sprite: %s",
                 widget.sprite.c_str()
             );
+
+            const auto parsedSprite =
+                parseSpriteReference(widget.sprite);
+
+            if (parsedSprite.has_value()) {
+                ImGui::Text(
+                    "Sprite Parsed: %s frame %u",
+                    parsedSprite->first.c_str(),
+                    static_cast<unsigned int>(
+                        parsedSprite->second
+                    )
+                );
+            }
+            else {
+                ImGui::TextUnformatted(
+                    "Sprite Parsed: failed"
+                );
+            }
+        }
+
+        if (!widget.secondarySprite.empty()) {
+            ImGui::Text(
+                "Secondary Sprite: %s",
+                widget.secondarySprite.c_str()
+            );
+
+            const auto parsedSprite =
+                parseSpriteReference(widget.secondarySprite);
+
+            if (parsedSprite.has_value()) {
+                ImGui::Text(
+                    "Secondary Sprite Parsed: %s frame %u",
+                    parsedSprite->first.c_str(),
+                    static_cast<unsigned int>(
+                        parsedSprite->second
+                    )
+                );
+            }
+            else {
+                ImGui::TextUnformatted(
+                    "Secondary Sprite Parsed: failed"
+                );
+            }
         }
 
         if (widget.modelId.has_value()) {

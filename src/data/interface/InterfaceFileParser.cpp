@@ -1,4 +1,4 @@
-#include "InterfaceParser.h"
+#include "InterfaceFileParser.h"
 
 #include <exception>
 #include <limits>
@@ -41,18 +41,20 @@ std::int32_t readScriptInstruction(
 
 }
 
-std::optional<std::vector<InterfaceDefinition>>
-InterfaceParser::parse(
+std::optional<InterfaceFile>
+InterfaceFileParser::parse(
     const std::vector<std::uint8_t>& payload
 ) const {
     try {
         eld::binary::ByteReader reader(payload);
 
-        const std::uint16_t declaredCount =
+        InterfaceFile file;
+        file.payload = payload;
+        file.declaredCount =
             reader.readU16();
 
-        std::vector<InterfaceDefinition> definitions;
-        definitions.reserve(declaredCount);
+        std::vector<InterfaceFileWidget> widgets;
+        widgets.reserve(file.declaredCount);
 
         std::optional<std::uint16_t> parentId;
 
@@ -68,7 +70,7 @@ InterfaceParser::parse(
                     reader.readU16();
             }
 
-            InterfaceDefinition definition;
+            InterfaceFileWidget definition;
             definition.id = id;
             definition.parentId = parentId;
 
@@ -111,7 +113,7 @@ InterfaceParser::parse(
                 const std::uint16_t length =
                     reader.readU16();
 
-                InterfaceScript script;
+                InterfaceFileScript script;
                 script.instructions.reserve(length);
 
                 for (
@@ -382,12 +384,13 @@ InterfaceParser::parse(
                 }
             }
 
-            definitions.push_back(
+            widgets.push_back(
                 std::move(definition)
             );
         }
 
-        return definitions;
+        file.widgets = std::move(widgets);
+        return file;
     }
     catch (const std::exception&) {
         return std::nullopt;

@@ -67,6 +67,7 @@ private:
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;
     eld::sprite::SpriteRepository titleSpriteRepository_;
+    eld::sprite::SpriteRepository mediaSpriteRepository_;
     eld::image::JpegRepository titleJpegRepository_;
     eld::font::FontRepository titleFontRepository_;
     eld::definition::DefinitionRepository definitionRepository_;

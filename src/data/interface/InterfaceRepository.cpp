@@ -33,65 +33,89 @@ InterfaceRepository::InterfaceRepository(
     const eld::archive::ArchiveFile& dataFile =
         archive->get("data");
 
-    InterfaceParser parser;
+    std::optional<InterfaceFile> file =
+        parser_.parse(dataFile.payload);
 
-    std::optional<std::vector<InterfaceDefinition>>
-        definitions =
-            parser.parse(dataFile.payload);
-
-    if (!definitions.has_value()) {
+    if (!file.has_value()) {
         throw std::runtime_error(
-            "Failed to parse interface definitions"
+            "Failed to parse interface file"
         );
     }
 
-    definitions_ =
-        std::move(*definitions);
+    interface_.file =
+        std::move(*file);
 }
 
-const InterfaceDefinition& InterfaceRepository::get(
+const Interface& InterfaceRepository::get() const {
+    return interface_;
+}
+
+const InterfaceFile& InterfaceRepository::getFile() const {
+    return interface_.file;
+}
+
+const InterfaceWidget& InterfaceRepository::getWidget(
     std::uint16_t id
 ) const {
-    const InterfaceDefinition* definition =
-        find(id);
+    const InterfaceWidget* widget =
+        findWidget(id);
 
-    if (definition == nullptr) {
+    if (widget == nullptr) {
         throw std::out_of_range(
-            "Interface definition does not exist"
+            "Interface widget does not exist"
         );
     }
 
-    return *definition;
+    return *widget;
 }
 
-const InterfaceDefinition* InterfaceRepository::find(
+const InterfaceWidget* InterfaceRepository::findWidget(
     std::uint16_t id
 ) const {
-    for (
-        const InterfaceDefinition& definition :
-        definitions_
-    ) {
-        if (definition.id == id) {
-            return &definition;
+    for (const InterfaceWidget& widget : interface_.file.widgets) {
+        if (widget.id == id) {
+            return &widget;
         }
     }
 
     return nullptr;
 }
 
-const std::vector<InterfaceDefinition>&
-InterfaceRepository::list() const {
-    return definitions_;
+const InterfaceWidget& InterfaceRepository::get(
+    std::uint16_t id
+) const {
+    return getWidget(id);
+}
+
+const InterfaceWidget* InterfaceRepository::find(
+    std::uint16_t id
+) const {
+    return findWidget(id);
+}
+
+const std::vector<InterfaceWidget>& InterfaceRepository::list() const {
+    return interface_.file.widgets;
+}
+
+std::vector<std::uint16_t> InterfaceRepository::listIds() const {
+    std::vector<std::uint16_t> ids;
+    ids.reserve(interface_.file.widgets.size());
+
+    for (const InterfaceWidget& widget : interface_.file.widgets) {
+        ids.push_back(widget.id);
+    }
+
+    return ids;
 }
 
 bool InterfaceRepository::contains(
     std::uint16_t id
 ) const {
-    return find(id) != nullptr;
+    return findWidget(id) != nullptr;
 }
 
 std::size_t InterfaceRepository::count() const {
-    return definitions_.size();
+    return interface_.file.widgets.size();
 }
 
 }

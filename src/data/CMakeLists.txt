@@ -13,7 +13,7 @@ add_library(eldoria_data STATIC
     archive/Archive.cpp
     archive/ArchiveParser.cpp
 
-    interface/InterfaceParser.cpp
+    interface/InterfaceFileParser.cpp
     interface/InterfaceRepository.cpp
 
     model/ModelDecoder.cpp

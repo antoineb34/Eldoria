@@ -1,16 +1,16 @@
 #pragma once
 
-#include <cstdint>
 #include <optional>
 #include <vector>
+#include <cstdint>
 
-#include "InterfaceDefinition.h"
+#include "InterfaceFile.h"
 
 namespace eld::interface {
 
-class InterfaceParser {
+class InterfaceFileParser {
 public:
-    std::optional<std::vector<InterfaceDefinition>> parse(
+    std::optional<InterfaceFile> parse(
         const std::vector<std::uint8_t>& payload
     ) const;
 };

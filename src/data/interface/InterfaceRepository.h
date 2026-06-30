@@ -4,11 +4,14 @@
 #include <cstdint>
 #include <vector>
 
-#include "InterfaceDefinition.h"
-#include "InterfaceParser.h"
+#include "Interface.h"
+#include "InterfaceFile.h"
+#include "InterfaceFileParser.h"
 #include "cache/Store.h"
 
 namespace eld::interface {
+
+using InterfaceWidget = InterfaceFileWidget;
 
 class InterfaceRepository {
 public:
@@ -17,16 +20,29 @@ public:
         std::uint16_t archiveId
     );
 
-    const InterfaceDefinition& get(
+    const Interface& get() const;
+
+    const InterfaceFile& getFile() const;
+
+    const InterfaceWidget& getWidget(
         std::uint16_t id
     ) const;
 
-    const InterfaceDefinition* find(
+    const InterfaceWidget* findWidget(
         std::uint16_t id
     ) const;
 
-    const std::vector<InterfaceDefinition>&
-    list() const;
+    const InterfaceWidget& get(
+        std::uint16_t id
+    ) const;
+
+    const InterfaceWidget* find(
+        std::uint16_t id
+    ) const;
+
+    const std::vector<InterfaceWidget>& list() const;
+
+    std::vector<std::uint16_t> listIds() const;
 
     bool contains(
         std::uint16_t id
@@ -35,7 +51,9 @@ public:
     std::size_t count() const;
 
 private:
-    std::vector<InterfaceDefinition> definitions_;
+    Interface interface_;
+
+    InterfaceFileParser parser_;
 };
 
 }
