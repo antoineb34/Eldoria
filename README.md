@@ -1,174 +1,85 @@
 # Eldoria
 
-Eldoria is a custom RuneScape-317-feeling private server ecosystem built in C++.
+A C++ RuneScape-317 private server ecosystem. Purpose-built as a complete foundation for building and running custom RuneScape-like worlds.
 
-The project is not only a cache viewer, a client remake, or a server experiment. The long-term goal is a complete ecosystem for building and running a custom RuneScape-like world.
-
-Eldoria is composed of three main applications:
-
-- **ElForge** — the development, inspection, debugging, editing, and content creation tool.
-- **ElClient** — the player-facing C++ game client.
-- **ElServer** — the authoritative C++ game server.
-
-Shared modules provide reusable systems for data loading, world representation, gameplay rules, networking, rendering, and platform integration.
+**Status: Foundation Phase** — Data loading and parsing infrastructure complete. Multi-application architecture established. Ready for gameplay systems.
 
 ---
 
-## Project Goals
+## What You're Building
 
-Eldoria should eventually support:
+Eldoria is three tightly integrated C++ applications that share a unified codebase:
 
-- RuneScape-317-style visuals and feel
-- a custom C++ game client
-- an authoritative C++ server
-- internal tooling for inspecting and editing content
-- custom models, maps, items, NPCs, bosses, interfaces, and gameplay
-- offline client/debug workflows
-- server-authoritative online play
-- content created or validated through ElForge
+- **ElForge** — Inspection and content creation tool for game assets and definitions
+- **ElClient** — Player-facing game client (C++, SDL3)  
+- **ElServer** — Authoritative gameplay server
 
-The goal is not to stay frozen as a pure 317 clone forever.
-
-The goal is to use the RuneScape-317 style and data concepts as a foundation for a custom private server ecosystem.
+All three use the same data, world, networking, and rendering modules, eliminating duplication and keeping them synchronized.
 
 ---
 
-## Applications
+## What's Done
 
-### ElForge
+### Data Layer (Complete)
+- **Cache system** — Full RS-317 cache reader supporting all indices (config, models, animations, MIDI, maps)
+- **Asset parsing** — Models, animations, textures, fonts, interfaces, sprites
+- **Definition tables** — Items, NPCs, floors, locations, sequences, spot animations, varps, varbits, parameters, messages
+- **Binary utilities** — Byte readers/writers with smart-int support, compression (BZIP2, ZLIB), JPEG decoding
+- **Index entry validation** — Sector chain following, file integrity checks
 
-ElForge is the internal tool used to understand and create Eldoria content.
+### Application Skeletons (Complete)
+- Three standalone executables that build, launch, and shut down cleanly
+- CMake multi-application structure with shared module linking
+- SDL3 windowing (ElClient)
 
-It starts as a viewer and inspector for cache data, models, textures, maps, animations, interfaces, and definitions.
-
-Long-term, ElForge should become the tool used to edit, validate, save, export, and maintain custom Eldoria content.
-
-### ElClient
-
-ElClient is the player-facing game client.
-
-It should feel recognizable as a RuneScape-style client while using a cleaner modern C++ architecture.
-
-ElClient presents the world, handles player input, renders interfaces, connects to ElServer, and displays gameplay controlled by the server.
-
-### ElServer
-
-ElServer is the authoritative game server.
-
-It owns truth.
-
-Clients request actions. The server validates and applies them.
-
-ElServer is responsible for login, sessions, world state, movement validation, entity synchronization, persistence, gameplay rules, admin tools, and production server operation.
-
----
-
-## Source Layout
-
-```text
-src/
-├── apps/
-├── data/
-├── world/
-├── game/
-├── net/
-├── render/
-└── platform/
+### Shared Modules (In Progress)
 ```
-
-### Core Mental Model
-
-```text
-apps
-= runnable products
-
-data
-= what things are
-
-world
-= where things are and how they move
-
-game
-= what rules apply
-
-net
-= how state and actions travel
-
-render
-= how things become pixels
-
-platform
-= how Eldoria talks to the machine
+data/      → Binary, cache, archive, definition, texture, model, image parsing
+world/     → Entity placement, navigation, coordinate systems
+game/      → Gameplay rules and mechanics
+net/       → Client-server communication
+render/    → Software rasterization, texture sampling
+graphics/  → Texture and graphics abstractions
+math/      → Vector/matrix utilities
+platform/  → OS integration
 ```
 
 ---
 
-## Documentation
+## Architecture
 
-Detailed project planning lives in `docs/`.
+```
+ElForge ─┐
+ElClient├─→ [data, world, game, net, render, graphics, math, platform]
+ElServer ┘
+```
 
-- [`docs/architecture.md`](docs/architecture.md) — where code belongs and which module owns which responsibility
-- [`docs/roadmap.md`](docs/roadmap.md) — master product roadmap
-- [`docs/elforge.md`](docs/elforge.md) — ElForge roadmap
-- [`docs/elclient.md`](docs/elclient.md) — ElClient roadmap
-- [`docs/elserver.md`](docs/elserver.md) — ElServer roadmap
-- [`docs/development.md`](docs/development.md) — development workflow, branch strategy, and contribution process
-
----
-
-## Current Development Approach
-
-Development is milestone-driven.
-
-The current focus is to turn the architecture into a working multi-application foundation:
-
-1. Planning baseline
-2. App skeletons
-3. ElForge asset foundation
-4. Client login loop
-5. Map and world foundation
-
-Small implementation tasks are tracked as GitHub Issues.
-
-Changes should be made through feature branches created from `dev`, then merged back into `dev` through pull requests.
+Each application links the shared modules it needs. The data module is fully functional and can load, parse, and validate any RS-317 cache index. The other modules are placeholders awaiting gameplay implementation.
 
 ---
 
 ## Build
 
-The M1 workspace baseline is a multi-application CMake project.
-
-Configure from a clean build directory:
-
 ```bash
+# Configure
 cmake -B build
-```
 
-Build everything:
-
-```bash
+# Build all
 cmake --build build
-```
 
-Build one application target:
-
-```bash
+# Or one app
 cmake --build build --target elforge
 cmake --build build --target elclient
 cmake --build build --target elserver
-```
 
-Run the skeleton applications:
-
-```bash
+# Run
 ./build/bin/elforge
 ./build/bin/elclient
 ./build/bin/elserver
 ```
 
-Expected skeleton output:
-
-```text
+Expected output:
+```
 ElForge starting...
 ElForge shutdown.
 
@@ -181,4 +92,44 @@ ElServer run loop tick.
 ElServer shutdown.
 ```
 
-These app skeletons are intentionally minimal. They exist to verify that the workspace can configure, build, launch, and exit cleanly before deeper systems are added.
+---
+
+## Next Priorities
+
+1. **World foundation** — Tile grid, entity spawning, coordinate validation
+2. **Login flow** — ElClient → ElServer authentication and session handshake
+3. **Movement validation** — Server-authoritative pathfinding and collision
+4. **Rendering** — Convert cache models to drawable geometry, map rendering
+5. **Message protocol** — Structured packet definitions between client and server
+
+---
+
+## Key Dependencies
+
+- **C++20** — Modern standard library features
+- **CMake 3.20+** — Multi-app build orchestration
+- **SDL3** — Window and input (ElClient)
+- **ZLIB, BZIP2, JPEG** — Compression and image codecs
+
+---
+
+## Module Responsibilities
+
+| Module | Purpose |
+|--------|---------|
+| **data** | Load and parse RS-317 caches, assets, definitions |
+| **world** | Entity state, navigation, spatial queries |
+| **game** | Gameplay logic, rule enforcement |
+| **net** | Message framing, serialization, client-server protocol |
+| **render** | Rasterization, texture sampling, camera projection |
+| **graphics** | Texture management, shader abstraction |
+| **math** | Vectors, matrices, transforms |
+| **platform** | File I/O, threading, system integration |
+
+---
+
+## Development
+
+- Feature branches from `dev`, merged via pull request
+- Issues track small implementation tasks
+- Milestone-driven development focused on completing each application phase before moving on
