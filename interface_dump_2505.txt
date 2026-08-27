@@ -1,0 +1,448 @@
+interface dump
+root=2505
+declaredCount=13714
+loadedWidgets=13713
+containers=745
+--------------------
+widget id=2505 type=0 typeName=container absX=0 absY=0 width=512 height=334 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=147
+  childRef id=2506 x=12 y=20
+  widget id=2506 type=5 typeName=sprite absX=12 absY=20 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2507 x=12 y=80
+  widget id=2507 type=5 typeName=sprite absX=12 absY=80 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2508 x=12 y=140
+  widget id=2508 type=5 typeName=sprite absX=12 absY=140 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2509 x=12 y=200
+  widget id=2509 type=5 typeName=sprite absX=12 absY=200 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2510 x=12 y=260
+  widget id=2510 type=5 typeName=sprite absX=12 absY=260 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2511 x=100 y=20
+  widget id=2511 type=5 typeName=sprite absX=100 absY=20 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2512 x=100 y=80
+  widget id=2512 type=5 typeName=sprite absX=100 absY=80 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2513 x=100 y=140
+  widget id=2513 type=5 typeName=sprite absX=100 absY=140 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2514 x=100 y=200
+  widget id=2514 type=5 typeName=sprite absX=100 absY=200 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2515 x=188 y=20
+  widget id=2515 type=5 typeName=sprite absX=188 absY=20 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2516 x=100 y=260
+  widget id=2516 type=5 typeName=sprite absX=100 absY=260 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2517 x=188 y=80
+  widget id=2517 type=5 typeName=sprite absX=188 absY=80 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2518 x=188 y=140
+  widget id=2518 type=5 typeName=sprite absX=188 absY=140 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2519 x=188 y=200
+  widget id=2519 type=5 typeName=sprite absX=188 absY=200 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2520 x=188 y=260
+  widget id=2520 type=5 typeName=sprite absX=188 absY=260 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2521 x=276 y=20
+  widget id=2521 type=5 typeName=sprite absX=276 absY=20 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2522 x=364 y=80
+  widget id=2522 type=5 typeName=sprite absX=364 absY=80 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2523 x=276 y=80
+  widget id=2523 type=5 typeName=sprite absX=276 absY=80 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2524 x=276 y=140
+  widget id=2524 type=5 typeName=sprite absX=276 absY=140 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2525 x=276 y=200
+  widget id=2525 type=5 typeName=sprite absX=276 absY=200 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2526 x=276 y=260
+  widget id=2526 type=5 typeName=sprite absX=276 absY=260 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2527 x=364 y=140
+  widget id=2527 type=5 typeName=sprite absX=364 absY=140 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2528 x=364 y=20
+  widget id=2528 type=5 typeName=sprite absX=364 absY=20 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2529 x=364 y=200
+  widget id=2529 type=5 typeName=sprite absX=364 absY=200 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2530 x=364 y=260
+  widget id=2530 type=5 typeName=sprite absX=364 absY=260 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2531 x=412 y=20
+  widget id=2531 type=5 typeName=sprite absX=412 absY=20 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2532 x=412 y=80
+  widget id=2532 type=5 typeName=sprite absX=412 absY=80 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2533 x=412 y=140
+  widget id=2533 type=5 typeName=sprite absX=412 absY=140 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2534 x=412 y=200
+  widget id=2534 type=5 typeName=sprite absX=412 absY=200 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2535 x=412 y=260
+  widget id=2535 type=5 typeName=sprite absX=412 absY=260 width=88 height=60 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="tradebacking,0" secondarySprite=""
+  childRef id=2536 x=12 y=20
+  widget id=2536 type=5 typeName=sprite absX=12 absY=20 width=25 height=30 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder,0" secondarySprite=""
+  childRef id=2537 x=-3 y=49
+  widget id=2537 type=5 typeName=sprite absX=-3 absY=49 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2538 x=-3 y=85
+  widget id=2538 type=5 typeName=sprite absX=-3 absY=85 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2539 x=-3 y=121
+  widget id=2539 type=5 typeName=sprite absX=-3 absY=121 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2540 x=-3 y=157
+  widget id=2540 type=5 typeName=sprite absX=-3 absY=157 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2541 x=-3 y=193
+  widget id=2541 type=5 typeName=sprite absX=-3 absY=193 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2542 x=-3 y=229
+  widget id=2542 type=5 typeName=sprite absX=-3 absY=229 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2543 x=-3 y=265
+  widget id=2543 type=5 typeName=sprite absX=-3 absY=265 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,2" secondarySprite=""
+  childRef id=2544 x=479 y=50
+  widget id=2544 type=5 typeName=sprite absX=479 absY=50 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2545 x=479 y=86
+  widget id=2545 type=5 typeName=sprite absX=479 absY=86 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2546 x=479 y=122
+  widget id=2546 type=5 typeName=sprite absX=479 absY=122 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2547 x=479 y=158
+  widget id=2547 type=5 typeName=sprite absX=479 absY=158 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2548 x=479 y=194
+  widget id=2548 type=5 typeName=sprite absX=479 absY=194 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2549 x=479 y=230
+  widget id=2549 type=5 typeName=sprite absX=479 absY=230 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2550 x=479 y=266
+  widget id=2550 type=5 typeName=sprite absX=479 absY=266 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,1" secondarySprite=""
+  childRef id=2551 x=73 y=299
+  widget id=2551 type=5 typeName=sprite absX=73 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2552 x=109 y=299
+  widget id=2552 type=5 typeName=sprite absX=109 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2553 x=145 y=299
+  widget id=2553 type=5 typeName=sprite absX=145 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2554 x=181 y=299
+  widget id=2554 type=5 typeName=sprite absX=181 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2555 x=217 y=299
+  widget id=2555 type=5 typeName=sprite absX=217 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2556 x=253 y=299
+  widget id=2556 type=5 typeName=sprite absX=253 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2557 x=289 y=299
+  widget id=2557 type=5 typeName=sprite absX=289 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2558 x=325 y=299
+  widget id=2558 type=5 typeName=sprite absX=325 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2559 x=361 y=299
+  widget id=2559 type=5 typeName=sprite absX=361 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2560 x=397 y=299
+  widget id=2560 type=5 typeName=sprite absX=397 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2561 x=433 y=299
+  widget id=2561 type=5 typeName=sprite absX=433 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2562 x=72 y=5
+  widget id=2562 type=5 typeName=sprite absX=72 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2563 x=108 y=5
+  widget id=2563 type=5 typeName=sprite absX=108 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2564 x=144 y=5
+  widget id=2564 type=5 typeName=sprite absX=144 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2565 x=180 y=5
+  widget id=2565 type=5 typeName=sprite absX=180 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2566 x=216 y=5
+  widget id=2566 type=5 typeName=sprite absX=216 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2567 x=252 y=5
+  widget id=2567 type=5 typeName=sprite absX=252 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2568 x=288 y=5
+  widget id=2568 type=5 typeName=sprite absX=288 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2569 x=324 y=5
+  widget id=2569 type=5 typeName=sprite absX=324 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2570 x=360 y=5
+  widget id=2570 type=5 typeName=sprite absX=360 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2571 x=396 y=5
+  widget id=2571 type=5 typeName=sprite absX=396 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2572 x=432 y=5
+  widget id=2572 type=5 typeName=sprite absX=432 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2573 x=252 y=34
+  widget id=2573 type=5 typeName=sprite absX=252 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2574 x=37 y=5
+  widget id=2574 type=5 typeName=sprite absX=37 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2575 x=37 y=299
+  widget id=2575 type=5 typeName=sprite absX=37 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2576 x=12 y=290
+  widget id=2576 type=5 typeName=sprite absX=12 absY=290 width=25 height=30 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder,2" secondarySprite=""
+  childRef id=2577 x=475 y=20
+  widget id=2577 type=5 typeName=sprite absX=475 absY=20 width=25 height=30 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder,1" secondarySprite=""
+  childRef id=2578 x=439 y=5
+  widget id=2578 type=5 typeName=sprite absX=439 absY=5 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2579 x=475 y=290
+  widget id=2579 type=5 typeName=sprite absX=475 absY=290 width=25 height=30 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder,3" secondarySprite=""
+  childRef id=2580 x=439 y=299
+  widget id=2580 type=5 typeName=sprite absX=439 absY=299 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="miscgraphics,3" secondarySprite=""
+  childRef id=2581 x=65 y=95
+  widget id=2581 type=6 typeName=model absX=65 absY=95 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=120 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2582 x=190 y=30
+  widget id=2582 type=4 typeName=text absX=190 absY=30 width=130 height=14 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=2 textShadow=true color=0xffff00 text="Hairdressers' Salon" secondaryText=""
+  childRef id=2583 x=420 y=29
+  widget id=2583 type=4 typeName=text absX=420 absY=29 width=68 height=11 actionType=3 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=false fontId=0 textShadow=true color=0xff0000 text="Close Window" secondaryText=""
+  childRef id=2584 x=150 y=95
+  widget id=2584 type=6 typeName=model absX=150 absY=95 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=103 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2585 x=288 y=34
+  widget id=2585 type=5 typeName=sprite absX=288 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2586 x=324 y=34
+  widget id=2586 type=5 typeName=sprite absX=324 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2587 x=360 y=34
+  widget id=2587 type=5 typeName=sprite absX=360 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2588 x=396 y=34
+  widget id=2588 type=5 typeName=sprite absX=396 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2589 x=432 y=34
+  widget id=2589 type=5 typeName=sprite absX=432 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2590 x=459 y=34
+  widget id=2590 type=5 typeName=sprite absX=459 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2591 x=216 y=34
+  widget id=2591 type=5 typeName=sprite absX=216 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2592 x=180 y=34
+  widget id=2592 type=5 typeName=sprite absX=180 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2593 x=144 y=34
+  widget id=2593 type=5 typeName=sprite absX=144 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2594 x=108 y=34
+  widget id=2594 type=5 typeName=sprite absX=108 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2595 x=72 y=34
+  widget id=2595 type=5 typeName=sprite absX=72 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2596 x=36 y=34
+  widget id=2596 type=5 typeName=sprite absX=36 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2597 x=17 y=34
+  widget id=2597 type=5 typeName=sprite absX=17 absY=34 width=36 height=36 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="steelborder2,0" secondarySprite=""
+  childRef id=2598 x=235 y=95
+  widget id=2598 type=6 typeName=model absX=235 absY=95 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=110 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2599 x=320 y=95
+  widget id=2599 type=6 typeName=model absX=320 absY=95 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=113 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2600 x=65 y=175
+  widget id=2600 type=6 typeName=model absX=65 absY=175 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=118 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2601 x=150 y=175
+  widget id=2601 type=6 typeName=model absX=150 absY=175 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=114 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2602 x=235 y=175
+  widget id=2602 type=6 typeName=model absX=235 absY=175 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=125 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2603 x=320 y=175
+  widget id=2603 type=6 typeName=model absX=320 absY=175 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=105 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2604 x=405 y=95
+  widget id=2604 type=6 typeName=model absX=405 absY=95 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=115 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2605 x=405 y=175
+  widget id=2605 type=6 typeName=model absX=405 absY=175 width=32 height=32 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=104 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1200 modelRotationX=0 modelRotationY=200
+  childRef id=2606 x=390 y=290
+  widget id=2606 type=4 typeName=text absX=390 absY=290 width=55 height=14 actionType=1 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=false fontId=2 textShadow=true color=0xff00 text="CONFIRM" secondaryText=""
+  childRef id=2607 x=134 y=259
+  widget id=2607 type=3 typeName=rect absX=134 absY=259 width=243 height=23 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x0 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2608 x=135 y=260
+  widget id=2608 type=3 typeName=rect absX=135 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x302008 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2609 x=155 y=260
+  widget id=2609 type=3 typeName=rect absX=155 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0xd6d1d1 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2610 x=175 y=260
+  widget id=2610 type=3 typeName=rect absX=175 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x76756c secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2611 x=195 y=260
+  widget id=2611 type=3 typeName=rect absX=195 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x2f2a2a secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2612 x=215 y=260
+  widget id=2612 type=3 typeName=rect absX=215 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0xcb823e secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2613 x=235 y=260
+  widget id=2613 type=3 typeName=rect absX=235 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0xcdad53 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2614 x=255 y=260
+  widget id=2614 type=3 typeName=rect absX=255 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x885f29 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2615 x=275 y=260
+  widget id=2615 type=3 typeName=rect absX=275 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x50321e secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2616 x=295 y=260
+  widget id=2616 type=3 typeName=rect absX=295 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x8383 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2617 x=315 y=260
+  widget id=2617 type=3 typeName=rect absX=315 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x8300 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2618 x=335 y=260
+  widget id=2618 type=3 typeName=rect absX=335 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0x9f2800 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2619 x=355 y=260
+  widget id=2619 type=3 typeName=rect absX=355 absY=260 width=20 height=20 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type3 filled=true color=0xbe00c0 secondaryColor=0x0 hoverColor=0x0 secondaryHoverColor=0x0
+  childRef id=2620 x=198 y=233
+  widget id=2620 type=4 typeName=text absX=198 absY=233 width=114 height=14 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=1 textShadow=true color=0xffff00 text="Please select colour" secondaryText=""
+  childRef id=2621 x=85 y=115
+  widget id=2621 type=5 typeName=sprite absX=85 absY=115 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2622 x=170 y=115
+  widget id=2622 type=5 typeName=sprite absX=170 absY=115 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2623 x=260 y=115
+  widget id=2623 type=5 typeName=sprite absX=260 absY=115 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2624 x=345 y=115
+  widget id=2624 type=5 typeName=sprite absX=345 absY=115 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2625 x=430 y=115
+  widget id=2625 type=5 typeName=sprite absX=430 absY=115 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2626 x=85 y=195
+  widget id=2626 type=5 typeName=sprite absX=85 absY=195 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2627 x=170 y=195
+  widget id=2627 type=5 typeName=sprite absX=170 absY=195 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2628 x=260 y=195
+  widget id=2628 type=5 typeName=sprite absX=260 absY=195 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2629 x=340 y=195
+  widget id=2629 type=5 typeName=sprite absX=340 absY=195 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2630 x=430 y=195
+  widget id=2630 type=5 typeName=sprite absX=430 absY=195 width=25 height=25 actionType=0 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2631 x=135 y=260
+  widget id=2631 type=5 typeName=sprite absX=135 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2632 x=155 y=260
+  widget id=2632 type=5 typeName=sprite absX=155 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2633 x=175 y=260
+  widget id=2633 type=5 typeName=sprite absX=175 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2634 x=195 y=260
+  widget id=2634 type=5 typeName=sprite absX=195 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2635 x=215 y=260
+  widget id=2635 type=5 typeName=sprite absX=215 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2636 x=235 y=260
+  widget id=2636 type=5 typeName=sprite absX=235 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2637 x=255 y=260
+  widget id=2637 type=5 typeName=sprite absX=255 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2638 x=275 y=260
+  widget id=2638 type=5 typeName=sprite absX=275 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2639 x=295 y=260
+  widget id=2639 type=5 typeName=sprite absX=295 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2640 x=315 y=260
+  widget id=2640 type=5 typeName=sprite absX=315 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2641 x=335 y=260
+  widget id=2641 type=5 typeName=sprite absX=335 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2642 x=355 y=260
+  widget id=2642 type=5 typeName=sprite absX=355 absY=260 width=20 height=20 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite="headicons,1"
+  childRef id=2643 x=55 y=83
+  widget id=2643 type=5 typeName=sprite absX=55 absY=83 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2644 x=141 y=83
+  widget id=2644 type=5 typeName=sprite absX=141 absY=83 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2645 x=224 y=82
+  widget id=2645 type=5 typeName=sprite absX=224 absY=82 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2646 x=310 y=83
+  widget id=2646 type=5 typeName=sprite absX=310 absY=83 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2647 x=394 y=84
+  widget id=2647 type=5 typeName=sprite absX=394 absY=84 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2648 x=54 y=163
+  widget id=2648 type=5 typeName=sprite absX=54 absY=163 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2649 x=137 y=162
+  widget id=2649 type=5 typeName=sprite absX=137 absY=162 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2650 x=224 y=163
+  widget id=2650 type=5 typeName=sprite absX=224 absY=163 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2651 x=307 y=163
+  widget id=2651 type=5 typeName=sprite absX=307 absY=163 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""
+  childRef id=2652 x=394 y=163
+  widget id=2652 type=5 typeName=sprite absX=394 absY=163 width=50 height=50 actionType=5 contentType=0 opacity=0 parentId=2505 hoverId=none hidden=false scrollHeight=0 children=0
+    type5 sprite="" secondarySprite=""

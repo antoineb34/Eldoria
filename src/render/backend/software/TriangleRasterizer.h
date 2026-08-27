@@ -15,7 +15,8 @@ public:
         const SoftwareProjectedVertex& b,
         const SoftwareProjectedVertex& c,
         const eld::graphics::RenderMaterial& material,
-        const eld::graphics::GraphicsTexture* texture
+        const eld::graphics::GraphicsTexture* texture,
+        float depthBias = 0.0f
     ) const;
 };
 

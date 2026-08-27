@@ -1,0 +1,757 @@
+src/data/interface/Interface.h
+
+===== FILE: src/data/interface/Interface.h =====
+#pragma once
+
+#include "InterfaceFile.h"
+
+namespace eld::interface {
+
+struct Interface {
+    InterfaceFile file;
+};
+
+}
+
+src/data/interface/InterfaceDefinition.h
+
+===== FILE: src/data/interface/InterfaceDefinition.h =====
+#pragma once
+
+#include "InterfaceFile.h"
+
+namespace eld::interface {
+
+using InterfaceCondition = InterfaceFileCondition;
+using InterfaceScript = InterfaceFileScript;
+using InterfaceChild = InterfaceFileChild;
+using InterfaceSpriteSlot = InterfaceFileSpriteSlot;
+using InterfaceDefinition = InterfaceFileWidget;
+using InterfaceWidget = InterfaceFileWidget;
+
+}
+
+src/data/interface/InterfaceFile.h
+
+===== FILE: src/data/interface/InterfaceFile.h =====
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace eld::interface {
+
+struct InterfaceFileCondition {
+    std::uint8_t comparison = 0;
+    std::uint16_t value = 0;
+};
+
+struct InterfaceFileScript {
+    std::vector<std::int32_t> instructions;
+};
+
+struct InterfaceFileChild {
+    std::uint16_t id = 0;
+    std::int16_t x = 0;
+    std::int16_t y = 0;
+};
+
+struct InterfaceFileSpriteSlot {
+    std::uint8_t slot = 0;
+    std::int16_t x = 0;
+    std::int16_t y = 0;
+    std::string sprite;
+};
+
+struct InterfaceFileWidget {
+    std::uint16_t id = 0;
+    std::optional<std::uint16_t> parentId;
+
+    std::uint8_t type = 0;
+    std::uint8_t actionType = 0;
+    std::uint16_t contentType = 0;
+
+    std::uint16_t width = 0;
+    std::uint16_t height = 0;
+
+    std::uint8_t opacity = 0;
+    std::optional<std::uint16_t> hoverId;
+
+    std::vector<InterfaceFileCondition> conditions;
+    std::vector<InterfaceFileScript> scripts;
+
+    std::uint16_t scrollHeight = 0;
+    bool hidden = false;
+    std::vector<InterfaceFileChild> children;
+
+    bool inventorySwap = false;
+    bool inventoryInterface = false;
+    bool inventoryUsable = false;
+    bool inventoryReplace = false;
+
+    std::uint8_t inventoryPaddingX = 0;
+    std::uint8_t inventoryPaddingY = 0;
+
+    std::vector<std::uint16_t> itemIds;
+    std::vector<std::uint16_t> itemAmounts;
+    std::vector<InterfaceFileSpriteSlot> inventorySprites;
+    std::vector<std::string> actions;
+
+    bool filled = false;
+    bool centeredText = false;
+    std::uint8_t fontId = 0;
+    bool textShadow = false;
+
+    std::string text;
+    std::string secondaryText;
+
+    std::uint32_t color = 0;
+    std::uint32_t secondaryColor = 0;
+    std::uint32_t hoverColor = 0;
+    std::uint32_t secondaryHoverColor = 0;
+
+    std::string sprite;
+    std::string secondarySprite;
+
+    std::optional<std::uint16_t> modelId;
+    std::optional<std::uint16_t> secondaryModelId;
+    std::optional<std::uint16_t> animationId;
+    std::optional<std::uint16_t> secondaryAnimationId;
+
+    std::uint16_t modelZoom = 0;
+    std::uint16_t modelRotationX = 0;
+    std::uint16_t modelRotationY = 0;
+
+    std::int16_t itemPaddingX = 0;
+    std::int16_t itemPaddingY = 0;
+
+    std::string selectedAction;
+    std::string spellName;
+    std::uint16_t spellTargets = 0;
+    std::string tooltip;
+};
+
+struct InterfaceFile {
+    std::vector<std::uint8_t> payload;
+    std::uint16_t declaredCount = 0;
+    std::vector<InterfaceFileWidget> widgets;
+};
+
+}
+
+src/data/interface/InterfaceFileParser.cpp
+
+===== FILE: src/data/interface/InterfaceFileParser.cpp =====
+#include "InterfaceFileParser.h"
+
+#include <exception>
+#include <limits>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "binary/ByteReader.h"
+
+namespace eld::interface {
+
+namespace {
+
+std::optional<std::uint16_t> readReference(
+    eld::binary::ByteReader& reader
+) {
+    const std::uint8_t high =
+        reader.readU8();
+
+    if (high == 0) {
+        return std::nullopt;
+    }
+
+    return static_cast<std::uint16_t>(
+        (static_cast<std::uint16_t>(high - 1) << 8) |
+        reader.readU8()
+    );
+}
+
+std::int32_t readScriptInstruction(
+    eld::binary::ByteReader& reader
+) {
+    const std::uint16_t value =
+        reader.readU16();
+
+    return value == 65535
+        ? -1
+        : static_cast<std::int32_t>(value);
+}
+
+}
+
+std::optional<InterfaceFile>
+InterfaceFileParser::parse(
+    const std::vector<std::uint8_t>& payload
+) const {
+    try {
+        eld::binary::ByteReader reader(payload);
+
+        InterfaceFile file;
+        file.payload = payload;
+        file.declaredCount =
+            reader.readU16();
+
+        std::vector<InterfaceFileWidget> widgets;
+        widgets.reserve(file.declaredCount);
+
+        std::optional<std::uint16_t> parentId;
+
+        while (!reader.atEnd()) {
+            std::uint16_t id =
+                reader.readU16();
+
+            if (id == 65535) {
+                parentId =
+                    reader.readU16();
+
+                id =
+                    reader.readU16();
+            }
+
+            InterfaceFileWidget definition;
+            definition.id = id;
+            definition.parentId = parentId;
+
+            definition.type = reader.readU8();
+            definition.actionType = reader.readU8();
+            definition.contentType = reader.readU16();
+            definition.width = reader.readU16();
+            definition.height = reader.readU16();
+            definition.opacity = reader.readU8();
+            definition.hoverId = readReference(reader);
+
+            const std::uint8_t conditionCount =
+                reader.readU8();
+
+            definition.conditions.reserve(
+                conditionCount
+            );
+
+            for (
+                std::uint8_t index = 0;
+                index < conditionCount;
+                ++index
+            ) {
+                definition.conditions.push_back({
+                    reader.readU8(),
+                    reader.readU16()
+                });
+            }
+
+            const std::uint8_t scriptCount =
+                reader.readU8();
+
+            definition.scripts.reserve(scriptCount);
+
+            for (
+                std::uint8_t index = 0;
+                index < scriptCount;
+                ++index
+            ) {
+                const std::uint16_t length =
+                    reader.readU16();
+
+                InterfaceFileScript script;
+                script.instructions.reserve(length);
+
+                for (
+                    std::uint16_t instruction = 0;
+                    instruction < length;
+                    ++instruction
+                ) {
+                    script.instructions.push_back(
+                        readScriptInstruction(reader)
+                    );
+                }
+
+                definition.scripts.push_back(
+                    std::move(script)
+                );
+            }
+
+            if (definition.type == 0) {
+                definition.scrollHeight =
+                    reader.readU16();
+
+                definition.hidden =
+                    reader.readU8() == 1;
+
+                const std::uint16_t childCount =
+                    reader.readU16();
+
+                definition.children.reserve(
+                    childCount
+                );
+
+                for (
+                    std::uint16_t index = 0;
+                    index < childCount;
+                    ++index
+                ) {
+                    definition.children.push_back({
+                        reader.readU16(),
+                        reader.readI16(),
+                        reader.readI16()
+                    });
+                }
+            }
+
+            if (definition.type == 1) {
+                reader.readU16();
+                reader.readU8();
+            }
+
+            if (
+                definition.type == 2 ||
+                definition.type == 7
+            ) {
+                const std::size_t slotCount =
+                    static_cast<std::size_t>(
+                        definition.width
+                    ) *
+                    definition.height;
+
+                definition.itemIds.resize(slotCount);
+                definition.itemAmounts.resize(slotCount);
+            }
+
+            if (definition.type == 2) {
+                definition.inventorySwap =
+                    reader.readU8() == 1;
+
+                definition.inventoryInterface =
+                    reader.readU8() == 1;
+
+                definition.inventoryUsable =
+                    reader.readU8() == 1;
+
+                definition.inventoryReplace =
+                    reader.readU8() == 1;
+
+                definition.inventoryPaddingX =
+                    reader.readU8();
+
+                definition.inventoryPaddingY =
+                    reader.readU8();
+
+                for (
+                    std::uint8_t slot = 0;
+                    slot < 20;
+                    ++slot
+                ) {
+                    if (reader.readU8() == 1) {
+                        definition.inventorySprites.push_back({
+                            slot,
+                            reader.readI16(),
+                            reader.readI16(),
+                            reader.readTerminatedString(10)
+                        });
+                    }
+                }
+
+                definition.actions.reserve(5);
+
+                for (
+                    std::uint8_t index = 0;
+                    index < 5;
+                    ++index
+                ) {
+                    definition.actions.push_back(
+                        reader.readTerminatedString(10)
+                    );
+                }
+            }
+
+            if (definition.type == 3) {
+                definition.filled =
+                    reader.readU8() == 1;
+            }
+
+            if (
+                definition.type == 1 ||
+                definition.type == 4
+            ) {
+                definition.centeredText =
+                    reader.readU8() == 1;
+
+                definition.fontId =
+                    reader.readU8();
+
+                definition.textShadow =
+                    reader.readU8() == 1;
+            }
+
+            if (definition.type == 4) {
+                definition.text =
+                    reader.readTerminatedString(10);
+
+                definition.secondaryText =
+                    reader.readTerminatedString(10);
+            }
+
+            if (
+                definition.type == 1 ||
+                definition.type == 3 ||
+                definition.type == 4
+            ) {
+                definition.color =
+                    reader.readU32();
+            }
+
+            if (
+                definition.type == 3 ||
+                definition.type == 4
+            ) {
+                definition.secondaryColor =
+                    reader.readU32();
+
+                definition.hoverColor =
+                    reader.readU32();
+
+                definition.secondaryHoverColor =
+                    reader.readU32();
+            }
+
+            if (definition.type == 5) {
+                definition.sprite =
+                    reader.readTerminatedString(10);
+
+                definition.secondarySprite =
+                    reader.readTerminatedString(10);
+            }
+
+            if (definition.type == 6) {
+                definition.modelId =
+                    readReference(reader);
+
+                definition.secondaryModelId =
+                    readReference(reader);
+
+                definition.animationId =
+                    readReference(reader);
+
+                definition.secondaryAnimationId =
+                    readReference(reader);
+
+                definition.modelZoom =
+                    reader.readU16();
+
+                definition.modelRotationX =
+                    reader.readU16();
+
+                definition.modelRotationY =
+                    reader.readU16();
+            }
+
+            if (definition.type == 7) {
+                definition.centeredText =
+                    reader.readU8() == 1;
+
+                definition.fontId =
+                    reader.readU8();
+
+                definition.textShadow =
+                    reader.readU8() == 1;
+
+                definition.color =
+                    reader.readU32();
+
+                definition.itemPaddingX =
+                    reader.readI16();
+
+                definition.itemPaddingY =
+                    reader.readI16();
+
+                definition.inventoryInterface =
+                    reader.readU8() == 1;
+
+                definition.actions.reserve(5);
+
+                for (
+                    std::uint8_t index = 0;
+                    index < 5;
+                    ++index
+                ) {
+                    definition.actions.push_back(
+                        reader.readTerminatedString(10)
+                    );
+                }
+            }
+
+            if (definition.type == 8) {
+                definition.text =
+                    reader.readTerminatedString(10);
+            }
+
+            if (
+                definition.actionType == 2 ||
+                definition.type == 2
+            ) {
+                definition.selectedAction =
+                    reader.readTerminatedString(10);
+
+                definition.spellName =
+                    reader.readTerminatedString(10);
+
+                definition.spellTargets =
+                    reader.readU16();
+            }
+
+            if (
+                definition.actionType == 1 ||
+                definition.actionType == 4 ||
+                definition.actionType == 5 ||
+                definition.actionType == 6
+            ) {
+                definition.tooltip =
+                    reader.readTerminatedString(10);
+
+                if (definition.tooltip.empty()) {
+                    if (definition.actionType == 1) {
+                        definition.tooltip = "Ok";
+                    }
+                    else if (
+                        definition.actionType == 4 ||
+                        definition.actionType == 5
+                    ) {
+                        definition.tooltip = "Select";
+                    }
+                    else {
+                        definition.tooltip = "Continue";
+                    }
+                }
+            }
+
+            widgets.push_back(
+                std::move(definition)
+            );
+        }
+
+        file.widgets = std::move(widgets);
+        return file;
+    }
+    catch (const std::exception&) {
+        return std::nullopt;
+    }
+}
+
+}
+
+src/data/interface/InterfaceFileParser.h
+
+===== FILE: src/data/interface/InterfaceFileParser.h =====
+#pragma once
+
+#include <optional>
+#include <vector>
+#include <cstdint>
+
+#include "InterfaceFile.h"
+
+namespace eld::interface {
+
+class InterfaceFileParser {
+public:
+    std::optional<InterfaceFile> parse(
+        const std::vector<std::uint8_t>& payload
+    ) const;
+};
+
+}
+
+src/data/interface/InterfaceRepository.cpp
+
+===== FILE: src/data/interface/InterfaceRepository.cpp =====
+#include "InterfaceRepository.h"
+
+#include <optional>
+#include <stdexcept>
+#include <utility>
+
+#include "archive/Archive.h"
+#include "archive/ArchiveParser.h"
+#include "cache/File.h"
+
+namespace eld::interface {
+
+InterfaceRepository::InterfaceRepository(
+    eld::cache::Store store,
+    std::uint16_t archiveId
+) {
+    const eld::cache::File cacheFile =
+        store.get(archiveId);
+
+    eld::archive::ArchiveParser archiveParser;
+
+    std::optional<eld::archive::Archive> archive =
+        archiveParser.parse(
+            cacheFile.getBytes()
+        );
+
+    if (!archive.has_value()) {
+        throw std::runtime_error(
+            "Failed to parse interface archive"
+        );
+    }
+
+    const eld::archive::ArchiveFile& dataFile =
+        archive->get("data");
+
+    std::optional<InterfaceFile> file =
+        parser_.parse(dataFile.payload);
+
+    if (!file.has_value()) {
+        throw std::runtime_error(
+            "Failed to parse interface file"
+        );
+    }
+
+    interface_.file =
+        std::move(*file);
+}
+
+const Interface& InterfaceRepository::get() const {
+    return interface_;
+}
+
+const InterfaceFile& InterfaceRepository::getFile() const {
+    return interface_.file;
+}
+
+const InterfaceWidget& InterfaceRepository::getWidget(
+    std::uint16_t id
+) const {
+    const InterfaceWidget* widget =
+        findWidget(id);
+
+    if (widget == nullptr) {
+        throw std::out_of_range(
+            "Interface widget does not exist"
+        );
+    }
+
+    return *widget;
+}
+
+const InterfaceWidget* InterfaceRepository::findWidget(
+    std::uint16_t id
+) const {
+    for (const InterfaceWidget& widget : interface_.file.widgets) {
+        if (widget.id == id) {
+            return &widget;
+        }
+    }
+
+    return nullptr;
+}
+
+const InterfaceWidget& InterfaceRepository::get(
+    std::uint16_t id
+) const {
+    return getWidget(id);
+}
+
+const InterfaceWidget* InterfaceRepository::find(
+    std::uint16_t id
+) const {
+    return findWidget(id);
+}
+
+const std::vector<InterfaceWidget>& InterfaceRepository::list() const {
+    return interface_.file.widgets;
+}
+
+std::vector<std::uint16_t> InterfaceRepository::listIds() const {
+    std::vector<std::uint16_t> ids;
+    ids.reserve(interface_.file.widgets.size());
+
+    for (const InterfaceWidget& widget : interface_.file.widgets) {
+        ids.push_back(widget.id);
+    }
+
+    return ids;
+}
+
+bool InterfaceRepository::contains(
+    std::uint16_t id
+) const {
+    return findWidget(id) != nullptr;
+}
+
+std::size_t InterfaceRepository::count() const {
+    return interface_.file.widgets.size();
+}
+
+}
+
+src/data/interface/InterfaceRepository.h
+
+===== FILE: src/data/interface/InterfaceRepository.h =====
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+#include "Interface.h"
+#include "InterfaceFile.h"
+#include "InterfaceFileParser.h"
+#include "cache/Store.h"
+
+namespace eld::interface {
+
+using InterfaceWidget = InterfaceFileWidget;
+
+class InterfaceRepository {
+public:
+    InterfaceRepository(
+        eld::cache::Store store,
+        std::uint16_t archiveId
+    );
+
+    const Interface& get() const;
+
+    const InterfaceFile& getFile() const;
+
+    const InterfaceWidget& getWidget(
+        std::uint16_t id
+    ) const;
+
+    const InterfaceWidget* findWidget(
+        std::uint16_t id
+    ) const;
+
+    const InterfaceWidget& get(
+        std::uint16_t id
+    ) const;
+
+    const InterfaceWidget* find(
+        std::uint16_t id
+    ) const;
+
+    const std::vector<InterfaceWidget>& list() const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    Interface interface_;
+
+    InterfaceFileParser parser_;
+};
+
+}
+

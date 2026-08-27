@@ -34,6 +34,7 @@ eldoria_add_module(math src/math)
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
+eldoria_add_app(interface_probe src/apps/interface_probe)
 
 if(BUILD_TESTING)
   add_subdirectory(tests)

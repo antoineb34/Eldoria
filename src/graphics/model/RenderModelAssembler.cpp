@@ -285,11 +285,21 @@ std::uint32_t findOrCreateMaterial(
     );
 }
 
+constexpr float PriorityDepthBiasPerLevel = 0.001f;
+
+float depthBiasForPriority(
+    std::uint8_t priority
+) {
+    return
+        -static_cast<float>(priority) *
+        PriorityDepthBiasPerLevel;
+}
+
 void appendSection(
     RenderMesh& mesh,
     std::uint32_t firstIndex,
     std::uint32_t materialIndex,
-    std::uint8_t sortOrder
+    float depthBias
 ) {
     if (!mesh.sections.empty()) {
         RenderMeshSection& previous =
@@ -297,7 +307,7 @@ void appendSection(
 
         if (
             previous.materialIndex == materialIndex &&
-            previous.sortOrder == sortOrder &&
+            previous.depthBias == depthBias &&
             previous.firstIndex + previous.indexCount ==
                 firstIndex
         ) {
@@ -310,7 +320,7 @@ void appendSection(
         firstIndex,
         3,
         materialIndex,
-        sortOrder
+        depthBias
     });
 }
 
@@ -470,7 +480,9 @@ RenderModel RenderModelAssembler::assemble(
             mesh,
             firstIndex,
             materialIndex,
-            face.priority
+            depthBiasForPriority(
+                face.priority
+            )
         );
     }
 

@@ -1,0 +1,215 @@
+src/data
+├── archive
+│   ├── Archive.cpp
+│   ├── ArchiveFile.h
+│   ├── Archive.h
+│   ├── ArchiveHashes.h
+│   ├── ArchiveParser.cpp
+│   └── ArchiveParser.h
+├── binary
+│   ├── ByteReader.cpp
+│   ├── ByteReader.h
+│   ├── ByteWriter.cpp
+│   ├── ByteWriter.h
+│   ├── Compression.cpp
+│   └── Compression.h
+├── cache
+│   ├── Cache.cpp
+│   ├── Cache.h
+│   ├── File.cpp
+│   ├── File.h
+│   ├── Index.h
+│   ├── Payload.cpp
+│   ├── Payload.h
+│   ├── Reader.cpp
+│   ├── Reader.h
+│   ├── README.md
+│   ├── Sector.h
+│   ├── Store.cpp
+│   ├── Store.h
+│   ├── Writer.cpp
+│   └── Writer.h
+├── CMakeLists.txt
+├── definition
+│   ├── DefinitionRepository.cpp
+│   ├── DefinitionRepository.h
+│   ├── DefinitionTable.h
+│   ├── DefinitionTableParser.cpp
+│   ├── DefinitionTableParser.h
+│   ├── floor
+│   │   ├── FloorDefinition.h
+│   │   ├── FloorDefinitionParser.cpp
+│   │   ├── FloorDefinitionParser.h
+│   │   ├── FloorRepository.cpp
+│   │   └── FloorRepository.h
+│   ├── idk
+│   │   ├── IdentityKitDefinition.h
+│   │   ├── IdentityKitDefinitionParser.cpp
+│   │   ├── IdentityKitDefinitionParser.h
+│   │   ├── IdentityKitRepository.cpp
+│   │   └── IdentityKitRepository.h
+│   ├── item
+│   │   ├── ItemDefinition.h
+│   │   ├── ItemDefinitionParser.cpp
+│   │   ├── ItemDefinitionParser.h
+│   │   ├── ItemRepository.cpp
+│   │   └── ItemRepository.h
+│   ├── location
+│   │   ├── LocationDefinition.h
+│   │   ├── LocationDefinitionParser.cpp
+│   │   ├── LocationDefinitionParser.h
+│   │   ├── LocationRepository.cpp
+│   │   └── LocationRepository.h
+│   ├── message
+│   │   ├── MessageDefinition.h
+│   │   ├── MessageDefinitionParser.cpp
+│   │   ├── MessageDefinitionParser.h
+│   │   ├── MessageRepository.cpp
+│   │   └── MessageRepository.h
+│   ├── message_animation
+│   │   ├── MessageAnimationDefinition.h
+│   │   ├── MessageAnimationDefinitionParser.cpp
+│   │   ├── MessageAnimationDefinitionParser.h
+│   │   ├── MessageAnimationRepository.cpp
+│   │   └── MessageAnimationRepository.h
+│   ├── npc
+│   │   ├── NpcDefinition.h
+│   │   ├── NpcDefinitionParser.cpp
+│   │   ├── NpcDefinitionParser.h
+│   │   ├── NpcRepository.cpp
+│   │   └── NpcRepository.h
+│   ├── parameter
+│   │   ├── ParameterDefinition.h
+│   │   ├── ParameterDefinitionParser.cpp
+│   │   ├── ParameterDefinitionParser.h
+│   │   ├── ParameterRepository.cpp
+│   │   └── ParameterRepository.h
+│   ├── sequence
+│   │   ├── SequenceDefinition.h
+│   │   ├── SequenceDefinitionParser.cpp
+│   │   ├── SequenceDefinitionParser.h
+│   │   ├── SequenceRepository.cpp
+│   │   └── SequenceRepository.h
+│   ├── spot_animation
+│   │   ├── SpotAnimationDefinition.h
+│   │   ├── SpotAnimationDefinitionParser.cpp
+│   │   ├── SpotAnimationDefinitionParser.h
+│   │   ├── SpotAnimationRepository.cpp
+│   │   └── SpotAnimationRepository.h
+│   ├── varbit
+│   │   ├── VarbitDefinition.h
+│   │   ├── VarbitDefinitionParser.cpp
+│   │   ├── VarbitDefinitionParser.h
+│   │   ├── VarbitRepository.cpp
+│   │   └── VarbitRepository.h
+│   └── varp
+│       ├── VarpDefinition.h
+│       ├── VarpDefinitionParser.cpp
+│       ├── VarpDefinitionParser.h
+│       ├── VarpRepository.cpp
+│       └── VarpRepository.h
+├── font
+│   ├── FontDecoder.cpp
+│   ├── FontDecoder.h
+│   ├── FontFile.h
+│   ├── FontFileParser.cpp
+│   ├── FontFileParser.h
+│   ├── Font.h
+│   ├── FontRepository.cpp
+│   └── FontRepository.h
+├── image
+│   ├── Image.h
+│   ├── IndexedImageDecoder.cpp
+│   ├── IndexedImageDecoder.h
+│   ├── IndexedImageFile.h
+│   ├── IndexedImageFileParser.cpp
+│   ├── IndexedImageFileParser.h
+│   ├── IndexedImageSourceMap.h
+│   ├── JpegDecoder.cpp
+│   ├── JpegDecoder.h
+│   ├── JpegRepository.cpp
+│   └── JpegRepository.h
+├── interface
+│   ├── InterfaceDefinition.h
+│   ├── InterfaceFile.h
+│   ├── InterfaceFileParser.cpp
+│   ├── InterfaceFileParser.h
+│   ├── Interface.h
+│   ├── InterfaceRepository.cpp
+│   └── InterfaceRepository.h
+├── map
+│   ├── decoder
+│   │   ├── ObjectSpawnDecoder.cpp
+│   │   ├── ObjectSpawnDecoder.h
+│   │   ├── TerrainDecoder.cpp
+│   │   └── TerrainDecoder.h
+│   ├── MapFile.h
+│   ├── MapFileReader.cpp
+│   ├── MapFileReader.h
+│   ├── MapLoader.cpp
+│   ├── MapLoader.h
+│   ├── MapRegion.h
+│   └── MapTile.h
+├── model
+│   ├── ModelDecoder.cpp
+│   ├── ModelDecoder.h
+│   ├── ModelFile.h
+│   ├── ModelFileParser.cpp
+│   ├── ModelFileParser.h
+│   ├── Model.h
+│   ├── ModelMesh.h
+│   ├── ModelRepository.cpp
+│   ├── ModelRepository.h
+│   └── ModelSourceMap.h
+├── README.md
+├── references_rs317
+│   ├── ArchiveNames.h
+│   ├── Buffer.cpp
+│   ├── Buffer.h
+│   ├── DefinitionsLoader.cpp
+│   ├── DefinitionsLoader.h
+│   ├── FloDef.cpp
+│   ├── FloDef.h
+│   ├── IdkDef.cpp
+│   ├── IdkDef.h
+│   ├── ItemDef.cpp
+│   ├── ItemDef.h
+│   ├── KnownArchives.h
+│   ├── LocDef.cpp
+│   ├── LocDef.h
+│   ├── MapObjects.cpp
+│   ├── MapObjects.h
+│   ├── MapRegion.cpp
+│   ├── MapRegion.h
+│   ├── MapTerrain.cpp
+│   ├── MapTerrain.h
+│   ├── MesAnimDef.cpp
+│   ├── MesAnimDef.h
+│   ├── MesDef.cpp
+│   ├── MesDef.h
+│   ├── NpcDef.cpp
+│   ├── NpcDef.h
+│   ├── ParamDef.cpp
+│   ├── ParamDef.h
+│   ├── RegionRenderer2D.cpp
+│   ├── RegionRenderer2D.h
+│   ├── SeqDef.cpp
+│   ├── SeqDef.h
+│   ├── SpotAnimDef.cpp
+│   ├── SpotAnimDef.h
+│   ├── TextureDef.cpp
+│   ├── TextureDef.h
+│   ├── VarbitDef.cpp
+│   ├── VarbitDef.h
+│   ├── VarpDef.cpp
+│   └── VarpDef.h
+├── sprite
+│   ├── Sprite.h
+│   ├── SpriteRepository.cpp
+│   └── SpriteRepository.h
+└── texture
+    ├── Texture.h
+    ├── TextureRepository.cpp
+    └── TextureRepository.h
+
+26 directories, 187 files

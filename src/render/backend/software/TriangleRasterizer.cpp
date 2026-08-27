@@ -91,7 +91,8 @@ void TriangleRasterizer::drawTriangle(
     const SoftwareProjectedVertex& b,
     const SoftwareProjectedVertex& c,
     const eld::graphics::RenderMaterial& material,
-    const eld::graphics::GraphicsTexture* texture
+    const eld::graphics::GraphicsTexture* texture,
+    float depthBias
 ) const {
     if (!a.valid || !b.valid || !c.valid) {
         return;
@@ -264,7 +265,8 @@ void TriangleRasterizer::drawTriangle(
                 inverseDepth;
 
             const float depth =
-                1.0f / inverseDepth;
+                1.0f / inverseDepth +
+                depthBias;
 
             const eld::math::Vec2 uv{
                 a.uv.x * correctedA +
