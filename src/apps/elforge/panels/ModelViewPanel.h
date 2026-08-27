@@ -101,6 +101,14 @@ public:
         );
 
         ImGui::Spacing();
+        ImGui::TextUnformatted("TRANSFORM");
+        ImGui::Separator();
+
+        renderTransformControls(
+            state
+        );
+
+        ImGui::Spacing();
         ImGui::TextUnformatted("DISPLAY");
         ImGui::Separator();
 
@@ -215,6 +223,127 @@ private:
             y,
             z
         };
+    }
+
+    static float radiansToDegrees(
+        float radians
+    ) {
+        return
+            radians *
+            180.0f /
+            Pi;
+    }
+
+    static float degreesToRadians(
+        float degrees
+    ) {
+        return
+            degrees *
+            Pi /
+            180.0f;
+    }
+
+    void renderTransformControls(
+        CacheExplorerState& state
+    ) {
+        eld::render::Transform& transform =
+            state.modelTransform;
+
+        float rotationDegrees[3]{
+            radiansToDegrees(
+                transform.rotation.x
+            ),
+            radiansToDegrees(
+                transform.rotation.y
+            ),
+            radiansToDegrees(
+                transform.rotation.z
+            )
+        };
+
+        ImGui::SetNextItemWidth(
+            -1.0f
+        );
+
+        if (
+            ImGui::DragFloat3(
+                "Rotation",
+                rotationDegrees,
+                0.5f,
+                -360.0f,
+                360.0f,
+                "%.1f deg"
+            )
+        ) {
+            transform.rotation = {
+                degreesToRadians(
+                    rotationDegrees[0]
+                ),
+                degreesToRadians(
+                    rotationDegrees[1]
+                ),
+                degreesToRadians(
+                    rotationDegrees[2]
+                )
+            };
+        }
+
+        float position[3]{
+            transform.position.x,
+            transform.position.y,
+            transform.position.z
+        };
+
+        ImGui::SetNextItemWidth(
+            -1.0f
+        );
+
+        if (
+            ImGui::DragFloat3(
+                "Position",
+                position,
+                1.0f,
+                0.0f,
+                0.0f,
+                "%.1f"
+            )
+        ) {
+            transform.position = {
+                position[0],
+                position[1],
+                position[2]
+            };
+        }
+
+        float scale =
+            transform.scale.x;
+
+        ImGui::SetNextItemWidth(
+            -1.0f
+        );
+
+        if (
+            ImGui::DragFloat(
+                "Scale",
+                &scale,
+                0.01f,
+                0.1f,
+                20.0f,
+                "%.2fx"
+            )
+        ) {
+            scale =
+                std::max(
+                    scale,
+                    0.1f
+                );
+
+            transform.scale = {
+                scale,
+                scale,
+                scale
+            };
+        }
     }
 
     void renderViewPresets(

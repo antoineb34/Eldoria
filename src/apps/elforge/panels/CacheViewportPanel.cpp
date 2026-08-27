@@ -581,87 +581,6 @@ private:
     > textures_;
 };
 
-void updateViewportControls(
-    CacheExplorerState& state
-) {
-    const bool* keys =
-        SDL_GetKeyboardState(nullptr);
-
-    eld::render::Transform& transform =
-        state.modelTransform;
-
-    constexpr float rotationSpeed = 0.03f;
-    constexpr float moveSpeed = 8.0f;
-    constexpr float zoomSpeed = 0.02f;
-
-    if (keys[SDL_SCANCODE_LEFT]) {
-        transform.rotation.y -= rotationSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_RIGHT]) {
-        transform.rotation.y += rotationSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_UP]) {
-        transform.rotation.x -= rotationSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_DOWN]) {
-        transform.rotation.x += rotationSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_Q]) {
-        transform.rotation.z -= rotationSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_E]) {
-        transform.rotation.z += rotationSpeed;
-    }
-
-    float scale =
-        transform.scale.x;
-
-    if (keys[SDL_SCANCODE_EQUALS]) {
-        scale += zoomSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_MINUS]) {
-        scale -= zoomSpeed;
-    }
-
-    scale =
-        std::max(
-            scale,
-            0.1f
-        );
-
-    transform.scale = {
-        scale,
-        scale,
-        scale
-    };
-
-    if (keys[SDL_SCANCODE_W]) {
-        transform.position.y -= moveSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_S]) {
-        transform.position.y += moveSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_A]) {
-        transform.position.x -= moveSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_D]) {
-        transform.position.x += moveSpeed;
-    }
-
-    if (keys[SDL_SCANCODE_R]) {
-        transform = {};
-    }
-}
-
 void renderCheckerboard(
     SDL_Renderer* renderer,
     const CacheExplorerState& state,
@@ -2942,10 +2861,6 @@ void CacheViewportPanel::renderViewport(
     SDL_SetRenderClipRect(
         renderer,
         &clip
-    );
-
-    updateViewportControls(
-        state
     );
 
     eld::render::RenderObject object;
