@@ -43,6 +43,11 @@ void SoftwareRenderBackend::ensureTexture() {
         );
 
     if (texture_ != nullptr) {
+        SDL_SetTextureBlendMode(
+            texture_,
+            SDL_BLENDMODE_BLEND
+        );
+
         SDL_SetTextureScaleMode(
             texture_,
             SDL_SCALEMODE_NEAREST

@@ -1049,7 +1049,9 @@ void CacheExplorer::renderViewport(
     viewportPanel_.renderViewport(
         renderer,
         state_,
-        graphicsResources_
+        graphicsResources_,
+        interfaceRepository_,
+        mediaSpriteRepository_
     );
 }
 
