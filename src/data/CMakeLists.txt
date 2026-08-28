@@ -1,4 +1,9 @@
 add_library(eldoria_data STATIC
+    animation/AnimationFrameIndex.cpp
+    animation/AnimationFileParser.cpp
+    animation/AnimationDecoder.cpp
+    animation/AnimationRepository.cpp
+
     binary/ByteReader.cpp
     binary/ByteWriter.cpp
     binary/Compression.cpp

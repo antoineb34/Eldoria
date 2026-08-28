@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <string>
 
 #include <imgui.h>
@@ -17,6 +18,7 @@ namespace eld::elforge {
 enum class ViewportViewKind {
     None,
     Interface,
+    Npc,
     Model,
     Texture
 };
@@ -45,6 +47,14 @@ public:
         }
 
         if (
+            state.activeNpc.has_value() &&
+            state.activeModel.has_value() &&
+            state.activeModelHandle.has_value()
+        ) {
+            return ViewportViewKind::Npc;
+        }
+
+        if (
             state.activeModel.has_value() &&
             state.activeModelHandle.has_value()
         ) {
@@ -61,7 +71,9 @@ public:
         modelViewPanel_.update(
             state,
             kind ==
-                ViewportViewKind::Model
+                ViewportViewKind::Model ||
+            kind ==
+                ViewportViewKind::Npc
         );
     }
 
@@ -181,10 +193,13 @@ public:
         }
     }
 
+    // ELFORGE_NPC_ANIMATION_DRAWER_V1
     void render(
         CacheExplorerState& state,
         ViewportViewKind kind,
-        float drawerHeight
+        float drawerHeight,
+        const std::function<void()>&
+            renderNpcAnimationControls
     ) {
         ImGui::BeginChild(
             "ViewportViewDrawer",
@@ -232,7 +247,8 @@ public:
 
             renderActivePanel(
                 state,
-                kind
+                kind,
+                renderNpcAnimationControls
             );
         }
 
@@ -265,6 +281,9 @@ private:
             case ViewportViewKind::Interface:
                 return "INTERFACE VIEW";
 
+            case ViewportViewKind::Npc:
+                return "NPC VIEW";
+
             case ViewportViewKind::Model:
                 return "MODEL VIEW";
 
@@ -279,11 +298,26 @@ private:
 
     void renderActivePanel(
         CacheExplorerState& state,
-        ViewportViewKind kind
+        ViewportViewKind kind,
+        const std::function<void()>&
+            renderNpcAnimationControls
     ) {
         switch (kind) {
             case ViewportViewKind::Interface:
                 interfaceViewPanel_.render(
+                    true
+                );
+                break;
+
+            case ViewportViewKind::Npc:
+                if (renderNpcAnimationControls) {
+                    renderNpcAnimationControls();
+                }
+
+                ImGui::Spacing();
+
+                modelViewPanel_.render(
+                    state,
                     true
                 );
                 break;
@@ -304,7 +338,7 @@ private:
             case ViewportViewKind::None:
             default:
                 ImGui::TextDisabled(
-                    "Select an interface, model, or texture."
+                    "Select an interface, NPC, model, or texture."
                 );
                 break;
         }

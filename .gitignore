@@ -34,3 +34,6 @@ build-release/
 
 # Local ImGui state
 imgui.ini
+
+# Local patch/install backups
+*.before_*

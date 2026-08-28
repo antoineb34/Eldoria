@@ -1,10 +1,22 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <utility>
+
 #include <string>
 
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
+
+#include "animation/AnimationFrameIndex.h"
+#include "animation/AnimationRepository.h"
+#include "animation/AnimationPlayer.h"
+#include "animation/ModelAnimator.h"
+#include "model/ModelMesh.h"
 
 #include "CacheExplorerState.h"
 #include "CacheTreeBuilder.h"
@@ -62,7 +74,34 @@ private:
     void handleSelectionChanged();
     void findNextAlphaModel();
 
+    // ELFORGE_NPC_ANIMATION_PREVIEW_V1
+    void resetNpcAnimationPreview();
+
+    void startNpcAnimationPreview(
+        const std::optional<std::uint16_t>& sequenceId
+    );
+
+    void rebuildNpcAnimationFrame();
+    void renderNpcAnimationControls();
+
     eld::cache::Cache cache_;
+
+    eld::animation::AnimationRepository animationRepository_;
+    eld::animation::AnimationFrameIndex animationFrameIndex_;
+
+    eld::graphics::AnimationPlayer animationPlayer_;
+    eld::graphics::ModelAnimator modelAnimator_;
+
+    std::optional<eld::model::ModelMesh>
+        npcAnimationSource_;
+
+    std::map<
+        std::pair<std::uint16_t, std::size_t>,
+        eld::graphics::ModelHandle
+    > npcAnimationHandles_;
+
+    std::uint64_t lastAnimationUpdateMs_ = 0;
+
 
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;

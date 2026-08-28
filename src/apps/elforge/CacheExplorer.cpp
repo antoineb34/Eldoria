@@ -229,6 +229,87 @@ eld::image::Image buildFloorPreview(
     return image;
 }
 
+bool populateTextureArchive(
+    CacheTreeNode& node,
+    const std::vector<std::uint16_t>& textureIds
+) {
+    constexpr int ConfigIndexId = 0;
+    constexpr int TextureArchiveId = 6;
+
+    if (
+        node.type == CacheTreeNodeType::Archive &&
+        node.indexId == ConfigIndexId &&
+        node.archiveId == TextureArchiveId
+    ) {
+        node.label =
+            "Archive 6 - Textures";
+
+        node.children.clear();
+
+        node.children.reserve(
+            textureIds.size()
+        );
+
+        for (
+            const std::uint16_t textureId :
+            textureIds
+        ) {
+            CacheTreeNode textureNode;
+
+            textureNode.type =
+                CacheTreeNodeType::Texture;
+
+            textureNode.label =
+                "Texture " +
+                std::to_string(
+                    textureId
+                );
+
+            textureNode.key =
+                node.key +
+                "/texture/" +
+                std::to_string(
+                    textureId
+                );
+
+            textureNode.indexId =
+                node.indexId;
+
+            textureNode.archiveId =
+                node.archiveId;
+
+            textureNode.fileId =
+                static_cast<int>(
+                    textureId
+                );
+
+            node.children.push_back(
+                std::move(
+                    textureNode
+                )
+            );
+        }
+
+        return true;
+    }
+
+    for (
+        CacheTreeNode& child :
+        node.children
+    ) {
+        if (
+            populateTextureArchive(
+                child,
+                textureIds
+            )
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 }
 
 
@@ -307,10 +388,295 @@ void CacheExplorer::findNextAlphaModel() {
             continue;
         }
     }
+
+
+
+}
+
+
+// ELFORGE_NPC_ANIMATION_PREVIEW_V1
+void CacheExplorer::resetNpcAnimationPreview() {
+    animationPlayer_.clear();
+
+    npcAnimationSource_.reset();
+    npcAnimationHandles_.clear();
+}
+
+void CacheExplorer::startNpcAnimationPreview(
+    const std::optional<std::uint16_t>& sequenceId
+) {
+    if (
+        !sequenceId.has_value() ||
+        !npcAnimationSource_.has_value()
+    ) {
+        return;
+    }
+
+    const eld::definition::SequenceDefinition* sequence =
+        sequenceRepository_.find(
+            *sequenceId
+        );
+
+    if (
+        sequence == nullptr ||
+        sequence->frames.empty()
+    ) {
+        return;
+    }
+
+    animationPlayer_.setSequence(
+        *sequence
+    );
+
+    animationPlayer_.setLooping(
+        true
+    );
+
+    animationPlayer_.play();
+
+    rebuildNpcAnimationFrame();
+}
+
+void CacheExplorer::rebuildNpcAnimationFrame() {
+    if (
+        !npcAnimationSource_.has_value() ||
+        !state_.activeModel.has_value()
+    ) {
+        return;
+    }
+
+    const eld::definition::SequenceDefinition* sequence =
+        animationPlayer_.sequence();
+
+    if (sequence == nullptr) {
+        return;
+    }
+
+    const eld::animation::ResolvedAnimationFrame resolved =
+        animationPlayer_.currentResolvedFrame();
+
+    if (!resolved) {
+        return;
+    }
+
+    const eld::graphics::AnimatedModelFrame animated =
+        modelAnimator_.apply(
+            *npcAnimationSource_,
+            *resolved.frame,
+            *resolved.skeleton
+        );
+
+    state_.activeModel->mesh =
+        animated.mesh;
+
+    const std::pair<std::uint16_t, std::size_t> key{
+        sequence->id,
+        animationPlayer_.frameIndex()
+    };
+
+    const auto cached =
+        npcAnimationHandles_.find(
+            key
+        );
+
+    if (
+        cached !=
+        npcAnimationHandles_.end()
+    ) {
+        state_.activeModelHandle =
+            cached->second;
+
+        return;
+    }
+
+    const eld::graphics::ModelHandle handle =
+        graphicsResources_.resolveModel(
+            animated.mesh
+        );
+
+    npcAnimationHandles_.emplace(
+        key,
+        handle
+    );
+
+    state_.activeModelHandle =
+        handle;
+}
+
+void CacheExplorer::renderNpcAnimationControls() {
+    if (
+        !state_.activeNpc.has_value() ||
+        !npcAnimationSource_.has_value()
+    ) {
+        return;
+    }
+
+    const eld::definition::NpcDefinition& npc =
+        *state_.activeNpc;
+
+    ImGui::TextUnformatted(
+        "NPC ANIMATION"
+    );
+
+    const auto sequenceButton =
+        [this](
+            const char* label,
+            const std::optional<std::uint16_t>& sequenceId
+        ) {
+            std::string buttonLabel =
+                label;
+
+            if (!sequenceId.has_value()) {
+                buttonLabel += " (none)";
+            }
+
+            if (
+                ImGui::Button(
+                    buttonLabel.c_str()
+                ) &&
+                sequenceId.has_value()
+            ) {
+                startNpcAnimationPreview(
+                    sequenceId
+                );
+            }
+        };
+
+    sequenceButton(
+        "Idle",
+        npc.idleAnimationId
+    );
+
+    ImGui::SameLine();
+
+    sequenceButton(
+        "Walk",
+        npc.walkAnimationId
+    );
+
+    ImGui::SameLine();
+
+    sequenceButton(
+        "Turn around",
+        npc.turnAroundAnimationId
+    );
+
+    ImGui::SameLine();
+
+    sequenceButton(
+        "Turn left",
+        npc.turnLeftAnimationId
+    );
+
+    ImGui::SameLine();
+
+    sequenceButton(
+        "Turn right",
+        npc.turnRightAnimationId
+    );
+
+    if (animationPlayer_.sequence() != nullptr) {
+        if (
+            ImGui::Button(
+                animationPlayer_.isPlaying()
+                    ? "Pause"
+                    : "Play"
+            )
+        ) {
+            animationPlayer_.setPlaying(
+                !animationPlayer_.isPlaying()
+            );
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("< Frame")) {
+            animationPlayer_.pause();
+
+            if (
+                animationPlayer_.stepBackward()
+            ) {
+                rebuildNpcAnimationFrame();
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Frame >")) {
+            animationPlayer_.pause();
+
+            if (
+                animationPlayer_.stepForward()
+            ) {
+                rebuildNpcAnimationFrame();
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Restart")) {
+            animationPlayer_.restart();
+            rebuildNpcAnimationFrame();
+        }
+
+        float speed =
+            animationPlayer_.speed();
+
+        ImGui::SetNextItemWidth(
+            180.0f
+        );
+
+        if (
+            ImGui::SliderFloat(
+                "Speed",
+                &speed,
+                0.10f,
+                3.00f,
+                "%.2fx"
+            )
+        ) {
+            animationPlayer_.setSpeed(
+                speed
+            );
+        }
+
+        const eld::definition::SequenceDefinition* sequence =
+            animationPlayer_.sequence();
+
+        ImGui::SameLine();
+
+        ImGui::Text(
+            "seq=%u  frame=%zu/%zu  %ums",
+            static_cast<unsigned int>(
+                sequence->id
+            ),
+            animationPlayer_.frameIndex(),
+            animationPlayer_.frameCount() > 0
+                ? animationPlayer_.frameCount() - 1
+                : 0,
+            static_cast<unsigned int>(
+                animationPlayer_
+                    .currentFrameDurationMilliseconds()
+            )
+        );
+    }
+
+    ImGui::Separator();
 }
 
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
+      animationRepository_(
+          cache_.open(
+              eld::cache::IndexId::Animations
+          )
+      ),
+      animationFrameIndex_(
+          animationRepository_
+      ),
+      animationPlayer_(
+          animationFrameIndex_
+      ),
       textureRepository_(
           cache_.open(
               eld::cache::IndexId::Config
@@ -441,6 +807,18 @@ bool CacheExplorer::initialize() {
             cache_
         );
 
+    // Archive 6 in the config index is not useful as a list
+    // of hashed raw archive entries.  TextureRepository already
+    // knows the semantic texture IDs (0.dat, 1.dat, ...), so expose
+    // those IDs directly in ElForge.
+    populateTextureArchive(
+        state_.rootNode,
+        textureRepository_.listIds()
+    );
+
+    lastAnimationUpdateMs_ =
+        SDL_GetTicks();
+
     return true;
 }
 
@@ -451,6 +829,17 @@ void CacheExplorer::handleEvent(
 }
 
 void CacheExplorer::update() {
+    const std::uint64_t now =
+        SDL_GetTicks();
+
+    const std::uint64_t delta =
+        lastAnimationUpdateMs_ == 0
+            ? 0
+            : now - lastAnimationUpdateMs_;
+
+    lastAnimationUpdateMs_ =
+        now;
+
     if (
         state_.selection.key !=
         lastSelectedKey_
@@ -459,10 +848,26 @@ void CacheExplorer::update() {
             state_.selection.key;
 
         handleSelectionChanged();
+
+        lastAnimationUpdateMs_ =
+            now;
+
+        return;
+    }
+
+    if (
+        npcAnimationSource_.has_value() &&
+        animationPlayer_.update(
+            delta
+        )
+    ) {
+        rebuildNpcAnimationFrame();
     }
 }
 
 void CacheExplorer::handleSelectionChanged() {
+    resetNpcAnimationPreview();
+
     state_.activeModel.reset();
     state_.activeModelHandle.reset();
     state_.activeTexture.reset();
@@ -533,8 +938,32 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::Texture:
+        case CacheTreeNodeType::Texture: {
+            if (
+                state_.selection.fileId < 0 ||
+                state_.selection.fileId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            const std::uint16_t textureId =
+                static_cast<std::uint16_t>(
+                    state_.selection.fileId
+                );
+
+            try {
+                state_.activeTexture =
+                    textureRepository_.find(
+                        textureId
+                    );
+            }
+            catch (const std::exception&) {
+                state_.activeTexture.reset();
+            }
+
             break;
+        }
 
         case CacheTreeNodeType::Font: {
             if (
@@ -846,6 +1275,19 @@ void CacheExplorer::handleSelectionChanged() {
 
                     state_.activeModel =
                         std::move(*preview);
+
+                    npcAnimationSource_ =
+                        state_.activeModel->mesh;
+
+                    const std::optional<std::uint16_t>
+                        initialSequence =
+                            definition->idleAnimationId.has_value()
+                                ? definition->idleAnimationId
+                                : definition->walkAnimationId;
+
+                    startNpcAnimationPreview(
+                        initialSequence
+                    );
                 }
             }
 
@@ -1119,10 +1561,14 @@ void CacheExplorer::renderUi() {
 
     ImGui::SameLine();
 
+    // ELFORGE_NPC_ANIMATION_DRAWER_V1
     viewportPanel_.render(
         state_,
         viewportWidth,
-        height
+        height,
+        [this]() {
+            renderNpcAnimationControls();
+        }
     );
 
     ImGui::SameLine();

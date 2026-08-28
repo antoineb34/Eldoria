@@ -2668,10 +2668,13 @@ void renderInterfacePreview(
 
 }
 
+// ELFORGE_NPC_ANIMATION_DRAWER_V1
 void CacheViewportPanel::render(
     CacheExplorerState& state,
     float width,
-    float height
+    float height,
+    const std::function<void()>&
+        renderNpcAnimationControls
 ) {
     ImGui::BeginChild(
         "CacheViewportPanel",
@@ -2770,7 +2773,8 @@ void CacheViewportPanel::render(
     viewDrawer_.render(
         state,
         viewKind,
-        drawerLayout.drawerHeight
+        drawerLayout.drawerHeight,
+        renderNpcAnimationControls
     );
 
     ImGui::EndChild();

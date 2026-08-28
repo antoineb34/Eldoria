@@ -1,4 +1,7 @@
 add_library(eldoria_graphics STATIC
+    animation/AnimationPlayer.cpp
+    animation/ModelSkinGroups.cpp
+    animation/ModelAnimator.cpp
     model/ModelRegistry.cpp
     model/ModelResolver.cpp
     model/RenderModelAssembler.cpp

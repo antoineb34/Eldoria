@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL.h>
 
+#include <functional>
+
 #include "ViewportViewDrawer.h"
 
 namespace eld::graphics {
@@ -22,10 +24,13 @@ struct CacheExplorerState;
 
 class CacheViewportPanel {
 public:
+    // ELFORGE_NPC_ANIMATION_DRAWER_V1
     void render(
         CacheExplorerState& state,
         float width,
-        float height
+        float height,
+        const std::function<void()>&
+            renderNpcAnimationControls
     );
 
     void renderViewport(
