@@ -1,0 +1,37 @@
+interface dump
+root=1602
+declaredCount=13714
+loadedWidgets=13713
+containers=745
+--------------------
+widget id=1602 type=0 typeName=container absX=0 absY=0 width=182 height=76 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=true scrollHeight=0 children=10
+  childRef id=1603 x=3 y=4
+  widget id=1603 type=4 typeName=text absX=3 absY=4 width=174 height=14 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=1 textShadow=true color=0xfff000 text="Level 60 : Saradomin strike" secondaryText=""
+  childRef id=1604 x=3 y=17
+  widget id=1604 type=4 typeName=text absX=3 absY=17 width=174 height=22 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=0 textShadow=true color=0x6b6f33 text="Summons the power\nof Saradomin" secondaryText=""
+  childRef id=1605 x=10 y=35
+  widget id=1605 type=6 typeName=model absX=10 absY=35 width=28 height=28 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=2399 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=900 modelRotationX=512 modelRotationY=1024
+  childRef id=1606 x=54 y=35
+  widget id=1606 type=6 typeName=model absX=54 absY=35 width=28 height=28 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=2665 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=900 modelRotationX=512 modelRotationY=1024
+  childRef id=1607 x=98 y=35
+  widget id=1607 type=6 typeName=model absX=98 absY=35 width=28 height=28 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=2405 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=900 modelRotationX=512 modelRotationY=1024
+  childRef id=1608 x=12 y=62
+  widget id=1608 type=4 typeName=text absX=12 absY=62 width=26 height=11 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=0 textShadow=true color=0xc00000 text="%1/2" secondaryText=""
+  childRef id=1609 x=56 y=62
+  widget id=1609 type=4 typeName=text absX=56 absY=62 width=26 height=11 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=0 textShadow=true color=0xc00000 text="%1/2" secondaryText=""
+  childRef id=1610 x=100 y=62
+  widget id=1610 type=4 typeName=text absX=100 absY=62 width=24 height=11 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=0 textShadow=true color=0xc00000 text="%1/4" secondaryText=""
+  childRef id=1611 x=141 y=39
+  widget id=1611 type=6 typeName=model absX=141 absY=39 width=28 height=28 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type6 modelId=2790 secondaryModelId=none animationId=none secondaryAnimationId=none modelZoom=1909 modelRotationX=1818 modelRotationY=1588
+  childRef id=1612 x=144 y=62
+  widget id=1612 type=4 typeName=text absX=144 absY=62 width=23 height=11 actionType=0 contentType=0 opacity=0 parentId=1151 hoverId=none hidden=false scrollHeight=0 children=0
+    type4 centeredText=true fontId=0 textShadow=true color=0xc00000 text="%1/1" secondaryText=""

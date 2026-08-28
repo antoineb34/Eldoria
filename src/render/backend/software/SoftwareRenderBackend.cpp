@@ -1,8 +1,6 @@
 #include "SoftwareRenderBackend.h"
 
-#include <algorithm>
 #include <cstddef>
-#include <vector>
 
 namespace eld::render {
 
@@ -45,6 +43,11 @@ void SoftwareRenderBackend::ensureTexture() {
         );
 
     if (texture_ != nullptr) {
+        SDL_SetTextureBlendMode(
+            texture_,
+            SDL_BLENDMODE_BLEND
+        );
+
         SDL_SetTextureScaleMode(
             texture_,
             SDL_SCALEMODE_NEAREST
@@ -95,56 +98,25 @@ void SoftwareRenderBackend::draw(
                 camera_
             );
 
-        std::vector<
-            const eld::graphics::RenderMeshSection*
-        > sections;
-
-        sections.reserve(
-            mesh.sections.size()
-        );
-
         for (
             const eld::graphics::RenderMeshSection& section :
             mesh.sections
         ) {
-            sections.push_back(
-                &section
-            );
-        }
-
-        std::stable_sort(
-            sections.begin(),
-            sections.end(),
-            [](
-                const auto* left,
-                const auto* right
-            ) {
-                return
-                    left->sortOrder <
-                    right->sortOrder;
-            }
-        );
-
-        for (
-            const eld::graphics::RenderMeshSection* section :
-            sections
-        ) {
             if (
-                section == nullptr ||
-                section->materialIndex >=
+                section.materialIndex >=
                     model.materials.size() ||
-                section->firstIndex >
+                section.firstIndex >
                     mesh.indices.size() ||
-                section->indexCount >
+                section.indexCount >
                     mesh.indices.size() -
-                    section->firstIndex
+                    section.firstIndex
             ) {
                 continue;
             }
 
             const eld::graphics::RenderMaterial& material =
                 model.materials.at(
-                    section->materialIndex
+                    section.materialIndex
                 );
 
             const eld::graphics::GraphicsTexture* texture =
@@ -159,15 +131,15 @@ void SoftwareRenderBackend::draw(
 
             const std::size_t endIndex =
                 static_cast<std::size_t>(
-                    section->firstIndex
+                    section.firstIndex
                 ) +
                 static_cast<std::size_t>(
-                    section->indexCount
+                    section.indexCount
                 );
 
             for (
                 std::size_t index =
-                    section->firstIndex;
+                    section.firstIndex;
                 index + 2 < endIndex;
                 index += 3
             ) {
@@ -194,7 +166,8 @@ void SoftwareRenderBackend::draw(
                     projected.vertices.at(b),
                     projected.vertices.at(c),
                     material,
-                    texture
+                    texture,
+                    section.depthBias
                 );
             }
         }

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
@@ -32,6 +34,19 @@
 
 namespace eld::elforge {
 
+// ELFORGE_EDITOR_VIEWPORT_V1
+enum class ViewportGizmoMode : std::uint8_t {
+    Move,
+    Rotate,
+    Scale
+};
+
+// ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
+struct PresentationRenderObject {
+    eld::graphics::ModelHandle model;
+    eld::render::Transform transform;
+};
+
 struct CacheExplorerState {
     eld::render::Camera camera;
     eld::render::Transform modelTransform;
@@ -41,6 +56,25 @@ struct CacheExplorerState {
     int viewportWidth = 1;
     int viewportHeight = 1;
 
+    // Viewport-editor presentation state. These are tooling controls, not
+    // model/cache data.
+    ViewportGizmoMode viewportGizmoMode =
+        ViewportGizmoMode::Rotate;
+
+    bool showViewportGizmo = true;
+    bool showEditorGrid = true;
+
+    // ELFORGE_CAMERA_NAVIGATION_V1
+    // Editor camera orbit state. This is independent from modelTransform:
+    // the model moves through the world, while the camera moves around it.
+    eld::math::Vec3 viewportCameraPivot{
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    float viewportCameraDistance = 650.0f;
+
     CacheSelection selection;
     CacheTreeNode rootNode;
 
@@ -48,6 +82,9 @@ struct CacheExplorerState {
 
     std::optional<eld::graphics::ModelHandle>
         activeModelHandle;
+
+    std::vector<PresentationRenderObject>
+        presentationObjects;
 
     std::optional<eld::texture::Texture> activeTexture;
 

@@ -54,7 +54,9 @@ struct RenderMeshSection {
     std::uint32_t indexCount = 0;
     std::uint32_t materialIndex = 0;
 
-    std::uint8_t sortOrder = 0;
+    // Generic depth offset in view-space depth units.
+    // Negative values move the section slightly toward the camera.
+    float depthBias = 0.0f;
 };
 
 struct RenderMesh {

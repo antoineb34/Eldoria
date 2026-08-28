@@ -14,6 +14,16 @@ public:
         const eld::definition::SpotAnimationDefinition& definition,
         const eld::model::ModelRepository& repository
     ) const;
+
+    std::optional<eld::model::Model> buildAnimationSource(
+        const eld::definition::SpotAnimationDefinition& definition,
+        const eld::model::ModelRepository& repository
+    ) const;
+
+    void prepareAnimatedMesh(
+        const eld::definition::SpotAnimationDefinition& definition,
+        eld::model::ModelMesh& mesh
+    ) const;
 };
 
 }

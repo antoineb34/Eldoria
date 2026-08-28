@@ -1,0 +1,39 @@
+Eldoria Animation Probe
+=======================
+cache: ./cache
+index: 2 (Animations)
+
+Archive 5 animation metadata
+----------------------------
+anim_index entries:   33852
+anim_crc entries:     582
+anim_version entries: 582
+
+Animation file 316
+==============================
+index size:     56
+first sector:   12853
+sector count:   1
+compression:    gzip
+stored bytes:   56
+decoded bytes:  40
+version data:   flag=0x00 version=2 crc=0xea00b34b 
+
+Decoded head (40 bytes max)
+------------------------------
+  000000  00 02 25 8e 03 25 8f 03 00 01 00 00 01 01 60 60  ..%..%........``
+  000010  60 00 00 03 00 05 05 04 00 01 02 03 01 00 01 01  `...............
+  000020  00 06 00 06 00 03 00 02                          ........
+
+ASCII head
+------------------------------
+..%..%........```.......................
+
+Stored/compressed head
+------------------------------
+  000000  1f 8b 08 00 00 00 00 00 00 00 0d c8 41 11 00 30  ............A..0
+  000010  08 03 c1 0b 29 75 82 2f 14 51 cb 65 f6 b7 44 8d  ....)u./.Q.e..D.
+  000020  eb 19 81 d4 dd 60 32 0f 0a 6b 87 bb 4c 7c ca 1b  .....`2..k..L|..
+  000030  b9 61 28 00 00 00 00 02                          .a(.....
+
+No animation structure has been assumed or decoded yet.

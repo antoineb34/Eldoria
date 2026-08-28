@@ -1,9 +1,25 @@
 #include "SpotAnimationPreviewBuilder.h"
 
+#include <cstddef>
+
 namespace eld::elforge {
 
+namespace {
+
+void rotate90Degrees(
+    eld::model::ModelMesh& mesh
+) {
+    for (eld::model::Vertex& vertex : mesh.vertices) {
+        const float x = vertex.x;
+        vertex.x = vertex.z;
+        vertex.z = -x;
+    }
+}
+
+}
+
 std::optional<eld::model::Model>
-SpotAnimationPreviewBuilder::build(
+SpotAnimationPreviewBuilder::buildAnimationSource(
     const eld::definition::SpotAnimationDefinition& definition,
     const eld::model::ModelRepository& repository
 ) const {
@@ -21,8 +37,14 @@ SpotAnimationPreviewBuilder::build(
     }
 
     model->id = definition.id;
+    return model;
+}
 
-    for (eld::model::Vertex& vertex : model->mesh.vertices) {
+void SpotAnimationPreviewBuilder::prepareAnimatedMesh(
+    const eld::definition::SpotAnimationDefinition& definition,
+    eld::model::ModelMesh& mesh
+) const {
+    for (eld::model::Vertex& vertex : mesh.vertices) {
         vertex.x =
             vertex.x *
             static_cast<float>(definition.scaleX) /
@@ -39,7 +61,7 @@ SpotAnimationPreviewBuilder::build(
             128.0f;
     }
 
-    for (eld::model::Face& face : model->mesh.faces) {
+    for (eld::model::Face& face : mesh.faces) {
         for (
             std::size_t index = 0;
             index < definition.recolorSources.size();
@@ -53,11 +75,44 @@ SpotAnimationPreviewBuilder::build(
             ) {
                 face.color =
                     *definition.recolorDestinations[index];
-
                 break;
             }
         }
     }
+
+    if (definition.rotation == 90) {
+        rotate90Degrees(mesh);
+    }
+    else if (definition.rotation == 180) {
+        rotate90Degrees(mesh);
+        rotate90Degrees(mesh);
+    }
+    else if (definition.rotation == 270) {
+        rotate90Degrees(mesh);
+        rotate90Degrees(mesh);
+        rotate90Degrees(mesh);
+    }
+}
+
+std::optional<eld::model::Model>
+SpotAnimationPreviewBuilder::build(
+    const eld::definition::SpotAnimationDefinition& definition,
+    const eld::model::ModelRepository& repository
+) const {
+    std::optional<eld::model::Model> model =
+        buildAnimationSource(
+            definition,
+            repository
+        );
+
+    if (!model.has_value()) {
+        return std::nullopt;
+    }
+
+    prepareAnimatedMesh(
+        definition,
+        model->mesh
+    );
 
     return model;
 }

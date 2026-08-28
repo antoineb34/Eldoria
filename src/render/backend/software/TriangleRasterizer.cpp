@@ -91,7 +91,8 @@ void TriangleRasterizer::drawTriangle(
     const SoftwareProjectedVertex& b,
     const SoftwareProjectedVertex& c,
     const eld::graphics::RenderMaterial& material,
-    const eld::graphics::GraphicsTexture* texture
+    const eld::graphics::GraphicsTexture* texture,
+    float depthBias
 ) const {
     if (!a.valid || !b.valid || !c.valid) {
         return;
@@ -107,7 +108,14 @@ void TriangleRasterizer::drawTriangle(
             c.screen.y
         );
 
-    if (std::abs(area) < Epsilon) {
+    // ELDORIA_BACKFACE_CULLING_V1
+    //
+    // Screen-space winding is part of normal rasterization, not RS-specific
+    // asset semantics. The classic 317 model renderer only submitted faces
+    // whose projected winding had a positive signed area. Accepting both
+    // windings makes thin two-sided geometry (notably dragon wings) render
+    // overlapping front/back faces and produces the noisy surface artifact.
+    if (area <= Epsilon) {
         return;
     }
 
@@ -264,7 +272,8 @@ void TriangleRasterizer::drawTriangle(
                 inverseDepth;
 
             const float depth =
-                1.0f / inverseDepth;
+                1.0f / inverseDepth +
+                depthBias;
 
             const eld::math::Vec2 uv{
                 a.uv.x * correctedA +

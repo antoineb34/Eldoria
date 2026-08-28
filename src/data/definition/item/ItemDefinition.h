@@ -8,6 +8,23 @@
 
 namespace eld::definition {
 
+enum class ItemWearPosition : std::uint8_t {
+    Hat = 0,
+    Back = 1,
+    Front = 2,
+    RightHand = 3,
+    Torso = 4,
+    LeftHand = 5,
+    Arms = 6,
+    Legs = 7,
+    Head = 8,
+    Hands = 9,
+    Feet = 10,
+    Jaw = 11,
+    Ring = 12,
+    Quiver = 13
+};
+
 struct ItemRecolor {
     std::uint16_t source = 0;
     std::uint16_t destination = 0;
@@ -36,6 +53,14 @@ struct ItemDefinition {
     bool stackable = false;
     std::uint32_t value = 1;
     bool membersOnly = false;
+
+    // Server-side/cache variants that expose wear-position opcodes use these
+    // to describe the appearance slot occupied by the item and any body slots
+    // it suppresses. The classic 317 client obj.dat does not always contain
+    // these fields, so equipment preview also has a conservative fallback.
+    std::optional<ItemWearPosition> wearPosition;
+    std::optional<ItemWearPosition> wearPosition2;
+    std::optional<ItemWearPosition> wearPosition3;
 
     std::array<std::string, 5> groundActions;
     std::array<std::string, 5> inventoryActions;

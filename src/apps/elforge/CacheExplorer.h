@@ -1,13 +1,29 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <vector>
+#include <memory>
+#include <optional>
+#include <utility>
+
 #include <string>
 
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
 
+#include "animation/AnimationFrameIndex.h"
+#include "animation/AnimationRepository.h"
+#include "animation/AnimationPlayer.h"
+#include "animation/ModelAnimator.h"
+#include "animation/presentation/AnimationPresentationCatalog.h"
+#include "model/ModelMesh.h"
+
 #include "CacheExplorerState.h"
 #include "CacheTreeBuilder.h"
+#include "ItemPreviewBuilder.h"
 
 #include "panels/CacheInspectorPanel.h"
 #include "panels/CacheTreePanel.h"
@@ -62,7 +78,166 @@ private:
     void handleSelectionChanged();
     void findNextAlphaModel();
 
+    // ELFORGE_NPC_ANIMATION_PREVIEW_V1
+    void resetAnimationPreview();
+
+    void startAnimationPreview(
+        const std::optional<std::uint16_t>& sequenceId
+    );
+
+    void rebuildAnimationFrame();
+
+    // ELFORGE_NEXT_NPC_WITH_PROJECTILE_V1
+    void selectNextNpcWithProjectile();
+
+    // ELFORGE_NEXT_WEARABLE_ITEM_V1
+    void selectNextWearableItem();
+
+    void renderNpcAnimationControls();
+    void renderItemAnimationControls();
+    void renderLocationAnimationControls();
+    void renderSpotAnimationControls();
+    void renderAnimationControls();
+    void renderAnimationPlaybackControls();
+    // ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
+    void clearNpcActionPreview();
+
+    void startNpcActionPreview(
+        const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void startItemActionPreview(
+        const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void appendActionEffects(
+        const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void showItemInventoryPreview();
+
+    void showItemEquippedPreview(
+        ItemPreviewGender gender
+    );
+
+    void rebuildNpcActionEffect(
+        std::size_t effectIndex
+    );
+
+    void updateNpcActionEffects(
+        std::uint64_t deltaMilliseconds
+    );
+
+    void ensureActionTargetMarker();
+    // ELFORGE_CLICK_TARGET_GRID_V1
+    void ensureActionGrid();
+
+    bool placeActionTargetFromViewport(
+        float mouseX,
+        float mouseY
+    );
+
+    // ELFORGE_NPC_FACE_ACTION_TARGET_V1
+    void faceNpcTowardActionTarget();
+
+    void renderManualNpcActionComposer();
+
     eld::cache::Cache cache_;
+
+    eld::animation::AnimationRepository animationRepository_;
+    eld::animation::AnimationFrameIndex animationFrameIndex_;
+
+    eld::graphics::AnimationPlayer animationPlayer_;
+    eld::graphics::ModelAnimator modelAnimator_;
+
+    enum class AnimationPreviewKind {
+        None,
+        Npc,
+        Item,
+        Location,
+        SpotAnimation
+    };
+
+    eld::animation::presentation::AnimationPresentationCatalog
+        animationPresentationCatalog_;
+
+    AnimationPreviewKind animationPreviewKind_ =
+        AnimationPreviewKind::None;
+
+
+    struct NpcActionEffectPreview {
+        eld::animation::presentation::AnimationEffectBinding binding;
+        eld::definition::SpotAnimationDefinition definition;
+        eld::model::ModelMesh sourceMesh;
+
+        std::unique_ptr<eld::graphics::AnimationPlayer>
+            player;
+
+        std::optional<eld::graphics::ModelHandle>
+            modelHandle;
+
+        std::uint64_t elapsedMilliseconds = 0;
+    };
+
+    std::vector<NpcActionEffectPreview>
+        npcActionEffects_;
+
+    std::optional<eld::animation::presentation::AnimationBinding>
+        activeNpcAction_;
+
+    std::optional<eld::animation::presentation::AnimationBinding>
+        activeItemAction_;
+
+    enum class ItemPreviewMode : std::uint8_t {
+        Inventory,
+        MaleEquipped,
+        FemaleEquipped
+    };
+
+    ItemPreviewMode itemPreviewMode_ =
+        ItemPreviewMode::Inventory;
+
+    std::optional<eld::graphics::ModelHandle>
+        actionTargetHandle_;
+
+    std::optional<eld::graphics::ModelHandle>
+        actionGridHandle_;
+
+    eld::math::Vec3 actionTargetWorld_{
+        220.0f,
+        0.0f,
+        0.0f
+    };
+
+    bool showActionGrid_ = false;
+    bool placeActionTargetOnClick_ = false;
+
+    // ELFORGE_TARGET_LOCK_PRESETS_V1
+    bool lockNpcFacingToActionTarget_ = true;
+
+    float actionPreviewArcHeight_ = 70.0f;
+    float actionPreviewSourceHeight_ = 60.0f;
+
+    eld::animation::presentation::AnimationAction
+        manualActionAction_ =
+            eld::animation::presentation::AnimationAction::Attack;
+
+    int manualActionSequenceId_ = -1;
+    int manualActionSpotAnimationId_ = -1;
+    bool manualActionProjectile_ = true;
+    int manualActionDelayMilliseconds_ = 0;
+    int manualActionDurationMilliseconds_ = 700;
+
+    std::optional<eld::model::ModelMesh>
+        animationSource_;
+
+    std::map<
+        std::pair<std::uint16_t, std::size_t>,
+        eld::graphics::ModelHandle
+    > animationHandles_;
+
+    std::uint64_t lastAnimationUpdateMs_ = 0;
+
 
     eld::texture::TextureRepository textureRepository_;
     eld::model::ModelRepository modelRepository_;
