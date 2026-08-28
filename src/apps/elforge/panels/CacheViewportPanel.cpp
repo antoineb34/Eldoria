@@ -2674,7 +2674,7 @@ void CacheViewportPanel::render(
     float width,
     float height,
     const std::function<void()>&
-        renderNpcAnimationControls
+        renderAnimationControls
 ) {
     ImGui::BeginChild(
         "CacheViewportPanel",
@@ -2774,7 +2774,7 @@ void CacheViewportPanel::render(
         state,
         viewKind,
         drawerLayout.drawerHeight,
-        renderNpcAnimationControls
+        renderAnimationControls
     );
 
     ImGui::EndChild();
@@ -2883,6 +2883,18 @@ void CacheViewportPanel::renderViewport(
     scene.objects.push_back(
         object
     );
+
+
+    // ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
+    for (
+        const PresentationRenderObject& presentationObject :
+        state.presentationObjects
+    ) {
+        eld::render::RenderObject extra;
+        extra.model = presentationObject.model;
+        extra.transform = presentationObject.transform;
+        scene.objects.push_back(extra);
+    }
 
     const ModelViewOptions& modelOptions =
         viewDrawer_.modelOptions();

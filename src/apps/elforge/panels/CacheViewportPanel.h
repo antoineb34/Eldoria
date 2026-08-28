@@ -30,7 +30,7 @@ public:
         float width,
         float height,
         const std::function<void()>&
-            renderNpcAnimationControls
+            renderAnimationControls
     );
 
     void renderViewport(

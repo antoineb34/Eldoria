@@ -1,0 +1,23 @@
+# Eldoria client-side presentation bindings.
+#
+# Cache-owned relationships such as NPC idle/walk/turn, object animationId,
+# SpotAnim sequenceId and interface animation IDs do NOT need to be duplicated
+# here. This file is for gameplay/presentation relationships that vanilla 317
+# expected the server/content layer to choose.
+#
+# kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms
+# npc,50,attack,123,,
+# npc,50,death,456,,
+# npc,50,attack,123,77,true
+# item,4151,attack,1658,,
+kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms
+
+
+# CLASSIC_317_GREEN_DRAGON_ACTIONS
+# Community-documented classic 317 gameplay mapping for NPC 941:
+# attack=91, defend/block=89, death=92, fire/magic body animation=82.
+# These are presentation/gameplay bindings, intentionally outside npc.dat.
+npc,941,attack,91,,,,
+npc,941,defend,89,,,,
+npc,941,death,92,,,,
+npc,941,cast,82,,,,

@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <vector>
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -16,6 +18,7 @@
 #include "animation/AnimationRepository.h"
 #include "animation/AnimationPlayer.h"
 #include "animation/ModelAnimator.h"
+#include "animation/presentation/AnimationPresentationCatalog.h"
 #include "model/ModelMesh.h"
 
 #include "CacheExplorerState.h"
@@ -75,14 +78,43 @@ private:
     void findNextAlphaModel();
 
     // ELFORGE_NPC_ANIMATION_PREVIEW_V1
-    void resetNpcAnimationPreview();
+    void resetAnimationPreview();
 
-    void startNpcAnimationPreview(
+    void startAnimationPreview(
         const std::optional<std::uint16_t>& sequenceId
     );
 
-    void rebuildNpcAnimationFrame();
+    void rebuildAnimationFrame();
     void renderNpcAnimationControls();
+    void renderLocationAnimationControls();
+    void renderSpotAnimationControls();
+    void renderAnimationControls();
+    void renderAnimationPlaybackControls();
+    // ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
+    void clearNpcActionPreview();
+
+    void startNpcActionPreview(
+        const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void rebuildNpcActionEffect(
+        std::size_t effectIndex
+    );
+
+    void updateNpcActionEffects(
+        std::uint64_t deltaMilliseconds
+    );
+
+    void ensureActionTargetMarker();
+    // ELFORGE_CLICK_TARGET_GRID_V1
+    void ensureActionGrid();
+
+    bool placeActionTargetFromViewport(
+        float mouseX,
+        float mouseY
+    );
+
+    void renderManualNpcActionComposer();
 
     eld::cache::Cache cache_;
 
@@ -92,13 +124,71 @@ private:
     eld::graphics::AnimationPlayer animationPlayer_;
     eld::graphics::ModelAnimator modelAnimator_;
 
+    enum class AnimationPreviewKind {
+        None,
+        Npc,
+        Location,
+        SpotAnimation
+    };
+
+    eld::animation::presentation::AnimationPresentationCatalog
+        animationPresentationCatalog_;
+
+    AnimationPreviewKind animationPreviewKind_ =
+        AnimationPreviewKind::None;
+
+
+    struct NpcActionEffectPreview {
+        eld::animation::presentation::AnimationEffectBinding binding;
+        eld::definition::SpotAnimationDefinition definition;
+        eld::model::ModelMesh sourceMesh;
+
+        std::unique_ptr<eld::graphics::AnimationPlayer>
+            player;
+
+        std::optional<eld::graphics::ModelHandle>
+            modelHandle;
+
+        std::uint64_t elapsedMilliseconds = 0;
+    };
+
+    std::vector<NpcActionEffectPreview>
+        npcActionEffects_;
+
+    std::optional<eld::animation::presentation::AnimationBinding>
+        activeNpcAction_;
+
+    std::optional<eld::graphics::ModelHandle>
+        actionTargetHandle_;
+
+    std::optional<eld::graphics::ModelHandle>
+        actionGridHandle_;
+
+    eld::math::Vec3 actionTargetLocal_{
+        220.0f,
+        0.0f,
+        0.0f
+    };
+
+    bool showActionGrid_ = true;
+    bool placeActionTargetOnClick_ = false;
+
+    float actionPreviewArcHeight_ = 70.0f;
+    float actionPreviewSourceHeight_ = 60.0f;
+
+    int manualActionSequenceId_ = -1;
+    int manualActionSpotAnimationId_ = -1;
+    bool manualActionProjectile_ = true;
+    int manualActionDelayMilliseconds_ = 0;
+    int manualActionDurationMilliseconds_ = 700;
+
     std::optional<eld::model::ModelMesh>
-        npcAnimationSource_;
+        animationSource_;
 
     std::map<
         std::pair<std::uint16_t, std::size_t>,
         eld::graphics::ModelHandle
-    > npcAnimationHandles_;
+    > animationHandles_;
 
     std::uint64_t lastAnimationUpdateMs_ = 0;
 

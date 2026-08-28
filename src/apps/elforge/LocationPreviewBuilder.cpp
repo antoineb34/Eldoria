@@ -153,7 +153,7 @@ std::vector<std::uint16_t> selectModels(
 }
 
 std::optional<eld::model::Model>
-LocationPreviewBuilder::build(
+LocationPreviewBuilder::buildAnimationSource(
     const eld::definition::LocationDefinition& definition,
     const eld::model::ModelRepository& repository
 ) const {
@@ -173,11 +173,6 @@ LocationPreviewBuilder::build(
             continue;
         }
 
-        prepareMesh(
-            model->mesh,
-            definition
-        );
-
         appendMesh(
             combined.mesh,
             std::move(model->mesh)
@@ -189,6 +184,39 @@ LocationPreviewBuilder::build(
     return found
         ? std::optional{std::move(combined)}
         : std::nullopt;
+}
+
+void LocationPreviewBuilder::prepareAnimatedMesh(
+    const eld::definition::LocationDefinition& definition,
+    eld::model::ModelMesh& mesh
+) const {
+    prepareMesh(
+        mesh,
+        definition
+    );
+}
+
+std::optional<eld::model::Model>
+LocationPreviewBuilder::build(
+    const eld::definition::LocationDefinition& definition,
+    const eld::model::ModelRepository& repository
+) const {
+    std::optional<eld::model::Model> model =
+        buildAnimationSource(
+            definition,
+            repository
+        );
+
+    if (!model.has_value()) {
+        return std::nullopt;
+    }
+
+    prepareAnimatedMesh(
+        definition,
+        model->mesh
+    );
+
+    return model;
 }
 
 }

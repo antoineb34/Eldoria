@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
@@ -32,6 +33,12 @@
 
 namespace eld::elforge {
 
+// ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
+struct PresentationRenderObject {
+    eld::graphics::ModelHandle model;
+    eld::render::Transform transform;
+};
+
 struct CacheExplorerState {
     eld::render::Camera camera;
     eld::render::Transform modelTransform;
@@ -48,6 +55,9 @@ struct CacheExplorerState {
 
     std::optional<eld::graphics::ModelHandle>
         activeModelHandle;
+
+    std::vector<PresentationRenderObject>
+        presentationObjects;
 
     std::optional<eld::texture::Texture> activeTexture;
 

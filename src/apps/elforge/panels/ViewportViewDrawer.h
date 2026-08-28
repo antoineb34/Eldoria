@@ -19,6 +19,8 @@ enum class ViewportViewKind {
     None,
     Interface,
     Npc,
+    Location,
+    SpotAnimation,
     Model,
     Texture
 };
@@ -44,6 +46,22 @@ public:
 
         if (state.activeTexture.has_value()) {
             return ViewportViewKind::Texture;
+        }
+
+        if (
+            state.activeLocation.has_value() &&
+            state.activeModel.has_value() &&
+            state.activeModelHandle.has_value()
+        ) {
+            return ViewportViewKind::Location;
+        }
+
+        if (
+            state.activeSpotAnimation.has_value() &&
+            state.activeModel.has_value() &&
+            state.activeModelHandle.has_value()
+        ) {
+            return ViewportViewKind::SpotAnimation;
         }
 
         if (
@@ -73,7 +91,11 @@ public:
             kind ==
                 ViewportViewKind::Model ||
             kind ==
-                ViewportViewKind::Npc
+                ViewportViewKind::Npc ||
+            kind ==
+                ViewportViewKind::Location ||
+            kind ==
+                ViewportViewKind::SpotAnimation
         );
     }
 
@@ -199,7 +221,7 @@ public:
         ViewportViewKind kind,
         float drawerHeight,
         const std::function<void()>&
-            renderNpcAnimationControls
+            renderAnimationControls
     ) {
         ImGui::BeginChild(
             "ViewportViewDrawer",
@@ -248,7 +270,7 @@ public:
             renderActivePanel(
                 state,
                 kind,
-                renderNpcAnimationControls
+                renderAnimationControls
             );
         }
 
@@ -284,6 +306,12 @@ private:
             case ViewportViewKind::Npc:
                 return "NPC VIEW";
 
+            case ViewportViewKind::Location:
+                return "OBJECT VIEW";
+
+            case ViewportViewKind::SpotAnimation:
+                return "SPOT ANIMATION VIEW";
+
             case ViewportViewKind::Model:
                 return "MODEL VIEW";
 
@@ -300,7 +328,7 @@ private:
         CacheExplorerState& state,
         ViewportViewKind kind,
         const std::function<void()>&
-            renderNpcAnimationControls
+            renderAnimationControls
     ) {
         switch (kind) {
             case ViewportViewKind::Interface:
@@ -310,8 +338,22 @@ private:
                 break;
 
             case ViewportViewKind::Npc:
-                if (renderNpcAnimationControls) {
-                    renderNpcAnimationControls();
+                if (renderAnimationControls) {
+                    renderAnimationControls();
+                }
+
+                ImGui::Spacing();
+
+                modelViewPanel_.render(
+                    state,
+                    true
+                );
+                break;
+
+            case ViewportViewKind::Location:
+            case ViewportViewKind::SpotAnimation:
+                if (renderAnimationControls) {
+                    renderAnimationControls();
                 }
 
                 ImGui::Spacing();
@@ -338,7 +380,7 @@ private:
             case ViewportViewKind::None:
             default:
                 ImGui::TextDisabled(
-                    "Select an interface, NPC, model, or texture."
+                    "Select an interface, NPC, object, SpotAnim, model, or texture."
                 );
                 break;
         }
