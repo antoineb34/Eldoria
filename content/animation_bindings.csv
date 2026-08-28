@@ -5,13 +5,35 @@
 # here. This file is for gameplay/presentation relationships that vanilla 317
 # expected the server/content layer to choose.
 #
-# kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms
+# kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms,variant,placement,start_height,end_height,slope,start_distance
 # npc,50,attack,123,,
 # npc,50,death,456,,
 # npc,50,attack,123,77,true
 # item,4151,attack,1658,,
-kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms
+kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms,variant,placement,start_height,end_height,slope,start_distance
 
+# CLASSIC PLAYER SPECIAL ATTACKS
+# Preserved RuneScript selected these from worn right-hand items. Source GFX
+# are attached to the player. Ranged entries use one representative ElForge
+# flight (MSB uses two) because the real server owns target/tick orchestration.
+item,35,special_attack,1057,247,false,0,700,Sanctuary,source,,,,
+item,805,special_attack,1068,257,false,0,700,Chainhit,source,,,,
+item,805,special_attack,,258,true,120,700,Chainhit,projectile,40,36,15,11
+item,859,special_attack,426,250,false,0,700,Powershot,source,,,,
+item,859,special_attack,,249,true,120,700,Powershot,projectile,40,36,15,11
+item,861,special_attack,1074,256,false,0,700,Snapshot,source,,,,
+item,861,special_attack,,249,true,120,700,Snapshot,projectile,40,36,15,11
+item,861,special_attack,,249,true,360,700,Snapshot,projectile,40,36,15,11
+item,1215,special_attack,1062,252,false,0,700,Puncture,source,,,,
+item,1231,special_attack,1062,252,false,0,700,Puncture,source,,,,
+item,1249,special_attack,1064,253,false,0,700,Shove,source,,,,
+item,1263,special_attack,1064,253,false,0,700,Shove,source,,,,
+item,1305,special_attack,1058,248,false,0,700,Cleave,source,,,,
+item,1377,special_attack,1056,246,false,0,700,Rampage,source,,,,
+item,1434,special_attack,1060,251,false,0,700,Shatter,source,,,,
+item,3101,special_attack,923,274,false,0,700,Impale,source,,,,
+item,3176,special_attack,1064,253,false,0,700,Shove,source,,,,
+item,3204,special_attack,1203,,,,700,Halberd sweep,,,,,
 
 # CLASSIC_317_GREEN_DRAGON_ACTIONS
 # Community-documented classic 317 gameplay mapping for NPC 941:
