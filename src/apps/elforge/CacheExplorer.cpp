@@ -22,6 +22,21 @@ namespace eld::elforge {
 
 namespace {
 
+std::string actionBindingLabel(
+    const eld::animation::presentation::AnimationBinding& binding
+) {
+    std::string label(
+        eld::animation::presentation::toString(binding.action)
+    );
+
+    if (!binding.variant.empty()) {
+        label += " - ";
+        label += binding.variant;
+    }
+
+    return label;
+}
+
 eld::image::RgbaPixel makeColorPixel(
     std::uint32_t rgb
 ) {
@@ -756,52 +771,34 @@ bool CacheExplorer::placeActionTargetFromViewport(
     const eld::math::Vec3 rayOrigin =
         state_.camera.position;
 
-    const eld::math::Mat4 modelMatrix =
-        eld::render::buildModelMatrix(
-            state_.modelTransform
-        );
+    // ELFORGE_NPC_FACE_ACTION_TARGET_V1
+    //
+    // The visible editor grid is stationary world space, so target picking
+    // must use that same world plane. This keeps the clicked point fixed while
+    // the selected NPC/model turns independently.
+    const eld::math::Vec3 planeOrigin{
+        0.0f,
+        0.0f,
+        0.0f
+    };
 
-    const eld::math::Vec3 planeOrigin =
-        modelMatrix.transformPoint({
-            0.0f,
-            0.0f,
-            0.0f
-        });
-
-    const eld::math::Vec3 planeX =
-        modelMatrix.transformPoint({
-            1.0f,
-            0.0f,
-            0.0f
-        });
-
-    const eld::math::Vec3 planeZ =
-        modelMatrix.transformPoint({
-            0.0f,
-            0.0f,
-            1.0f
-        });
-
-    const eld::math::Vec3 xAxis =
-        planeX -
-        planeOrigin;
-
-    const eld::math::Vec3 zAxis =
-        planeZ -
-        planeOrigin;
-
-    const eld::math::Vec3 normal =
-        xAxis.cross(zAxis).normalized();
+    const eld::math::Vec3 planeNormal{
+        0.0f,
+        1.0f,
+        0.0f
+    };
 
     const float denominator =
-        normal.dot(rayDirection);
+        planeNormal.dot(
+            rayDirection
+        );
 
     if (std::abs(denominator) < 0.0001f) {
         return false;
     }
 
     const float distance =
-        normal.dot(
+        planeNormal.dot(
             planeOrigin -
             rayOrigin
         ) /
@@ -811,36 +808,17 @@ bool CacheExplorer::placeActionTargetFromViewport(
         return false;
     }
 
-    const eld::math::Vec3 hit =
+    actionTargetWorld_ =
         rayOrigin +
-        rayDirection * distance;
+        rayDirection *
+            distance;
 
-    const eld::math::Vec3 relative =
-        hit -
-        planeOrigin;
+    // Keep the tool target exactly on the editor floor.
+    actionTargetWorld_.y = 0.0f;
 
-    const float xLengthSquared =
-        xAxis.dot(xAxis);
-
-    const float zLengthSquared =
-        zAxis.dot(zAxis);
-
-    if (
-        xLengthSquared <= 0.000001f ||
-        zLengthSquared <= 0.000001f
-    ) {
-        return false;
+    if (activeNpcAction_.has_value()) {
+        faceNpcTowardActionTarget();
     }
-
-    actionTargetLocal_.x =
-        relative.dot(xAxis) /
-        xLengthSquared;
-
-    actionTargetLocal_.y = 0.0f;
-
-    actionTargetLocal_.z =
-        relative.dot(zAxis) /
-        zLengthSquared;
 
     return true;
 }
@@ -935,11 +913,59 @@ void CacheExplorer::rebuildNpcActionEffect(
         graphicsResources_.resolveModel(displayMesh);
 }
 
+
+void CacheExplorer::faceNpcTowardActionTarget() {
+    if (!state_.activeNpc.has_value()) {
+        return;
+    }
+
+    const float deltaX =
+        actionTargetWorld_.x -
+        state_.modelTransform.position.x;
+
+    const float deltaZ =
+        actionTargetWorld_.z -
+        state_.modelTransform.position.z;
+
+    const float horizontalDistanceSquared =
+        deltaX * deltaX +
+        deltaZ * deltaZ;
+
+    if (horizontalDistanceSquared <= 0.0001f) {
+        return;
+    }
+
+    // ELFORGE_NPC_FACING_AXIS_FIX_V1
+    //
+    // The target-heading atan2 below produces an angle whose zero direction
+    // is +X. RS NPC models are authored facing +Z at zero model yaw, so using
+    // that heading directly points the NPC's left side at the target.
+    //
+    // Eldoria's rotationY(+pi/2) rotates local +Z onto world +X, therefore
+    // add a quarter-turn to convert the world heading into model yaw.
+    constexpr float NpcForwardAxisOffset =
+        1.57079632679f;
+
+    // ELFORGE_NPC_FACING_AXIS_FIX_V2
+    //
+    // V1 proved the offset magnitude (90 degrees) but used the wrong sign:
+    // +pi/2 aligned the dragon's BACK with the target. Use -pi/2 so the
+    // authored forward/front axis points at the target.
+    state_.modelTransform.rotation.y =
+        std::atan2(
+            -deltaZ,
+            deltaX
+        ) -
+        NpcForwardAxisOffset;
+}
+
 void CacheExplorer::startNpcActionPreview(
     const eld::animation::presentation::AnimationBinding& binding
 ) {
     clearNpcActionPreview();
     activeNpcAction_ = binding;
+
+    faceNpcTowardActionTarget();
 
     if (binding.sequenceId.has_value()) {
         startAnimationPreview(binding.sequenceId);
@@ -1017,8 +1043,7 @@ void CacheExplorer::updateNpcActionEffects(
     }
 
     bool showTargetMarker =
-        state_.activeNpc.has_value() &&
-        showActionGrid_;
+        state_.activeNpc.has_value();
 
     for (
         std::size_t index = 0;
@@ -1041,6 +1066,12 @@ void CacheExplorer::updateNpcActionEffects(
             effect.elapsedMilliseconds -
             effect.binding.delayMilliseconds;
 
+        // Classic RuneScape launch/impact SpotAnims are transient. Projectile
+        // graphics live for the projectile flight, while non-projectile
+        // SpotAnims disappear when their one-shot sequence completes. Static
+        // SpotAnims have no sequence to signal completion, so use the authored
+        // binding duration as their lifetime instead of leaving them attached
+        // to the NPC forever.
         if (
             effect.binding.projectile &&
             activeMilliseconds > effect.binding.durationMilliseconds
@@ -1053,6 +1084,22 @@ void CacheExplorer::updateNpcActionEffects(
             effect.player->update(deltaMilliseconds)
         ) {
             rebuildNpcActionEffect(index);
+        }
+
+        if (!effect.binding.projectile) {
+            if (
+                effect.player &&
+                !effect.player->isPlaying()
+            ) {
+                continue;
+            }
+
+            if (
+                !effect.player &&
+                activeMilliseconds > effect.binding.durationMilliseconds
+            ) {
+                continue;
+            }
         }
 
         if (!effect.modelHandle.has_value()) {
@@ -1089,17 +1136,12 @@ void CacheExplorer::updateNpcActionEffects(
                     state_.modelTransform
                 );
 
-            const eld::math::Vec3 source =
+            const eld::math::Vec3 origin =
                 modelMatrix.transformPoint({
                     0.0f,
-                    actionPreviewSourceHeight_,
+                    0.0f,
                     0.0f
                 });
-
-            const eld::math::Vec3 target =
-                modelMatrix.transformPoint(
-                    actionTargetLocal_
-                );
 
             const eld::math::Vec3 upPoint =
                 modelMatrix.transformPoint({
@@ -1108,32 +1150,183 @@ void CacheExplorer::updateNpcActionEffects(
                     0.0f
                 });
 
-            const eld::math::Vec3 origin =
-                modelMatrix.transformPoint({
-                    0.0f,
-                    0.0f,
-                    0.0f
-                });
-
             const eld::math::Vec3 up =
                 (upPoint - origin).normalized();
 
-            const eld::math::Vec3 linear =
-                source * (1.0f - progress) +
-                target * progress;
+            // Mirror the classic client projectile setup, but do not apply a
+            // human-sized server height blindly to tiny NPC previews. RuneTek
+            // projectile heights are scene-space values; many of the broad
+            // reconstructed bindings only tell us the projectile identity, not
+            // the NPC-specific launch geometry. Cap the requested launch point
+            // to the selected NPC's upper body in graphics space. Exact values
+            // for large NPCs (for example troll rocks) remain unchanged when
+            // they already fall below this cap.
+            float sourceHeight =
+                static_cast<float>(
+                    effect.binding.projectileStartHeight * 4u
+                );
 
-            const float arc =
-                4.0f *
-                actionPreviewArcHeight_ *
-                progress *
-                (1.0f - progress);
+            if (
+                animationSource_.has_value() &&
+                !animationSource_->vertices.empty()
+            ) {
+                float minGraphicsY =
+                    -animationSource_->vertices.front().y;
+                float maxGraphicsY =
+                    minGraphicsY;
 
-            const eld::math::Vec3 position =
-                linear +
-                up * arc;
+                for (
+                    const eld::model::Vertex& vertex :
+                    animationSource_->vertices
+                ) {
+                    const float graphicsY =
+                        -vertex.y;
+
+                    minGraphicsY =
+                        std::min(minGraphicsY, graphicsY);
+                    maxGraphicsY =
+                        std::max(maxGraphicsY, graphicsY);
+                }
+
+                const float bodyHeight =
+                    maxGraphicsY - minGraphicsY;
+
+                if (bodyHeight > 1.0f) {
+                    constexpr float UpperBodyFraction =
+                        0.78f;
+
+                    const float upperBodyY =
+                        minGraphicsY +
+                        bodyHeight * UpperBodyFraction;
+
+                    sourceHeight =
+                        std::min(
+                            sourceHeight,
+                            upperBodyY
+                        );
+                }
+            }
+
+            const eld::math::Vec3 sourceLocal{
+                0.0f,
+                sourceHeight,
+                0.0f
+            };
+
+            eld::math::Vec3 source =
+                modelMatrix.transformPoint(
+                    sourceLocal
+                );
+
+            const eld::math::Vec3 target =
+                actionTargetWorld_ +
+                up * static_cast<float>(
+                    effect.binding.projectileEndHeight * 4u
+                );
+
+            eld::math::Vec3 horizontalDelta =
+                target - source;
+            horizontalDelta.y = 0.0f;
+
+            const float horizontalDistance =
+                std::sqrt(
+                    horizontalDelta.x * horizontalDelta.x +
+                    horizontalDelta.z * horizontalDelta.z
+                );
+
+            if (horizontalDistance > 0.0001f) {
+                const float startDistance =
+                    static_cast<float>(
+                        effect.binding.projectileStartDistance
+                    );
+
+                source.x +=
+                    horizontalDelta.x / horizontalDistance *
+                    startDistance;
+                source.z +=
+                    horizontalDelta.z / horizontalDistance *
+                    startDistance;
+            }
+
+            const float time =
+                progress * duration;
+
+            const float velocityX =
+                (target.x - source.x) / duration;
+            const float velocityZ =
+                (target.z - source.z) / duration;
+
+            const float horizontalSpeed =
+                std::sqrt(
+                    velocityX * velocityX +
+                    velocityZ * velocityZ
+                );
+
+            // 0.02454369 is pi / 128, matching the old client. Its vertical
+            // axis points the opposite way, so the sign is flipped here.
+            const float initialVelocityY =
+                horizontalSpeed *
+                std::tan(
+                    static_cast<float>(effect.binding.projectileSlope) *
+                    0.02454369f
+                );
+
+            const float accelerationY =
+                2.0f *
+                (
+                    target.y -
+                    source.y -
+                    initialVelocityY * duration
+                ) /
+                (duration * duration);
+
+            eld::math::Vec3 position;
+            position.x = source.x + velocityX * time;
+            position.z = source.z + velocityZ * time;
+            position.y =
+                source.y +
+                initialVelocityY * time +
+                0.5f * accelerationY * time * time;
 
             transform.position =
                 position;
+
+            // The classic 317 client does not inherit the shooter's model
+            // rotation.  Each projectile owns its orientation: yaw follows
+            // horizontal velocity and pitch follows the instantaneous vertical
+            // velocity (which changes as the ballistic acceleration is
+            // applied).  In the original client these were stored in 0..2047
+            // angle units; the formulas below are the same angles in radians.
+            constexpr float ProjectileForwardAxisOffset =
+                1.57079632679f;
+
+            transform.rotation.y =
+                std::atan2(
+                    -velocityZ,
+                    velocityX
+                ) -
+                ProjectileForwardAxisOffset;
+
+            const float currentVelocityY =
+                initialVelocityY +
+                accelerationY * time;
+
+            // Eldoria uses an upward-positive world Y axis and its transform
+            // rotation convention already matches that axis. Do not carry
+            // over the old client's downward-positive vertical sign a second
+            // time here: pitch follows the instantaneous flight velocity.
+            transform.rotation.x =
+                std::atan2(
+                    currentVelocityY,
+                    horizontalSpeed
+                );
+
+            transform.rotation.z = 0.0f;
+        }
+        else if (effect.binding.target) {
+            showTargetMarker = true;
+            transform.position =
+                actionTargetWorld_;
         }
         else {
             const eld::math::Mat4 modelMatrix =
@@ -1168,9 +1361,7 @@ void CacheExplorer::updateNpcActionEffects(
                 );
 
             target.position =
-                modelMatrix.transformPoint(
-                    actionTargetLocal_
-                );
+                actionTargetWorld_;
 
             state_.presentationObjects.push_back({
                 *actionTargetHandle_,
@@ -1194,6 +1385,106 @@ void CacheExplorer::renderManualNpcActionComposer() {
         "claiming the relationship came from npc.dat."
     );
 
+    ImGui::SeparatorText("PRESETS");
+
+    const eld::animation::presentation::NpcAnimationProfile presetProfile =
+        animationPresentationCatalog_.resolveNpc(
+            *state_.activeNpc
+        );
+
+    const auto isMovementPreset =
+        [](eld::animation::presentation::AnimationAction action) {
+            using Action =
+                eld::animation::presentation::AnimationAction;
+
+            return
+                action == Action::Idle ||
+                action == Action::Walk ||
+                action == Action::TurnAround ||
+                action == Action::TurnLeft ||
+                action == Action::TurnRight;
+        };
+
+    bool firstPreset = true;
+    bool hasPreset = false;
+
+    for (
+        const eld::animation::presentation::AnimationBinding& preset :
+        presetProfile.bindings
+    ) {
+        if (
+            isMovementPreset(preset.action) ||
+            (
+                !preset.sequenceId.has_value() &&
+                preset.effects.empty()
+            )
+        ) {
+            continue;
+        }
+
+        hasPreset = true;
+
+        if (!firstPreset) {
+            ImGui::SameLine();
+        }
+
+        const std::string presetLabel =
+            std::string("Load ") +
+            actionBindingLabel(preset);
+
+        if (ImGui::Button(presetLabel.c_str())) {
+            manualActionAction_ =
+                preset.action;
+
+            manualActionSequenceId_ =
+                preset.sequenceId.has_value()
+                    ? static_cast<int>(
+                          *preset.sequenceId
+                      )
+                    : -1;
+
+            manualActionSpotAnimationId_ = -1;
+            manualActionProjectile_ = true;
+            manualActionDelayMilliseconds_ = 0;
+            manualActionDurationMilliseconds_ = 700;
+
+            if (!preset.effects.empty()) {
+                const auto& effect =
+                    preset.effects.front();
+
+                manualActionSpotAnimationId_ =
+                    static_cast<int>(
+                        effect.spotAnimationId
+                    );
+
+                manualActionProjectile_ =
+                    effect.projectile;
+
+                manualActionDelayMilliseconds_ =
+                    static_cast<int>(
+                        effect.delayMilliseconds
+                    );
+
+                manualActionDurationMilliseconds_ =
+                    static_cast<int>(
+                        effect.durationMilliseconds
+                    );
+            }
+        }
+
+        firstPreset = false;
+    }
+
+    if (!hasPreset) {
+        ImGui::TextDisabled(
+            "No authored action presets for this NPC."
+        );
+    }
+
+    ImGui::TextDisabled(
+        "Preset values are presentation bindings, not npc.dat ownership."
+    );
+
     ImGui::InputInt("Body sequence", &manualActionSequenceId_);
     ImGui::InputInt("SpotAnim", &manualActionSpotAnimationId_);
     ImGui::Checkbox("Projectile", &manualActionProjectile_);
@@ -1203,14 +1494,26 @@ void CacheExplorer::renderManualNpcActionComposer() {
     ImGui::SeparatorText("3D target");
 
     ImGui::Checkbox(
-        "Show ground grid",
-        &showActionGrid_
+        "Show editor grid",
+        &state_.showEditorGrid
     );
 
     ImGui::Checkbox(
         "Click viewport to set target",
         &placeActionTargetOnClick_
     );
+
+    ImGui::Checkbox(
+        "Lock NPC facing to target",
+        &lockNpcFacingToActionTarget_
+    );
+
+    if (
+        lockNpcFacingToActionTarget_ &&
+        activeNpcAction_.has_value()
+    ) {
+        faceNpcTowardActionTarget();
+    }
 
     if (placeActionTargetOnClick_) {
         ImGui::TextUnformatted(
@@ -1219,13 +1522,13 @@ void CacheExplorer::renderManualNpcActionComposer() {
     }
 
     float targetPosition[2]{
-        actionTargetLocal_.x,
-        actionTargetLocal_.z
+        actionTargetWorld_.x,
+        actionTargetWorld_.z
     };
 
     if (
         ImGui::DragFloat2(
-            "Target X / Z",
+            "Target world X / Z",
             targetPosition,
             1.0f,
             -2000.0f,
@@ -1233,19 +1536,32 @@ void CacheExplorer::renderManualNpcActionComposer() {
             "%.1f"
         )
     ) {
-        actionTargetLocal_.x =
+        actionTargetWorld_.x =
             targetPosition[0];
 
-        actionTargetLocal_.z =
+        actionTargetWorld_.z =
             targetPosition[1];
+
+        if (activeNpcAction_.has_value()) {
+            faceNpcTowardActionTarget();
+        }
     }
 
     if (ImGui::Button("Reset target")) {
-        actionTargetLocal_ = {
-            220.0f,
+        const float yaw =
+            state_.modelTransform.rotation.y;
+
+        actionTargetWorld_ = {
+            state_.modelTransform.position.x +
+                std::cos(yaw) * 220.0f,
             0.0f,
-            0.0f
+            state_.modelTransform.position.z -
+                std::sin(yaw) * 220.0f
         };
+
+        if (activeNpcAction_.has_value()) {
+            faceNpcTowardActionTarget();
+        }
     }
 
     ImGui::SliderFloat(
@@ -1267,7 +1583,7 @@ void CacheExplorer::renderManualNpcActionComposer() {
     if (ImGui::Button("Play composed action")) {
         eld::animation::presentation::AnimationBinding binding;
         binding.action =
-            eld::animation::presentation::AnimationAction::Attack;
+            manualActionAction_;
 
         if (
             manualActionSequenceId_ >= 0 &&
@@ -1378,6 +1694,110 @@ void CacheExplorer::renderAnimationPlaybackControls() {
     );
 }
 
+void CacheExplorer::selectNextNpcWithProjectile() {
+    if (!state_.activeNpc.has_value()) {
+        return;
+    }
+
+    const std::uint16_t currentId =
+        state_.activeNpc->id;
+
+    const auto hasProjectile =
+        [this](const eld::definition::NpcDefinition& npc) {
+            const eld::animation::presentation::NpcAnimationProfile profile =
+                animationPresentationCatalog_.resolveNpc(npc);
+
+            return std::any_of(
+                profile.bindings.begin(),
+                profile.bindings.end(),
+                [this](
+                    const eld::animation::presentation::AnimationBinding& binding
+                ) {
+                    return std::any_of(
+                        binding.effects.begin(),
+                        binding.effects.end(),
+                        [this](
+                            const eld::animation::presentation::AnimationEffectBinding& effect
+                        ) {
+                            return
+                                effect.projectile &&
+                                spotAnimationRepository_.find(
+                                    effect.spotAnimationId
+                                ) != nullptr;
+                        }
+                    );
+                }
+            );
+        };
+
+    const auto selectNpc =
+        [this](const eld::definition::NpcDefinition& npc) {
+            state_.selection.type =
+                CacheTreeNodeType::NpcDefinition;
+
+            state_.selection.definitionId =
+                static_cast<int>(npc.id);
+
+            state_.selection.name = "npc";
+            state_.selection.label =
+                "NPC " + std::to_string(npc.id);
+
+            if (
+                !npc.name.empty() &&
+                npc.name != "null"
+            ) {
+                state_.selection.label +=
+                    " - " + npc.name;
+            }
+
+            const std::string NpcKeyMarker =
+                "/definitions/npc/";
+
+            const std::size_t marker =
+                state_.selection.key.find(NpcKeyMarker);
+
+            if (marker != std::string::npos) {
+                const std::size_t idStart =
+                    marker + NpcKeyMarker.size();
+
+                state_.selection.key =
+                    state_.selection.key.substr(0, idStart) +
+                    std::to_string(npc.id);
+            }
+            else {
+                // Still force a selection-key change if this NPC was reached
+                // from a non-tree code path. handleSelectionChanged() only
+                // needs the type + definition id.
+                state_.selection.key =
+                    "npc/" + std::to_string(npc.id);
+            }
+        };
+
+    const auto& npcs =
+        npcRepository_.list();
+
+    for (const eld::definition::NpcDefinition& npc : npcs) {
+        if (
+            npc.id > currentId &&
+            hasProjectile(npc)
+        ) {
+            selectNpc(npc);
+            return;
+        }
+    }
+
+    // Wrap so the button can be hammered continuously while reviewing NPCs.
+    for (const eld::definition::NpcDefinition& npc : npcs) {
+        if (
+            npc.id <= currentId &&
+            hasProjectile(npc)
+        ) {
+            selectNpc(npc);
+            return;
+        }
+    }
+}
+
 void CacheExplorer::renderNpcAnimationControls() {
     if (
         !state_.activeNpc.has_value() ||
@@ -1385,6 +1805,16 @@ void CacheExplorer::renderNpcAnimationControls() {
     ) {
         return;
     }
+
+    if (ImGui::SmallButton("Next NPC w/ projectile")) {
+        selectNextNpcWithProjectile();
+    }
+
+    ImGui::SameLine();
+    ImGui::Text(
+        "NPC %u",
+        static_cast<unsigned int>(state_.activeNpc->id)
+    );
 
     const eld::animation::presentation::NpcAnimationProfile profile =
         animationPresentationCatalog_.resolveNpc(*state_.activeNpc);
@@ -1421,9 +1851,7 @@ void CacheExplorer::renderNpcAnimationControls() {
         }
 
         const std::string label =
-            std::string(
-                eld::animation::presentation::toString(binding.action)
-            );
+            actionBindingLabel(binding);
 
         if (ImGui::Button(label.c_str())) {
             clearNpcActionPreview();
@@ -1462,9 +1890,7 @@ void CacheExplorer::renderNpcAnimationControls() {
         }
 
         const std::string label =
-            std::string(
-                eld::animation::presentation::toString(binding.action)
-            );
+            actionBindingLabel(binding);
 
         if (ImGui::Button(label.c_str())) {
             startNpcActionPreview(binding);
@@ -1481,11 +1907,7 @@ void CacheExplorer::renderNpcAnimationControls() {
 
     if (activeNpcAction_.has_value()) {
         const std::string actionLabel =
-            std::string(
-                eld::animation::presentation::toString(
-                    activeNpcAction_->action
-                )
-            );
+            actionBindingLabel(*activeNpcAction_);
 
         ImGui::Text(
             "Active action: %s",
@@ -1496,13 +1918,25 @@ void CacheExplorer::renderNpcAnimationControls() {
             const eld::animation::presentation::AnimationEffectBinding& effect :
             activeNpcAction_->effects
         ) {
-            ImGui::BulletText(
-                "SpotAnim %u%s  delay=%ums  duration=%ums",
-                static_cast<unsigned int>(effect.spotAnimationId),
-                effect.projectile ? " projectile" : " attached",
-                static_cast<unsigned int>(effect.delayMilliseconds),
-                static_cast<unsigned int>(effect.durationMilliseconds)
-            );
+            if (effect.projectile) {
+                ImGui::BulletText(
+                    "SpotAnim %u projectile  h=%u->%u slope=%u start=%u",
+                    static_cast<unsigned int>(effect.spotAnimationId),
+                    static_cast<unsigned int>(effect.projectileStartHeight),
+                    static_cast<unsigned int>(effect.projectileEndHeight),
+                    static_cast<unsigned int>(effect.projectileSlope),
+                    static_cast<unsigned int>(effect.projectileStartDistance)
+                );
+            }
+            else {
+                ImGui::BulletText(
+                    "SpotAnim %u %s  delay=%ums  duration=%ums",
+                    static_cast<unsigned int>(effect.spotAnimationId),
+                    effect.target ? "target" : "attached",
+                    static_cast<unsigned int>(effect.delayMilliseconds),
+                    static_cast<unsigned int>(effect.durationMilliseconds)
+                );
+            }
         }
     }
 
@@ -1703,17 +2137,38 @@ CacheExplorer::CacheExplorer()
 }
 
 bool CacheExplorer::initialize() {
-    state_.camera.position = {
-        0.0f,
-        0.0f,
-        -500.0f
-    };
-
-    state_.camera.rotation = {
+    // ELFORGE_CAMERA_NAVIGATION_V1
+    state_.viewportCameraPivot = {
         0.0f,
         0.0f,
         0.0f
     };
+
+    state_.viewportCameraDistance =
+        650.0f;
+
+    state_.camera.rotation = {
+        0.42f,
+        -0.55f,
+        0.0f
+    };
+
+    const float pitch =
+        state_.camera.rotation.x;
+
+    const float yaw =
+        state_.camera.rotation.y;
+
+    const eld::math::Vec3 forward{
+        std::cos(pitch) * std::sin(yaw),
+        -std::sin(pitch),
+        std::cos(pitch) * std::cos(yaw)
+    };
+
+    state_.camera.position =
+        state_.viewportCameraPivot -
+        forward *
+            state_.viewportCameraDistance;
 
     state_.camera.verticalFov =
         1.04719755f;
@@ -1827,6 +2282,20 @@ void CacheExplorer::update() {
     updateNpcActionEffects(
         delta
     );
+
+    // ELFORGE_TARGET_LOCK_PRESETS_V1
+    //
+    // An active semantic/composed action owns facing while this lock is on.
+    // Moving the NPC or moving the target therefore recomputes yaw every
+    // frame instead of taking a one-time snapshot at action start.
+    if (
+        lockNpcFacingToActionTarget_ &&
+        activeNpcAction_.has_value() &&
+        state_.activeNpc.has_value()
+    ) {
+        faceNpcTowardActionTarget();
+    }
+
 }
 
 void CacheExplorer::handleSelectionChanged() {
@@ -2521,9 +2990,7 @@ void CacheExplorer::renderUi() {
 
     ImGui::Separator();
 
-    if (ImGui::Button("Find alpha model")) {
-        findNextAlphaModel();
-    }
+    // ELFORGE_REMOVE_FIND_ALPHA_BUTTON_V1
 
     const float treeWidth = 300.0f;
     const float inspectorWidth = 320.0f;

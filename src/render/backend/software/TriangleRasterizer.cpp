@@ -108,7 +108,14 @@ void TriangleRasterizer::drawTriangle(
             c.screen.y
         );
 
-    if (std::abs(area) < Epsilon) {
+    // ELDORIA_BACKFACE_CULLING_V1
+    //
+    // Screen-space winding is part of normal rasterization, not RS-specific
+    // asset semantics. The classic 317 model renderer only submitted faces
+    // whose projected winding had a positive signed area. Accepting both
+    // windings makes thin two-sided geometry (notably dragon wings) render
+    // overlapping front/back faces and produces the noisy surface artifact.
+    if (area <= Epsilon) {
         return;
     }
 

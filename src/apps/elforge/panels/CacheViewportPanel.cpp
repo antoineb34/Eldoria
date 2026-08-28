@@ -15,6 +15,15 @@
 
 #include <imgui.h>
 
+#include <array>
+#include <vector>
+
+#include "math/Mat4.h"
+#include "math/Vec3.h"
+#include "math/Vec4.h"
+#include "render/camera/Projection.h"
+#include "render/scene/Transform.h"
+
 #include "../CacheExplorerState.h"
 #include "../InterfacePreviewBuilder.h"
 
@@ -580,6 +589,1999 @@ private:
         SpriteTexture
     > textures_;
 };
+
+// ELFORGE_EDITOR_VIEWPORT_V1
+enum class GizmoAxis : int {
+    None = -1,
+    X = 0,
+    Y = 1,
+    Z = 2
+};
+
+struct ViewportEditorInteraction {
+    GizmoAxis activeAxis = GizmoAxis::None;
+    bool draggingGizmo = false;
+};
+
+ViewportEditorInteraction editorInteraction;
+
+struct ProjectedPoint {
+    ImVec2 screen;
+    float depth = 0.0f;
+    bool valid = false;
+};
+
+bool mouseInside(
+    const ImVec2& mouse,
+    const ImVec2& position,
+    const ImVec2& size
+) {
+    return
+        mouse.x >= position.x &&
+        mouse.y >= position.y &&
+        mouse.x < position.x + size.x &&
+        mouse.y < position.y + size.y;
+}
+
+float distanceToSegment(
+    const ImVec2& point,
+    const ImVec2& a,
+    const ImVec2& b
+) {
+    const float abX = b.x - a.x;
+    const float abY = b.y - a.y;
+
+    const float lengthSquared =
+        abX * abX +
+        abY * abY;
+
+    if (lengthSquared <= 0.0001f) {
+        const float dx = point.x - a.x;
+        const float dy = point.y - a.y;
+
+        return std::sqrt(
+            dx * dx +
+            dy * dy
+        );
+    }
+
+    float t =
+        (
+            (point.x - a.x) * abX +
+            (point.y - a.y) * abY
+        ) /
+        lengthSquared;
+
+    t = std::clamp(
+        t,
+        0.0f,
+        1.0f
+    );
+
+    const float closestX =
+        a.x +
+        abX * t;
+
+    const float closestY =
+        a.y +
+        abY * t;
+
+    const float dx =
+        point.x -
+        closestX;
+
+    const float dy =
+        point.y -
+        closestY;
+
+    return std::sqrt(
+        dx * dx +
+        dy * dy
+    );
+}
+
+ProjectedPoint projectWorld(
+    const CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    const eld::math::Vec3& world
+) {
+    eld::render::Camera camera =
+        state.camera;
+
+    camera.viewportWidth =
+        static_cast<std::uint32_t>(
+            std::max(
+                state.viewportWidth,
+                1
+            )
+        );
+
+    camera.viewportHeight =
+        static_cast<std::uint32_t>(
+            std::max(
+                state.viewportHeight,
+                1
+            )
+        );
+
+    const eld::math::Mat4 view =
+        eld::render::buildViewMatrix(
+            camera
+        );
+
+    const eld::math::Mat4 projection =
+        eld::render::buildProjectionMatrix(
+            camera
+        );
+
+    const eld::render::ScreenPoint point =
+        eld::render::projectPoint(
+            world,
+            view,
+            projection,
+            camera
+        );
+
+    ProjectedPoint result;
+    result.screen = {
+        viewportPosition.x +
+            point.x,
+        viewportPosition.y +
+            point.y
+    };
+
+    result.depth =
+        point.depth;
+
+    result.valid =
+        std::isfinite(point.x) &&
+        std::isfinite(point.y) &&
+        std::isfinite(point.depth) &&
+        point.depth >= camera.nearPlane &&
+        point.depth <= camera.farPlane;
+
+    return result;
+}
+
+eld::math::Mat4 rotationMatrix(
+    const eld::render::Transform& transform
+) {
+    return
+        eld::math::Mat4::rotationX(
+            transform.rotation.x
+        ) *
+        eld::math::Mat4::rotationY(
+            transform.rotation.y
+        ) *
+        eld::math::Mat4::rotationZ(
+            transform.rotation.z
+        );
+}
+
+eld::math::Vec3 rotateDirection(
+    const eld::render::Transform& transform,
+    const eld::math::Vec3& direction
+) {
+    const eld::math::Vec4 transformed =
+        rotationMatrix(transform).transform({
+            direction.x,
+            direction.y,
+            direction.z,
+            0.0f
+        });
+
+    return eld::math::Vec3{
+        transformed.x,
+        transformed.y,
+        transformed.z
+    }.normalized();
+}
+
+eld::math::Vec3 axisDirection(
+    const eld::render::Transform& transform,
+    GizmoAxis axis
+) {
+    switch (axis) {
+        case GizmoAxis::X:
+            return rotateDirection(
+                transform,
+                {1.0f, 0.0f, 0.0f}
+            );
+
+        case GizmoAxis::Y:
+            return rotateDirection(
+                transform,
+                {0.0f, 1.0f, 0.0f}
+            );
+
+        case GizmoAxis::Z:
+            return rotateDirection(
+                transform,
+                {0.0f, 0.0f, 1.0f}
+            );
+
+        case GizmoAxis::None:
+            break;
+    }
+
+    return {};
+}
+
+ImU32 axisColor(
+    GizmoAxis axis,
+    bool active
+) {
+    if (active) {
+        return IM_COL32(
+            255,
+            220,
+            80,
+            255
+        );
+    }
+
+    switch (axis) {
+        case GizmoAxis::X:
+            return IM_COL32(
+                235,
+                80,
+                80,
+                255
+            );
+
+        case GizmoAxis::Y:
+            return IM_COL32(
+                90,
+                220,
+                100,
+                255
+            );
+
+        case GizmoAxis::Z:
+            return IM_COL32(
+                80,
+                150,
+                245,
+                255
+            );
+
+        case GizmoAxis::None:
+            break;
+    }
+
+    return IM_COL32_WHITE;
+}
+
+float worldUnitsPerPixel(
+    const CacheExplorerState& state,
+    float depth
+) {
+    const float safeDepth =
+        std::max(
+            std::abs(depth),
+            1.0f
+        );
+
+    const float height =
+        static_cast<float>(
+            std::max(
+                state.viewportHeight,
+                1
+            )
+        );
+
+    return
+        2.0f *
+        safeDepth *
+        std::tan(
+            state.camera.verticalFov *
+            0.5f
+        ) /
+        height;
+}
+
+void drawEditorGrid(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    ImDrawList* drawList
+) {
+    if (
+        !state.showEditorGrid ||
+        !state.activeModelHandle.has_value()
+    ) {
+        return;
+    }
+
+    // ELFORGE_WORLD_STATIONARY_GRID_V1
+    // The editor grid is world space, not part of the selected model.
+    // Moving/rotating/scaling the model must not drag the floor with it.
+    const eld::math::Mat4 model =
+        eld::math::Mat4::identity();
+
+    constexpr int HalfLines = 10;
+    constexpr float Spacing = 50.0f;
+    constexpr float Extent =
+        HalfLines *
+        Spacing;
+
+    for (
+        int line = -HalfLines;
+        line <= HalfLines;
+        ++line
+    ) {
+        const float offset =
+            static_cast<float>(line) *
+            Spacing;
+
+        const eld::math::Vec3 xStart =
+            model.transformPoint({
+                -Extent,
+                0.0f,
+                offset
+            });
+
+        const eld::math::Vec3 xEnd =
+            model.transformPoint({
+                Extent,
+                0.0f,
+                offset
+            });
+
+        const eld::math::Vec3 zStart =
+            model.transformPoint({
+                offset,
+                0.0f,
+                -Extent
+            });
+
+        const eld::math::Vec3 zEnd =
+            model.transformPoint({
+                offset,
+                0.0f,
+                Extent
+            });
+
+        const ProjectedPoint px0 =
+            projectWorld(
+                state,
+                viewportPosition,
+                xStart
+            );
+
+        const ProjectedPoint px1 =
+            projectWorld(
+                state,
+                viewportPosition,
+                xEnd
+            );
+
+        const ProjectedPoint pz0 =
+            projectWorld(
+                state,
+                viewportPosition,
+                zStart
+            );
+
+        const ProjectedPoint pz1 =
+            projectWorld(
+                state,
+                viewportPosition,
+                zEnd
+            );
+
+        const ImU32 lineColor =
+            line == 0
+                ? IM_COL32(
+                      140,
+                      145,
+                      155,
+                      180
+                  )
+                : IM_COL32(
+                      115,
+                      120,
+                      130,
+                      80
+                  );
+
+        const float thickness =
+            line == 0
+                ? 1.5f
+                : 1.0f;
+
+        if (
+            px0.valid &&
+            px1.valid
+        ) {
+            drawList->AddLine(
+                px0.screen,
+                px1.screen,
+                lineColor,
+                thickness
+            );
+        }
+
+        if (
+            pz0.valid &&
+            pz1.valid
+        ) {
+            drawList->AddLine(
+                pz0.screen,
+                pz1.screen,
+                lineColor,
+                thickness
+            );
+        }
+    }
+}
+
+GizmoAxis closestLinearAxis(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    const ImVec2& mouse,
+    float axisLengthWorld,
+    std::array<ProjectedPoint, 3>& endpoints,
+    ProjectedPoint& origin
+) {
+    origin =
+        projectWorld(
+            state,
+            viewportPosition,
+            state.modelTransform.position
+        );
+
+    if (!origin.valid) {
+        return GizmoAxis::None;
+    }
+
+    float closestDistance =
+        10.0f;
+
+    GizmoAxis closest =
+        GizmoAxis::None;
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const GizmoAxis axis =
+            static_cast<GizmoAxis>(
+                axisIndex
+            );
+
+        const eld::math::Vec3 direction =
+            axisDirection(
+                state.modelTransform,
+                axis
+            );
+
+        endpoints[
+            static_cast<std::size_t>(
+                axisIndex
+            )
+        ] =
+            projectWorld(
+                state,
+                viewportPosition,
+                state.modelTransform.position +
+                    direction *
+                    axisLengthWorld
+            );
+
+        const ProjectedPoint& endpoint =
+            endpoints[
+                static_cast<std::size_t>(
+                    axisIndex
+                )
+            ];
+
+        if (!endpoint.valid) {
+            continue;
+        }
+
+        const float distance =
+            distanceToSegment(
+                mouse,
+                origin.screen,
+                endpoint.screen
+            );
+
+        if (distance < closestDistance) {
+            closestDistance =
+                distance;
+
+            closest =
+                axis;
+        }
+    }
+
+    return closest;
+}
+
+void drawLinearGizmo(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    ImDrawList* drawList,
+    bool scaleMode
+) {
+    const ImVec2 mouse =
+        ImGui::GetIO().MousePos;
+
+    const ProjectedPoint originProbe =
+        projectWorld(
+            state,
+            viewportPosition,
+            state.modelTransform.position
+        );
+
+    if (!originProbe.valid) {
+        return;
+    }
+
+    const float axisLengthWorld =
+        worldUnitsPerPixel(
+            state,
+            originProbe.depth
+        ) *
+        78.0f;
+
+    std::array<ProjectedPoint, 3>
+        endpoints;
+
+    ProjectedPoint origin;
+
+    const GizmoAxis hovered =
+        closestLinearAxis(
+            state,
+            viewportPosition,
+            mouse,
+            axisLengthWorld,
+            endpoints,
+            origin
+        );
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const GizmoAxis axis =
+            static_cast<GizmoAxis>(
+                axisIndex
+            );
+
+        const ProjectedPoint& endpoint =
+            endpoints[
+                static_cast<std::size_t>(
+                    axisIndex
+                )
+            ];
+
+        if (!endpoint.valid) {
+            continue;
+        }
+
+        const bool active =
+            editorInteraction.activeAxis ==
+                axis ||
+            (
+                !editorInteraction.draggingGizmo &&
+                hovered == axis
+            );
+
+        drawList->AddLine(
+            origin.screen,
+            endpoint.screen,
+            axisColor(
+                axis,
+                active
+            ),
+            active
+                ? 4.0f
+                : 3.0f
+        );
+
+        if (scaleMode) {
+            drawList->AddRectFilled(
+                {
+                    endpoint.screen.x - 5.0f,
+                    endpoint.screen.y - 5.0f
+                },
+                {
+                    endpoint.screen.x + 5.0f,
+                    endpoint.screen.y + 5.0f
+                },
+                axisColor(
+                    axis,
+                    active
+                )
+            );
+        }
+        else {
+            drawList->AddCircleFilled(
+                endpoint.screen,
+                5.0f,
+                axisColor(
+                    axis,
+                    active
+                )
+            );
+        }
+    }
+
+    if (
+        !editorInteraction.draggingGizmo &&
+        ImGui::IsMouseClicked(
+            ImGuiMouseButton_Left
+        ) &&
+        hovered != GizmoAxis::None
+    ) {
+        editorInteraction.activeAxis =
+            hovered;
+
+        editorInteraction.draggingGizmo =
+            true;
+    }
+
+    if (
+        editorInteraction.draggingGizmo &&
+        !ImGui::IsMouseDown(
+            ImGuiMouseButton_Left
+        )
+    ) {
+        editorInteraction.draggingGizmo =
+            false;
+
+        editorInteraction.activeAxis =
+            GizmoAxis::None;
+
+        return;
+    }
+
+    if (
+        !editorInteraction.draggingGizmo ||
+        editorInteraction.activeAxis ==
+            GizmoAxis::None
+    ) {
+        return;
+    }
+
+    const int activeIndex =
+        static_cast<int>(
+            editorInteraction.activeAxis
+        );
+
+    const ProjectedPoint& activeEndpoint =
+        endpoints[
+            static_cast<std::size_t>(
+                activeIndex
+            )
+        ];
+
+    const float screenX =
+        activeEndpoint.screen.x -
+        origin.screen.x;
+
+    const float screenY =
+        activeEndpoint.screen.y -
+        origin.screen.y;
+
+    const float screenLength =
+        std::sqrt(
+            screenX * screenX +
+            screenY * screenY
+        );
+
+    if (screenLength <= 0.001f) {
+        return;
+    }
+
+    const float normalizedX =
+        screenX /
+        screenLength;
+
+    const float normalizedY =
+        screenY /
+        screenLength;
+
+    const ImVec2 delta =
+        ImGui::GetIO().MouseDelta;
+
+    const float pixels =
+        delta.x *
+            normalizedX +
+        delta.y *
+            normalizedY;
+
+    if (scaleMode) {
+        const float scaleDelta =
+            pixels *
+            0.01f;
+
+        switch (editorInteraction.activeAxis) {
+            case GizmoAxis::X:
+                state.modelTransform.scale.x =
+                    std::max(
+                        0.01f,
+                        state.modelTransform.scale.x +
+                            scaleDelta
+                    );
+                break;
+
+            case GizmoAxis::Y:
+                state.modelTransform.scale.y =
+                    std::max(
+                        0.01f,
+                        state.modelTransform.scale.y +
+                            scaleDelta
+                    );
+                break;
+
+            case GizmoAxis::Z:
+                state.modelTransform.scale.z =
+                    std::max(
+                        0.01f,
+                        state.modelTransform.scale.z +
+                            scaleDelta
+                    );
+                break;
+
+            case GizmoAxis::None:
+                break;
+        }
+
+        return;
+    }
+
+    const eld::math::Vec3 direction =
+        axisDirection(
+            state.modelTransform,
+            editorInteraction.activeAxis
+        );
+
+    state.modelTransform.position =
+        state.modelTransform.position +
+        direction *
+            (
+                pixels *
+                worldUnitsPerPixel(
+                    state,
+                    origin.depth
+                )
+            );
+}
+
+std::vector<ImVec2> projectedRing(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    GizmoAxis axis,
+    float radius
+) {
+    std::vector<ImVec2> result;
+
+    constexpr int Segments = 64;
+
+    result.reserve(
+        Segments + 1
+    );
+
+    const eld::math::Mat4 rotation =
+        rotationMatrix(
+            state.modelTransform
+        );
+
+    for (
+        int index = 0;
+        index <= Segments;
+        ++index
+    ) {
+        const float angle =
+            static_cast<float>(
+                index
+            ) /
+            static_cast<float>(
+                Segments
+            ) *
+            6.28318530718f;
+
+        eld::math::Vec3 local;
+
+        switch (axis) {
+            case GizmoAxis::X:
+                local = {
+                    0.0f,
+                    std::cos(angle) *
+                        radius,
+                    std::sin(angle) *
+                        radius
+                };
+                break;
+
+            case GizmoAxis::Y:
+                local = {
+                    std::cos(angle) *
+                        radius,
+                    0.0f,
+                    std::sin(angle) *
+                        radius
+                };
+                break;
+
+            case GizmoAxis::Z:
+                local = {
+                    std::cos(angle) *
+                        radius,
+                    std::sin(angle) *
+                        radius,
+                    0.0f
+                };
+                break;
+
+            case GizmoAxis::None:
+                break;
+        }
+
+        const eld::math::Vec4 rotated =
+            rotation.transform({
+                local.x,
+                local.y,
+                local.z,
+                0.0f
+            });
+
+        const ProjectedPoint point =
+            projectWorld(
+                state,
+                viewportPosition,
+                state.modelTransform.position +
+                    eld::math::Vec3{
+                        rotated.x,
+                        rotated.y,
+                        rotated.z
+                    }
+            );
+
+        if (point.valid) {
+            result.push_back(
+                point.screen
+            );
+        }
+    }
+
+    return result;
+}
+
+float distanceToPolyline(
+    const ImVec2& point,
+    const std::vector<ImVec2>& line
+) {
+    if (line.size() < 2) {
+        return 100000.0f;
+    }
+
+    float best =
+        100000.0f;
+
+    for (
+        std::size_t index = 1;
+        index < line.size();
+        ++index
+    ) {
+        best =
+            std::min(
+                best,
+                distanceToSegment(
+                    point,
+                    line[index - 1],
+                    line[index]
+                )
+            );
+    }
+
+    return best;
+}
+
+void drawRotateGizmo(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    ImDrawList* drawList
+) {
+    const ProjectedPoint origin =
+        projectWorld(
+            state,
+            viewportPosition,
+            state.modelTransform.position
+        );
+
+    if (!origin.valid) {
+        return;
+    }
+
+    const float radius =
+        worldUnitsPerPixel(
+            state,
+            origin.depth
+        ) *
+        68.0f;
+
+    std::array<
+        std::vector<ImVec2>,
+        3
+    > rings;
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        rings[
+            static_cast<std::size_t>(
+                axisIndex
+            )
+        ] =
+            projectedRing(
+                state,
+                viewportPosition,
+                static_cast<GizmoAxis>(
+                    axisIndex
+                ),
+                radius
+            );
+    }
+
+    const ImVec2 mouse =
+        ImGui::GetIO().MousePos;
+
+    GizmoAxis hovered =
+        GizmoAxis::None;
+
+    float closestDistance =
+        9.0f;
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const float distance =
+            distanceToPolyline(
+                mouse,
+                rings[
+                    static_cast<std::size_t>(
+                        axisIndex
+                    )
+                ]
+            );
+
+        if (distance < closestDistance) {
+            closestDistance =
+                distance;
+
+            hovered =
+                static_cast<GizmoAxis>(
+                    axisIndex
+                );
+        }
+    }
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const GizmoAxis axis =
+            static_cast<GizmoAxis>(
+                axisIndex
+            );
+
+        const bool active =
+            editorInteraction.activeAxis ==
+                axis ||
+            (
+                !editorInteraction.draggingGizmo &&
+                hovered == axis
+            );
+
+        const std::vector<ImVec2>& ring =
+            rings[
+                static_cast<std::size_t>(
+                    axisIndex
+                )
+            ];
+
+        for (
+            std::size_t index = 1;
+            index < ring.size();
+            ++index
+        ) {
+            drawList->AddLine(
+                ring[index - 1],
+                ring[index],
+                axisColor(
+                    axis,
+                    active
+                ),
+                active
+                    ? 4.0f
+                    : 2.5f
+            );
+        }
+    }
+
+    if (
+        !editorInteraction.draggingGizmo &&
+        ImGui::IsMouseClicked(
+            ImGuiMouseButton_Left
+        ) &&
+        hovered != GizmoAxis::None
+    ) {
+        editorInteraction.activeAxis =
+            hovered;
+
+        editorInteraction.draggingGizmo =
+            true;
+    }
+
+    if (
+        editorInteraction.draggingGizmo &&
+        !ImGui::IsMouseDown(
+            ImGuiMouseButton_Left
+        )
+    ) {
+        editorInteraction.draggingGizmo =
+            false;
+
+        editorInteraction.activeAxis =
+            GizmoAxis::None;
+
+        return;
+    }
+
+    if (
+        !editorInteraction.draggingGizmo ||
+        editorInteraction.activeAxis ==
+            GizmoAxis::None
+    ) {
+        return;
+    }
+
+    const ImVec2 delta =
+        ImGui::GetIO().MouseDelta;
+
+    const float angleDelta =
+        (
+            delta.x -
+            delta.y
+        ) *
+        0.012f;
+
+    switch (editorInteraction.activeAxis) {
+        case GizmoAxis::X:
+            state.modelTransform.rotation.x +=
+                angleDelta;
+            break;
+
+        case GizmoAxis::Y:
+            state.modelTransform.rotation.y +=
+                angleDelta;
+            break;
+
+        case GizmoAxis::Z:
+            state.modelTransform.rotation.z +=
+                angleDelta;
+            break;
+
+        case GizmoAxis::None:
+            break;
+    }
+}
+
+// ELFORGE_CAMERA_NAVIGATION_V1
+eld::math::Vec3 editorCameraForward(
+    const CacheExplorerState& state
+) {
+    const float pitch =
+        state.camera.rotation.x;
+
+    const float yaw =
+        state.camera.rotation.y;
+
+    return {
+        std::cos(pitch) *
+            std::sin(yaw),
+        -std::sin(pitch),
+        std::cos(pitch) *
+            std::cos(yaw)
+    };
+}
+
+eld::math::Vec3 editorCameraRight(
+    const CacheExplorerState& state
+) {
+    const float yaw =
+        state.camera.rotation.y;
+
+    return {
+        std::cos(yaw),
+        0.0f,
+        -std::sin(yaw)
+    };
+}
+
+eld::math::Vec3 editorCameraUp(
+    const CacheExplorerState& state
+) {
+    return
+        editorCameraForward(state)
+            .cross(
+                editorCameraRight(state)
+            )
+            .normalized();
+}
+
+void updateEditorCameraPosition(
+    CacheExplorerState& state
+) {
+    state.camera.position =
+        state.viewportCameraPivot -
+        editorCameraForward(state) *
+            state.viewportCameraDistance;
+}
+
+void resetEditorCamera(
+    CacheExplorerState& state
+) {
+    state.viewportCameraPivot = {
+        0.0f,
+        0.0f,
+        0.0f
+    };
+
+    state.viewportCameraDistance =
+        650.0f;
+
+    state.camera.rotation = {
+        0.42f,
+        -0.55f,
+        0.0f
+    };
+
+    updateEditorCameraPosition(
+        state
+    );
+}
+
+void updateEditorNavigation(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    const ImVec2& viewportSize
+) {
+    if (!state.activeModelHandle.has_value()) {
+        return;
+    }
+
+    ImGuiIO& io =
+        ImGui::GetIO();
+
+    if (
+        !mouseInside(
+            io.MousePos,
+            viewportPosition,
+            viewportSize
+        )
+    ) {
+        return;
+    }
+
+    if (
+        io.WantTextInput ||
+        editorInteraction.draggingGizmo
+    ) {
+        return;
+    }
+
+    // RMB = orbit the VIEW, not the selected model.
+    if (
+        ImGui::IsMouseDragging(
+            ImGuiMouseButton_Right,
+            1.0f
+        )
+    ) {
+        state.camera.rotation.y +=
+            io.MouseDelta.x *
+            0.01f;
+
+        state.camera.rotation.x +=
+            io.MouseDelta.y *
+            0.01f;
+
+        state.camera.rotation.x =
+            std::clamp(
+                state.camera.rotation.x,
+                -1.45f,
+                1.45f
+            );
+
+        updateEditorCameraPosition(
+            state
+        );
+    }
+
+    // MMB = pan the editor view in camera-local X/Y while preserving orbit.
+    if (
+        ImGui::IsMouseDragging(
+            ImGuiMouseButton_Middle,
+            1.0f
+        )
+    ) {
+        const ProjectedPoint pivot =
+            projectWorld(
+                state,
+                viewportPosition,
+                state.viewportCameraPivot
+            );
+
+        const float unitsPerPixel =
+            pivot.valid
+                ? worldUnitsPerPixel(
+                      state,
+                      pivot.depth
+                  )
+                : std::max(
+                      state.viewportCameraDistance /
+                          600.0f,
+                      0.1f
+                  );
+
+        const eld::math::Vec3 right =
+            editorCameraRight(state);
+
+        const eld::math::Vec3 up =
+            editorCameraUp(state);
+
+        const eld::math::Vec3 pan =
+            right *
+                (
+                    -io.MouseDelta.x *
+                    unitsPerPixel
+                ) +
+            up *
+                (
+                    io.MouseDelta.y *
+                    unitsPerPixel
+                );
+
+        state.viewportCameraPivot =
+            state.viewportCameraPivot +
+            pan;
+
+        state.camera.position =
+            state.camera.position +
+            pan;
+    }
+
+    // Wheel = dolly camera toward/away from the orbit pivot.
+    if (std::abs(io.MouseWheel) > 0.001f) {
+        state.viewportCameraDistance *=
+            std::pow(
+                0.88f,
+                io.MouseWheel
+            );
+
+        state.viewportCameraDistance =
+            std::clamp(
+                state.viewportCameraDistance,
+                25.0f,
+                5000.0f
+            );
+
+        updateEditorCameraPosition(
+            state
+        );
+    }
+
+    // F = focus the orbit pivot on the selected model without moving it.
+    if (ImGui::IsKeyPressed(ImGuiKey_F)) {
+        state.viewportCameraPivot =
+            state.modelTransform.position;
+
+        updateEditorCameraPosition(
+            state
+        );
+    }
+}
+
+void renderViewportToolbar(
+    CacheExplorerState& state,
+    const ImVec2&
+) {
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_FrameRounding,
+        4.0f
+    );
+
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_ItemSpacing,
+        ImVec2(4.0f, 4.0f)
+    );
+
+    const auto modeButton =
+        [&state](
+            const char* label,
+            ViewportGizmoMode mode
+        ) {
+            const bool active =
+                state.viewportGizmoMode ==
+                    mode;
+
+            if (active) {
+                ImGui::PushStyleColor(
+                    ImGuiCol_Button,
+                    ImGui::GetStyleColorVec4(
+                        ImGuiCol_ButtonActive
+                    )
+                );
+            }
+
+            if (ImGui::SmallButton(label)) {
+                state.viewportGizmoMode =
+                    mode;
+            }
+
+            if (active) {
+                ImGui::PopStyleColor();
+            }
+        };
+
+    modeButton(
+        "Move [W]",
+        ViewportGizmoMode::Move
+    );
+
+    ImGui::SameLine();
+
+    modeButton(
+        "Rotate [E]",
+        ViewportGizmoMode::Rotate
+    );
+
+    ImGui::SameLine();
+
+    modeButton(
+        "Scale [R]",
+        ViewportGizmoMode::Scale
+    );
+
+    ImGui::SameLine();
+
+    if (
+        ImGui::SmallButton(
+            state.showEditorGrid
+                ? "Grid: On"
+                : "Grid: Off"
+        )
+    ) {
+        state.showEditorGrid =
+            !state.showEditorGrid;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::SmallButton("Reset Model")) {
+        state.modelTransform = {};
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::SmallButton("Focus [F]")) {
+        state.viewportCameraPivot =
+            state.modelTransform.position;
+
+        updateEditorCameraPosition(
+            state
+        );
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::SmallButton("Reset View")) {
+        resetEditorCamera(
+            state
+        );
+    }
+
+    ImGui::PopStyleVar(2);
+}
+
+void renderEditorOverlay(
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    const ImVec2& viewportSize
+) {
+    if (!state.activeModelHandle.has_value()) {
+        return;
+    }
+
+    ImGuiIO& io =
+        ImGui::GetIO();
+
+    if (!io.WantTextInput) {
+        if (ImGui::IsKeyPressed(ImGuiKey_W)) {
+            state.viewportGizmoMode =
+                ViewportGizmoMode::Move;
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_E)) {
+            state.viewportGizmoMode =
+                ViewportGizmoMode::Rotate;
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_R)) {
+            state.viewportGizmoMode =
+                ViewportGizmoMode::Scale;
+        }
+    }
+
+    updateEditorNavigation(
+        state,
+        viewportPosition,
+        viewportSize
+    );
+
+    ImDrawList* drawList =
+        ImGui::GetWindowDrawList();
+
+    drawEditorGrid(
+        state,
+        viewportPosition,
+        drawList
+    );
+
+    if (state.showViewportGizmo) {
+        switch (state.viewportGizmoMode) {
+            case ViewportGizmoMode::Move:
+                drawLinearGizmo(
+                    state,
+                    viewportPosition,
+                    drawList,
+                    false
+                );
+                break;
+
+            case ViewportGizmoMode::Rotate:
+                drawRotateGizmo(
+                    state,
+                    viewportPosition,
+                    drawList
+                );
+                break;
+
+            case ViewportGizmoMode::Scale:
+                drawLinearGizmo(
+                    state,
+                    viewportPosition,
+                    drawList,
+                    true
+                );
+                break;
+        }
+    }
+
+}
+
+
+void setAxisDrawColor(
+    SDL_Renderer* renderer,
+    GizmoAxis axis,
+    bool active
+) {
+    if (active) {
+        SDL_SetRenderDrawColor(
+            renderer,
+            255,
+            220,
+            80,
+            255
+        );
+        return;
+    }
+
+    switch (axis) {
+        case GizmoAxis::X:
+            SDL_SetRenderDrawColor(
+                renderer,
+                235,
+                80,
+                80,
+                255
+            );
+            break;
+
+        case GizmoAxis::Y:
+            SDL_SetRenderDrawColor(
+                renderer,
+                90,
+                220,
+                100,
+                255
+            );
+            break;
+
+        case GizmoAxis::Z:
+            SDL_SetRenderDrawColor(
+                renderer,
+                80,
+                150,
+                245,
+                255
+            );
+            break;
+
+        case GizmoAxis::None:
+            SDL_SetRenderDrawColor(
+                renderer,
+                255,
+                255,
+                255,
+                255
+            );
+            break;
+    }
+}
+
+void drawEditorGridSdl(
+    SDL_Renderer* renderer,
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition
+) {
+    if (
+        renderer == nullptr ||
+        !state.showEditorGrid ||
+        !state.activeModelHandle.has_value()
+    ) {
+        return;
+    }
+
+    // ELFORGE_WORLD_STATIONARY_GRID_V1
+    // The editor grid is world space, not part of the selected model.
+    // Moving/rotating/scaling the model must not drag the floor with it.
+    const eld::math::Mat4 model =
+        eld::math::Mat4::identity();
+
+    constexpr int HalfLines = 10;
+    constexpr float Spacing = 50.0f;
+    constexpr float Extent =
+        HalfLines *
+        Spacing;
+
+    for (
+        int line = -HalfLines;
+        line <= HalfLines;
+        ++line
+    ) {
+        const float offset =
+            static_cast<float>(line) *
+            Spacing;
+
+        const eld::math::Vec3 xStart =
+            model.transformPoint({
+                -Extent,
+                0.0f,
+                offset
+            });
+
+        const eld::math::Vec3 xEnd =
+            model.transformPoint({
+                Extent,
+                0.0f,
+                offset
+            });
+
+        const eld::math::Vec3 zStart =
+            model.transformPoint({
+                offset,
+                0.0f,
+                -Extent
+            });
+
+        const eld::math::Vec3 zEnd =
+            model.transformPoint({
+                offset,
+                0.0f,
+                Extent
+            });
+
+        const ProjectedPoint px0 =
+            projectWorld(
+                state,
+                viewportPosition,
+                xStart
+            );
+
+        const ProjectedPoint px1 =
+            projectWorld(
+                state,
+                viewportPosition,
+                xEnd
+            );
+
+        const ProjectedPoint pz0 =
+            projectWorld(
+                state,
+                viewportPosition,
+                zStart
+            );
+
+        const ProjectedPoint pz1 =
+            projectWorld(
+                state,
+                viewportPosition,
+                zEnd
+            );
+
+        if (line == 0) {
+            SDL_SetRenderDrawColor(
+                renderer,
+                145,
+                150,
+                160,
+                190
+            );
+        }
+        else {
+            SDL_SetRenderDrawColor(
+                renderer,
+                125,
+                130,
+                140,
+                100
+            );
+        }
+
+        if (px0.valid && px1.valid) {
+            SDL_RenderLine(
+                renderer,
+                px0.screen.x,
+                px0.screen.y,
+                px1.screen.x,
+                px1.screen.y
+            );
+        }
+
+        if (pz0.valid && pz1.valid) {
+            SDL_RenderLine(
+                renderer,
+                pz0.screen.x,
+                pz0.screen.y,
+                pz1.screen.x,
+                pz1.screen.y
+            );
+        }
+    }
+}
+
+void drawLinearGizmoSdl(
+    SDL_Renderer* renderer,
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition,
+    bool scaleMode
+) {
+    if (
+        renderer == nullptr ||
+        !state.showViewportGizmo
+    ) {
+        return;
+    }
+
+    const ProjectedPoint originProbe =
+        projectWorld(
+            state,
+            viewportPosition,
+            state.modelTransform.position
+        );
+
+    if (!originProbe.valid) {
+        return;
+    }
+
+    const float axisLengthWorld =
+        worldUnitsPerPixel(
+            state,
+            originProbe.depth
+        ) *
+        78.0f;
+
+    std::array<ProjectedPoint, 3>
+        endpoints;
+
+    ProjectedPoint origin;
+
+    const ImVec2 mouse =
+        ImGui::GetIO().MousePos;
+
+    const GizmoAxis hovered =
+        closestLinearAxis(
+            state,
+            viewportPosition,
+            mouse,
+            axisLengthWorld,
+            endpoints,
+            origin
+        );
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const GizmoAxis axis =
+            static_cast<GizmoAxis>(
+                axisIndex
+            );
+
+        const ProjectedPoint& endpoint =
+            endpoints[
+                static_cast<std::size_t>(
+                    axisIndex
+                )
+            ];
+
+        if (!endpoint.valid) {
+            continue;
+        }
+
+        const bool active =
+            editorInteraction.activeAxis ==
+                axis ||
+            (
+                !editorInteraction.draggingGizmo &&
+                hovered == axis
+            );
+
+        setAxisDrawColor(
+            renderer,
+            axis,
+            active
+        );
+
+        SDL_RenderLine(
+            renderer,
+            origin.screen.x,
+            origin.screen.y,
+            endpoint.screen.x,
+            endpoint.screen.y
+        );
+
+        const float halfSize =
+            scaleMode
+                ? 5.0f
+                : 4.0f;
+
+        const SDL_FRect handle{
+            endpoint.screen.x - halfSize,
+            endpoint.screen.y - halfSize,
+            halfSize * 2.0f,
+            halfSize * 2.0f
+        };
+
+        SDL_RenderFillRect(
+            renderer,
+            &handle
+        );
+    }
+}
+
+void drawRotateGizmoSdl(
+    SDL_Renderer* renderer,
+    CacheExplorerState& state,
+    const ImVec2& viewportPosition
+) {
+    if (
+        renderer == nullptr ||
+        !state.showViewportGizmo
+    ) {
+        return;
+    }
+
+    const ProjectedPoint origin =
+        projectWorld(
+            state,
+            viewportPosition,
+            state.modelTransform.position
+        );
+
+    if (!origin.valid) {
+        return;
+    }
+
+    const float radius =
+        worldUnitsPerPixel(
+            state,
+            origin.depth
+        ) *
+        68.0f;
+
+    std::array<
+        std::vector<ImVec2>,
+        3
+    > rings;
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        rings[
+            static_cast<std::size_t>(
+                axisIndex
+            )
+        ] =
+            projectedRing(
+                state,
+                viewportPosition,
+                static_cast<GizmoAxis>(
+                    axisIndex
+                ),
+                radius
+            );
+    }
+
+    const ImVec2 mouse =
+        ImGui::GetIO().MousePos;
+
+    GizmoAxis hovered =
+        GizmoAxis::None;
+
+    float closestDistance =
+        9.0f;
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const float distance =
+            distanceToPolyline(
+                mouse,
+                rings[
+                    static_cast<std::size_t>(
+                        axisIndex
+                    )
+                ]
+            );
+
+        if (distance < closestDistance) {
+            closestDistance =
+                distance;
+
+            hovered =
+                static_cast<GizmoAxis>(
+                    axisIndex
+                );
+        }
+    }
+
+    for (
+        int axisIndex = 0;
+        axisIndex < 3;
+        ++axisIndex
+    ) {
+        const GizmoAxis axis =
+            static_cast<GizmoAxis>(
+                axisIndex
+            );
+
+        const bool active =
+            editorInteraction.activeAxis ==
+                axis ||
+            (
+                !editorInteraction.draggingGizmo &&
+                hovered == axis
+            );
+
+        setAxisDrawColor(
+            renderer,
+            axis,
+            active
+        );
+
+        const std::vector<ImVec2>& ring =
+            rings[
+                static_cast<std::size_t>(
+                    axisIndex
+                )
+            ];
+
+        for (
+            std::size_t index = 1;
+            index < ring.size();
+            ++index
+        ) {
+            SDL_RenderLine(
+                renderer,
+                ring[index - 1].x,
+                ring[index - 1].y,
+                ring[index].x,
+                ring[index].y
+            );
+        }
+    }
+}
+
+void drawEditorOverlaySdl(
+    SDL_Renderer* renderer,
+    CacheExplorerState& state
+) {
+    if (
+        renderer == nullptr ||
+        !state.activeModelHandle.has_value()
+    ) {
+        return;
+    }
+
+    const SDL_Rect clip{
+        state.viewportX,
+        state.viewportY,
+        state.viewportWidth,
+        state.viewportHeight
+    };
+
+    SDL_SetRenderClipRect(
+        renderer,
+        &clip
+    );
+
+    const ImVec2 viewportPosition{
+        static_cast<float>(
+            state.viewportX
+        ),
+        static_cast<float>(
+            state.viewportY
+        )
+    };
+
+    drawEditorGridSdl(
+        renderer,
+        state,
+        viewportPosition
+    );
+
+    if (state.showViewportGizmo) {
+        switch (state.viewportGizmoMode) {
+            case ViewportGizmoMode::Move:
+                drawLinearGizmoSdl(
+                    renderer,
+                    state,
+                    viewportPosition,
+                    false
+                );
+                break;
+
+            case ViewportGizmoMode::Rotate:
+                drawRotateGizmoSdl(
+                    renderer,
+                    state,
+                    viewportPosition
+                );
+                break;
+
+            case ViewportGizmoMode::Scale:
+                drawLinearGizmoSdl(
+                    renderer,
+                    state,
+                    viewportPosition,
+                    true
+                );
+                break;
+        }
+    }
+
+    SDL_SetRenderClipRect(
+        renderer,
+        nullptr
+    );
+}
 
 void renderCheckerboard(
     SDL_Renderer* renderer,
@@ -2728,6 +4730,20 @@ void CacheViewportPanel::render(
             ImGuiWindowFlags_NoScrollWithMouse
     );
 
+    // ELFORGE_DIRECT_VIEWPORT_SDL_OVERLAY_V1
+    if (state.activeModelHandle.has_value()) {
+        renderViewportToolbar(
+            state,
+            {}
+        );
+
+        ImGui::TextDisabled(
+            "RMB orbit view | MMB pan view | wheel dolly | F focus | W/E/R object gizmo"
+        );
+
+        ImGui::Separator();
+    }
+
     const ImVec2 viewportPosition =
         ImGui::GetCursorScreenPos();
 
@@ -2759,6 +4775,12 @@ void CacheViewportPanel::render(
             ),
             1
         );
+
+    renderEditorOverlay(
+        state,
+        viewportPosition,
+        viewportSize
+    );
 
     ImGui::Dummy(
         viewportSize
@@ -2966,6 +4988,11 @@ void CacheViewportPanel::renderViewport(
             modelOptions
         );
     }
+
+    drawEditorOverlaySdl(
+        renderer,
+        state
+    );
 
     SDL_SetRenderClipRect(
         renderer,

@@ -85,6 +85,10 @@ private:
     );
 
     void rebuildAnimationFrame();
+
+    // ELFORGE_NEXT_NPC_WITH_PROJECTILE_V1
+    void selectNextNpcWithProjectile();
+
     void renderNpcAnimationControls();
     void renderLocationAnimationControls();
     void renderSpotAnimationControls();
@@ -113,6 +117,9 @@ private:
         float mouseX,
         float mouseY
     );
+
+    // ELFORGE_NPC_FACE_ACTION_TARGET_V1
+    void faceNpcTowardActionTarget();
 
     void renderManualNpcActionComposer();
 
@@ -164,17 +171,24 @@ private:
     std::optional<eld::graphics::ModelHandle>
         actionGridHandle_;
 
-    eld::math::Vec3 actionTargetLocal_{
+    eld::math::Vec3 actionTargetWorld_{
         220.0f,
         0.0f,
         0.0f
     };
 
-    bool showActionGrid_ = true;
+    bool showActionGrid_ = false;
     bool placeActionTargetOnClick_ = false;
+
+    // ELFORGE_TARGET_LOCK_PRESETS_V1
+    bool lockNpcFacingToActionTarget_ = true;
 
     float actionPreviewArcHeight_ = 70.0f;
     float actionPreviewSourceHeight_ = 60.0f;
+
+    eld::animation::presentation::AnimationAction
+        manualActionAction_ =
+            eld::animation::presentation::AnimationAction::Attack;
 
     int manualActionSequenceId_ = -1;
     int manualActionSpotAnimationId_ = -1;

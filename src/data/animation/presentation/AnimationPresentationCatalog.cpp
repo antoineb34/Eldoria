@@ -44,8 +44,9 @@ std::vector<std::string> splitCsv(
         values.push_back(trim(value));
     }
 
-    // kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms
-    while (values.size() < 8) {
+    // kind,id,action,sequence,spotanim,projectile,delay_ms,duration_ms,
+    // variant,placement,start_height,end_height,slope,start_distance
+    while (values.size() < 14) {
         values.emplace_back();
     }
 
@@ -130,7 +131,9 @@ void mergeBinding(
             bindings.begin(),
             bindings.end(),
             [&](const AnimationBinding& binding) {
-                return binding.action == authored.action;
+                return
+                    binding.action == authored.action &&
+                    binding.variant == authored.variant;
             }
         );
 
@@ -213,13 +216,15 @@ void AnimationPresentationCatalog::load(
         const Key key{
             kind,
             *entityId,
-            *action
+            *action,
+            fields[8]
         };
 
         AnimationBinding& binding =
             authored_[key];
 
         binding.action = *action;
+        binding.variant = fields[8];
 
         const std::optional<std::uint16_t> sequenceId =
             parseU16(fields[3]);
@@ -235,6 +240,46 @@ void AnimationPresentationCatalog::load(
             AnimationEffectBinding effect;
             effect.spotAnimationId = *spotAnimationId;
             effect.projectile = parseBool(fields[5]);
+
+            if (fields[9] == "target") {
+                effect.projectile = false;
+                effect.target = true;
+            }
+            else if (fields[9] == "projectile") {
+                effect.projectile = true;
+            }
+            else if (
+                fields[9] == "source" ||
+                fields[9] == "attached"
+            ) {
+                effect.projectile = false;
+            }
+
+            // Classic RuneTek defaults from the preserved projectile helpers.
+            // Generic NPC ranged: 40,36,... angle=15, offset=11.
+            // Magic helper example: 43,31,... angle=16, offset=64.
+            if (effect.projectile && *action == AnimationAction::Cast) {
+                effect.projectileStartHeight = 43;
+                effect.projectileEndHeight = 31;
+                effect.projectileSlope = 16;
+                effect.projectileStartDistance = 64;
+            }
+
+            if (const auto value = parseU16(fields[10])) {
+                effect.projectileStartHeight = *value;
+            }
+
+            if (const auto value = parseU16(fields[11])) {
+                effect.projectileEndHeight = *value;
+            }
+
+            if (const auto value = parseU16(fields[12])) {
+                effect.projectileSlope = *value;
+            }
+
+            if (const auto value = parseU16(fields[13])) {
+                effect.projectileStartDistance = *value;
+            }
 
             if (const auto delay = parseU32(fields[6])) {
                 effect.delayMilliseconds = *delay;

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
+#include <string>
 
 #include "AnimationPresentation.h"
 #include "definition/item/ItemDefinition.h"
@@ -40,6 +41,7 @@ private:
         EntityKind kind = EntityKind::Npc;
         std::uint16_t id = 0;
         AnimationAction action = AnimationAction::Idle;
+        std::string variant;
 
         bool operator<(
             const Key& other
@@ -52,7 +54,11 @@ private:
                 return id < other.id;
             }
 
-            return action < other.action;
+            if (action != other.action) {
+                return action < other.action;
+            }
+
+            return variant < other.variant;
         }
     };
 
