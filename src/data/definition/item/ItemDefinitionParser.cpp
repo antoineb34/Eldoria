@@ -28,6 +28,18 @@ std::int16_t readSignedOffset(
     );
 }
 
+std::optional<ItemWearPosition> readWearPosition(
+    eld::binary::ByteReader& reader
+) {
+    const std::uint8_t value = reader.readU8();
+
+    if (value > static_cast<std::uint8_t>(ItemWearPosition::Quiver)) {
+        return std::nullopt;
+    }
+
+    return static_cast<ItemWearPosition>(value);
+}
+
 }
 
 std::optional<ItemDefinition>
@@ -105,6 +117,16 @@ ItemDefinitionParser::parse(
                         reader.readU32();
                     break;
 
+                case 13:
+                    definition.wearPosition =
+                        readWearPosition(reader);
+                    break;
+
+                case 14:
+                    definition.wearPosition2 =
+                        readWearPosition(reader);
+                    break;
+
                 case 16:
                     definition.membersOnly = true;
                     break;
@@ -133,6 +155,11 @@ ItemDefinitionParser::parse(
                 case 26:
                     definition.femaleModelIds[1] =
                         readOptionalId(reader);
+                    break;
+
+                case 27:
+                    definition.wearPosition3 =
+                        readWearPosition(reader);
                     break;
 
                 case 40: {

@@ -23,6 +23,7 @@
 
 #include "CacheExplorerState.h"
 #include "CacheTreeBuilder.h"
+#include "ItemPreviewBuilder.h"
 
 #include "panels/CacheInspectorPanel.h"
 #include "panels/CacheTreePanel.h"
@@ -89,7 +90,11 @@ private:
     // ELFORGE_NEXT_NPC_WITH_PROJECTILE_V1
     void selectNextNpcWithProjectile();
 
+    // ELFORGE_NEXT_WEARABLE_ITEM_V1
+    void selectNextWearableItem();
+
     void renderNpcAnimationControls();
+    void renderItemAnimationControls();
     void renderLocationAnimationControls();
     void renderSpotAnimationControls();
     void renderAnimationControls();
@@ -99,6 +104,20 @@ private:
 
     void startNpcActionPreview(
         const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void startItemActionPreview(
+        const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void appendActionEffects(
+        const eld::animation::presentation::AnimationBinding& binding
+    );
+
+    void showItemInventoryPreview();
+
+    void showItemEquippedPreview(
+        ItemPreviewGender gender
     );
 
     void rebuildNpcActionEffect(
@@ -134,6 +153,7 @@ private:
     enum class AnimationPreviewKind {
         None,
         Npc,
+        Item,
         Location,
         SpotAnimation
     };
@@ -164,6 +184,18 @@ private:
 
     std::optional<eld::animation::presentation::AnimationBinding>
         activeNpcAction_;
+
+    std::optional<eld::animation::presentation::AnimationBinding>
+        activeItemAction_;
+
+    enum class ItemPreviewMode : std::uint8_t {
+        Inventory,
+        MaleEquipped,
+        FemaleEquipped
+    };
+
+    ItemPreviewMode itemPreviewMode_ =
+        ItemPreviewMode::Inventory;
 
     std::optional<eld::graphics::ModelHandle>
         actionTargetHandle_;

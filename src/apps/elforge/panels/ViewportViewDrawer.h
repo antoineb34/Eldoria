@@ -365,6 +365,12 @@ private:
                 break;
 
             case ViewportViewKind::Model:
+                if (renderAnimationControls) {
+                    renderAnimationControls();
+                }
+
+                ImGui::Spacing();
+
                 modelViewPanel_.render(
                     state,
                     true

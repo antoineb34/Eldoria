@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cctype>
 #include "IdentityKitPreviewBuilder.h"
 #include "LocationPreviewBuilder.h"
 #include "NpcPreviewBuilder.h"
@@ -35,6 +36,225 @@ std::string actionBindingLabel(
     }
 
     return label;
+}
+
+std::string lowerAscii(std::string value) {
+    std::transform(
+        value.begin(),
+        value.end(),
+        value.begin(),
+        [](unsigned char c) {
+            return static_cast<char>(std::tolower(c));
+        }
+    );
+
+    return value;
+}
+
+bool itemHasInventoryAction(
+    const eld::definition::ItemDefinition& definition,
+    const std::string& wanted
+) {
+    const std::string wantedLower = lowerAscii(wanted);
+
+    return std::any_of(
+        definition.inventoryActions.begin(),
+        definition.inventoryActions.end(),
+        [&](const std::string& action) {
+            return lowerAscii(action) == wantedLower;
+        }
+    );
+}
+
+bool itemHasWearPosition(
+    const eld::definition::ItemDefinition& definition,
+    eld::definition::ItemWearPosition wanted
+) {
+    return
+        definition.wearPosition == wanted ||
+        definition.wearPosition2 == wanted ||
+        definition.wearPosition3 == wanted;
+}
+
+bool itemLooksLikeShield(
+    const eld::definition::ItemDefinition& definition
+) {
+    if (
+        itemHasWearPosition(
+            definition,
+            eld::definition::ItemWearPosition::LeftHand
+        )
+    ) {
+        return true;
+    }
+
+    const std::string name = lowerAscii(definition.name);
+
+    return
+        name.find("shield") != std::string::npos ||
+        name.find("defender") != std::string::npos;
+}
+
+bool itemLooksLikeWeapon(
+    const eld::definition::ItemDefinition& definition
+) {
+    if (itemLooksLikeShield(definition)) {
+        return false;
+    }
+
+    if (
+        itemHasWearPosition(
+            definition,
+            eld::definition::ItemWearPosition::RightHand
+        )
+    ) {
+        return true;
+    }
+
+    // The stock 317 client item definition does not expose server wearpos
+    // metadata, but weapons use the inventory action "Wield".
+    return itemHasInventoryAction(definition, "Wield");
+}
+
+std::optional<std::uint16_t> genericItemAttackSequence(
+    const eld::definition::ItemDefinition& definition
+) {
+    if (!itemLooksLikeWeapon(definition)) {
+        return std::nullopt;
+    }
+
+    const std::string name = lowerAscii(definition.name);
+
+    // These are the classic human combat families from the same sequence
+    // table used by the cache. They are only a fallback when there is no
+    // authored item binding in animation_bindings.csv.
+    if (name.find("crossbow") != std::string::npos) {
+        return 427; // human_crossbow
+    }
+
+    if (name.find("bow") != std::string::npos) {
+        return 426; // human_bow
+    }
+
+    if (
+        name.find("dagger") != std::string::npos ||
+        name.find("claw") != std::string::npos
+    ) {
+        return 376; // human_ddagger_lunge
+    }
+
+    if (
+        name.find("spear") != std::string::npos ||
+        name.find("halberd") != std::string::npos
+    ) {
+        return 428; // human_spear_spike
+    }
+
+    if (name.find("scythe") != std::string::npos) {
+        return 437; // human_scythe_slash
+    }
+
+    if (
+        name.find("javelin") != std::string::npos ||
+        name.find("dart") != std::string::npos ||
+        name.find("throwing knife") != std::string::npos ||
+        name.find("thrownaxe") != std::string::npos ||
+        name.find("thrown axe") != std::string::npos
+    ) {
+        return 385; // human_throw
+    }
+
+    if (name.find("staff") != std::string::npos) {
+        return 412; // human_staff_spike
+    }
+
+    if (
+        name.find("2h") != std::string::npos ||
+        name.find("two-handed") != std::string::npos ||
+        name.find("two handed") != std::string::npos
+    ) {
+        return 407; // human_dhsword_slash
+    }
+
+    if (
+        name.find("mace") != std::string::npos ||
+        name.find("maul") != std::string::npos ||
+        name.find("hammer") != std::string::npos
+    ) {
+        return 401; // human_blunt_pound
+    }
+
+    if (name.find("axe") != std::string::npos) {
+        return 393; // human_axe_chop
+    }
+
+    if (
+        name.find("sword") != std::string::npos ||
+        name.find("scimitar") != std::string::npos
+    ) {
+        return 390; // human_sword_slash
+    }
+
+    return 390; // human_sword_slash; generic one-handed wield fallback
+}
+
+std::optional<std::uint16_t> genericItemDefendSequence(
+    const eld::definition::ItemDefinition& definition
+) {
+    const std::string name = lowerAscii(definition.name);
+
+    // Match the classic human weapon block families when possible. Shields
+    // and ranged/unknown wearables fall back to the ordinary human block.
+    if (
+        name.find("dagger") != std::string::npos ||
+        name.find("claw") != std::string::npos
+    ) {
+        return 378; // human_ddagger_block
+    }
+
+    if (
+        name.find("spear") != std::string::npos ||
+        name.find("halberd") != std::string::npos
+    ) {
+        return 430; // human_spear_block
+    }
+
+    if (name.find("scythe") != std::string::npos) {
+        return 435; // human_scythe_block
+    }
+
+    if (name.find("staff") != std::string::npos) {
+        return 415; // human_staff_block
+    }
+
+    if (
+        name.find("2h") != std::string::npos ||
+        name.find("two-handed") != std::string::npos ||
+        name.find("two handed") != std::string::npos
+    ) {
+        return 410; // human_dhsword_block
+    }
+
+    if (
+        name.find("mace") != std::string::npos ||
+        name.find("maul") != std::string::npos ||
+        name.find("hammer") != std::string::npos
+    ) {
+        return 403; // human_blunt_block
+    }
+
+    if (name.find("axe") != std::string::npos) {
+        return 397; // human_axe_block
+    }
+
+    if (
+        name.find("sword") != std::string::npos ||
+        name.find("scimitar") != std::string::npos
+    ) {
+        return 387; // human_sword_block
+    }
+
+    return 424; // human_unarmedblock
 }
 
 eld::image::RgbaPixel makeColorPixel(
@@ -549,6 +769,7 @@ void CacheExplorer::rebuildAnimationFrame() {
 void CacheExplorer::clearNpcActionPreview() {
     npcActionEffects_.clear();
     activeNpcAction_.reset();
+    activeItemAction_.reset();
     state_.presentationObjects.clear();
 }
 
@@ -959,19 +1180,9 @@ void CacheExplorer::faceNpcTowardActionTarget() {
         NpcForwardAxisOffset;
 }
 
-void CacheExplorer::startNpcActionPreview(
+void CacheExplorer::appendActionEffects(
     const eld::animation::presentation::AnimationBinding& binding
 ) {
-    clearNpcActionPreview();
-    activeNpcAction_ = binding;
-
-    faceNpcTowardActionTarget();
-
-    if (binding.sequenceId.has_value()) {
-        startAnimationPreview(binding.sequenceId);
-        animationPlayer_.setLooping(false);
-    }
-
     const SpotAnimationPreviewBuilder previewBuilder;
 
     for (
@@ -1021,6 +1232,116 @@ void CacheExplorer::startNpcActionPreview(
         npcActionEffects_.push_back(std::move(effect));
         rebuildNpcActionEffect(npcActionEffects_.size() - 1);
     }
+}
+
+void CacheExplorer::startNpcActionPreview(
+    const eld::animation::presentation::AnimationBinding& binding
+) {
+    clearNpcActionPreview();
+    activeNpcAction_ = binding;
+
+    faceNpcTowardActionTarget();
+
+    if (binding.sequenceId.has_value()) {
+        startAnimationPreview(binding.sequenceId);
+        animationPlayer_.setLooping(false);
+    }
+
+    appendActionEffects(binding);
+}
+
+void CacheExplorer::startItemActionPreview(
+    const eld::animation::presentation::AnimationBinding& binding
+) {
+    if (
+        !state_.activeItem.has_value() ||
+        !animationSource_.has_value()
+    ) {
+        return;
+    }
+
+    clearNpcActionPreview();
+    activeItemAction_ = binding;
+
+    // Player models use the same authored +Z forward axis as the classic NPC
+    // models. Face the mannequin toward the target once when starting a combat
+    // preview so projectile/special effects leave in the direction Bob faces.
+    const float deltaX =
+        actionTargetWorld_.x - state_.modelTransform.position.x;
+    const float deltaZ =
+        actionTargetWorld_.z - state_.modelTransform.position.z;
+
+    if (deltaX * deltaX + deltaZ * deltaZ > 0.0001f) {
+        constexpr float ForwardAxisOffset = 1.57079632679f;
+        state_.modelTransform.rotation.y =
+            std::atan2(-deltaZ, deltaX) - ForwardAxisOffset;
+    }
+
+    if (binding.sequenceId.has_value()) {
+        startAnimationPreview(binding.sequenceId);
+        animationPlayer_.setLooping(false);
+    }
+
+    appendActionEffects(binding);
+}
+
+void CacheExplorer::showItemInventoryPreview() {
+    if (!state_.activeItem.has_value()) {
+        return;
+    }
+
+    const ItemPreviewBuilder builder;
+    std::optional<eld::model::Model> preview =
+        builder.build(*state_.activeItem, modelRepository_);
+
+    if (!preview.has_value()) {
+        return;
+    }
+
+    resetAnimationPreview();
+
+    state_.activeModelHandle =
+        graphicsResources_.resolveModel(preview->mesh);
+    state_.activeModel = std::move(*preview);
+    itemPreviewMode_ = ItemPreviewMode::Inventory;
+}
+
+void CacheExplorer::showItemEquippedPreview(
+    ItemPreviewGender gender
+) {
+    if (!state_.activeItem.has_value()) {
+        return;
+    }
+
+    const ItemPreviewBuilder builder;
+    std::optional<eld::model::Model> preview =
+        builder.buildEquipped(
+            *state_.activeItem,
+            gender,
+            identityKitRepository_,
+            modelRepository_
+        );
+
+    if (!preview.has_value()) {
+        return;
+    }
+
+    resetAnimationPreview();
+
+    state_.activeModelHandle =
+        graphicsResources_.resolveModel(preview->mesh);
+    state_.activeModel = std::move(*preview);
+
+    animationSource_ = state_.activeModel->mesh;
+    animationPreviewKind_ = AnimationPreviewKind::Item;
+
+    itemPreviewMode_ =
+        gender == ItemPreviewGender::Male
+            ? ItemPreviewMode::MaleEquipped
+            : ItemPreviewMode::FemaleEquipped;
+
+    // Classic default player standing animation (human_ready).
+    startAnimationPreview(std::uint16_t{808});
 }
 
 void CacheExplorer::updateNpcActionEffects(
@@ -1154,12 +1475,12 @@ void CacheExplorer::updateNpcActionEffects(
                 (upPoint - origin).normalized();
 
             // Mirror the classic client projectile setup, but do not apply a
-            // human-sized server height blindly to tiny NPC previews. RuneTek
-            // projectile heights are scene-space values; many of the broad
-            // reconstructed bindings only tell us the projectile identity, not
-            // the NPC-specific launch geometry. Cap the requested launch point
-            // to the selected NPC's upper body in graphics space. Exact values
-            // for large NPCs (for example troll rocks) remain unchanged when
+            // human-sized server height blindly to tiny actor previews. RuneTek
+            // projectile heights are scene-space values; some reconstructed
+            // bindings only tell us the projectile identity, not actor-specific
+            // launch geometry. Cap the requested launch point to the current
+            // preview actor's upper body in graphics space. Exact lower values
+            // (for example troll rocks) remain unchanged when
             // they already fall below this cap.
             float sourceHeight =
                 static_cast<float>(
@@ -1798,6 +2119,147 @@ void CacheExplorer::selectNextNpcWithProjectile() {
     }
 }
 
+void CacheExplorer::selectNextWearableItem() {
+    if (!state_.activeItem.has_value()) {
+        return;
+    }
+
+    const std::uint16_t currentId =
+        state_.activeItem->id;
+
+    const ItemPreviewMode previousMode =
+        itemPreviewMode_;
+
+    const ItemPreviewBuilder previewBuilder;
+
+    const auto isWearable =
+        [&previewBuilder](const eld::definition::ItemDefinition& item) {
+            return
+                previewBuilder.hasEquippedModel(
+                    item,
+                    ItemPreviewGender::Male
+                ) ||
+                previewBuilder.hasEquippedModel(
+                    item,
+                    ItemPreviewGender::Female
+                );
+        };
+
+    const auto selectItem =
+        [this, previousMode, &previewBuilder](
+            const eld::definition::ItemDefinition& item
+        ) {
+            state_.selection.type =
+                CacheTreeNodeType::ItemDefinition;
+
+            state_.selection.definitionId =
+                static_cast<int>(item.id);
+
+            state_.selection.name = "obj";
+            state_.selection.label =
+                "Item " + std::to_string(item.id);
+
+            if (
+                !item.name.empty() &&
+                item.name != "null"
+            ) {
+                state_.selection.label +=
+                    " - " + item.name;
+            }
+
+            const std::string ItemKeyMarker =
+                "/definitions/obj/";
+
+            const std::size_t marker =
+                state_.selection.key.find(ItemKeyMarker);
+
+            if (marker != std::string::npos) {
+                const std::size_t idStart =
+                    marker + ItemKeyMarker.size();
+
+                state_.selection.key =
+                    state_.selection.key.substr(0, idStart) +
+                    std::to_string(item.id);
+            }
+            else {
+                state_.selection.key =
+                    "obj/" + std::to_string(item.id);
+            }
+
+            // Apply the new selection immediately so hammering Next wearable
+            // feels instant, and mark the key consumed so update() does not
+            // rebuild the same selection again on the following frame.
+            lastSelectedKey_ =
+                state_.selection.key;
+            handleSelectionChanged();
+
+            if (!state_.activeItem.has_value()) {
+                return;
+            }
+
+            if (previousMode == ItemPreviewMode::MaleEquipped) {
+                if (previewBuilder.hasEquippedModel(
+                    *state_.activeItem,
+                    ItemPreviewGender::Male
+                )) {
+                    showItemEquippedPreview(ItemPreviewGender::Male);
+                    return;
+                }
+            }
+            else if (previousMode == ItemPreviewMode::FemaleEquipped) {
+                if (previewBuilder.hasEquippedModel(
+                    *state_.activeItem,
+                    ItemPreviewGender::Female
+                )) {
+                    showItemEquippedPreview(ItemPreviewGender::Female);
+                    return;
+                }
+            }
+
+            // If the current view was equipped but the next item lacks that
+            // gender's model, stay in an equipped view using the other gender
+            // when possible instead of unexpectedly dropping to raw-item view.
+            if (previousMode != ItemPreviewMode::Inventory) {
+                if (previewBuilder.hasEquippedModel(
+                    *state_.activeItem,
+                    ItemPreviewGender::Male
+                )) {
+                    showItemEquippedPreview(ItemPreviewGender::Male);
+                }
+                else if (previewBuilder.hasEquippedModel(
+                    *state_.activeItem,
+                    ItemPreviewGender::Female
+                )) {
+                    showItemEquippedPreview(ItemPreviewGender::Female);
+                }
+            }
+        };
+
+    const auto& items =
+        itemRepository_.list();
+
+    for (const eld::definition::ItemDefinition& item : items) {
+        if (
+            item.id > currentId &&
+            isWearable(item)
+        ) {
+            selectItem(item);
+            return;
+        }
+    }
+
+    // Wrap so the button can be used continuously while reviewing equipment.
+    for (const eld::definition::ItemDefinition& item : items) {
+        if (
+            item.id <= currentId &&
+            isWearable(item)
+        ) {
+            selectItem(item);
+            return;
+        }
+    }
+}
+
 void CacheExplorer::renderNpcAnimationControls() {
     if (
         !state_.activeNpc.has_value() ||
@@ -1945,6 +2407,266 @@ void CacheExplorer::renderNpcAnimationControls() {
     ImGui::Separator();
 }
 
+void CacheExplorer::renderItemAnimationControls() {
+    if (!state_.activeItem.has_value()) {
+        return;
+    }
+
+    const eld::definition::ItemDefinition& item =
+        *state_.activeItem;
+
+    const ItemPreviewBuilder previewBuilder;
+    const bool hasMale =
+        previewBuilder.hasEquippedModel(
+            item,
+            ItemPreviewGender::Male
+        );
+    const bool hasFemale =
+        previewBuilder.hasEquippedModel(
+            item,
+            ItemPreviewGender::Female
+        );
+
+    if (ImGui::SmallButton("Next wearable")) {
+        selectNextWearableItem();
+        return;
+    }
+
+    ImGui::SameLine();
+    ImGui::Text(
+        "Item %u",
+        static_cast<unsigned int>(item.id)
+    );
+
+    ImGui::TextUnformatted("ITEM PREVIEW");
+
+    if (ImGui::Button("Item")) {
+        showItemInventoryPreview();
+    }
+
+    if (hasMale) {
+        ImGui::SameLine();
+        if (ImGui::Button("Male equip")) {
+            showItemEquippedPreview(ItemPreviewGender::Male);
+        }
+    }
+
+    if (hasFemale) {
+        ImGui::SameLine();
+        if (ImGui::Button("Female equip")) {
+            showItemEquippedPreview(ItemPreviewGender::Female);
+        }
+    }
+
+    if (!hasMale && !hasFemale) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("No worn model");
+    }
+
+    const char* viewLabel = "item";
+
+    if (itemPreviewMode_ == ItemPreviewMode::MaleEquipped) {
+        viewLabel = "male equipped";
+    }
+    else if (itemPreviewMode_ == ItemPreviewMode::FemaleEquipped) {
+        viewLabel = "female equipped";
+    }
+
+    ImGui::Text(
+        "View: %s",
+        viewLabel
+    );
+
+    if (
+        itemPreviewMode_ == ItemPreviewMode::Inventory ||
+        !animationSource_.has_value()
+    ) {
+        ImGui::Separator();
+        return;
+    }
+
+    using Action =
+        eld::animation::presentation::AnimationAction;
+
+    const auto sequenceAvailable =
+        [this](std::uint16_t id) {
+            const eld::definition::SequenceDefinition* sequence =
+                sequenceRepository_.find(id);
+
+            return
+                sequence != nullptr &&
+                !sequence->frames.empty();
+        };
+
+    ImGui::TextUnformatted("MOVEMENT");
+
+    if (
+        sequenceAvailable(808) &&
+        ImGui::Button("Idle")
+    ) {
+        clearNpcActionPreview();
+        startAnimationPreview(std::uint16_t{808});
+        animationPlayer_.setLooping(true);
+    }
+
+    if (sequenceAvailable(819)) {
+        ImGui::SameLine();
+        if (ImGui::Button("Walk")) {
+            clearNpcActionPreview();
+            startAnimationPreview(std::uint16_t{819});
+            animationPlayer_.setLooping(true);
+        }
+    }
+
+    const eld::animation::presentation::ItemAnimationProfile profile =
+        animationPresentationCatalog_.resolveItem(item);
+
+    const auto hasAuthoredAction =
+        [&](Action action) {
+            return std::any_of(
+                profile.bindings.begin(),
+                profile.bindings.end(),
+                [&](const eld::animation::presentation::AnimationBinding& binding) {
+                    return binding.action == action;
+                }
+            );
+        };
+
+    ImGui::Spacing();
+    ImGui::TextUnformatted("ACTIONS");
+
+    bool hasActions = false;
+    bool firstAction = true;
+
+    const auto renderActionButton =
+        [&](
+            const std::string& label,
+            const eld::animation::presentation::AnimationBinding& binding
+        ) {
+            if (!firstAction) {
+                ImGui::SameLine();
+            }
+
+            if (ImGui::Button(label.c_str())) {
+                startItemActionPreview(binding);
+            }
+
+            firstAction = false;
+            hasActions = true;
+        };
+
+    if (!hasAuthoredAction(Action::Attack)) {
+        const std::optional<std::uint16_t> attackSequence =
+            genericItemAttackSequence(item);
+
+        if (
+            attackSequence.has_value() &&
+            sequenceAvailable(*attackSequence)
+        ) {
+            eld::animation::presentation::AnimationBinding attack;
+            attack.action = Action::Attack;
+            attack.sequenceId = *attackSequence;
+            renderActionButton("Attack", attack);
+        }
+    }
+
+    if (!hasAuthoredAction(Action::Defend)) {
+        const std::optional<std::uint16_t> defendSequence =
+            genericItemDefendSequence(item);
+
+        if (
+            defendSequence.has_value() &&
+            sequenceAvailable(*defendSequence)
+        ) {
+            eld::animation::presentation::AnimationBinding defend;
+            defend.action = Action::Defend;
+            defend.sequenceId = *defendSequence;
+            renderActionButton("Defend", defend);
+        }
+    }
+
+    if (
+        !hasAuthoredAction(Action::Death) &&
+        sequenceAvailable(836)
+    ) {
+        eld::animation::presentation::AnimationBinding death;
+        death.action = Action::Death;
+        death.sequenceId = 836; // human_death
+        renderActionButton("Death", death);
+    }
+
+    for (
+        const eld::animation::presentation::AnimationBinding& binding :
+        profile.bindings
+    ) {
+        if (
+            binding.action == Action::Idle ||
+            binding.action == Action::Walk ||
+            binding.action == Action::TurnAround ||
+            binding.action == Action::TurnLeft ||
+            binding.action == Action::TurnRight
+        ) {
+            continue;
+        }
+
+        if (
+            !binding.sequenceId.has_value() &&
+            binding.effects.empty()
+        ) {
+            continue;
+        }
+
+        renderActionButton(
+            actionBindingLabel(binding),
+            binding
+        );
+    }
+
+    if (!hasActions) {
+        ImGui::TextUnformatted(
+            "No combat animation is known for this item."
+        );
+    }
+
+    if (activeItemAction_.has_value()) {
+        const std::string actionLabel =
+            actionBindingLabel(*activeItemAction_);
+
+        ImGui::Text(
+            "Active action: %s",
+            actionLabel.c_str()
+        );
+
+        for (
+            const eld::animation::presentation::AnimationEffectBinding& effect :
+            activeItemAction_->effects
+        ) {
+            if (effect.projectile) {
+                ImGui::BulletText(
+                    "SpotAnim %u projectile  h=%u->%u slope=%u start=%u",
+                    static_cast<unsigned int>(effect.spotAnimationId),
+                    static_cast<unsigned int>(effect.projectileStartHeight),
+                    static_cast<unsigned int>(effect.projectileEndHeight),
+                    static_cast<unsigned int>(effect.projectileSlope),
+                    static_cast<unsigned int>(effect.projectileStartDistance)
+                );
+            }
+            else {
+                ImGui::BulletText(
+                    "SpotAnim %u %s  delay=%ums  duration=%ums",
+                    static_cast<unsigned int>(effect.spotAnimationId),
+                    effect.target ? "target" : "attached",
+                    static_cast<unsigned int>(effect.delayMilliseconds),
+                    static_cast<unsigned int>(effect.durationMilliseconds)
+                );
+            }
+        }
+    }
+
+    renderAnimationPlaybackControls();
+    ImGui::Separator();
+}
+
 void CacheExplorer::renderLocationAnimationControls() {
     if (!state_.activeLocation.has_value()) {
         return;
@@ -2004,6 +2726,11 @@ void CacheExplorer::renderSpotAnimationControls() {
 void CacheExplorer::renderAnimationControls() {
     if (state_.activeNpc.has_value()) {
         renderNpcAnimationControls();
+        return;
+    }
+
+    if (state_.activeItem.has_value()) {
+        renderItemAnimationControls();
         return;
     }
 
@@ -2660,26 +3387,8 @@ void CacheExplorer::handleSelectionChanged() {
                 );
 
             if (definition != nullptr) {
-                state_.activeItem =
-                    *definition;
-
-                const ItemPreviewBuilder previewBuilder;
-
-                std::optional<eld::model::Model> preview =
-                    previewBuilder.build(
-                        *definition,
-                        modelRepository_
-                    );
-
-                if (preview.has_value()) {
-                    state_.activeModelHandle =
-                        graphicsResources_.resolveModel(
-                            preview->mesh
-                        );
-
-                    state_.activeModel =
-                        std::move(*preview);
-                }
+                state_.activeItem = *definition;
+                showItemInventoryPreview();
             }
 
             break;
