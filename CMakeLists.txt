@@ -35,6 +35,7 @@ eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
 eldoria_add_app(interface_probe src/apps/interface_probe)
+eldoria_add_app(map_probe src/apps/map_probe)
 
 eldoria_add_app(animation_probe src/apps/animation_probe)
 if(BUILD_TESTING)

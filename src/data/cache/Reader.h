@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -40,7 +41,8 @@ private:
 
     Sector readSector(
         std::ifstream& dataStream,
-        std::uint32_t sectorId
+        std::uint32_t sectorId,
+        std::size_t requiredDataBytes
     ) const;
 
     eld::binary::CompressionType
