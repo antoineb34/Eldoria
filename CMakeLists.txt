@@ -22,6 +22,7 @@ find_package(JPEG REQUIRED)
 
 # Shared modules.
 eldoria_add_module(data src/data)
+eldoria_add_module(audio src/audio)
 eldoria_add_module(world src/world)
 eldoria_add_module(game src/game)
 eldoria_add_module(network src/net)

@@ -15,7 +15,7 @@
 #include "cache/Cache.h"
 #include "map/MapLoader.h"
 #include "midi/MidiRepository.h"
-#include "audio/MidiPlayer.h"
+#include "midi/MidiPlayer.h"
 
 #include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"

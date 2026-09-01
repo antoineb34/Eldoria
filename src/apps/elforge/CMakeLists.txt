@@ -37,6 +37,7 @@ target_include_directories(elforge PRIVATE
 )
 
 target_link_libraries(elforge PRIVATE
+    Eldoria::Audio
     Eldoria::Data
     Eldoria::Platform
     Eldoria::PlatformImGui

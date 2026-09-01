@@ -15,7 +15,8 @@
 
 #include <imgui.h>
 
-#include "audio/MidiPlayer.h"
+#include "midi/MidiPlayer.h"
+#include "midi/MidiTimeline.h"
 
 #include "math/Mat4.h"
 #include "math/Vec3.h"
@@ -44,229 +45,12 @@ constexpr int InterfaceModelRenderTargetSize = 512;
 constexpr int DebugFontWidth = 8;
 constexpr int DebugFontHeight = 8;
 
-struct MidiPulse {
-    std::uint32_t tick = 0;
-    std::uint8_t note = 0;
-    std::uint8_t velocity = 0;
-};
-
-bool readMidiVlq(
-    const std::vector<std::uint8_t>& bytes,
-    std::size_t& cursor,
-    std::size_t end,
-    std::uint32_t& value
-) {
-    value = 0;
-
-    for (int count = 0; count < 4; ++count) {
-        if (cursor >= end) {
-            return false;
-        }
-
-        const std::uint8_t byte =
-            bytes[cursor++];
-
-        value =
-            (value << 7) |
-            static_cast<std::uint32_t>(
-                byte & 0x7Fu
-            );
-
-        if ((byte & 0x80u) == 0) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 std::pair<std::vector<float>, int> buildMidiActivity(
     const eld::midi::MidiFile& midi,
     std::size_t binCount = 360
 ) {
-    const std::vector<std::uint8_t>& bytes =
-        midi.data.bytes;
-
-    std::vector<MidiPulse> pulses;
-    std::uint32_t maximumTick = 0;
-
-    for (const eld::midi::MidiTrackInfo& track : midi.data.tracks) {
-        std::size_t cursor =
-            track.dataOffset;
-
-        const std::size_t end =
-            std::min(
-                track.dataOffset +
-                    static_cast<std::size_t>(
-                        track.dataSize
-                    ),
-                bytes.size()
-            );
-
-        std::uint32_t tick = 0;
-        std::uint8_t runningStatus = 0;
-
-        while (cursor < end) {
-            std::uint32_t delta = 0;
-
-            if (!readMidiVlq(
-                    bytes,
-                    cursor,
-                    end,
-                    delta
-                )) {
-                break;
-            }
-
-            tick += delta;
-            maximumTick =
-                std::max(
-                    maximumTick,
-                    tick
-                );
-
-            if (cursor >= end) {
-                break;
-            }
-
-            std::uint8_t status =
-                bytes[cursor];
-
-            if ((status & 0x80u) != 0) {
-                ++cursor;
-
-                if (status < 0xF0u) {
-                    runningStatus = status;
-                }
-            }
-            else {
-                if (runningStatus == 0) {
-                    break;
-                }
-
-                status = runningStatus;
-            }
-
-            if (status == 0xFFu) {
-                if (cursor >= end) {
-                    break;
-                }
-
-                ++cursor; // Meta event type.
-
-                std::uint32_t length = 0;
-                if (!readMidiVlq(
-                        bytes,
-                        cursor,
-                        end,
-                        length
-                    ) ||
-                    length > end - cursor
-                ) {
-                    break;
-                }
-
-                cursor += length;
-                continue;
-            }
-
-            if (
-                status == 0xF0u ||
-                status == 0xF7u
-            ) {
-                runningStatus = 0;
-
-                std::uint32_t length = 0;
-                if (!readMidiVlq(
-                        bytes,
-                        cursor,
-                        end,
-                        length
-                    ) ||
-                    length > end - cursor
-                ) {
-                    break;
-                }
-
-                cursor += length;
-                continue;
-            }
-
-            if (status >= 0xF0u) {
-                // System-common events are unusual in SMF files. Skip the
-                // fixed-width forms we can recognize, otherwise end this
-                // track rather than interpreting arbitrary bytes as notes.
-                std::size_t dataLength = 0;
-
-                switch (status) {
-                    case 0xF1u:
-                    case 0xF3u:
-                        dataLength = 1;
-                        break;
-
-                    case 0xF2u:
-                        dataLength = 2;
-                        break;
-
-                    case 0xF6u:
-                    case 0xF8u:
-                    case 0xFAu:
-                    case 0xFBu:
-                    case 0xFCu:
-                    case 0xFEu:
-                        dataLength = 0;
-                        break;
-
-                    default:
-                        cursor = end;
-                        continue;
-                }
-
-                if (dataLength > end - cursor) {
-                    break;
-                }
-
-                cursor += dataLength;
-                continue;
-            }
-
-            const std::uint8_t command =
-                status & 0xF0u;
-
-            const std::size_t dataLength =
-                command == 0xC0u ||
-                command == 0xD0u
-                    ? 1
-                    : 2;
-
-            if (dataLength > end - cursor) {
-                break;
-            }
-
-            const std::uint8_t first =
-                bytes[cursor];
-
-            const std::uint8_t second =
-                dataLength == 2
-                    ? bytes[cursor + 1]
-                    : 0;
-
-            cursor += dataLength;
-
-            if (
-                command == 0x90u &&
-                second != 0
-            ) {
-                pulses.push_back(
-                    MidiPulse{
-                        .tick = tick,
-                        .note = first,
-                        .velocity = second
-                    }
-                );
-            }
-        }
-    }
+    const eld::audio::MidiTimeline timeline =
+        eld::audio::readMidiTimeline(midi);
 
     std::vector<float> activity(
         std::max<std::size_t>(
@@ -277,39 +61,46 @@ std::pair<std::vector<float>, int> buildMidiActivity(
     );
 
     if (
-        pulses.empty() ||
-        maximumTick == 0
+        timeline.noteOnEvents.empty() ||
+        timeline.totalTicks == 0
     ) {
         return {
             std::move(activity),
-            static_cast<int>(maximumTick)
+            static_cast<int>(
+                timeline.totalTicks
+            )
         };
     }
 
-    for (const MidiPulse& pulse : pulses) {
+    for (
+        const eld::audio::MidiNoteEvent& event :
+        timeline.noteOnEvents
+    ) {
         const std::size_t index =
             std::min(
                 static_cast<std::size_t>(
                     (
                         static_cast<std::uint64_t>(
-                            pulse.tick
+                            event.tick
                         ) *
                         activity.size()
                     ) /
                     (
                         static_cast<std::uint64_t>(
-                            maximumTick
+                            timeline.totalTicks
                         ) + 1u
                     )
                 ),
                 activity.size() - 1
             );
 
-        // Velocity carries musical emphasis. A tiny pitch weighting keeps
-        // dense low-note drum passages from flattening every other section.
+        // ElForge visualization policy:
+        // velocity carries musical emphasis, while
+        // a small pitch weighting keeps dense low-note
+        // passages from flattening the graph.
         const float velocity =
             static_cast<float>(
-                pulse.velocity
+                event.velocity
             ) /
             127.0f;
 
@@ -317,7 +108,7 @@ std::pair<std::vector<float>, int> buildMidiActivity(
             0.85f +
             0.15f *
                 static_cast<float>(
-                    pulse.note
+                    event.note
                 ) /
                 127.0f;
 
@@ -343,9 +134,12 @@ std::pair<std::vector<float>, int> buildMidiActivity(
 
     return {
         std::move(activity),
-        static_cast<int>(maximumTick)
+        static_cast<int>(
+            timeline.totalTicks
+        )
     };
 }
+
 
 void renderMidiPlaybackControls(
     CacheExplorerState& state,
