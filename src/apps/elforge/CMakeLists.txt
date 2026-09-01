@@ -8,18 +8,22 @@ add_executable(elforge
     CacheTreeBuilder.cpp
     FontPreviewBuilder.cpp
     IdentityKitPreviewBuilder.cpp
+    ItemPreviewBuilder.cpp
     LocationPreviewBuilder.cpp
     MapPreview.cpp
     MapPreviewBuilder.cpp
     MidiExport.cpp
     NpcPreviewBuilder.cpp
-    ItemPreviewBuilder.cpp
     SpotAnimationPreviewBuilder.cpp
 
     panels/CacheInspectorPanel.cpp
-    panels/MapGpuViewportRenderer.cpp
     panels/CacheTreePanel.cpp
     panels/CacheViewportPanel.cpp
+    panels/InterfaceViewPanel.cpp
+    panels/MapGpuViewportRenderer.cpp
+    panels/ModelViewPanel.cpp
+    panels/TextureViewPanel.cpp
+    panels/ViewportViewDrawer.cpp
 )
 
 target_include_directories(elforge PRIVATE
