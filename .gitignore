@@ -1,6 +1,7 @@
 # Build output
-build/
-cmake-build-*/
+/build/
+/cmake-build-*/
+/build-release/
 
 # Compiled objects
 *.o
@@ -20,8 +21,20 @@ compile_commands.json
 # Cache files (binary game data, do not commit)
 /cache/
 
-# Generated render previews
-region_*.ppm
+# Generated previews, exports, and diagnostics
+/exports/
+/region_*.ppm
+/*.ppm
+/animation_*.txt
+/interface_dump_*.txt
+/interface_folder_dump.txt
+/interface_render_work.txt
+/map_probe_debug_*.txt
+/midi_*.txt
+/midi_probe_*.txt
+/midi_production_validation.txt
+/renderer_dump.txt
+/data_tree.txt
 
 # IDE
 .vscode/
@@ -29,11 +42,9 @@ region_*.ppm
 *.swp
 *.swo
 .DS_Store
-build-release/
-*.ppm
 
 # Local ImGui state
-imgui.ini
+/imgui.ini
 
 # Local patch/install backups
 *.before_*
