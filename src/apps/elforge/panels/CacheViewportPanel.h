@@ -2,10 +2,16 @@
 
 #include <SDL3/SDL.h>
 
+#include <cstdint>
 #include <functional>
+#include <vector>
 
 #include "ViewportViewDrawer.h"
 #include "MapGpuViewportRenderer.h"
+
+namespace eld::audio {
+class MidiPlayer;
+}
 
 namespace eld::graphics {
 class GraphicsResources;
@@ -32,6 +38,7 @@ public:
         CacheExplorerState& state,
         float width,
         float height,
+        eld::audio::MidiPlayer& midiPlayer,
         const std::function<void()>&
             renderAnimationControls
     );
@@ -53,6 +60,12 @@ public:
 private:
     ViewportViewDrawer viewDrawer_;
     MapGpuViewportRenderer mapGpuRenderer_;
+
+    int midiVisualizationId_ = -1;
+    int midiVisualizationTotalTicks_ = 0;
+    std::vector<float> midiActivity_;
+
+    int animationVisualizationId_ = -1;
 };
 
 }

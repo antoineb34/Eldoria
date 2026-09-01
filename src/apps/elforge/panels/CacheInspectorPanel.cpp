@@ -2,6 +2,8 @@
 
 #include <array>
 #include <charconv>
+#include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <utility>
@@ -9,6 +11,8 @@
 #include <imgui.h>
 
 #include "../CacheExplorerState.h"
+#include "../AnimationDump.h"
+#include "../MidiExport.h"
 
 namespace eld::elforge {
 
@@ -80,6 +84,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::Model:
             return "Model";
 
+        case CacheTreeNodeType::Animation:
+            return "Animation";
+
         case CacheTreeNodeType::Texture:
             return "Texture";
 
@@ -134,6 +141,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::InterfaceDefinition:
             return "Interface";
 
+        case CacheTreeNodeType::Midi:
+            return "MIDI";
+
         case CacheTreeNodeType::MapRegion:
             return "Map Region";
 
@@ -171,6 +181,20 @@ const char* mapLocKindName(
     }
 
     return "Unknown";
+}
+
+const char* animationTransformTypeName(
+    std::uint8_t type
+) {
+    switch (type) {
+        case 0: return "Pivot";
+        case 1: return "Translate";
+        case 2: return "Rotate";
+        case 3: return "Scale";
+        case 4: return "Unknown 4";
+        case 5: return "Alpha";
+        default: return "Unknown";
+    }
 }
 
 std::string buildModelDebugText(
@@ -342,6 +366,357 @@ void CacheInspectorPanel::render(
             "Object file: %d",
             state.selection.objectFileId
         );
+    }
+
+    if (state.activeAnimation.has_value()) {
+        const AnimationRelationsInfo& info =
+            *state.activeAnimation;
+
+        const eld::animation::Animation& animation =
+            info.animation;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("ANIMATION");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(animation.id)
+        );
+
+        ImGui::Text(
+            "Frames: %zu",
+            animation.asset.frames.size()
+        );
+
+        ImGui::Text(
+            "Skeleton slots: %zu",
+            animation.asset.skeleton.slots.size()
+        );
+
+        ImGui::Text(
+            "Decoded size: %zu bytes",
+            animation.file.bytes.size()
+        );
+
+        if (!animation.asset.frames.empty()) {
+            std::uint16_t minimumFrame =
+                animation.asset.frames.front().id;
+
+            std::uint16_t maximumFrame =
+                animation.asset.frames.front().id;
+
+            for (
+                const eld::animation::AnimationFrame& frame :
+                animation.asset.frames
+            ) {
+                minimumFrame =
+                    std::min(minimumFrame, frame.id);
+
+                maximumFrame =
+                    std::max(maximumFrame, frame.id);
+            }
+
+            ImGui::Text(
+                "Global frame IDs: %u - %u",
+                static_cast<unsigned int>(minimumFrame),
+                static_cast<unsigned int>(maximumFrame)
+            );
+        }
+
+        ImGui::Text(
+            "Referenced by sequences: %zu",
+            info.sequences.size()
+        );
+
+        ImGui::Text(
+            "Known uses: %zu",
+            info.uses.size()
+        );
+
+        const std::filesystem::path dumpPath =
+            defaultAnimationDumpPath(animation.id);
+
+        if (ImGui::Button("Dump Animation JSON")) {
+            std::string error;
+
+            if (
+                dumpAnimationRelationsInfo(
+                    info,
+                    dumpPath,
+                    error
+                )
+            ) {
+                state.animationDumpStatus =
+                    "Exported: " +
+                    dumpPath.string();
+            }
+            else {
+                state.animationDumpStatus =
+                    "Export failed: " +
+                    error;
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Dump All Animation Relations")) {
+            state.animationDumpStatus =
+                "Building full animation relation dump...";
+            state.animationDumpAllRequested = true;
+        }
+
+        if (!state.animationDumpStatus.empty()) {
+            ImGui::TextWrapped(
+                "%s",
+                state.animationDumpStatus.c_str()
+            );
+        }
+
+        if (ImGui::CollapsingHeader("Referenced by sequences", ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (info.sequences.empty()) {
+                ImGui::TextUnformatted("No sequence references found.");
+            }
+
+            for (
+                const AnimationSequenceReference& sequence :
+                info.sequences
+            ) {
+                const std::size_t matching =
+                    sequence.matchingPrimaryFrames +
+                    sequence.matchingSecondaryFrames;
+
+                ImGui::Text(
+                    "Sequence %u - %zu/%zu frame refs (primary %zu, secondary %zu)",
+                    static_cast<unsigned int>(sequence.sequenceId),
+                    matching,
+                    sequence.totalFrameReferences,
+                    sequence.matchingPrimaryFrames,
+                    sequence.matchingSecondaryFrames
+                );
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Used by", ImGuiTreeNodeFlags_DefaultOpen)) {
+            if (info.uses.empty()) {
+                ImGui::TextUnformatted("No known cache/content users found.");
+            }
+
+            for (const AnimationUse& use : info.uses) {
+                std::string label =
+                    use.source +
+                    " " +
+                    std::to_string(use.sourceId);
+
+                if (!use.sourceName.empty()) {
+                    label += " - " + use.sourceName;
+                }
+
+                label +=
+                    " - " +
+                    use.role +
+                    " - Sequence " +
+                    std::to_string(use.sequenceId);
+
+                if (use.viaSpotAnimationId.has_value()) {
+                    label +=
+                        " via SpotAnim " +
+                        std::to_string(*use.viaSpotAnimationId);
+                }
+
+                label +=
+                    " [" +
+                    use.provenance +
+                    "]";
+
+                ImGui::TextWrapped(
+                    "%s",
+                    label.c_str()
+                );
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Frames")) {
+            for (
+                const eld::animation::AnimationFrame& frame :
+                animation.asset.frames
+            ) {
+                ImGui::Text(
+                    "Frame %u - delay %u - %zu transforms",
+                    static_cast<unsigned int>(frame.id),
+                    static_cast<unsigned int>(frame.delay),
+                    frame.transforms.size()
+                );
+
+                if (
+                    ImGui::TreeNode(
+                        reinterpret_cast<const void*>(
+                            static_cast<std::uintptr_t>(frame.id) + 1u
+                        ),
+                        "Transforms##frame_%u",
+                        static_cast<unsigned int>(frame.id)
+                    )
+                ) {
+                    for (
+                        const eld::animation::FrameTransform& transform :
+                        frame.transforms
+                    ) {
+                        ImGui::Text(
+                            "slot %u flags 0x%02X  x=%d y=%d z=%d",
+                            static_cast<unsigned int>(transform.slot),
+                            static_cast<unsigned int>(transform.flags),
+                            transform.x,
+                            transform.y,
+                            transform.z
+                        );
+                    }
+
+                    ImGui::TreePop();
+                }
+            }
+        }
+
+        if (ImGui::CollapsingHeader("Skeleton")) {
+            for (
+                std::size_t index = 0;
+                index < animation.asset.skeleton.slots.size();
+                ++index
+            ) {
+                const eld::animation::SkeletonSlot& slot =
+                    animation.asset.skeleton.slots[index];
+
+                std::string groups;
+
+                for (std::size_t group = 0; group < slot.groups.size(); ++group) {
+                    if (group != 0) {
+                        groups += ", ";
+                    }
+
+                    groups +=
+                        std::to_string(
+                            static_cast<unsigned int>(slot.groups[group])
+                        );
+                }
+
+                ImGui::TextWrapped(
+                    "Slot %zu - %s (%u) - groups [%s]",
+                    index,
+                    animationTransformTypeName(slot.type),
+                    static_cast<unsigned int>(slot.type),
+                    groups.c_str()
+                );
+            }
+        }
+    }
+
+    if (state.activeMidi.has_value()) {
+        const eld::midi::MidiFile& midi =
+            *state.activeMidi;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("MIDI");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(midi.id)
+        );
+
+        ImGui::Text(
+            "Source container: %s",
+            midi.data.sourceContainer ==
+                    eld::midi::MidiContainer::RiffMidi
+                ? "RIFF/RMID"
+                : "Standard MIDI"
+        );
+
+        ImGui::Text(
+            "Format: %u",
+            static_cast<unsigned int>(
+                midi.data.header.format
+            )
+        );
+
+        ImGui::Text(
+            "Tracks: %u",
+            static_cast<unsigned int>(
+                midi.data.header.trackCount
+            )
+        );
+
+        const std::uint16_t division =
+            midi.data.header.division;
+
+        if ((division & 0x8000u) == 0) {
+            ImGui::Text(
+                "Division: %u ticks / quarter note",
+                static_cast<unsigned int>(division)
+            );
+        }
+        else {
+            ImGui::Text(
+                "Division: SMPTE 0x%04X",
+                static_cast<unsigned int>(division)
+            );
+        }
+
+        ImGui::Text(
+            "Normalized size: %zu bytes",
+            midi.data.bytes.size()
+        );
+
+        ImGui::TextUnformatted(
+            "Normalized stream: Standard MIDI (MThd at byte 0)"
+        );
+
+        const std::filesystem::path exportPath =
+            defaultMidiExportPath(midi);
+
+        if (ImGui::Button("Export normalized .mid")) {
+            std::string error;
+
+            if (exportMidi(midi, exportPath, error)) {
+                state.midiExportStatus =
+                    "Exported: " +
+                    exportPath.string();
+            }
+            else {
+                state.midiExportStatus =
+                    "Export failed: " +
+                    error;
+            }
+        }
+
+        ImGui::TextWrapped(
+            "Export path: %s",
+            exportPath.string().c_str()
+        );
+
+        if (!state.midiExportStatus.empty()) {
+            ImGui::TextWrapped(
+                "%s",
+                state.midiExportStatus.c_str()
+            );
+        }
+
+        if (ImGui::CollapsingHeader("Track chunks")) {
+            for (
+                std::size_t index = 0;
+                index < midi.data.tracks.size();
+                ++index
+            ) {
+                const eld::midi::MidiTrackInfo& track =
+                    midi.data.tracks[index];
+
+                ImGui::Text(
+                    "Track %zu: chunk @ %zu, data @ %zu, %u bytes",
+                    index,
+                    track.chunkOffset,
+                    track.dataOffset,
+                    static_cast<unsigned int>(track.dataSize)
+                );
+            }
+        }
     }
 
     if (state.activeMap.has_value()) {

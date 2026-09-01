@@ -1,0 +1,44 @@
+MIDI FILE 24
+================
+index entry size: 11287
+first sector: 13638
+detected cache compression: gzip
+stored bytes: 11287 signature=gzip
+decoded bytes: 58346 signature=MThd@20
+
+Decoded MIDI inspection
+-----------------------
+MThd offset: 20
+Header valid: yes
+Header length: 6
+Format: 1
+Declared tracks: 13
+Discovered MTrk chunks: 13
+All chunks fit buffer: yes
+Division: 0x01e0
+
+Stored MIDI inspection
+----------------------
+No MThd header found in first 512 bytes.
+
+Decoded hex preview
+-------------------
+000000  52 49 46 46 e2 e3 00 00 52 4d 49 44 64 61 74 61 
+000010  d6 e3 00 00 4d 54 68 64 00 00 00 06 00 01 00 0d 
+000020  01 e0 4d 54 72 6b 00 00 00 4a 00 ff 03 16 57 72 
+000030  69 74 74 65 6e 20 42 79 3a 20 49 61 6e 20 54 61 
+000040  79 6c 6f 72 00 ff 02 17 a9 20 32 30 30 33 2d 30 
+000050  34 20 62 79 20 4a 61 67 65 78 20 4c 74 64 2e 00 
+
+Decoded ASCII preview
+---------------------
+RIFF....RMIDdata....MThd..........MTrk...J....Written By: Ian Taylor..... 2003-04 by Jagex Ltd..
+
+Stored hex preview
+------------------
+000000  1f 8b 08 00 00 00 00 00 00 00 ed 9c 5b 50 54 d9 
+000010  9a e7 77 72 37 15 32 f1 4a a9 28 28 a2 a0 5c 4c 
+000020  72 e7 85 4c 61 63 72 49 c4 94 8b 28 a2 88 22 16 
+000030  8a 08 52 78 29 ad f2 94 27 41 ab ba 4e f5 74 20 
+000040  94 96 58 d3 11 13 f3 36 2f 13 3d da 7d ba bb fa 
+000050  61 6e dd 33 13 33 f3 3c cf 73 89 20 e6 6d ba 5f 

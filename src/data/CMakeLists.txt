@@ -27,6 +27,9 @@ add_library(eldoria_data STATIC
     map/decoder/TerrainDecoder.cpp
     map/decoder/ObjectSpawnDecoder.cpp
 
+    midi/MidiFileParser.cpp
+    midi/MidiRepository.cpp
+
     model/ModelDecoder.cpp
     model/ModelFileParser.cpp
     model/ModelRepository.cpp
