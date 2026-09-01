@@ -38,6 +38,7 @@ eldoria_add_app(interface_probe src/apps/interface_probe)
 eldoria_add_app(map_probe src/apps/map_probe)
 
 eldoria_add_app(animation_probe src/apps/animation_probe)
+eldoria_add_app(gpu_probe src/apps/gpu_probe)
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()

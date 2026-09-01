@@ -82,6 +82,13 @@ int AppShell::run() {
             );
         }
 
+        // Map previews use the real OpenGL backend on a hidden tool surface.
+        // Prepare before the SDL renderer starts this frame so the two GL
+        // contexts never fight over pending renderer commands.
+        explorer_.prepareViewport(
+            renderer
+        );
+
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
@@ -118,6 +125,8 @@ int AppShell::run() {
 
         SDL_Delay(16);
     }
+
+    explorer_.shutdown();
 
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();

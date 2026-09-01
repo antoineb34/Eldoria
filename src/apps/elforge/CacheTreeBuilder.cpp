@@ -11,6 +11,7 @@
 #include "definition/parameter/ParameterRepository.h"
 #include "definition/message/MessageRepository.h"
 #include "definition/message_animation/MessageAnimationRepository.h"
+#include "map/MapLoader.h"
 #include "interface/InterfaceRepository.h"
 
 #include <array>
@@ -2047,6 +2048,88 @@ std::optional<CacheTreeNode> makeArchiveNode(
     return node;
 }
 
+CacheTreeNode makeMapRegionNode(
+    const eld::map::MapIndexEntry& entry
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::MapRegion;
+
+    node.key =
+        "index/4/region/" +
+        std::to_string(entry.regionId);
+
+    node.label =
+        "Region " +
+        std::to_string(entry.regionId) +
+        " (" +
+        std::to_string(entry.regionX()) +
+        "," +
+        std::to_string(entry.regionY()) +
+        ")";
+
+    node.indexId =
+        static_cast<int>(
+            eld::cache::IndexId::Maps
+        );
+
+    node.regionId =
+        static_cast<int>(entry.regionId);
+
+    node.terrainFileId =
+        static_cast<int>(entry.terrainFileId);
+
+    node.objectFileId =
+        static_cast<int>(entry.objectFileId);
+
+    CacheTreeNode terrain;
+    terrain.type = CacheTreeNodeType::File;
+    terrain.key =
+        node.key + "/terrain/" +
+        std::to_string(entry.terrainFileId);
+    terrain.label =
+        "Terrain file " +
+        std::to_string(entry.terrainFileId);
+    terrain.indexId =
+        static_cast<int>(
+            eld::cache::IndexId::Maps
+        );
+    terrain.fileId =
+        static_cast<int>(entry.terrainFileId);
+    terrain.regionId = node.regionId;
+    terrain.terrainFileId = node.terrainFileId;
+    terrain.objectFileId = node.objectFileId;
+
+    CacheTreeNode objects;
+    objects.type = CacheTreeNodeType::File;
+    objects.key =
+        node.key + "/objects/" +
+        std::to_string(entry.objectFileId);
+    objects.label =
+        "Object file " +
+        std::to_string(entry.objectFileId);
+    objects.indexId =
+        static_cast<int>(
+            eld::cache::IndexId::Maps
+        );
+    objects.fileId =
+        static_cast<int>(entry.objectFileId);
+    objects.regionId = node.regionId;
+    objects.terrainFileId = node.terrainFileId;
+    objects.objectFileId = node.objectFileId;
+
+    node.children.push_back(
+        std::move(terrain)
+    );
+
+    node.children.push_back(
+        std::move(objects)
+    );
+
+    return node;
+}
+
 void addIndex(
     CacheTreeNode& root,
     const eld::cache::Cache& cache,
@@ -2056,6 +2139,28 @@ void addIndex(
         makeIndexNode(
             index.id
         );
+
+    if (
+        index.id ==
+        eld::cache::IndexId::Maps
+    ) {
+        const eld::map::MapLoader loader(cache);
+
+        for (
+            const eld::map::MapIndexEntry& entry :
+            loader.entries()
+        ) {
+            indexNode.children.push_back(
+                makeMapRegionNode(entry)
+            );
+        }
+
+        root.children.push_back(
+            std::move(indexNode)
+        );
+
+        return;
+    }
 
     const eld::cache::Store store =
         cache.open(

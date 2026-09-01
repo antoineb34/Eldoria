@@ -8,6 +8,7 @@ The render module turns prepared graphics resources into pixels.
 - Scene objects and transforms
 - Render submission
 - Backend-independent rendering interfaces
+- Hardware OpenGL rendering
 - Software rendering
 - Framebuffer, depth testing, texture sampling, and rasterization
 
@@ -34,3 +35,16 @@ data repositories
     -> render pipeline
     -> rendering backend
     -> pixels
+
+## Backends
+
+`OpenGLRenderBackend` is the primary hardware path. It consumes stable
+`ModelHandle` / `TextureHandle` values, uploads normalized graphics resources
+once, and keeps the resulting GPU buffers and textures resident for later
+frames. The current baseline is OpenGL 3.3 core.
+
+`SoftwareRenderBackend` remains a CPU reference/fallback implementation. It
+uses the same `IRenderBackend` contract and normalized graphics resources.
+
+Backend code must stay source-agnostic: RuneScape map/model interpretation
+continues to belong to `graphics` and `data`, not to the GPU backend.

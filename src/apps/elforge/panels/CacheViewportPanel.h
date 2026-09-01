@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "ViewportViewDrawer.h"
+#include "MapGpuViewportRenderer.h"
 
 namespace eld::graphics {
 class GraphicsResources;
@@ -24,6 +25,8 @@ struct CacheExplorerState;
 
 class CacheViewportPanel {
 public:
+    void shutdown();
+
     // ELFORGE_NPC_ANIMATION_DRAWER_V1
     void render(
         CacheExplorerState& state,
@@ -31,6 +34,12 @@ public:
         float height,
         const std::function<void()>&
             renderAnimationControls
+    );
+
+    void prepareViewport(
+        SDL_Renderer* renderer,
+        CacheExplorerState& state,
+        eld::graphics::GraphicsResources& resources
     );
 
     void renderViewport(
@@ -43,6 +52,7 @@ public:
 
 private:
     ViewportViewDrawer viewDrawer_;
+    MapGpuViewportRenderer mapGpuRenderer_;
 };
 
 }

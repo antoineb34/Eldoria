@@ -131,6 +131,15 @@ void CacheTreePanel::renderNode(
         state.selection.definitionId =
             node.definitionId;
 
+        state.selection.regionId =
+            node.regionId;
+
+        state.selection.terrainFileId =
+            node.terrainFileId;
+
+        state.selection.objectFileId =
+            node.objectFileId;
+
         if (hasChildren) {
             expanded =
                 !expanded;

@@ -1,5 +1,6 @@
 add_library(eldoria_platform STATIC
     sdl/SdlContext.cpp
+    sdl/SdlOpenGLContext.cpp
 )
 
 add_library(Eldoria::Platform ALIAS eldoria_platform)

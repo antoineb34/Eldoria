@@ -134,6 +134,9 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::InterfaceDefinition:
             return "Interface";
 
+        case CacheTreeNodeType::MapRegion:
+            return "Map Region";
+
         case CacheTreeNodeType::Font:
             return "Font";
 
@@ -142,6 +145,29 @@ const char* getNodeTypeName(
 
         case CacheTreeNodeType::SpriteFrame:
             return "Sprite Frame";
+    }
+
+    return "Unknown";
+}
+
+const char* mapLocKindName(
+    eld::graphics::map::SceneLocKind kind
+) {
+    switch (kind) {
+        case eld::graphics::map::SceneLocKind::Wall:
+            return "Wall";
+
+        case eld::graphics::map::SceneLocKind::WallDecoration:
+            return "Wall Decoration";
+
+        case eld::graphics::map::SceneLocKind::GroundDecoration:
+            return "Ground Decoration";
+
+        case eld::graphics::map::SceneLocKind::Location:
+            return "Location";
+
+        case eld::graphics::map::SceneLocKind::Roof:
+            return "Roof";
     }
 
     return "Unknown";
@@ -300,6 +326,342 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (state.selection.regionId >= 0) {
+        ImGui::Text(
+            "Region: %d",
+            state.selection.regionId
+        );
+
+        ImGui::Text(
+            "Terrain file: %d",
+            state.selection.terrainFileId
+        );
+
+        ImGui::Text(
+            "Object file: %d",
+            state.selection.objectFileId
+        );
+    }
+
+    if (state.activeMap.has_value()) {
+        const MapPreview& map =
+            *state.activeMap;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("MAP REGION");
+
+        ImGui::Text(
+            "ID: %u",
+            static_cast<unsigned int>(
+                map.indexEntry.regionId
+            )
+        );
+
+        ImGui::Text(
+            "Region coordinates: %d, %d",
+            map.indexEntry.regionX(),
+            map.indexEntry.regionY()
+        );
+
+        ImGui::Text(
+            "World base: %d, %d",
+            map.centerRegion.worldBaseX(),
+            map.centerRegion.worldBaseY()
+        );
+
+        ImGui::Text(
+            "Preload: %s",
+            map.indexEntry.shouldPreload
+                ? "yes"
+                : "no"
+        );
+
+        ImGui::Text(
+            "Decoded object spawns: %zu",
+            map.centerRegion.objects.size()
+        );
+
+        ImGui::Text(
+            "Neighborhood terrain: %zu / 9",
+            map.stats.neighborhoodRegions
+        );
+
+        ImGui::Text(
+            "Build time: %.2f ms",
+            map.stats.buildMilliseconds
+        );
+
+        ImGui::Text(
+            "Terrain triangles: %zu (%zu buckets)",
+            map.stats.terrainTriangles,
+            map.stats.terrainDrawBuckets
+        );
+
+        ImGui::Text(
+            "Object triangles: %zu (%zu static buckets)",
+            map.stats.locTriangles,
+            map.stats.locDrawBuckets
+        );
+
+        ImGui::Text(
+            "Loc models: %zu instances, %zu parts, %zu variants",
+            map.stats.locModelInstances,
+            map.stats.locModelParts,
+            map.stats.locModelVariants
+        );
+
+        ImGui::Text(
+            "Camera-dependent parts: %zu",
+            map.stats.cameraDependentParts
+        );
+
+        if (!map.missingNeighborRegionIds.empty()) {
+            ImGui::TextUnformatted(
+                "Missing neighboring regions:"
+            );
+
+            for (
+                const std::uint16_t regionId :
+                map.missingNeighborRegionIds
+            ) {
+                ImGui::BulletText(
+                    "%u",
+                    static_cast<unsigned int>(regionId)
+                );
+            }
+        }
+
+        if (state.selectedMapTile.has_value()) {
+            const MapTileSelection& selection =
+                *state.selectedMapTile;
+
+            if (
+                selection.plane < eld::map::PlaneCount &&
+                selection.x >= 0 &&
+                selection.x < static_cast<int>(eld::map::RegionSize) &&
+                selection.y >= 0 &&
+                selection.y < static_cast<int>(eld::map::RegionSize)
+            ) {
+                const eld::map::MapTile& tile =
+                    map.centerRegion.tile(
+                        selection.plane,
+                        static_cast<std::size_t>(selection.x),
+                        static_cast<std::size_t>(selection.y)
+                    );
+
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::TextUnformatted("SELECTED MAP TILE");
+
+                ImGui::Text(
+                    "Plane: %zu",
+                    selection.plane
+                );
+
+                ImGui::Text(
+                    "Local tile: %d, %d",
+                    selection.x,
+                    selection.y
+                );
+
+                ImGui::Text(
+                    "World tile: %d, %d",
+                    map.centerRegion.worldBaseX() + selection.x,
+                    map.centerRegion.worldBaseY() + selection.y
+                );
+
+                ImGui::Text(
+                    "Height: %d",
+                    tile.height
+                );
+
+                if (tile.underlayId == 0) {
+                    ImGui::TextUnformatted("Underlay raw ID: 0");
+                }
+                else {
+                    ImGui::Text(
+                        "Underlay raw ID: %u (floor definition %d)",
+                        static_cast<unsigned int>(tile.underlayId),
+                        static_cast<int>(tile.underlayId) - 1
+                    );
+                }
+
+                if (tile.overlayId == 0) {
+                    ImGui::TextUnformatted("Overlay raw ID: 0");
+                }
+                else {
+                    ImGui::Text(
+                        "Overlay raw ID: %u (floor definition %d)",
+                        static_cast<unsigned int>(tile.overlayId),
+                        static_cast<int>(tile.overlayId) - 1
+                    );
+                }
+
+                ImGui::Text(
+                    "Overlay shape / rotation: %u / %u",
+                    static_cast<unsigned int>(tile.overlayShape),
+                    static_cast<unsigned int>(tile.overlayRotation)
+                );
+
+                ImGui::Text(
+                    "Settings: 0x%02X",
+                    static_cast<unsigned int>(tile.settings)
+                );
+
+                if (tile.settings == 0) {
+                    ImGui::TextUnformatted("Flags: none");
+                }
+                else {
+                    ImGui::TextUnformatted("Flags:");
+
+                    if (tile.hasFlag(eld::map::TileFlag::Solid)) {
+                        ImGui::BulletText("0x01 solid / floor clipped");
+                    }
+
+                    if (tile.hasFlag(eld::map::TileFlag::Bridge)) {
+                        ImGui::BulletText("0x02 bridge");
+                    }
+
+                    if (tile.hasFlag(eld::map::TileFlag::Roof)) {
+                        ImGui::BulletText("0x04 roof marker");
+                    }
+
+                    if (tile.hasFlag(eld::map::TileFlag::ForceLevelZero)) {
+                        ImGui::BulletText("0x08 force draw level 0");
+                    }
+
+                    if (tile.hasFlag(eld::map::TileFlag::LowMemoryHidden)) {
+                        ImGui::BulletText("0x10 low-memory hidden");
+                    }
+
+                    if (tile.hasFlag(eld::map::TileFlag::Unknown20)) {
+                        ImGui::BulletText("0x20 unknown / preserved");
+                    }
+                }
+            }
+        }
+
+        if (
+            state.selectedMapLocIndex.has_value() &&
+            *state.selectedMapLocIndex < map.sceneLocs.size()
+        ) {
+            const eld::graphics::map::SceneLocPlacement& loc =
+                map.sceneLocs[*state.selectedMapLocIndex];
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextUnformatted("SELECTED MAP OBJECT");
+
+            ImGui::Text(
+                "Loc ID: %u",
+                static_cast<unsigned int>(loc.id)
+            );
+
+            ImGui::Text(
+                "Kind: %s",
+                mapLocKindName(loc.kind)
+            );
+
+            ImGui::Text(
+                "Shape / model type / rotation: %u / %u / %u",
+                static_cast<unsigned int>(loc.shape),
+                static_cast<unsigned int>(loc.modelType),
+                static_cast<unsigned int>(loc.rotation)
+            );
+
+            ImGui::Text(
+                "Source plane -> scene plane: %u -> %u",
+                static_cast<unsigned int>(loc.sourcePlane),
+                static_cast<unsigned int>(loc.scenePlane)
+            );
+
+            ImGui::Text(
+                "Bridge attachment: %s",
+                loc.bridgeAttachment ? "yes" : "no"
+            );
+
+            ImGui::Text(
+                "Local tile: %d, %d",
+                loc.tileX,
+                loc.tileZ
+            );
+
+            ImGui::Text(
+                "World tile: %d, %d",
+                map.centerRegion.worldBaseX() + loc.tileX,
+                map.centerRegion.worldBaseY() + loc.tileZ
+            );
+
+            ImGui::Text(
+                "Footprint: %d x %d",
+                loc.footprintWidth,
+                loc.footprintLength
+            );
+
+            ImGui::Text(
+                "Scene XYZ: %d, %d, %d",
+                loc.sceneX,
+                loc.sceneY,
+                loc.sceneZ
+            );
+
+            ImGui::Text(
+                "Primary model rotation: %u",
+                static_cast<unsigned int>(
+                    loc.primaryModelRotation
+                )
+            );
+
+            if (loc.hasSecondaryModel) {
+                ImGui::Text(
+                    "Secondary model rotation: %u",
+                    static_cast<unsigned int>(
+                        loc.secondaryModelRotation
+                    )
+                );
+            }
+
+            ImGui::Text(
+                "Extra scene yaw: %d",
+                loc.sceneYaw
+            );
+
+            ImGui::Text(
+                "Corner heights: %d, %d, %d, %d",
+                loc.cornerHeights[0],
+                loc.cornerHeights[1],
+                loc.cornerHeights[2],
+                loc.cornerHeights[3]
+            );
+
+            if (loc.kind == eld::graphics::map::SceneLocKind::Wall) {
+                ImGui::Text(
+                    "Wall types: %d, %d",
+                    loc.wallTypeA,
+                    loc.wallTypeB
+                );
+            }
+
+            if (
+                loc.kind ==
+                    eld::graphics::map::SceneLocKind::WallDecoration
+            ) {
+                ImGui::Text(
+                    "Decoration type / angle: %d / %d",
+                    loc.decorationType,
+                    loc.decorationAngle
+                );
+
+                ImGui::Text(
+                    "Decoration offset X/Z: %d, %d",
+                    loc.decorationOffsetX,
+                    loc.decorationOffsetZ
+                );
+            }
+        }
+    }
 
     if (state.activeInterface.has_value()) {
         const auto& widget =

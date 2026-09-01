@@ -4668,6 +4668,398 @@ void renderInterfacePreview(
     );
 }
 
+void renderMapToolbar(
+    CacheExplorerState& state
+) {
+    ImGui::TextUnformatted("PLANE");
+    ImGui::SameLine();
+
+    for (
+        std::size_t plane = 0;
+        plane < eld::map::PlaneCount;
+        ++plane
+    ) {
+        if (plane != 0) {
+            ImGui::SameLine();
+        }
+
+        const bool selected =
+            state.mapPlane == plane;
+
+        ImGui::PushID(
+            static_cast<int>(plane)
+        );
+
+        if (
+            ImGui::Selectable(
+                std::to_string(plane).c_str(),
+                selected,
+                0,
+                ImVec2(32.0f, 0.0f)
+            )
+        ) {
+            state.mapPlane = plane;
+            state.selectedMapTile.reset();
+            state.selectedMapLocIndex.reset();
+            state.mapViewportDirty = true;
+        }
+
+        ImGui::PopID();
+    }
+
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+
+    if (
+        ImGui::Checkbox(
+            "Terrain",
+            &state.mapShowTerrain
+        )
+    ) {
+        if (!state.mapShowTerrain) {
+            state.selectedMapTile.reset();
+        }
+
+        state.mapViewportDirty = true;
+    }
+
+    ImGui::SameLine();
+
+    if (
+        ImGui::Checkbox(
+            "Objects",
+            &state.mapShowLocs
+        )
+    ) {
+        if (!state.mapShowLocs) {
+            state.selectedMapLocIndex.reset();
+        }
+
+        state.mapViewportDirty = true;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Reset view")) {
+        resetMapView(
+            state.mapPlane,
+            state.mapYaw,
+            state.mapPitch,
+            state.mapDistance
+        );
+
+        state.selectedMapTile.reset();
+        state.selectedMapLocIndex.reset();
+        state.mapViewportDirty = true;
+    }
+}
+
+struct MapProjectedPoint {
+    ImVec2 screen{};
+    float depth = 0.0f;
+    bool valid = false;
+};
+
+struct MapProjectionContext {
+    eld::math::Mat4 model;
+    eld::math::Mat4 view;
+    eld::math::Mat4 projection;
+    eld::render::Camera camera;
+    float viewportX = 0.0f;
+    float viewportY = 0.0f;
+    bool valid = false;
+};
+
+MapProjectionContext makeMapProjectionContext(
+    const CacheExplorerState& state
+) {
+    if (!state.activeMap.has_value()) {
+        return {};
+    }
+
+    const MapPreview& preview =
+        *state.activeMap;
+
+    const std::size_t terrainIndex =
+        preview.terrainObjectIndices[0];
+
+    if (terrainIndex >= preview.scene.objects.size()) {
+        return {};
+    }
+
+    return {
+        eld::render::buildModelMatrix(
+            preview.scene.objects[terrainIndex].transform
+        ),
+        eld::render::buildViewMatrix(
+            preview.scene.camera
+        ),
+        eld::render::buildProjectionMatrix(
+            preview.scene.camera
+        ),
+        preview.scene.camera,
+        static_cast<float>(state.viewportX),
+        static_cast<float>(state.viewportY),
+        true
+    };
+}
+
+MapProjectedPoint projectMapLocalPoint(
+    const MapProjectionContext& context,
+    const eld::math::Vec3& localPoint
+) {
+    if (!context.valid) {
+        return {};
+    }
+
+    const eld::math::Vec3 world =
+        context.model.transformPoint(
+            localPoint
+        );
+
+    const eld::render::ScreenPoint point =
+        eld::render::projectPoint(
+            world,
+            context.view,
+            context.projection,
+            context.camera
+        );
+
+    return {
+        ImVec2(
+            context.viewportX + point.x,
+            context.viewportY + point.y
+        ),
+        point.depth,
+        point.depth >= context.camera.nearPlane &&
+            point.depth <= context.camera.farPlane
+    };
+}
+
+float mapScreenDistanceSquared(
+    const ImVec2& a,
+    const ImVec2& b
+) {
+    const float dx = a.x - b.x;
+    const float dy = a.y - b.y;
+    return dx * dx + dy * dy;
+}
+
+void pickMapElement(
+    CacheExplorerState& state,
+    const ImVec2& mouse
+) {
+    if (!state.activeMap.has_value()) {
+        return;
+    }
+
+    MapPreview& preview =
+        *state.activeMap;
+
+    updateMapPreviewScene(
+        preview,
+        state.mapPlane,
+        state.mapShowTerrain,
+        state.mapShowLocs,
+        state.mapYaw,
+        state.mapPitch,
+        state.mapDistance,
+        static_cast<std::uint32_t>(
+            std::max(state.viewportWidth, 1)
+        ),
+        static_cast<std::uint32_t>(
+            std::max(state.viewportHeight, 1)
+        )
+    );
+
+    const MapProjectionContext projection =
+        makeMapProjectionContext(
+            state
+        );
+
+    if (!projection.valid) {
+        return;
+    }
+
+    constexpr float LocRadius = 18.0f;
+    constexpr float TileRadius = 24.0f;
+
+    if (state.mapShowLocs) {
+        std::optional<std::size_t> bestLoc;
+        float bestLocDistance =
+            LocRadius * LocRadius;
+
+        for (
+            std::size_t index = 0;
+            index < preview.sceneLocs.size();
+            ++index
+        ) {
+            const eld::graphics::map::SceneLocPlacement& loc =
+                preview.sceneLocs[index];
+
+            if (loc.scenePlane != state.mapPlane) {
+                continue;
+            }
+
+            const MapProjectedPoint projected =
+                projectMapLocalPoint(
+                    projection,
+                    {
+                        static_cast<float>(loc.sceneX),
+                        -static_cast<float>(loc.sceneY),
+                        static_cast<float>(loc.sceneZ)
+                    }
+                );
+
+            if (!projected.valid) {
+                continue;
+            }
+
+            const float distance =
+                mapScreenDistanceSquared(
+                    mouse,
+                    projected.screen
+                );
+
+            if (distance < bestLocDistance) {
+                bestLocDistance = distance;
+                bestLoc = index;
+            }
+        }
+
+        if (bestLoc.has_value()) {
+            state.selectedMapLocIndex =
+                *bestLoc;
+            state.selectedMapTile.reset();
+            return;
+        }
+    }
+
+    if (!state.mapShowTerrain) {
+        state.selectedMapLocIndex.reset();
+        state.selectedMapTile.reset();
+        return;
+    }
+
+    std::optional<MapTileSelection> bestTile;
+    float bestTileDistance =
+        TileRadius * TileRadius;
+
+    for (
+        int x = 0;
+        x < static_cast<int>(eld::map::RegionSize);
+        ++x
+    ) {
+        for (
+            int y = 0;
+            y < static_cast<int>(eld::map::RegionSize);
+            ++y
+        ) {
+            const eld::map::MapTile& tile =
+                preview.centerRegion.tile(
+                    state.mapPlane,
+                    static_cast<std::size_t>(x),
+                    static_cast<std::size_t>(y)
+                );
+
+            const MapProjectedPoint projected =
+                projectMapLocalPoint(
+                    projection,
+                    {
+                        static_cast<float>(x * 128 + 64),
+                        -static_cast<float>(tile.height),
+                        static_cast<float>(y * 128 + 64)
+                    }
+                );
+
+            if (!projected.valid) {
+                continue;
+            }
+
+            const float distance =
+                mapScreenDistanceSquared(
+                    mouse,
+                    projected.screen
+                );
+
+            if (distance < bestTileDistance) {
+                bestTileDistance = distance;
+                bestTile = MapTileSelection{
+                    state.mapPlane,
+                    x,
+                    y
+                };
+            }
+        }
+    }
+
+    state.selectedMapLocIndex.reset();
+    state.selectedMapTile = bestTile;
+}
+
+void renderMapInteraction(
+    CacheExplorerState& state,
+    const ImVec2& viewportSize
+) {
+    ImGui::InvisibleButton(
+        "##MapViewportCanvas",
+        viewportSize
+    );
+
+    if (!ImGui::IsItemHovered()) {
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (io.MouseWheel != 0.0f) {
+        state.mapDistance =
+            std::clamp(
+                state.mapDistance -
+                    io.MouseWheel * 4.0f,
+                24.0f,
+                180.0f
+            );
+
+        state.mapViewportDirty = true;
+    }
+
+    if (
+        ImGui::IsMouseClicked(
+            ImGuiMouseButton_Left
+        )
+    ) {
+        pickMapElement(
+            state,
+            io.MousePos
+        );
+    }
+
+    if (
+        ImGui::IsMouseDown(
+            ImGuiMouseButton_Right
+        )
+    ) {
+        state.mapYaw +=
+            io.MouseDelta.x * 0.010f;
+
+        state.mapPitch =
+            std::clamp(
+                state.mapPitch -
+                    io.MouseDelta.y * 0.010f,
+                0.12f,
+                1.35f
+            );
+
+        state.mapViewportDirty = true;
+    }
+}
+
+}
+
+void CacheViewportPanel::shutdown() {
+    mapGpuRenderer_.shutdown();
 }
 
 // ELFORGE_NPC_ANIMATION_DRAWER_V1
@@ -4730,8 +5122,26 @@ void CacheViewportPanel::render(
             ImGuiWindowFlags_NoScrollWithMouse
     );
 
+    if (state.activeMap.has_value()) {
+        renderMapToolbar(
+            state
+        );
+
+        ImGui::TextDisabled(
+            "RMB orbit | wheel zoom | select plane to inspect scene levels"
+        );
+
+        if (!state.mapPreviewError.empty()) {
+            ImGui::TextWrapped(
+                "Map renderer: %s",
+                state.mapPreviewError.c_str()
+            );
+        }
+
+        ImGui::Separator();
+    }
     // ELFORGE_DIRECT_VIEWPORT_SDL_OVERLAY_V1
-    if (state.activeModelHandle.has_value()) {
+    else if (state.activeModelHandle.has_value()) {
         renderViewportToolbar(
             state,
             {}
@@ -4776,15 +5186,23 @@ void CacheViewportPanel::render(
             1
         );
 
-    renderEditorOverlay(
-        state,
-        viewportPosition,
-        viewportSize
-    );
+    if (state.activeMap.has_value()) {
+        renderMapInteraction(
+            state,
+            viewportSize
+        );
+    }
+    else {
+        renderEditorOverlay(
+            state,
+            viewportPosition,
+            viewportSize
+        );
 
-    ImGui::Dummy(
-        viewportSize
-    );
+        ImGui::Dummy(
+            viewportSize
+        );
+    }
 
     ImGui::EndChild();
 
@@ -4802,6 +5220,30 @@ void CacheViewportPanel::render(
     ImGui::EndChild();
 }
 
+void CacheViewportPanel::prepareViewport(
+    SDL_Renderer* renderer,
+    CacheExplorerState& state,
+    eld::graphics::GraphicsResources& resources
+) {
+    if (!state.activeMap.has_value()) {
+        return;
+    }
+
+    if (
+        !mapGpuRenderer_.prepare(
+            renderer,
+            state,
+            resources
+        )
+    ) {
+        state.mapPreviewError =
+            mapGpuRenderer_.error();
+    }
+    else {
+        state.mapPreviewError.clear();
+    }
+}
+
 void CacheViewportPanel::renderViewport(
     SDL_Renderer* renderer,
     CacheExplorerState& state,
@@ -4809,6 +5251,15 @@ void CacheViewportPanel::renderViewport(
     const eld::interface::InterfaceRepository& interfaces,
     eld::sprite::SpriteRepository& interfaceSprites
 ) {
+    if (state.activeMap.has_value()) {
+        mapGpuRenderer_.draw(
+            renderer,
+            state
+        );
+
+        return;
+    }
+
     if (state.activeInterface.has_value()) {
         const InterfacePreviewBuilder previewBuilder;
 

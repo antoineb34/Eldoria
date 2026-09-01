@@ -6,6 +6,9 @@ add_library(eldoria_render STATIC
     backend/software/TextureSampler.cpp
     backend/software/TriangleRasterizer.cpp
 
+    backend/opengl/OpenGLApi.cpp
+    backend/opengl/OpenGLRenderBackend.cpp
+
     camera/Projection.cpp
 
     scene/Transform.cpp

@@ -9,6 +9,7 @@
 #include "ItemPreviewBuilder.h"
 #include "SpotAnimationPreviewBuilder.h"
 #include "FontPreviewBuilder.h"
+#include "MapPreviewBuilder.h"
 
 #include <exception>
 #include <limits>
@@ -2870,6 +2871,7 @@ void CacheExplorer::renderAnimationControls() {
 
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
+      mapLoader_(cache_),
       animationRepository_(
           cache_.open(
               eld::cache::IndexId::Animations
@@ -2985,6 +2987,10 @@ CacheExplorer::CacheExplorer()
           modelRepository_,
           textureRepository_
       ) {
+}
+
+void CacheExplorer::shutdown() {
+    viewportPanel_.shutdown();
 }
 
 bool CacheExplorer::initialize() {
@@ -3152,6 +3158,10 @@ void CacheExplorer::update() {
 void CacheExplorer::handleSelectionChanged() {
     resetAnimationPreview();
 
+    state_.activeMap.reset();
+    state_.mapPreviewError.clear();
+    state_.selectedMapTile.reset();
+    state_.selectedMapLocIndex.reset();
     state_.activeModel.reset();
     state_.activeModelHandle.reset();
     state_.activeTexture.reset();
@@ -3180,6 +3190,53 @@ void CacheExplorer::handleSelectionChanged() {
         case CacheTreeNodeType::File:
         case CacheTreeNodeType::ArchiveFile:
             break;
+
+        case CacheTreeNodeType::MapRegion: {
+            if (
+                state_.selection.regionId < 0 ||
+                state_.selection.regionId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                state_.mapPreviewError =
+                    "Selected map region id is invalid";
+                break;
+            }
+
+            try {
+                const MapPreviewBuilder previewBuilder(
+                    mapLoader_,
+                    floorRepository_,
+                    locationRepository_,
+                    modelRepository_,
+                    graphicsResources_
+                );
+
+                state_.activeMap =
+                    previewBuilder.build(
+                        static_cast<std::uint16_t>(
+                            state_.selection.regionId
+                        )
+                    );
+
+                resetMapView(
+                    state_.mapPlane,
+                    state_.mapYaw,
+                    state_.mapPitch,
+                    state_.mapDistance
+                );
+
+                state_.mapShowTerrain = true;
+                state_.mapShowLocs = true;
+                state_.mapViewportDirty = true;
+            }
+            catch (const std::exception& exception) {
+                state_.activeMap.reset();
+                state_.mapPreviewError =
+                    exception.what();
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::Model: {
             if (
@@ -3778,6 +3835,16 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
     }
+}
+
+void CacheExplorer::prepareViewport(
+    SDL_Renderer* renderer
+) {
+    viewportPanel_.prepareViewport(
+        renderer,
+        state_,
+        graphicsResources_
+    );
 }
 
 void CacheExplorer::renderViewport(

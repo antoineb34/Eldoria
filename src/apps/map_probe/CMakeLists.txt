@@ -4,6 +4,8 @@ add_executable(map_probe
 
 target_link_libraries(map_probe PRIVATE
     Eldoria::Data
+    Eldoria::Platform
+    Eldoria::Graphics
 )
 
 set_target_properties(map_probe PROPERTIES

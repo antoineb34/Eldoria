@@ -83,10 +83,13 @@ void SoftwareRenderBackend::beginFrame(
 }
 
 void SoftwareRenderBackend::draw(
-    const eld::graphics::RenderModel& model,
+    eld::graphics::ModelHandle modelHandle,
     const Transform& transform,
     const eld::graphics::GraphicsResources& resources
 ) {
+    const eld::graphics::RenderModel& model =
+        resources.getModel(modelHandle);
+
     for (
         const eld::graphics::RenderMesh& mesh :
         model.meshes
