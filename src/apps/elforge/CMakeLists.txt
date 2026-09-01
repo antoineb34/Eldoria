@@ -1,35 +1,35 @@
 add_executable(elforge
     main.cpp
 
-    AppShell.cpp
-    AnimationDump.cpp
-    AnimationRelations.cpp
-    CacheExplorer.cpp
-    CacheExplorerAnimation.cpp
-    CacheExplorerItem.cpp
-    CacheExplorerSelection.cpp
-    CacheTreeBuilder.cpp
-    FloorPreviewBuilder.cpp
-    FontPreviewBuilder.cpp
-    IdentityKitPreviewBuilder.cpp
-    InterfaceDumpBuilder.cpp
-    ItemAnimationPresets.cpp
-    ItemPreviewBuilder.cpp
-    LocationPreviewBuilder.cpp
-    MapPreview.cpp
-    MapPreviewBuilder.cpp
-    MidiExport.cpp
-    NpcPreviewBuilder.cpp
-    SpotAnimationPreviewBuilder.cpp
+    app/AppShell.cpp
+    export/AnimationExporter.cpp
+    inspection/AnimationInspector.cpp
+    explorer/CacheExplorer.cpp
+    explorer/CacheExplorerAnimation.cpp
+    explorer/CacheExplorerItem.cpp
+    explorer/CacheExplorerSelection.cpp
+    explorer/tree/CacheTreeBuilder.cpp
+    views/floor/FloorView.cpp
+    views/font/FontView.cpp
+    views/identity_kit/IdentityKitView.cpp
+    inspection/InterfaceInspector.cpp
+    views/item/ItemAnimationPresets.cpp
+    views/item/ItemView.cpp
+    views/location/LocationView.cpp
+    views/map/MapViewState.cpp
+    views/map/MapView.cpp
+    export/MidiExporter.cpp
+    views/npc/NpcView.cpp
+    views/spot_animation/SpotAnimationView.cpp
 
-    panels/CacheInspectorPanel.cpp
-    panels/CacheTreePanel.cpp
-    panels/CacheViewportPanel.cpp
-    panels/InterfaceViewPanel.cpp
-    panels/MapGpuViewportRenderer.cpp
-    panels/ModelViewPanel.cpp
-    panels/TextureViewPanel.cpp
-    panels/ViewportViewDrawer.cpp
+    explorer/CacheInspectorPanel.cpp
+    explorer/tree/CacheTreePanel.cpp
+    viewport/ViewportPanel.cpp
+    views/interface/InterfaceViewPanel.cpp
+    views/map/MapViewSurface.cpp
+    views/model/ModelViewPanel.cpp
+    views/texture/TextureViewPanel.cpp
+    viewport/ViewportControlsPanel.cpp
 )
 
 target_include_directories(elforge PRIVATE
