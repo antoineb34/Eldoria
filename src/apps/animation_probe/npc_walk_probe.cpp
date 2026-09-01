@@ -1080,9 +1080,7 @@ int runProbe(
         );
 
         backend.draw(
-            graphicsResources.getModel(
-                originalRenderHandle
-            ),
+            originalRenderHandle,
             modelTransform,
             graphicsResources
         );
@@ -1099,9 +1097,7 @@ int runProbe(
         );
 
         backend.draw(
-            graphicsResources.getModel(
-                *currentAnimatedRenderHandle
-            ),
+            *currentAnimatedRenderHandle,
             modelTransform,
             graphicsResources
         );

@@ -16,13 +16,8 @@ void RenderPipeline::render(
             continue;
         }
 
-        const eld::graphics::RenderModel& model =
-            resources.getModel(
-                object.model
-            );
-
         backend.draw(
-            model,
+            object.model,
             object.transform,
             resources
         );

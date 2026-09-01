@@ -28,6 +28,13 @@ public:
         const eld::model::ModelMesh& source
     );
 
+    // Register an already-normalized backend-independent render model.
+    // This is used by graphics builders (for example static map batches)
+    // that are not sourced from a single cache ModelMesh.
+    ModelHandle registerModel(
+        RenderModel model
+    );
+
     TextureHandle resolveTexture(
         std::uint16_t sourceTextureId
     );

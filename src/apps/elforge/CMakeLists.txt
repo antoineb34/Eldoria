@@ -7,11 +7,14 @@ add_executable(elforge
     FontPreviewBuilder.cpp
     IdentityKitPreviewBuilder.cpp
     LocationPreviewBuilder.cpp
+    MapPreview.cpp
+    MapPreviewBuilder.cpp
     NpcPreviewBuilder.cpp
     ItemPreviewBuilder.cpp
     SpotAnimationPreviewBuilder.cpp
 
     panels/CacheInspectorPanel.cpp
+    panels/MapGpuViewportRenderer.cpp
     panels/CacheTreePanel.cpp
     panels/CacheViewportPanel.cpp
 )

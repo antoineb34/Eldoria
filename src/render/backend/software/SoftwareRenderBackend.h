@@ -24,7 +24,7 @@ public:
     ) override;
 
     void draw(
-        const eld::graphics::RenderModel& model,
+        eld::graphics::ModelHandle model,
         const Transform& transform,
         const eld::graphics::GraphicsResources& resources
     ) override;

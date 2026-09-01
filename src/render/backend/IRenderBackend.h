@@ -2,7 +2,7 @@
 
 #include "camera/Camera.h"
 #include "graphics/GraphicsResources.h"
-#include "graphics/model/RenderModel.h"
+#include "graphics/model/ModelHandle.h"
 #include "scene/Transform.h"
 
 namespace eld::render {
@@ -16,7 +16,7 @@ public:
     ) = 0;
 
     virtual void draw(
-        const eld::graphics::RenderModel& model,
+        eld::graphics::ModelHandle model,
         const Transform& transform,
         const eld::graphics::GraphicsResources& resources
     ) = 0;

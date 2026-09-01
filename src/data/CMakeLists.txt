@@ -22,6 +22,11 @@ add_library(eldoria_data STATIC
     interface/InterfaceFileParser.cpp
     interface/InterfaceRepository.cpp
 
+    map/MapFileReader.cpp
+    map/MapLoader.cpp
+    map/decoder/TerrainDecoder.cpp
+    map/decoder/ObjectSpawnDecoder.cpp
+
     model/ModelDecoder.cpp
     model/ModelFileParser.cpp
     model/ModelRepository.cpp

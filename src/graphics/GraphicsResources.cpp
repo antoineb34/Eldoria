@@ -1,5 +1,7 @@
 #include "GraphicsResources.h"
 
+#include <utility>
+
 namespace eld::graphics {
 
 GraphicsResources::GraphicsResources(
@@ -30,6 +32,14 @@ ModelHandle GraphicsResources::resolveModel(
 ) {
     return modelResolver_.resolve(
         source
+    );
+}
+
+ModelHandle GraphicsResources::registerModel(
+    RenderModel model
+) {
+    return modelRegistry_.registerModel(
+        std::move(model)
     );
 }
 

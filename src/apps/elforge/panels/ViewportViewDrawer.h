@@ -17,6 +17,7 @@ namespace eld::elforge {
 
 enum class ViewportViewKind {
     None,
+    Map,
     Interface,
     Npc,
     Location,
@@ -40,6 +41,10 @@ public:
     ViewportViewKind kindFor(
         const CacheExplorerState& state
     ) const {
+        if (state.activeMap.has_value()) {
+            return ViewportViewKind::Map;
+        }
+
         if (state.activeInterface.has_value()) {
             return ViewportViewKind::Interface;
         }
@@ -300,6 +305,9 @@ private:
         ViewportViewKind kind
     ) {
         switch (kind) {
+            case ViewportViewKind::Map:
+                return "MAP VIEW";
+
             case ViewportViewKind::Interface:
                 return "INTERFACE VIEW";
 
@@ -331,6 +339,66 @@ private:
             renderAnimationControls
     ) {
         switch (kind) {
+            case ViewportViewKind::Map:
+                if (state.activeMap.has_value()) {
+                    const MapPreview& map =
+                        *state.activeMap;
+
+                    ImGui::Text(
+                        "Region %u (%d,%d)",
+                        static_cast<unsigned int>(
+                            map.indexEntry.regionId
+                        ),
+                        map.indexEntry.regionX(),
+                        map.indexEntry.regionY()
+                    );
+
+                    ImGui::Text(
+                        "World base: %d, %d",
+                        map.centerRegion.worldBaseX(),
+                        map.centerRegion.worldBaseY()
+                    );
+
+                    ImGui::Text(
+                        "Terrain file: %u | Object file: %u",
+                        static_cast<unsigned int>(
+                            map.indexEntry.terrainFileId
+                        ),
+                        static_cast<unsigned int>(
+                            map.indexEntry.objectFileId
+                        )
+                    );
+
+                    ImGui::Separator();
+
+                    ImGui::Text(
+                        "Objects: %zu | model instances: %zu | variants: %zu",
+                        map.stats.locPlacements,
+                        map.stats.locModelInstances,
+                        map.stats.locModelVariants
+                    );
+
+                    ImGui::Text(
+                        "Terrain triangles: %zu | object triangles: %zu",
+                        map.stats.terrainTriangles,
+                        map.stats.locTriangles
+                    );
+
+                    ImGui::Text(
+                        "Build: %.2f ms | neighborhood: %zu/9",
+                        map.stats.buildMilliseconds,
+                        map.stats.neighborhoodRegions
+                    );
+
+                    ImGui::Text(
+                        "Camera: yaw %.2f pitch %.2f distance %.1f",
+                        state.mapYaw,
+                        state.mapPitch,
+                        state.mapDistance
+                    );
+                }
+                break;
+
             case ViewportViewKind::Interface:
                 interfaceViewPanel_.render(
                     true
@@ -386,7 +454,7 @@ private:
             case ViewportViewKind::None:
             default:
                 ImGui::TextDisabled(
-                    "Select an interface, NPC, object, SpotAnim, model, or texture."
+                    "Select a map, interface, NPC, object, SpotAnim, model, or texture."
                 );
                 break;
         }

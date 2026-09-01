@@ -13,6 +13,7 @@
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
+#include "map/MapLoader.h"
 
 #include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"
@@ -58,6 +59,7 @@ public:
     CacheExplorer();
 
     bool initialize();
+    void shutdown();
 
     void handleEvent(
         const SDL_Event& event
@@ -65,6 +67,10 @@ public:
 
     void update();
     void renderUi();
+
+    void prepareViewport(
+        SDL_Renderer* renderer
+    );
 
     void renderViewport(
         SDL_Renderer* renderer
@@ -143,6 +149,7 @@ private:
     void renderManualNpcActionComposer();
 
     eld::cache::Cache cache_;
+    eld::map::MapLoader mapLoader_;
 
     eld::animation::AnimationRepository animationRepository_;
     eld::animation::AnimationFrameIndex animationFrameIndex_;

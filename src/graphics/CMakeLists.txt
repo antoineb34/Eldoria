@@ -6,6 +6,12 @@ add_library(eldoria_graphics STATIC
     model/ModelResolver.cpp
     model/RenderModelAssembler.cpp
 
+    map/ClassicTerrainAppearance.cpp
+    map/SceneLocBuilder.cpp
+    map/SceneLocModelBuilder.cpp
+    map/SceneMapRenderModelBuilder.cpp
+    map/SceneTerrainBuilder.cpp
+
     texture/TextureConverter.cpp
     texture/TextureRegistry.cpp
     texture/TextureResolver.cpp

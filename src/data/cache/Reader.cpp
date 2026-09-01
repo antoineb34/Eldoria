@@ -232,10 +232,27 @@ Payload Reader::readPayload(
             );
         }
 
+        const std::size_t bytesAlreadyRead =
+            expectedChunkId *
+            Sector::DataSize;
+
+        const std::size_t remainingBytes =
+            static_cast<std::size_t>(
+                entry.size
+            ) -
+            bytesAlreadyRead;
+
+        const std::size_t requiredDataBytes =
+            std::min(
+                remainingBytes,
+                Sector::DataSize
+            );
+
         Sector sector =
             readSector(
                 dataStream,
-                currentSectorId
+                currentSectorId,
+                requiredDataBytes
             );
 
         if (
@@ -286,8 +303,18 @@ Payload Reader::readPayload(
 
 Sector Reader::readSector(
     std::ifstream& dataStream,
-    std::uint32_t sectorId
+    std::uint32_t sectorId,
+    std::size_t requiredDataBytes
 ) const {
+    if (
+        requiredDataBytes == 0 ||
+        requiredDataBytes > Sector::DataSize
+    ) {
+        throw std::invalid_argument(
+            "Invalid cache sector payload size"
+        );
+    }
+
     const std::size_t sectorOffset =
         static_cast<std::size_t>(
             sectorId
@@ -314,19 +341,23 @@ Sector Reader::readSector(
         Sector::TotalSize
     > sectorBytes{};
 
+    const std::size_t requiredSectorBytes =
+        Sector::HeaderSize +
+        requiredDataBytes;
+
     dataStream.read(
         reinterpret_cast<char*>(
             sectorBytes.data()
         ),
         static_cast<std::streamsize>(
-            sectorBytes.size()
+            requiredSectorBytes
         )
     );
 
     if (
         dataStream.gcount() !=
         static_cast<std::streamsize>(
-            sectorBytes.size()
+            requiredSectorBytes
         )
     ) {
         throw std::out_of_range(
@@ -337,7 +368,7 @@ Sector Reader::readSector(
     eld::binary::ByteReader reader(
         std::span<const std::uint8_t>(
             sectorBytes.data(),
-            sectorBytes.size()
+            requiredSectorBytes
         )
     );
 
@@ -376,7 +407,7 @@ Sector Reader::readSector(
 
     const std::span<const std::uint8_t> sectorData =
         reader.readSpan(
-            Sector::DataSize
+            requiredDataBytes
         );
 
     std::copy(

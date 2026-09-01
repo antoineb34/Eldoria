@@ -8,6 +8,7 @@
 
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
+#include "MapPreview.h"
 
 #include "graphics/model/ModelHandle.h"
 #include "model/Model.h"
@@ -47,6 +48,12 @@ struct PresentationRenderObject {
     eld::render::Transform transform;
 };
 
+struct MapTileSelection {
+    std::size_t plane = 0;
+    int x = 0;
+    int y = 0;
+};
+
 struct CacheExplorerState {
     eld::render::Camera camera;
     eld::render::Transform modelTransform;
@@ -77,6 +84,20 @@ struct CacheExplorerState {
 
     CacheSelection selection;
     CacheTreeNode rootNode;
+
+    std::optional<MapPreview> activeMap;
+    std::string mapPreviewError;
+
+    std::size_t mapPlane = 0;
+    bool mapShowTerrain = true;
+    bool mapShowLocs = true;
+    float mapYaw = 0.75f;
+    float mapPitch = 0.62f;
+    float mapDistance = 82.0f;
+    bool mapViewportDirty = true;
+
+    std::optional<MapTileSelection> selectedMapTile;
+    std::optional<std::size_t> selectedMapLocIndex;
 
     std::optional<eld::model::Model> activeModel;
 
