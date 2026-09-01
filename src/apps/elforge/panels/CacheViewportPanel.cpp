@@ -15,6 +15,8 @@
 
 #include <imgui.h>
 
+#include "audio/MidiPlayer.h"
+
 #include <array>
 #include <vector>
 
@@ -44,6 +46,1057 @@ constexpr int InterfaceSlotSize = 32;
 constexpr int InterfaceModelRenderTargetSize = 512;
 constexpr int DebugFontWidth = 8;
 constexpr int DebugFontHeight = 8;
+
+struct MidiPulse {
+    std::uint32_t tick = 0;
+    std::uint8_t note = 0;
+    std::uint8_t velocity = 0;
+};
+
+bool readMidiVlq(
+    const std::vector<std::uint8_t>& bytes,
+    std::size_t& cursor,
+    std::size_t end,
+    std::uint32_t& value
+) {
+    value = 0;
+
+    for (int count = 0; count < 4; ++count) {
+        if (cursor >= end) {
+            return false;
+        }
+
+        const std::uint8_t byte =
+            bytes[cursor++];
+
+        value =
+            (value << 7) |
+            static_cast<std::uint32_t>(
+                byte & 0x7Fu
+            );
+
+        if ((byte & 0x80u) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+std::pair<std::vector<float>, int> buildMidiActivity(
+    const eld::midi::MidiFile& midi,
+    std::size_t binCount = 360
+) {
+    const std::vector<std::uint8_t>& bytes =
+        midi.data.bytes;
+
+    std::vector<MidiPulse> pulses;
+    std::uint32_t maximumTick = 0;
+
+    for (const eld::midi::MidiTrackInfo& track : midi.data.tracks) {
+        std::size_t cursor =
+            track.dataOffset;
+
+        const std::size_t end =
+            std::min(
+                track.dataOffset +
+                    static_cast<std::size_t>(
+                        track.dataSize
+                    ),
+                bytes.size()
+            );
+
+        std::uint32_t tick = 0;
+        std::uint8_t runningStatus = 0;
+
+        while (cursor < end) {
+            std::uint32_t delta = 0;
+
+            if (!readMidiVlq(
+                    bytes,
+                    cursor,
+                    end,
+                    delta
+                )) {
+                break;
+            }
+
+            tick += delta;
+            maximumTick =
+                std::max(
+                    maximumTick,
+                    tick
+                );
+
+            if (cursor >= end) {
+                break;
+            }
+
+            std::uint8_t status =
+                bytes[cursor];
+
+            if ((status & 0x80u) != 0) {
+                ++cursor;
+
+                if (status < 0xF0u) {
+                    runningStatus = status;
+                }
+            }
+            else {
+                if (runningStatus == 0) {
+                    break;
+                }
+
+                status = runningStatus;
+            }
+
+            if (status == 0xFFu) {
+                if (cursor >= end) {
+                    break;
+                }
+
+                ++cursor; // Meta event type.
+
+                std::uint32_t length = 0;
+                if (!readMidiVlq(
+                        bytes,
+                        cursor,
+                        end,
+                        length
+                    ) ||
+                    length > end - cursor
+                ) {
+                    break;
+                }
+
+                cursor += length;
+                continue;
+            }
+
+            if (
+                status == 0xF0u ||
+                status == 0xF7u
+            ) {
+                runningStatus = 0;
+
+                std::uint32_t length = 0;
+                if (!readMidiVlq(
+                        bytes,
+                        cursor,
+                        end,
+                        length
+                    ) ||
+                    length > end - cursor
+                ) {
+                    break;
+                }
+
+                cursor += length;
+                continue;
+            }
+
+            if (status >= 0xF0u) {
+                // System-common events are unusual in SMF files. Skip the
+                // fixed-width forms we can recognize, otherwise end this
+                // track rather than interpreting arbitrary bytes as notes.
+                std::size_t dataLength = 0;
+
+                switch (status) {
+                    case 0xF1u:
+                    case 0xF3u:
+                        dataLength = 1;
+                        break;
+
+                    case 0xF2u:
+                        dataLength = 2;
+                        break;
+
+                    case 0xF6u:
+                    case 0xF8u:
+                    case 0xFAu:
+                    case 0xFBu:
+                    case 0xFCu:
+                    case 0xFEu:
+                        dataLength = 0;
+                        break;
+
+                    default:
+                        cursor = end;
+                        continue;
+                }
+
+                if (dataLength > end - cursor) {
+                    break;
+                }
+
+                cursor += dataLength;
+                continue;
+            }
+
+            const std::uint8_t command =
+                status & 0xF0u;
+
+            const std::size_t dataLength =
+                command == 0xC0u ||
+                command == 0xD0u
+                    ? 1
+                    : 2;
+
+            if (dataLength > end - cursor) {
+                break;
+            }
+
+            const std::uint8_t first =
+                bytes[cursor];
+
+            const std::uint8_t second =
+                dataLength == 2
+                    ? bytes[cursor + 1]
+                    : 0;
+
+            cursor += dataLength;
+
+            if (
+                command == 0x90u &&
+                second != 0
+            ) {
+                pulses.push_back(
+                    MidiPulse{
+                        .tick = tick,
+                        .note = first,
+                        .velocity = second
+                    }
+                );
+            }
+        }
+    }
+
+    std::vector<float> activity(
+        std::max<std::size_t>(
+            binCount,
+            1
+        ),
+        0.0f
+    );
+
+    if (
+        pulses.empty() ||
+        maximumTick == 0
+    ) {
+        return {
+            std::move(activity),
+            static_cast<int>(maximumTick)
+        };
+    }
+
+    for (const MidiPulse& pulse : pulses) {
+        const std::size_t index =
+            std::min(
+                static_cast<std::size_t>(
+                    (
+                        static_cast<std::uint64_t>(
+                            pulse.tick
+                        ) *
+                        activity.size()
+                    ) /
+                    (
+                        static_cast<std::uint64_t>(
+                            maximumTick
+                        ) + 1u
+                    )
+                ),
+                activity.size() - 1
+            );
+
+        // Velocity carries musical emphasis. A tiny pitch weighting keeps
+        // dense low-note drum passages from flattening every other section.
+        const float velocity =
+            static_cast<float>(
+                pulse.velocity
+            ) /
+            127.0f;
+
+        const float pitchWeight =
+            0.85f +
+            0.15f *
+                static_cast<float>(
+                    pulse.note
+                ) /
+                127.0f;
+
+        activity[index] +=
+            velocity *
+            pitchWeight;
+    }
+
+    const float peak =
+        *std::max_element(
+            activity.begin(),
+            activity.end()
+        );
+
+    if (peak > 0.0f) {
+        for (float& value : activity) {
+            value =
+                std::sqrt(
+                    value / peak
+                );
+        }
+    }
+
+    return {
+        std::move(activity),
+        static_cast<int>(maximumTick)
+    };
+}
+
+void renderMidiPlaybackControls(
+    CacheExplorerState& state,
+    eld::audio::MidiPlayer& midiPlayer
+) {
+    if (!state.activeMidi.has_value()) {
+        return;
+    }
+
+    const eld::midi::MidiFile& midi =
+        *state.activeMidi;
+
+    ImGui::Text(
+        "MIDI %u",
+        static_cast<unsigned int>(
+            midi.id
+        )
+    );
+
+    ImGui::SameLine();
+    ImGui::TextDisabled(
+        "| %s",
+        eld::audio::midiPlayerStateName(
+            midiPlayer.state()
+        )
+    );
+
+    if (
+        midiPlayer.isAvailable() &&
+        midiPlayer.hasMidi()
+    ) {
+        const eld::audio::MidiPlayerState playbackState =
+            midiPlayer.state();
+
+        const bool canPlay =
+            playbackState !=
+                eld::audio::MidiPlayerState::Playing;
+
+        const bool canPause =
+            playbackState ==
+                eld::audio::MidiPlayerState::Playing;
+
+        if (!canPlay) {
+            ImGui::BeginDisabled();
+        }
+
+        if (ImGui::Button("Play")) {
+            if (!midiPlayer.play()) {
+                state.midiPlaybackStatus =
+                    midiPlayer.statusMessage();
+            }
+            else {
+                state.midiPlaybackStatus =
+                    "Playing";
+            }
+        }
+
+        if (!canPlay) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::SameLine();
+
+        if (!canPause) {
+            ImGui::BeginDisabled();
+        }
+
+        if (ImGui::Button("Pause")) {
+            midiPlayer.pause();
+            state.midiPlaybackStatus =
+                midiPlayer.statusMessage();
+        }
+
+        if (!canPause) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Stop")) {
+            midiPlayer.stop();
+            state.midiSeekPreviewTick = 0;
+            state.midiSeekActive = false;
+            state.midiPlaybackStatus =
+                midiPlayer.statusMessage();
+        }
+
+        float volume =
+            midiPlayer.volume();
+
+        ImGui::SetNextItemWidth(
+            std::min(
+                ImGui::GetContentRegionAvail().x,
+                360.0f
+            )
+        );
+
+        if (ImGui::SliderFloat(
+                "Volume",
+                &volume,
+                0.0f,
+                1.0f,
+                "%.2f"
+            )) {
+            midiPlayer.setVolume(volume);
+        }
+
+        const int currentTick =
+            midiPlayer.currentTick();
+
+        const int totalTicks =
+            midiPlayer.totalTicks();
+
+        if (!state.midiSeekActive) {
+            state.midiSeekPreviewTick =
+                currentTick;
+        }
+
+        if (totalTicks > 0) {
+            ImGui::SetNextItemWidth(
+                std::max(
+                    ImGui::GetContentRegionAvail().x -
+                        8.0f,
+                    100.0f
+                )
+            );
+
+            ImGui::SliderInt(
+                "Position",
+                &state.midiSeekPreviewTick,
+                0,
+                totalTicks,
+                "%d ticks"
+            );
+
+            if (ImGui::IsItemActive()) {
+                state.midiSeekActive = true;
+            }
+
+            if (ImGui::IsItemDeactivatedAfterEdit()) {
+                midiPlayer.seek(
+                    state.midiSeekPreviewTick
+                );
+
+                state.midiPlaybackStatus =
+                    midiPlayer.statusMessage();
+
+                state.midiSeekActive = false;
+            }
+
+            ImGui::Text(
+                "Tick %d / %d",
+                currentTick,
+                totalTicks
+            );
+
+            const int bpm =
+                midiPlayer.currentBpm();
+
+            if (bpm > 0) {
+                ImGui::SameLine();
+                ImGui::TextDisabled(
+                    "| %d BPM",
+                    bpm
+                );
+            }
+        }
+    }
+    else {
+        ImGui::TextWrapped(
+            "%s",
+            midiPlayer.statusMessage().empty()
+                ? "MIDI playback is unavailable"
+                : midiPlayer.statusMessage().c_str()
+        );
+    }
+
+    if (!midiPlayer.soundFontPath().empty()) {
+        ImGui::TextDisabled(
+            "FluidSynth | %s",
+            midiPlayer.soundFontPath().string().c_str()
+        );
+    }
+
+    if (!state.midiPlaybackStatus.empty()) {
+        ImGui::TextDisabled(
+            "%s",
+            state.midiPlaybackStatus.c_str()
+        );
+    }
+}
+
+void renderMidiActivityVisualization(
+    CacheExplorerState& state,
+    eld::audio::MidiPlayer& midiPlayer,
+    const std::vector<float>& activity,
+    int activityTotalTicks,
+    const ImVec2& size
+) {
+    const ImVec2 origin =
+        ImGui::GetCursorScreenPos();
+
+    ImGui::InvisibleButton(
+        "##MidiActivityViewport",
+        size
+    );
+
+    ImDrawList* drawList =
+        ImGui::GetWindowDrawList();
+
+    const ImU32 background =
+        ImGui::GetColorU32(
+            ImGuiCol_FrameBg
+        );
+
+    const ImU32 border =
+        ImGui::GetColorU32(
+            ImGuiCol_Border
+        );
+
+    const ImU32 waveform =
+        ImGui::GetColorU32(
+            ImGuiCol_PlotHistogram
+        );
+
+    const ImU32 centerLine =
+        ImGui::GetColorU32(
+            ImGuiCol_Separator
+        );
+
+    const ImU32 playhead =
+        ImGui::GetColorU32(
+            ImGuiCol_SliderGrabActive
+        );
+
+    const ImVec2 end{
+        origin.x + size.x,
+        origin.y + size.y
+    };
+
+    drawList->AddRectFilled(
+        origin,
+        end,
+        background
+    );
+
+    drawList->AddRect(
+        origin,
+        end,
+        border
+    );
+
+    const float centerY =
+        origin.y +
+        size.y * 0.5f;
+
+    drawList->AddLine(
+        ImVec2(origin.x, centerY),
+        ImVec2(end.x, centerY),
+        centerLine
+    );
+
+    for (int grid = 1; grid < 8; ++grid) {
+        const float x =
+            origin.x +
+            size.x *
+                static_cast<float>(grid) /
+                8.0f;
+
+        drawList->AddLine(
+            ImVec2(x, origin.y),
+            ImVec2(x, end.y),
+            centerLine
+        );
+    }
+
+    if (!activity.empty()) {
+        const float binWidth =
+            size.x /
+            static_cast<float>(
+                activity.size()
+            );
+
+        const float maximumHalfHeight =
+            std::max(
+                size.y * 0.40f,
+                1.0f
+            );
+
+        for (
+            std::size_t index = 0;
+            index < activity.size();
+            ++index
+        ) {
+            const float x0 =
+                origin.x +
+                static_cast<float>(index) *
+                    binWidth;
+
+            const float x1 =
+                std::max(
+                    x0 + 1.0f,
+                    origin.x +
+                        static_cast<float>(index + 1) *
+                            binWidth -
+                        1.0f
+                );
+
+            const float halfHeight =
+                activity[index] *
+                maximumHalfHeight;
+
+            drawList->AddRectFilled(
+                ImVec2(
+                    x0,
+                    centerY - halfHeight
+                ),
+                ImVec2(
+                    x1,
+                    centerY + halfHeight
+                ),
+                waveform
+            );
+        }
+    }
+
+    const int playerTotalTicks =
+        midiPlayer.totalTicks();
+
+    const int totalTicks =
+        playerTotalTicks > 0
+            ? playerTotalTicks
+            : activityTotalTicks;
+
+    const int currentTick =
+        std::clamp(
+            midiPlayer.currentTick(),
+            0,
+            std::max(totalTicks, 0)
+        );
+
+    if (totalTicks > 0) {
+        const float fraction =
+            static_cast<float>(currentTick) /
+            static_cast<float>(totalTicks);
+
+        const float playheadX =
+            origin.x +
+            size.x * fraction;
+
+        drawList->AddLine(
+            ImVec2(playheadX, origin.y),
+            ImVec2(playheadX, end.y),
+            playhead,
+            2.0f
+        );
+
+        if (
+            ImGui::IsItemHovered() &&
+            ImGui::IsMouseClicked(
+                ImGuiMouseButton_Left
+            ) &&
+            midiPlayer.isAvailable() &&
+            midiPlayer.hasMidi()
+        ) {
+            const float mouseFraction =
+                std::clamp(
+                    (
+                        ImGui::GetIO().MousePos.x -
+                        origin.x
+                    ) /
+                    std::max(size.x, 1.0f),
+                    0.0f,
+                    1.0f
+                );
+
+            const int seekTick =
+                static_cast<int>(
+                    std::lround(
+                        mouseFraction *
+                        static_cast<float>(
+                            totalTicks
+                        )
+                    )
+                );
+
+            if (midiPlayer.seek(seekTick)) {
+                state.midiSeekPreviewTick =
+                    seekTick;
+                state.midiPlaybackStatus =
+                    midiPlayer.statusMessage();
+            }
+        }
+    }
+
+    drawList->AddText(
+        ImVec2(
+            origin.x + 10.0f,
+            origin.y + 8.0f
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_Text
+        ),
+        "MIDI NOTE ACTIVITY"
+    );
+
+    drawList->AddText(
+        ImVec2(
+            origin.x + 10.0f,
+            origin.y + 26.0f
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_TextDisabled
+        ),
+        "note-on density / velocity  |  click to seek"
+    );
+}
+
+void renderAnimationFrameVisualization(
+    CacheExplorerState& state,
+    const ImVec2& size
+) {
+    if (!state.activeAnimation.has_value()) {
+        return;
+    }
+
+    const AnimationRelationsInfo& info =
+        *state.activeAnimation;
+
+    const eld::animation::Animation& animation =
+        info.animation;
+
+    const std::vector<eld::animation::AnimationFrame>& frames =
+        animation.asset.frames;
+
+    const ImVec2 origin =
+        ImGui::GetCursorScreenPos();
+
+    ImGui::InvisibleButton(
+        "##AnimationFrameViewport",
+        size
+    );
+
+    ImDrawList* drawList =
+        ImGui::GetWindowDrawList();
+
+    const ImVec2 end{
+        origin.x + size.x,
+        origin.y + size.y
+    };
+
+    drawList->AddRectFilled(
+        origin,
+        end,
+        ImGui::GetColorU32(
+            ImGuiCol_FrameBg
+        )
+    );
+
+    drawList->AddRect(
+        origin,
+        end,
+        ImGui::GetColorU32(
+            ImGuiCol_Border
+        )
+    );
+
+    drawList->AddText(
+        ImVec2(
+            origin.x + 12.0f,
+            origin.y + 10.0f
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_Text
+        ),
+        "ANIMATION FRAME ACTIVITY"
+    );
+
+    const std::string relationSummary =
+        std::to_string(
+            info.sequences.size()
+        ) +
+        " sequences  |  " +
+        std::to_string(
+            info.uses.size()
+        ) +
+        " known uses";
+
+    drawList->AddText(
+        ImVec2(
+            origin.x + 12.0f,
+            origin.y + 30.0f
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_TextDisabled
+        ),
+        relationSummary.c_str()
+    );
+
+    if (frames.empty()) {
+        drawList->AddText(
+            ImVec2(
+                origin.x + 12.0f,
+                origin.y + 62.0f
+            ),
+            ImGui::GetColorU32(
+                ImGuiCol_TextDisabled
+            ),
+            "No decoded frames in this animation."
+        );
+
+        return;
+    }
+
+    state.activeAnimationFrameIndex =
+        std::min(
+            state.activeAnimationFrameIndex,
+            frames.size() - 1
+        );
+
+    constexpr float LeftPadding = 12.0f;
+    constexpr float RightPadding = 12.0f;
+    constexpr float TopPadding = 58.0f;
+    constexpr float BottomPadding = 54.0f;
+
+    const float graphLeft =
+        origin.x + LeftPadding;
+
+    const float graphRight =
+        std::max(
+            graphLeft + 1.0f,
+            end.x - RightPadding
+        );
+
+    const float graphTop =
+        origin.y + TopPadding;
+
+    const float graphBottom =
+        std::max(
+            graphTop + 1.0f,
+            end.y - BottomPadding
+        );
+
+    const float graphWidth =
+        std::max(
+            graphRight - graphLeft,
+            1.0f
+        );
+
+    const float graphHeight =
+        std::max(
+            graphBottom - graphTop,
+            1.0f
+        );
+
+    const ImU32 gridColor =
+        ImGui::GetColorU32(
+            ImGuiCol_Separator
+        );
+
+    for (int row = 0; row <= 4; ++row) {
+        const float y =
+            graphTop +
+            graphHeight *
+                static_cast<float>(row) /
+                4.0f;
+
+        drawList->AddLine(
+            ImVec2(graphLeft, y),
+            ImVec2(graphRight, y),
+            gridColor
+        );
+    }
+
+    std::size_t maximumTransforms = 1;
+
+    for (
+        const eld::animation::AnimationFrame& frame :
+        frames
+    ) {
+        maximumTransforms =
+            std::max(
+                maximumTransforms,
+                frame.transforms.size()
+            );
+    }
+
+    const float frameWidth =
+        graphWidth /
+        static_cast<float>(
+            frames.size()
+        );
+
+    const ImU32 normalBar =
+        ImGui::GetColorU32(
+            ImGuiCol_PlotHistogram
+        );
+
+    const ImU32 selectedBar =
+        ImGui::GetColorU32(
+            ImGuiCol_SliderGrabActive
+        );
+
+    for (
+        std::size_t index = 0;
+        index < frames.size();
+        ++index
+    ) {
+        const eld::animation::AnimationFrame& frame =
+            frames[index];
+
+        const float normalized =
+            static_cast<float>(
+                frame.transforms.size()
+            ) /
+            static_cast<float>(
+                maximumTransforms
+            );
+
+        const float barHeight =
+            std::max(
+                graphHeight * normalized,
+                frame.transforms.empty()
+                    ? 0.0f
+                    : 1.0f
+            );
+
+        const float x0 =
+            graphLeft +
+            static_cast<float>(index) *
+                frameWidth;
+
+        const float x1 =
+            std::min(
+                graphRight,
+                std::max(
+                    x0 + 1.0f,
+                    graphLeft +
+                        static_cast<float>(index + 1) *
+                            frameWidth -
+                        1.0f
+                )
+            );
+
+        drawList->AddRectFilled(
+            ImVec2(
+                x0,
+                graphBottom - barHeight
+            ),
+            ImVec2(
+                x1,
+                graphBottom
+            ),
+            index ==
+                    state.activeAnimationFrameIndex
+                ? selectedBar
+                : normalBar
+        );
+    }
+
+    if (
+        ImGui::IsItemHovered() &&
+        ImGui::IsMouseClicked(
+            ImGuiMouseButton_Left
+        )
+    ) {
+        const float mouseX =
+            ImGui::GetIO().MousePos.x;
+
+        if (
+            mouseX >= graphLeft &&
+            mouseX <= graphRight
+        ) {
+            const float fraction =
+                std::clamp(
+                    (
+                        mouseX - graphLeft
+                    ) /
+                    graphWidth,
+                    0.0f,
+                    0.999999f
+                );
+
+            state.activeAnimationFrameIndex =
+                std::min(
+                    static_cast<std::size_t>(
+                        fraction *
+                        static_cast<float>(
+                            frames.size()
+                        )
+                    ),
+                    frames.size() - 1
+                );
+        }
+    }
+
+    const eld::animation::AnimationFrame& selectedFrame =
+        frames[
+            state.activeAnimationFrameIndex
+        ];
+
+    const std::string selectedText =
+        "Frame " +
+        std::to_string(
+            state.activeAnimationFrameIndex
+        ) +
+        " / " +
+        std::to_string(
+            frames.size() - 1
+        ) +
+        "  |  global " +
+        std::to_string(
+            selectedFrame.id
+        ) +
+        "  |  delay " +
+        std::to_string(
+            static_cast<unsigned int>(
+                selectedFrame.delay
+            )
+        ) +
+        "  |  " +
+        std::to_string(
+            selectedFrame.transforms.size()
+        ) +
+        " transforms";
+
+    drawList->AddText(
+        ImVec2(
+            origin.x + 12.0f,
+            end.y - 40.0f
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_Text
+        ),
+        selectedText.c_str()
+    );
+
+    drawList->AddText(
+        ImVec2(
+            origin.x + 12.0f,
+            end.y - 20.0f
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_TextDisabled
+        ),
+        "bar height = explicit transform count  |  click a frame to inspect"
+    );
+}
 
 struct PixelSize {
     int width = 1;
@@ -5067,6 +6120,7 @@ void CacheViewportPanel::render(
     CacheExplorerState& state,
     float width,
     float height,
+    eld::audio::MidiPlayer& midiPlayer,
     const std::function<void()>&
         renderAnimationControls
 ) {
@@ -5091,6 +6145,49 @@ void CacheViewportPanel::render(
         state,
         viewKind
     );
+
+    if (state.activeMidi.has_value()) {
+        const int midiId =
+            static_cast<int>(
+                state.activeMidi->id
+            );
+
+        if (midiVisualizationId_ != midiId) {
+            auto [activity, totalTicks] =
+                buildMidiActivity(
+                    *state.activeMidi
+                );
+
+            midiActivity_ =
+                std::move(activity);
+
+            midiVisualizationTotalTicks_ =
+                totalTicks;
+
+            midiVisualizationId_ =
+                midiId;
+        }
+    }
+    else {
+        midiVisualizationId_ = -1;
+        midiVisualizationTotalTicks_ = 0;
+        midiActivity_.clear();
+    }
+
+    if (state.activeAnimation.has_value()) {
+        const int animationId =
+            static_cast<int>(
+                state.activeAnimation->animation.id
+            );
+
+        if (animationVisualizationId_ != animationId) {
+            animationVisualizationId_ = animationId;
+            state.activeAnimationFrameIndex = 0;
+        }
+    }
+    else {
+        animationVisualizationId_ = -1;
+    }
 
     const ViewportDrawerLayout drawerLayout =
         viewDrawer_.updateLayout(
@@ -5140,6 +6237,18 @@ void CacheViewportPanel::render(
 
         ImGui::Separator();
     }
+    else if (state.activeMidi.has_value()) {
+        ImGui::TextDisabled(
+            "MIDI activity visualization | click waveform to seek"
+        );
+        ImGui::Separator();
+    }
+    else if (state.activeAnimation.has_value()) {
+        ImGui::TextDisabled(
+            "Animation frame activity | click a frame to inspect it"
+        );
+        ImGui::Separator();
+    }
     // ELFORGE_DIRECT_VIEWPORT_SDL_OVERLAY_V1
     else if (state.activeModelHandle.has_value()) {
         renderViewportToolbar(
@@ -5186,7 +6295,22 @@ void CacheViewportPanel::render(
             1
         );
 
-    if (state.activeMap.has_value()) {
+    if (state.activeMidi.has_value()) {
+        renderMidiActivityVisualization(
+            state,
+            midiPlayer,
+            midiActivity_,
+            midiVisualizationTotalTicks_,
+            viewportSize
+        );
+    }
+    else if (state.activeAnimation.has_value()) {
+        renderAnimationFrameVisualization(
+            state,
+            viewportSize
+        );
+    }
+    else if (state.activeMap.has_value()) {
         renderMapInteraction(
             state,
             viewportSize
@@ -5214,7 +6338,13 @@ void CacheViewportPanel::render(
         state,
         viewKind,
         drawerLayout.drawerHeight,
-        renderAnimationControls
+        renderAnimationControls,
+        [&state, &midiPlayer]() {
+            renderMidiPlaybackControls(
+                state,
+                midiPlayer
+            );
+        }
     );
 
     ImGui::EndChild();

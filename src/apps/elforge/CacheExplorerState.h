@@ -8,7 +8,11 @@
 
 #include "CacheSelection.h"
 #include "CacheTreeNode.h"
+#include "AnimationRelations.h"
+#include "AnimationDump.h"
 #include "MapPreview.h"
+
+#include "midi/MidiFile.h"
 
 #include "graphics/model/ModelHandle.h"
 #include "model/Model.h"
@@ -84,6 +88,17 @@ struct CacheExplorerState {
 
     CacheSelection selection;
     CacheTreeNode rootNode;
+
+    std::optional<AnimationRelationsInfo> activeAnimation;
+    std::size_t activeAnimationFrameIndex = 0;
+    std::string animationDumpStatus;
+    bool animationDumpAllRequested = false;
+
+    std::optional<eld::midi::MidiFile> activeMidi;
+    std::string midiExportStatus;
+    std::string midiPlaybackStatus;
+    int midiSeekPreviewTick = 0;
+    bool midiSeekActive = false;
 
     std::optional<MapPreview> activeMap;
     std::string mapPreviewError;

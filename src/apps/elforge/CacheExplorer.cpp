@@ -2872,6 +2872,11 @@ void CacheExplorer::renderAnimationControls() {
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
       mapLoader_(cache_),
+      midiRepository_(
+          cache_.open(
+              eld::cache::IndexId::Midi
+          )
+      ),
       animationRepository_(
           cache_.open(
               eld::cache::IndexId::Animations
@@ -2990,6 +2995,7 @@ CacheExplorer::CacheExplorer()
 }
 
 void CacheExplorer::shutdown() {
+    midiPlayer_.shutdown();
     viewportPanel_.shutdown();
 }
 
@@ -3052,6 +3058,15 @@ bool CacheExplorer::initialize() {
 
     lastAnimationUpdateMs_ =
         SDL_GetTicks();
+
+    if (!midiPlayer_.initialize()) {
+        state_.midiPlaybackStatus =
+            midiPlayer_.statusMessage();
+    }
+    else {
+        state_.midiPlaybackStatus =
+            "MIDI playback ready";
+    }
 
     return true;
 }
@@ -3127,6 +3142,51 @@ void CacheExplorer::update() {
         return;
     }
 
+    if (state_.animationDumpAllRequested) {
+        state_.animationDumpAllRequested = false;
+
+        try {
+            const AnimationRelations relations(
+                animationRepository_,
+                animationFrameIndex_,
+                sequenceRepository_,
+                npcRepository_,
+                locationRepository_,
+                spotAnimationRepository_,
+                itemRepository_,
+                interfaceRepository_,
+                animationPresentationCatalog_
+            );
+
+            const std::filesystem::path path =
+                defaultAnimationRelationsDumpPath();
+
+            std::string error;
+
+            if (
+                dumpAllAnimationRelations(
+                    relations,
+                    path,
+                    error
+                )
+            ) {
+                state_.animationDumpStatus =
+                    "Exported: " +
+                    path.string();
+            }
+            else {
+                state_.animationDumpStatus =
+                    "Export failed: " +
+                    error;
+            }
+        }
+        catch (const std::exception& exception) {
+            state_.animationDumpStatus =
+                std::string("Export failed: ") +
+                exception.what();
+        }
+    }
+
     if (
         animationSource_.has_value() &&
         animationPlayer_.update(
@@ -3158,6 +3218,17 @@ void CacheExplorer::update() {
 void CacheExplorer::handleSelectionChanged() {
     resetAnimationPreview();
 
+    midiPlayer_.unload();
+
+    state_.activeAnimation.reset();
+    state_.animationDumpStatus.clear();
+    state_.animationDumpAllRequested = false;
+
+    state_.activeMidi.reset();
+    state_.midiExportStatus.clear();
+    state_.midiPlaybackStatus.clear();
+    state_.midiSeekPreviewTick = 0;
+    state_.midiSeekActive = false;
     state_.activeMap.reset();
     state_.mapPreviewError.clear();
     state_.selectedMapTile.reset();
@@ -3190,6 +3261,91 @@ void CacheExplorer::handleSelectionChanged() {
         case CacheTreeNodeType::File:
         case CacheTreeNodeType::ArchiveFile:
             break;
+
+        case CacheTreeNodeType::Animation: {
+            if (
+                state_.selection.fileId < 0 ||
+                state_.selection.fileId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            try {
+                const AnimationRelations relations(
+                    animationRepository_,
+                    animationFrameIndex_,
+                    sequenceRepository_,
+                    npcRepository_,
+                    locationRepository_,
+                    spotAnimationRepository_,
+                    itemRepository_,
+                    interfaceRepository_,
+                    animationPresentationCatalog_
+                );
+
+                state_.activeAnimation =
+                    relations.inspect(
+                        static_cast<std::uint16_t>(
+                            state_.selection.fileId
+                        )
+                    );
+            }
+            catch (const std::exception& exception) {
+                state_.activeAnimation.reset();
+                state_.animationDumpStatus =
+                    std::string("Failed to inspect animation: ") +
+                    exception.what();
+            }
+
+            break;
+        }
+
+        case CacheTreeNodeType::Midi: {
+            if (
+                state_.selection.fileId < 0 ||
+                state_.selection.fileId >
+                    std::numeric_limits<std::uint16_t>::max()
+            ) {
+                break;
+            }
+
+            try {
+                state_.activeMidi =
+                    midiRepository_.get(
+                        static_cast<std::uint16_t>(
+                            state_.selection.fileId
+                        )
+                    );
+
+                if (midiPlayer_.isAvailable()) {
+                    if (midiPlayer_.load(
+                            state_.activeMidi->data.bytes
+                        )) {
+                        state_.midiPlaybackStatus =
+                            "Ready to play";
+                    }
+                    else {
+                        state_.midiPlaybackStatus =
+                            midiPlayer_.statusMessage();
+                    }
+                }
+                else {
+                    state_.midiPlaybackStatus =
+                        midiPlayer_.statusMessage();
+                }
+            }
+            catch (const std::exception& exception) {
+                const std::string message =
+                    std::string("Failed to load MIDI: ") +
+                    exception.what();
+
+                state_.midiExportStatus = message;
+                state_.midiPlaybackStatus = message;
+            }
+
+            break;
+        }
 
         case CacheTreeNodeType::MapRegion: {
             if (
@@ -3926,6 +4082,7 @@ void CacheExplorer::renderUi() {
         state_,
         viewportWidth,
         height,
+        midiPlayer_,
         [this]() {
             renderAnimationControls();
         }

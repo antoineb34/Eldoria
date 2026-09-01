@@ -12,6 +12,7 @@ namespace eld::elforge {
         File,
         ArchiveFile,
         Model,
+        Animation,
         Texture,
         Sprite,
         SpriteFrame,
@@ -31,6 +32,7 @@ namespace eld::elforge {
         MessageDefinition,
         MessageAnimationDefinition,
         InterfaceDefinition,
+        Midi,
         MapRegion,
     };
 

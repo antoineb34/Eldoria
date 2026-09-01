@@ -14,6 +14,8 @@
 
 #include "cache/Cache.h"
 #include "map/MapLoader.h"
+#include "midi/MidiRepository.h"
+#include "audio/MidiPlayer.h"
 
 #include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"
@@ -150,6 +152,8 @@ private:
 
     eld::cache::Cache cache_;
     eld::map::MapLoader mapLoader_;
+    eld::midi::MidiRepository midiRepository_;
+    eld::audio::MidiPlayer midiPlayer_;
 
     eld::animation::AnimationRepository animationRepository_;
     eld::animation::AnimationFrameIndex animationFrameIndex_;

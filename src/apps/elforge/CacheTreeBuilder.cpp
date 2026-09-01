@@ -386,10 +386,15 @@ CacheTreeNode makeFileNode(
 ) {
     CacheTreeNode node;
 
-    node.type =
-        index == eld::cache::IndexId::Models
-            ? CacheTreeNodeType::Model
-            : CacheTreeNodeType::File;
+    if (index == eld::cache::IndexId::Models) {
+        node.type = CacheTreeNodeType::Model;
+    }
+    else if (index == eld::cache::IndexId::Animations) {
+        node.type = CacheTreeNodeType::Animation;
+    }
+    else {
+        node.type = CacheTreeNodeType::File;
+    }
 
     node.key =
         "index/" +
@@ -399,12 +404,21 @@ CacheTreeNode makeFileNode(
         "/file/" +
         std::to_string(entry.fileId);
 
-    node.label =
-        index == eld::cache::IndexId::Models
-            ? "Model " +
-                std::to_string(entry.fileId)
-            : "File " +
-                std::to_string(entry.fileId);
+    if (index == eld::cache::IndexId::Models) {
+        node.label =
+            "Model " +
+            std::to_string(entry.fileId);
+    }
+    else if (index == eld::cache::IndexId::Animations) {
+        node.label =
+            "Animation " +
+            std::to_string(entry.fileId);
+    }
+    else {
+        node.label =
+            "File " +
+            std::to_string(entry.fileId);
+    }
 
     node.indexId =
         static_cast<int>(index);
@@ -2048,6 +2062,34 @@ std::optional<CacheTreeNode> makeArchiveNode(
     return node;
 }
 
+
+CacheTreeNode makeMidiNode(
+    const eld::cache::FileEntry& entry
+) {
+    CacheTreeNode node;
+
+    node.type =
+        CacheTreeNodeType::Midi;
+
+    node.key =
+        "index/3/midi/" +
+        std::to_string(entry.fileId);
+
+    node.label =
+        "MIDI " +
+        std::to_string(entry.fileId);
+
+    node.name = "midi";
+    node.indexId =
+        static_cast<int>(
+            eld::cache::IndexId::Midi
+        );
+    node.fileId =
+        static_cast<int>(entry.fileId);
+
+    return node;
+}
+
 CacheTreeNode makeMapRegionNode(
     const eld::map::MapIndexEntry& entry
 ) {
@@ -2139,6 +2181,29 @@ void addIndex(
         makeIndexNode(
             index.id
         );
+
+    if (
+        index.id ==
+        eld::cache::IndexId::Midi
+    ) {
+        const eld::cache::Store store =
+            cache.open(index.id);
+
+        const std::vector<eld::cache::FileEntry> entries =
+            store.list();
+
+        for (const eld::cache::FileEntry& entry : entries) {
+            indexNode.children.push_back(
+                makeMidiNode(entry)
+            );
+        }
+
+        root.children.push_back(
+            std::move(indexNode)
+        );
+
+        return;
+    }
 
     if (
         index.id ==

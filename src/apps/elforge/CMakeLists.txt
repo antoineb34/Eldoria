@@ -2,6 +2,8 @@ add_executable(elforge
     main.cpp
 
     AppShell.cpp
+    AnimationDump.cpp
+    AnimationRelations.cpp
     CacheExplorer.cpp
     CacheTreeBuilder.cpp
     FontPreviewBuilder.cpp
@@ -9,6 +11,7 @@ add_executable(elforge
     LocationPreviewBuilder.cpp
     MapPreview.cpp
     MapPreviewBuilder.cpp
+    MidiExport.cpp
     NpcPreviewBuilder.cpp
     ItemPreviewBuilder.cpp
     SpotAnimationPreviewBuilder.cpp
