@@ -4,10 +4,11 @@
 
 #include <cstdint>
 #include <functional>
-#include <vector>
 
 #include "viewport/ViewportControlsPanel.h"
 #include "views/map/MapViewSurface.h"
+#include "views/midi/MidiView.h"
+#include "views/midi/MidiViewPanel.h"
 
 namespace eld::audio {
 class MidiPlayer;
@@ -60,9 +61,8 @@ private:
     ViewportControlsPanel controlsPanel_;
     MapViewSurface mapGpuRenderer_;
 
-    int midiVisualizationId_ = -1;
-    int midiVisualizationTotalTicks_ = 0;
-    std::vector<float> midiActivity_;
+    MidiView midiView_;
+    MidiViewPanel midiViewPanel_;
 
     int animationVisualizationId_ = -1;
 };

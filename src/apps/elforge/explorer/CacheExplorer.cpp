@@ -191,11 +191,11 @@ bool CacheExplorer::initialize() {
         SDL_GetTicks();
 
     if (!midiPlayer_.initialize()) {
-        state_.midiPlaybackStatus =
+        state_.midiView.playbackStatus =
             midiPlayer_.statusMessage();
     }
     else {
-        state_.midiPlaybackStatus =
+        state_.midiView.playbackStatus =
             "MIDI playback ready";
     }
 

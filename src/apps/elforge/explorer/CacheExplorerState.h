@@ -13,6 +13,7 @@
 #include "views/map/MapViewState.h"
 
 #include "midi/MidiFile.h"
+#include "views/midi/MidiViewState.h"
 
 #include "graphics/model/ModelHandle.h"
 #include "model/Model.h"
@@ -93,9 +94,7 @@ struct CacheExplorerState {
 
     std::optional<eld::midi::MidiFile> activeMidi;
     std::string midiExportStatus;
-    std::string midiPlaybackStatus;
-    int midiSeekTick = 0;
-    bool midiSeekActive = false;
+    MidiViewState midiView;
 
     std::optional<MapViewState> activeMap;
     std::string mapViewError;

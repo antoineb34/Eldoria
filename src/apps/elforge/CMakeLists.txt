@@ -18,6 +18,8 @@ add_executable(elforge
     views/location/LocationView.cpp
     views/map/MapViewState.cpp
     views/map/MapView.cpp
+    views/midi/MidiView.cpp
+    views/midi/MidiViewPanel.cpp
     export/MidiExporter.cpp
     views/npc/NpcView.cpp
     views/spot_animation/SpotAnimationView.cpp

@@ -28,9 +28,7 @@ void CacheExplorer::handleSelectionChanged() {
 
     state_.activeMidi.reset();
     state_.midiExportStatus.clear();
-    state_.midiPlaybackStatus.clear();
-    state_.midiSeekTick = 0;
-    state_.midiSeekActive = false;
+    state_.midiView = {};
     state_.activeMap.reset();
     state_.mapViewError.clear();
     state_.selectedMapTile.reset();
@@ -124,16 +122,16 @@ void CacheExplorer::handleSelectionChanged() {
                     if (midiPlayer_.load(
                             state_.activeMidi->data.bytes
                         )) {
-                        state_.midiPlaybackStatus =
+                        state_.midiView.playbackStatus =
                             "Ready to play";
                     }
                     else {
-                        state_.midiPlaybackStatus =
+                        state_.midiView.playbackStatus =
                             midiPlayer_.statusMessage();
                     }
                 }
                 else {
-                    state_.midiPlaybackStatus =
+                    state_.midiView.playbackStatus =
                         midiPlayer_.statusMessage();
                 }
             }
@@ -143,7 +141,7 @@ void CacheExplorer::handleSelectionChanged() {
                     exception.what();
 
                 state_.midiExportStatus = message;
-                state_.midiPlaybackStatus = message;
+                state_.midiView.playbackStatus = message;
             }
 
             break;
