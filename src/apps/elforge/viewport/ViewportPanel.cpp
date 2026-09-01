@@ -1,4 +1,8 @@
+#include "ui/ElForgeTheme.h"
+#include "ui/IconButton.h"
 #include "viewport/ViewportPanel.h"
+#include "views/animation/AnimationViewOverlay.h"
+#include "views/animation/AnimationViewPanel.h"
 
 #include <algorithm>
 #include <array>
@@ -43,337 +47,6 @@ constexpr int InterfaceSlotSize = 32;
 constexpr int InterfaceModelRenderTargetSize = 512;
 constexpr int DebugFontWidth = 8;
 constexpr int DebugFontHeight = 8;
-
-void renderAnimationFrameVisualization(
-    CacheExplorerState& state,
-    const ImVec2& size
-) {
-    if (!state.activeAnimation.has_value()) {
-        return;
-    }
-
-    const AnimationInspection& info =
-        *state.activeAnimation;
-
-    const eld::animation::Animation& animation =
-        info.animation;
-
-    const std::vector<eld::animation::AnimationFrame>& frames =
-        animation.asset.frames;
-
-    const ImVec2 origin =
-        ImGui::GetCursorScreenPos();
-
-    ImGui::InvisibleButton(
-        "##AnimationFrameViewport",
-        size
-    );
-
-    ImDrawList* drawList =
-        ImGui::GetWindowDrawList();
-
-    const ImVec2 end{
-        origin.x + size.x,
-        origin.y + size.y
-    };
-
-    drawList->AddRectFilled(
-        origin,
-        end,
-        ImGui::GetColorU32(
-            ImGuiCol_FrameBg
-        )
-    );
-
-    drawList->AddRect(
-        origin,
-        end,
-        ImGui::GetColorU32(
-            ImGuiCol_Border
-        )
-    );
-
-    drawList->AddText(
-        ImVec2(
-            origin.x + 12.0f,
-            origin.y + 10.0f
-        ),
-        ImGui::GetColorU32(
-            ImGuiCol_Text
-        ),
-        "ANIMATION FRAME ACTIVITY"
-    );
-
-    const std::string relationSummary =
-        std::to_string(
-            info.sequences.size()
-        ) +
-        " sequences  |  " +
-        std::to_string(
-            info.uses.size()
-        ) +
-        " known uses";
-
-    drawList->AddText(
-        ImVec2(
-            origin.x + 12.0f,
-            origin.y + 30.0f
-        ),
-        ImGui::GetColorU32(
-            ImGuiCol_TextDisabled
-        ),
-        relationSummary.c_str()
-    );
-
-    if (frames.empty()) {
-        drawList->AddText(
-            ImVec2(
-                origin.x + 12.0f,
-                origin.y + 62.0f
-            ),
-            ImGui::GetColorU32(
-                ImGuiCol_TextDisabled
-            ),
-            "No decoded frames in this animation."
-        );
-
-        return;
-    }
-
-    state.activeAnimationFrameIndex =
-        std::min(
-            state.activeAnimationFrameIndex,
-            frames.size() - 1
-        );
-
-    constexpr float LeftPadding = 12.0f;
-    constexpr float RightPadding = 12.0f;
-    constexpr float TopPadding = 58.0f;
-    constexpr float BottomPadding = 54.0f;
-
-    const float graphLeft =
-        origin.x + LeftPadding;
-
-    const float graphRight =
-        std::max(
-            graphLeft + 1.0f,
-            end.x - RightPadding
-        );
-
-    const float graphTop =
-        origin.y + TopPadding;
-
-    const float graphBottom =
-        std::max(
-            graphTop + 1.0f,
-            end.y - BottomPadding
-        );
-
-    const float graphWidth =
-        std::max(
-            graphRight - graphLeft,
-            1.0f
-        );
-
-    const float graphHeight =
-        std::max(
-            graphBottom - graphTop,
-            1.0f
-        );
-
-    const ImU32 gridColor =
-        ImGui::GetColorU32(
-            ImGuiCol_Separator
-        );
-
-    for (int row = 0; row <= 4; ++row) {
-        const float y =
-            graphTop +
-            graphHeight *
-                static_cast<float>(row) /
-                4.0f;
-
-        drawList->AddLine(
-            ImVec2(graphLeft, y),
-            ImVec2(graphRight, y),
-            gridColor
-        );
-    }
-
-    std::size_t maximumTransforms = 1;
-
-    for (
-        const eld::animation::AnimationFrame& frame :
-        frames
-    ) {
-        maximumTransforms =
-            std::max(
-                maximumTransforms,
-                frame.transforms.size()
-            );
-    }
-
-    const float frameWidth =
-        graphWidth /
-        static_cast<float>(
-            frames.size()
-        );
-
-    const ImU32 normalBar =
-        ImGui::GetColorU32(
-            ImGuiCol_PlotHistogram
-        );
-
-    const ImU32 selectedBar =
-        ImGui::GetColorU32(
-            ImGuiCol_SliderGrabActive
-        );
-
-    for (
-        std::size_t index = 0;
-        index < frames.size();
-        ++index
-    ) {
-        const eld::animation::AnimationFrame& frame =
-            frames[index];
-
-        const float normalized =
-            static_cast<float>(
-                frame.transforms.size()
-            ) /
-            static_cast<float>(
-                maximumTransforms
-            );
-
-        const float barHeight =
-            std::max(
-                graphHeight * normalized,
-                frame.transforms.empty()
-                    ? 0.0f
-                    : 1.0f
-            );
-
-        const float x0 =
-            graphLeft +
-            static_cast<float>(index) *
-                frameWidth;
-
-        const float x1 =
-            std::min(
-                graphRight,
-                std::max(
-                    x0 + 1.0f,
-                    graphLeft +
-                        static_cast<float>(index + 1) *
-                            frameWidth -
-                        1.0f
-                )
-            );
-
-        drawList->AddRectFilled(
-            ImVec2(
-                x0,
-                graphBottom - barHeight
-            ),
-            ImVec2(
-                x1,
-                graphBottom
-            ),
-            index ==
-                    state.activeAnimationFrameIndex
-                ? selectedBar
-                : normalBar
-        );
-    }
-
-    if (
-        ImGui::IsItemHovered() &&
-        ImGui::IsMouseClicked(
-            ImGuiMouseButton_Left
-        )
-    ) {
-        const float mouseX =
-            ImGui::GetIO().MousePos.x;
-
-        if (
-            mouseX >= graphLeft &&
-            mouseX <= graphRight
-        ) {
-            const float fraction =
-                std::clamp(
-                    (
-                        mouseX - graphLeft
-                    ) /
-                    graphWidth,
-                    0.0f,
-                    0.999999f
-                );
-
-            state.activeAnimationFrameIndex =
-                std::min(
-                    static_cast<std::size_t>(
-                        fraction *
-                        static_cast<float>(
-                            frames.size()
-                        )
-                    ),
-                    frames.size() - 1
-                );
-        }
-    }
-
-    const eld::animation::AnimationFrame& selectedFrame =
-        frames[
-            state.activeAnimationFrameIndex
-        ];
-
-    const std::string selectedText =
-        "Frame " +
-        std::to_string(
-            state.activeAnimationFrameIndex
-        ) +
-        " / " +
-        std::to_string(
-            frames.size() - 1
-        ) +
-        "  |  global " +
-        std::to_string(
-            selectedFrame.id
-        ) +
-        "  |  delay " +
-        std::to_string(
-            static_cast<unsigned int>(
-                selectedFrame.delay
-            )
-        ) +
-        "  |  " +
-        std::to_string(
-            selectedFrame.transforms.size()
-        ) +
-        " transforms";
-
-    drawList->AddText(
-        ImVec2(
-            origin.x + 12.0f,
-            end.y - 40.0f
-        ),
-        ImGui::GetColorU32(
-            ImGuiCol_Text
-        ),
-        selectedText.c_str()
-    );
-
-    drawList->AddText(
-        ImVec2(
-            origin.x + 12.0f,
-            end.y - 20.0f
-        ),
-        ImGui::GetColorU32(
-            ImGuiCol_TextDisabled
-        ),
-        "bar height = explicit transform count  |  click a frame to inspect"
-    );
-}
 
 struct PixelSize {
     int width = 1;
@@ -1221,16 +894,37 @@ void drawEditorGrid(
         return;
     }
 
-    // The editor grid is world space, not part of the selected model.
-    // Moving/rotating/scaling the model must not drag the floor with it.
     const eld::math::Mat4 model =
         eld::math::Mat4::identity();
 
     constexpr int HalfLines = 10;
     constexpr float Spacing = 50.0f;
+
     constexpr float Extent =
         HalfLines *
         Spacing;
+
+    const auto& major =
+        ui::themePalette().gridMajor;
+
+    const auto& minor =
+        ui::themePalette().gridMinor;
+
+    const ImU32 majorColor =
+        IM_COL32(
+            major[0],
+            major[1],
+            major[2],
+            major[3]
+        );
+
+    const ImU32 minorColor =
+        IM_COL32(
+            minor[0],
+            minor[1],
+            minor[2],
+            minor[3]
+        );
 
     for (
         int line = -HalfLines;
@@ -1299,23 +993,13 @@ void drawEditorGrid(
 
         const ImU32 lineColor =
             line == 0
-                ? IM_COL32(
-                      140,
-                      145,
-                      155,
-                      180
-                  )
-                : IM_COL32(
-                      115,
-                      120,
-                      130,
-                      80
-                  );
+                ? majorColor
+                : minorColor;
 
         const float thickness =
             line == 0
-                ? 1.5f
-                : 1.0f;
+                ? 1.25f
+                : 0.8f;
 
         if (
             px0.valid &&
@@ -2546,24 +2230,20 @@ void drawEditorGridSdl(
                 zEnd
             );
 
-        if (line == 0) {
-            SDL_SetRenderDrawColor(
-                renderer,
-                145,
-                150,
-                160,
-                190
-            );
-        }
-        else {
-            SDL_SetRenderDrawColor(
-                renderer,
-                125,
-                130,
-                140,
-                100
-            );
-        }
+        const auto& gridColor =
+            line == 0
+                ? ui::themePalette().
+                    gridMajor
+                : ui::themePalette().
+                    gridMinor;
+
+        SDL_SetRenderDrawColor(
+            renderer,
+            gridColor[0],
+            gridColor[1],
+            gridColor[2],
+            gridColor[3]
+        );
 
         if (px0.valid && px1.valid) {
             SDL_RenderLine(
@@ -3019,12 +2699,16 @@ void renderImage(
         );
     }
     else {
+        const auto& canvasColor =
+            ui::themePalette().
+                viewportBackground;
+
         SDL_SetRenderDrawColor(
             renderer,
-            36,
-            38,
-            42,
-            255
+            canvasColor[0],
+            canvasColor[1],
+            canvasColor[2],
+            canvasColor[3]
         );
 
         const SDL_FRect background{
@@ -5385,8 +5069,292 @@ void renderMapInteraction(
 }
 
 void ViewportPanel::shutdown() {
+    viewportSurface_.shutdown();
+    viewportRenderer_ = nullptr;
+
     mapGpuRenderer_.shutdown();
 }
+
+
+void renderAnimationToolRail(
+    CacheExplorerState& state
+) {
+    constexpr ImVec2 ButtonSize{
+        34.0f,
+        34.0f
+    };
+
+    constexpr float ButtonGap =
+        2.0f;
+
+    constexpr float DividerGap =
+        5.0f;
+
+
+    const auto centerButton =
+        [&]() {
+            ImGui::SetCursorPosX(
+                (
+                    ImGui::GetWindowWidth() -
+                    ButtonSize.x
+                ) *
+                    0.5f
+            );
+        };
+
+
+    const auto toolButton =
+        [&](
+            const char* id,
+            ui::Icon icon,
+            const char* tooltip,
+            bool active = false
+        ) {
+            const auto& palette =
+                ui::themePalette();
+
+            centerButton();
+
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_FrameRounding,
+                ButtonSize.y *
+                    0.5f
+            );
+
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_FrameBorderSize,
+                0.0f
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_Button,
+                active
+                    ? ImVec4(
+                          palette.primary.x,
+                          palette.primary.y,
+                          palette.primary.z,
+                          0.22f
+                      )
+                    : ImVec4(
+                          0.0f,
+                          0.0f,
+                          0.0f,
+                          0.0f
+                      )
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_ButtonHovered,
+                ImVec4(
+                    palette.primary.x,
+                    palette.primary.y,
+                    palette.primary.z,
+                    active
+                        ? 0.32f
+                        : 0.14f
+                )
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_ButtonActive,
+                ImVec4(
+                    palette.primary.x,
+                    palette.primary.y,
+                    palette.primary.z,
+                    0.40f
+                )
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_Text,
+                active
+                    ? palette.primary
+                    : palette.text
+            );
+
+            const bool clicked =
+                ui::iconButton(
+                    id,
+                    icon,
+                    tooltip,
+                    ButtonSize
+                );
+
+            ImGui::PopStyleColor(4);
+            ImGui::PopStyleVar(2);
+
+            return clicked;
+        };
+
+
+    const auto divider =
+        [&]() {
+            ImGui::SetCursorPosY(
+                ImGui::GetCursorPosY() +
+                    DividerGap *
+                        0.5f
+            );
+
+            constexpr float DividerInset =
+                10.0f;
+
+            const ImVec2 windowPosition =
+                ImGui::GetWindowPos();
+
+            const float y =
+                ImGui::GetCursorScreenPos().y;
+
+            const auto& palette =
+                ui::themePalette();
+
+            ImGui::GetWindowDrawList()->AddLine(
+                ImVec2(
+                    windowPosition.x +
+                        DividerInset,
+                    y
+                ),
+                ImVec2(
+                    windowPosition.x +
+                        ImGui::GetWindowWidth() -
+                        DividerInset,
+                    y
+                ),
+                ImGui::ColorConvertFloat4ToU32(
+                    ImVec4(
+                        palette.border.x,
+                        palette.border.y,
+                        palette.border.z,
+                        0.65f
+                    )
+                ),
+                1.0f
+            );
+
+            ImGui::Dummy(
+                ImVec2(
+                    1.0f,
+                    DividerGap
+                )
+            );
+        };
+
+
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_ItemSpacing,
+        ImVec2(
+            0.0f,
+            ButtonGap
+        )
+    );
+
+
+    // --------------------------------------------------------
+    // TRANSFORM
+    // --------------------------------------------------------
+
+    if (
+        toolButton(
+            "Move",
+            ui::Icon::Move,
+            "Move [W]",
+            state.viewportGizmoMode ==
+                ViewportGizmoMode::Move
+        )
+    ) {
+        state.viewportGizmoMode =
+            ViewportGizmoMode::Move;
+    }
+
+
+    if (
+        toolButton(
+            "Rotate",
+            ui::Icon::Rotate,
+            "Rotate [E]",
+            state.viewportGizmoMode ==
+                ViewportGizmoMode::Rotate
+        )
+    ) {
+        state.viewportGizmoMode =
+            ViewportGizmoMode::Rotate;
+    }
+
+
+    if (
+        toolButton(
+            "Scale",
+            ui::Icon::Scale,
+            "Scale [R]",
+            state.viewportGizmoMode ==
+                ViewportGizmoMode::Scale
+        )
+    ) {
+        state.viewportGizmoMode =
+            ViewportGizmoMode::Scale;
+    }
+
+
+    divider();
+
+
+    // --------------------------------------------------------
+    // VIEW
+    // --------------------------------------------------------
+
+    if (
+        toolButton(
+            "Grid",
+            ui::Icon::Grid,
+            state.showEditorGrid
+                ? "Hide grid"
+                : "Show grid",
+            state.showEditorGrid
+        )
+    ) {
+        state.showEditorGrid =
+            !state.showEditorGrid;
+    }
+
+
+    if (
+        toolButton(
+            "Focus",
+            ui::Icon::Focus,
+            "Focus model [F]"
+        )
+    ) {
+        state.viewportCameraPivot =
+            state.modelTransform.position;
+
+        updateEditorCameraPosition(
+            state
+        );
+    }
+
+
+    divider();
+
+
+    // --------------------------------------------------------
+    // RESET
+    // --------------------------------------------------------
+
+    if (
+        toolButton(
+            "ResetView",
+            ui::Icon::Restart,
+            "Reset viewport"
+        )
+    ) {
+        resetEditorCamera(
+            state
+        );
+    }
+
+
+    ImGui::PopStyleVar();
+}
+
 
 void ViewportPanel::render(
     CacheExplorerState& state,
@@ -5402,8 +5370,6 @@ void ViewportPanel::render(
         true
     );
 
-    ImGui::TextUnformatted("VIEWPORT");
-    ImGui::Separator();
 
     const ImVec2 available =
         ImGui::GetContentRegionAvail();
@@ -5425,50 +5391,91 @@ void ViewportPanel::render(
         state.midiView
     );
 
-    if (state.activeAnimation.has_value()) {
-        const int animationId =
-            static_cast<int>(
-                state.activeAnimation->animation.id
-            );
+    const float spacing =
+        ImGui::GetStyle().ItemSpacing.y;
 
-        if (animationVisualizationId_ != animationId) {
-            animationVisualizationId_ = animationId;
-            state.activeAnimationFrameIndex = 0;
-        }
-    }
-    else {
-        animationVisualizationId_ = -1;
-    }
+    // Animation has bespoke workspace chrome above the
+    // renderer-backed canvas.
+    constexpr float AnimationHeaderHeight =
+        34.0f;
+
+    const float headerHeight =
+        state.activeAnimation.has_value()
+            ? AnimationHeaderHeight + spacing
+            : 0.0f;
+
+    const bool animationWorkspace =
+        state.activeAnimation.has_value();
 
     const ViewportControlsLayout controlsLayout =
         controlsPanel_.updateLayout(
-            available.y
+            std::max(
+                available.y -
+                    headerHeight,
+                1.0f
+            )
         );
 
-    const float spacing =
-        ImGui::GetStyle().ItemSpacing.y;
+    const float bottomControlsHeight =
+        animationWorkspace
+            ? 0.0f
+            : controlsLayout.controlsHeight +
+                controlsLayout.resizeHandleHeight +
+                spacing;
 
     const float viewportHeight =
         std::max(
             available.y -
-                controlsLayout.controlsHeight -
-                controlsLayout.resizeHandleHeight -
-                spacing,
+                headerHeight -
+                bottomControlsHeight,
             1.0f
         );
 
-    // The viewport stays a real child window.
-    // The contextual controls panel is a sibling below it.
+    if (state.activeAnimation.has_value()) {
+        ImGui::BeginChild(
+            "##AnimationWorkspaceHeader",
+            ImVec2(
+                0.0f,
+                AnimationHeaderHeight
+            ),
+            false,
+            ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoScrollWithMouse
+        );
+
+        AnimationViewOverlay{}.renderHeader(
+            state
+        );
+
+        ImGui::EndChild();
+    }
+
+    // The renderer-backed viewport is essentially edge-to-edge
+    // for bespoke animation workspaces.
+    if (animationWorkspace) {
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_WindowPadding,
+            ImVec2(
+                0.0f,
+                0.0f
+            )
+        );
+    }
+
     ImGui::BeginChild(
         "ViewportCanvasWindow",
         ImVec2(
             0.0f,
             viewportHeight
         ),
-        true,
+        !animationWorkspace,
         ImGuiWindowFlags_NoScrollbar |
             ImGuiWindowFlags_NoScrollWithMouse
     );
+
+    if (animationWorkspace) {
+        ImGui::PopStyleVar();
+    }
 
     if (state.activeMap.has_value()) {
         renderMapToolbar(
@@ -5494,20 +5501,13 @@ void ViewportPanel::render(
         );
         ImGui::Separator();
     }
-    else if (state.activeAnimation.has_value()) {
-        ImGui::TextDisabled(
-            "Animation frame activity | click a frame to inspect it"
-        );
-        ImGui::Separator();
-    }
-    else if (state.activeModelHandle.has_value()) {
+    else if (
+        state.activeModelHandle.has_value() &&
+        !animationWorkspace
+    ) {
         renderViewportToolbar(
             state,
             {}
-        );
-
-        ImGui::TextDisabled(
-            "RMB orbit view | MMB pan view | wheel dolly | F focus | W/E/R object gizmo"
         );
 
         ImGui::Separator();
@@ -5545,16 +5545,271 @@ void ViewportPanel::render(
             1
         );
 
+
+    // Resize/create the renderer target before ImGui records
+    // the texture for this frame.
+    //
+    // The first frame may not yet know the SDL renderer; the
+    // render pass below establishes it and the next frame uses
+    // the surface normally.
+    if (viewportRenderer_ != nullptr) {
+        viewportSurface_.ensure(
+            viewportRenderer_,
+            state.viewportWidth,
+            state.viewportHeight
+        );
+    }
+
+    // MIDI is already a native ImGui visualization.
+    // Every renderer-backed view is now an actual image inside
+    // the ImGui workspace instead of painting over the window.
+    if (
+        !state.activeMidi.has_value() &&
+        viewportSurface_.texture() != nullptr
+    ) {
+        const ImVec2 viewportEnd{
+            viewportPosition.x +
+                viewportSize.x,
+            viewportPosition.y +
+                viewportSize.y
+        };
+
+        ImDrawList* viewportDrawList =
+            ImGui::GetWindowDrawList();
+
+        viewportDrawList->AddImage(
+            (ImTextureID)(
+                std::intptr_t
+            ) viewportSurface_.texture(),
+            viewportPosition,
+            viewportEnd
+        );
+
+        if (animationWorkspace) {
+            // -----------------------------------------------
+            // Forest viewport atmosphere:
+            // - soft light haze at the top
+            // - darker side vignette
+            // - strong bottom falloff behind HUD overlays
+            // -----------------------------------------------
+
+            const float topLightBottomY =
+                viewportPosition.y +
+                viewportSize.y *
+                    0.44f;
+
+            viewportDrawList->
+                AddRectFilledMultiColor(
+                    viewportPosition,
+                    ImVec2(
+                        viewportEnd.x,
+                        topLightBottomY
+                    ),
+
+                    IM_COL32(
+                        228,
+                        236,
+                        223,
+                        30
+                    ),
+
+                    IM_COL32(
+                        228,
+                        236,
+                        223,
+                        30
+                    ),
+
+                    IM_COL32(
+                        228,
+                        236,
+                        223,
+                        0
+                    ),
+
+                    IM_COL32(
+                        228,
+                        236,
+                        223,
+                        0
+                    )
+                );
+
+
+            const float sideVignetteWidth =
+                viewportSize.x *
+                0.18f;
+
+            viewportDrawList->
+                AddRectFilledMultiColor(
+                    viewportPosition,
+                    ImVec2(
+                        viewportPosition.x +
+                            sideVignetteWidth,
+                        viewportEnd.y
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        32
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        0
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        0
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        32
+                    )
+                );
+
+            viewportDrawList->
+                AddRectFilledMultiColor(
+                    ImVec2(
+                        viewportEnd.x -
+                            sideVignetteWidth,
+                        viewportPosition.y
+                    ),
+
+                    viewportEnd,
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        0
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        32
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        32
+                    ),
+
+                    IM_COL32(
+                        16,
+                        21,
+                        17,
+                        0
+                    )
+                );
+
+
+            const float lowerFadeY =
+                viewportPosition.y +
+                viewportSize.y *
+                    0.52f;
+
+            viewportDrawList->
+                AddRectFilledMultiColor(
+                    ImVec2(
+                        viewportPosition.x,
+                        lowerFadeY
+                    ),
+
+                    viewportEnd,
+
+                    IM_COL32(
+                        12,
+                        17,
+                        13,
+                        0
+                    ),
+
+                    IM_COL32(
+                        12,
+                        17,
+                        13,
+                        0
+                    ),
+
+                    IM_COL32(
+                        12,
+                        17,
+                        13,
+                        164
+                    ),
+
+                    IM_COL32(
+                        12,
+                        17,
+                        13,
+                        164
+                    )
+                );
+
+            const float footerShadowY =
+                viewportPosition.y +
+                viewportSize.y *
+                    0.76f;
+
+            viewportDrawList->
+                AddRectFilledMultiColor(
+                    ImVec2(
+                        viewportPosition.x,
+                        footerShadowY
+                    ),
+
+                    viewportEnd,
+
+                    IM_COL32(
+                        7,
+                        10,
+                        8,
+                        0
+                    ),
+
+                    IM_COL32(
+                        7,
+                        10,
+                        8,
+                        0
+                    ),
+
+                    IM_COL32(
+                        7,
+                        10,
+                        8,
+                        92
+                    ),
+
+                    IM_COL32(
+                        7,
+                        10,
+                        8,
+                        92
+                    )
+                );
+        }
+    }
+
     if (state.activeMidi.has_value()) {
         midiViewPanel_.renderVisualization(
             state.midiView,
             midiPlayer,
-            viewportSize
-        );
-    }
-    else if (state.activeAnimation.has_value()) {
-        renderAnimationFrameVisualization(
-            state,
             viewportSize
         );
     }
@@ -5571,6 +5826,90 @@ void ViewportPanel::render(
             viewportSize
         );
 
+        if (animationWorkspace) {
+            // ------------------------------------------------
+            // LEFT TOOL RAIL
+            // ------------------------------------------------
+
+            constexpr float ToolRailWidth =
+                52.0f;
+
+            constexpr float toolRailHeight =
+                244.0f;
+
+            constexpr float ToolRailX =
+                20.0f;
+
+            constexpr float ToolRailY =
+                20.0f;
+
+            ImGui::SetCursorScreenPos(
+                ImVec2(
+                    viewportPosition.x +
+                        ToolRailX,
+                    viewportPosition.y +
+                        ToolRailY
+                )
+            );
+
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_ChildRounding,
+                7.0f
+            );
+
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_WindowPadding,
+                ImVec2(
+                    1.0f,
+                    2.0f
+                )
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_ChildBg,
+                ui::themePalette().hudBackground
+            );
+
+            ImGui::BeginChild(
+                "##AnimationToolRail",
+                ImVec2(
+                    ToolRailWidth,
+                    toolRailHeight
+                ),
+                true,
+                ImGuiWindowFlags_NoScrollbar |
+                    ImGuiWindowFlags_NoScrollWithMouse
+            );
+
+            ImGui::SetCursorPosY(
+                5.0f
+            );
+
+            renderAnimationToolRail(
+                state
+            );
+
+            ImGui::EndChild();
+
+            ImGui::PopStyleColor();
+            ImGui::PopStyleVar(2);
+
+
+            // Animation controls are individual HUD surfaces:
+            // timeline + metadata + transport + context.
+            AnimationViewPanel{}.render(
+                state,
+                renderAnimationControls
+            );
+
+            // Overlay children move ImGui's layout cursor.
+            // Restore the real canvas origin before reserving
+            // the viewport item.
+            ImGui::SetCursorScreenPos(
+                viewportPosition
+            );
+        }
+
         ImGui::Dummy(
             viewportSize
         );
@@ -5578,25 +5917,27 @@ void ViewportPanel::render(
 
     ImGui::EndChild();
 
-    controlsPanel_.renderResizeHandle(
-        controlsLayout
-    );
+    if (!animationWorkspace) {
+        controlsPanel_.renderResizeHandle(
+            controlsLayout
+        );
 
-    controlsPanel_.render(
-        state,
-        viewKind,
-        controlsLayout.controlsHeight,
-        renderAnimationControls,
-        [this, &state, &midiPlayer]() {
-            midiViewPanel_.renderControls(
-                state.activeMidi.has_value()
-                    ? &*state.activeMidi
-                    : nullptr,
-                state.midiView,
-                midiPlayer
-            );
-        }
-    );
+        controlsPanel_.render(
+            state,
+            viewKind,
+            controlsLayout.controlsHeight,
+            renderAnimationControls,
+            [this, &state, &midiPlayer]() {
+                midiViewPanel_.renderControls(
+                    state.activeMidi.has_value()
+                        ? &*state.activeMidi
+                        : nullptr,
+                    state.midiView,
+                    midiPlayer
+                );
+            }
+        );
+    }
 
     ImGui::EndChild();
 }
@@ -5632,6 +5973,90 @@ void ViewportPanel::renderViewport(
     const eld::interface::InterfaceRepository& interfaces,
     eld::sprite::SpriteRepository& interfaceSprites
 ) {
+    viewportRenderer_ =
+        renderer;
+
+    if (
+        !viewportSurface_.ensure(
+            renderer,
+            state.viewportWidth,
+            state.viewportHeight
+        )
+    ) {
+        return;
+    }
+
+    if (
+        !viewportSurface_.begin(
+            renderer
+        )
+    ) {
+        return;
+    }
+
+    // Existing viewport render helpers use state.viewportX/Y as
+    // their output origin. On the offscreen target the origin is
+    // always local (0, 0), not application-window coordinates.
+    const int screenViewportX =
+        state.viewportX;
+
+    const int screenViewportY =
+        state.viewportY;
+
+    state.viewportX =
+        0;
+
+    state.viewportY =
+        0;
+
+    struct ViewportSurfaceRestore {
+        ViewportSurface& surface;
+        SDL_Renderer* renderer;
+        CacheExplorerState& state;
+
+        int screenX;
+        int screenY;
+
+        ~ViewportSurfaceRestore() {
+            state.viewportX =
+                screenX;
+
+            state.viewportY =
+                screenY;
+
+            surface.end(
+                renderer
+            );
+        }
+    };
+
+    const ViewportSurfaceRestore restore{
+        viewportSurface_,
+        renderer,
+        state,
+        screenViewportX,
+        screenViewportY
+    };
+
+    // Give empty/failed views a deterministic canvas instead of
+    // leaking the previous frame's contents.
+    const auto& viewportBackground =
+        ui::themePalette().
+            viewportBackground;
+
+    SDL_SetRenderDrawColor(
+        renderer,
+        viewportBackground[0],
+        viewportBackground[1],
+        viewportBackground[2],
+        viewportBackground[3]
+    );
+
+    SDL_RenderClear(
+        renderer
+    );
+
+
     if (state.activeMap.has_value()) {
         mapGpuRenderer_.draw(
             renderer,
@@ -5754,7 +6179,8 @@ void ViewportPanel::renderViewport(
 
     const std::array<std::uint8_t, 4>
         background =
-            modelOptions.backgroundColor();
+            ui::themePalette().
+                viewportBackground;
 
     if (modelOptions.showSolid) {
         eld::render::SoftwareRenderBackend backend(

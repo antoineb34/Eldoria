@@ -1,4 +1,6 @@
 #include "app/AppShell.h"
+#include <string>
+#include "ui/ElForgeTheme.h"
 
 #include <SDL3/SDL.h>
 
@@ -57,6 +59,9 @@ int AppShell::run() {
 
     ImGui::StyleColorsDark();
     eld::platform::imgui::applyImGuiTheme();
+    eld::elforge::ui::applyElForgeTheme(
+        eld::elforge::ui::ElForgeTheme::Forest
+    );
 
     ImGui_ImplSDL3_InitForSDLRenderer(
         window,
@@ -80,6 +85,43 @@ int AppShell::run() {
             ImGui_ImplSDL3_ProcessEvent(
                 &event
             );
+
+
+            if (
+                event.type ==
+                    SDL_EVENT_KEY_DOWN &&
+                event.key.key ==
+                    SDLK_F6 &&
+                !event.key.repeat
+            ) {
+                const int direction =
+                    (
+                        SDL_GetModState() &
+                        SDL_KMOD_SHIFT
+                    )
+                        ? -1
+                        : 1;
+
+                eld::elforge::ui::
+                    cycleElForgeTheme(
+                        direction
+                    );
+
+                const std::string title =
+                    std::string(
+                        "ElForge — "
+                    ) +
+                    eld::elforge::ui::
+                        elForgeThemeName(
+                            eld::elforge::ui::
+                                currentElForgeTheme()
+                        );
+
+                SDL_SetWindowTitle(
+                    window,
+                    title.c_str()
+                );
+            }
 
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
@@ -125,12 +167,27 @@ int AppShell::run() {
 
         ImGui::Render();
 
-        ImGui_ImplSDLRenderer3_RenderDrawData(
-            ImGui::GetDrawData(),
+        // Render the scene first.
+        // ImGui is the final compositing layer so popups,
+        // cards, menus and tooltips always stay above it.
+        explorer_.renderViewport(
             renderer
         );
 
-        explorer_.renderViewport(
+        // Viewport rendering may alter SDL renderer state.
+        // Restore the full target before drawing ImGui.
+        SDL_SetRenderViewport(
+            renderer,
+            nullptr
+        );
+
+        SDL_SetRenderClipRect(
+            renderer,
+            nullptr
+        );
+
+        ImGui_ImplSDLRenderer3_RenderDrawData(
+            ImGui::GetDrawData(),
             renderer
         );
 

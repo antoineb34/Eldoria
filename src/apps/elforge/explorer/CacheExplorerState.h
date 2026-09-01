@@ -13,6 +13,7 @@
 #include "views/map/MapViewState.h"
 
 #include "midi/MidiFile.h"
+#include "views/animation/AnimationViewState.h"
 #include "views/midi/MidiViewState.h"
 
 #include "graphics/model/ModelHandle.h"
@@ -88,7 +89,8 @@ struct CacheExplorerState {
     CacheTreeNode rootNode;
 
     std::optional<AnimationInspection> activeAnimation;
-    std::size_t activeAnimationFrameIndex = 0;
+    AnimationViewState animationView;
+    std::string animationDumpStatus;
     std::string animationExportStatus;
     bool animationExportAllRequested = false;
 

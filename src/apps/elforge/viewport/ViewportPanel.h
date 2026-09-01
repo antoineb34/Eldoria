@@ -6,6 +6,7 @@
 #include <functional>
 
 #include "viewport/ViewportControlsPanel.h"
+#include "viewport/ViewportSurface.h"
 #include "views/map/MapViewSurface.h"
 #include "views/midi/MidiView.h"
 #include "views/midi/MidiViewPanel.h"
@@ -58,13 +59,20 @@ public:
     );
 
 private:
+    // Renderer-backed scene image composited by ImGui.
+    ViewportSurface viewportSurface_;
+
+    // SDL renderer is stable for the lifetime of ElForge.
+    // Stored after the first render pass so UI layout can resize
+    // the target before ImGui records its texture reference.
+    SDL_Renderer* viewportRenderer_ = nullptr;
+
     ViewportControlsPanel controlsPanel_;
     MapViewSurface mapGpuRenderer_;
 
     MidiView midiView_;
     MidiViewPanel midiViewPanel_;
 
-    int animationVisualizationId_ = -1;
 };
 
 }

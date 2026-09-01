@@ -1,3 +1,4 @@
+#include "dump/AnimationDumper.h"
 #include "explorer/CacheInspectorPanel.h"
 
 #include <array>
@@ -395,7 +396,7 @@ void CacheInspectorPanel::render(
         );
 
         ImGui::Text(
-            "Decoded size: %zu bytes",
+            "Raw file bytes: %zu",
             animation.file.bytes.size()
         );
 
@@ -411,201 +412,62 @@ void CacheInspectorPanel::render(
                 animation.asset.frames
             ) {
                 minimumFrame =
-                    std::min(minimumFrame, frame.id);
+                    std::min(
+                        minimumFrame,
+                        frame.id
+                    );
 
                 maximumFrame =
-                    std::max(maximumFrame, frame.id);
+                    std::max(
+                        maximumFrame,
+                        frame.id
+                    );
             }
 
             ImGui::Text(
                 "Global frame IDs: %u - %u",
-                static_cast<unsigned int>(minimumFrame),
-                static_cast<unsigned int>(maximumFrame)
+                static_cast<unsigned int>(
+                    minimumFrame
+                ),
+                static_cast<unsigned int>(
+                    maximumFrame
+                )
             );
         }
 
-        ImGui::Text(
-            "Referenced by sequences: %zu",
-            info.sequences.size()
-        );
-
-        ImGui::Text(
-            "Known uses: %zu",
-            info.uses.size()
-        );
+        ImGui::Spacing();
 
         const std::filesystem::path dumpPath =
-            defaultAnimationExportPath(animation.id);
+            defaultAnimationDumpPath(
+                animation.id
+            );
 
-        if (ImGui::Button("Dump Animation JSON")) {
+        if (ImGui::Button("Dump Full Asset")) {
             std::string error;
 
             if (
-                exportAnimationInspection(
+                dumpAnimation(
                     info,
                     dumpPath,
                     error
                 )
             ) {
-                state.animationExportStatus =
-                    "Exported: " +
+                state.animationDumpStatus =
+                    "Dumped: " +
                     dumpPath.string();
             }
             else {
-                state.animationExportStatus =
-                    "Export failed: " +
+                state.animationDumpStatus =
+                    "Dump failed: " +
                     error;
             }
         }
 
-        ImGui::SameLine();
-
-        if (ImGui::Button("Dump All Animation Relations")) {
-            state.animationExportStatus =
-                "Building full animation relation dump...";
-            state.animationExportAllRequested = true;
-        }
-
-        if (!state.animationExportStatus.empty()) {
+        if (!state.animationDumpStatus.empty()) {
             ImGui::TextWrapped(
                 "%s",
-                state.animationExportStatus.c_str()
+                state.animationDumpStatus.c_str()
             );
-        }
-
-        if (ImGui::CollapsingHeader("Referenced by sequences", ImGuiTreeNodeFlags_DefaultOpen)) {
-            if (info.sequences.empty()) {
-                ImGui::TextUnformatted("No sequence references found.");
-            }
-
-            for (
-                const AnimationSequenceReference& sequence :
-                info.sequences
-            ) {
-                const std::size_t matching =
-                    sequence.matchingPrimaryFrames +
-                    sequence.matchingSecondaryFrames;
-
-                ImGui::Text(
-                    "Sequence %u - %zu/%zu frame refs (primary %zu, secondary %zu)",
-                    static_cast<unsigned int>(sequence.sequenceId),
-                    matching,
-                    sequence.totalFrameReferences,
-                    sequence.matchingPrimaryFrames,
-                    sequence.matchingSecondaryFrames
-                );
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Used by", ImGuiTreeNodeFlags_DefaultOpen)) {
-            if (info.uses.empty()) {
-                ImGui::TextUnformatted("No known cache/content users found.");
-            }
-
-            for (const AnimationUse& use : info.uses) {
-                std::string label =
-                    use.source +
-                    " " +
-                    std::to_string(use.sourceId);
-
-                if (!use.sourceName.empty()) {
-                    label += " - " + use.sourceName;
-                }
-
-                label +=
-                    " - " +
-                    use.role +
-                    " - Sequence " +
-                    std::to_string(use.sequenceId);
-
-                if (use.viaSpotAnimationId.has_value()) {
-                    label +=
-                        " via SpotAnim " +
-                        std::to_string(*use.viaSpotAnimationId);
-                }
-
-                label +=
-                    " [" +
-                    use.provenance +
-                    "]";
-
-                ImGui::TextWrapped(
-                    "%s",
-                    label.c_str()
-                );
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Frames")) {
-            for (
-                const eld::animation::AnimationFrame& frame :
-                animation.asset.frames
-            ) {
-                ImGui::Text(
-                    "Frame %u - delay %u - %zu transforms",
-                    static_cast<unsigned int>(frame.id),
-                    static_cast<unsigned int>(frame.delay),
-                    frame.transforms.size()
-                );
-
-                if (
-                    ImGui::TreeNode(
-                        reinterpret_cast<const void*>(
-                            static_cast<std::uintptr_t>(frame.id) + 1u
-                        ),
-                        "Transforms##frame_%u",
-                        static_cast<unsigned int>(frame.id)
-                    )
-                ) {
-                    for (
-                        const eld::animation::FrameTransform& transform :
-                        frame.transforms
-                    ) {
-                        ImGui::Text(
-                            "slot %u flags 0x%02X  x=%d y=%d z=%d",
-                            static_cast<unsigned int>(transform.slot),
-                            static_cast<unsigned int>(transform.flags),
-                            transform.x,
-                            transform.y,
-                            transform.z
-                        );
-                    }
-
-                    ImGui::TreePop();
-                }
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Skeleton")) {
-            for (
-                std::size_t index = 0;
-                index < animation.asset.skeleton.slots.size();
-                ++index
-            ) {
-                const eld::animation::SkeletonSlot& slot =
-                    animation.asset.skeleton.slots[index];
-
-                std::string groups;
-
-                for (std::size_t group = 0; group < slot.groups.size(); ++group) {
-                    if (group != 0) {
-                        groups += ", ";
-                    }
-
-                    groups +=
-                        std::to_string(
-                            static_cast<unsigned int>(slot.groups[group])
-                        );
-                }
-
-                ImGui::TextWrapped(
-                    "Slot %zu - %s (%u) - groups [%s]",
-                    index,
-                    animationTransformTypeName(slot.type),
-                    static_cast<unsigned int>(slot.type),
-                    groups.c_str()
-                );
-            }
         }
     }
 

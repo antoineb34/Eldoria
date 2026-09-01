@@ -1,3 +1,4 @@
+#include "views/animation/AnimationViewPanel.h"
 #include "viewport/ViewportControlsPanel.h"
 
 #include <algorithm>
@@ -65,11 +66,24 @@ void ViewportControlsPanel::update(
     ViewportViewKind kind
 ) {
     if (kind != lastKind_) {
-        if (
-            kind == ViewportViewKind::Midi ||
-            kind == ViewportViewKind::Animation
-        ) {
+        if (kind == ViewportViewKind::Animation) {
             open_ = true;
+
+            // Animation's sequence/preview/playback controls
+            // are primary interaction, not a hidden drawer.
+            preferredHeight_ = 108.0f;
+        }
+        else {
+            if (
+                lastKind_ ==
+                ViewportViewKind::Animation
+            ) {
+                preferredHeight_ = 175.0f;
+            }
+
+            if (kind == ViewportViewKind::Midi) {
+                open_ = true;
+            }
         }
 
         lastKind_ = kind;
@@ -87,6 +101,31 @@ void ViewportControlsPanel::update(
 ViewportControlsLayout ViewportControlsPanel::updateLayout(
     float availableHeight
 ) {
+    if (
+        lastKind_ ==
+        ViewportViewKind::Animation
+    ) {
+        constexpr float ToolbarHeight =
+            86.0f;
+
+        const float height =
+            std::min(
+                ToolbarHeight,
+                std::max(
+                    CollapsedHeight,
+                    availableHeight
+                )
+            );
+
+        return {
+            height,
+            0.0f,
+            height,
+            height
+        };
+    }
+
+
     constexpr float MinimumViewportHeight = 80.0f;
 
     const float maximumHeight = std::max(
@@ -95,7 +134,7 @@ ViewportControlsLayout ViewportControlsPanel::updateLayout(
     );
 
     const float minimumHeight = std::min(
-        150.0f,
+        84.0f,
         maximumHeight
     );
 
@@ -136,7 +175,10 @@ ViewportControlsLayout ViewportControlsPanel::updateLayout(
 void ViewportControlsPanel::renderResizeHandle(
     const ViewportControlsLayout& layout
 ) {
-    if (!open_) {
+    if (
+        !open_ ||
+        layout.resizeHandleHeight <= 0.0f
+    ) {
         return;
     }
 
@@ -170,18 +212,33 @@ void ViewportControlsPanel::render(
     ImGui::BeginChild(
         "ViewportControlsPanel",
         ImVec2(0.0f, controlsHeight),
-        true
+        false
     );
 
+    // Animation uses this area as a permanent contextual
+    // toolbar. Do not hide primary playback behind a drawer.
+    if (kind == ViewportViewKind::Animation) {
+        renderActivePanel(
+            state,
+            kind,
+            renderAnimationControls,
+            renderMidiControls
+        );
+
+        ImGui::EndChild();
+        return;
+    }
+
     const std::string label =
-        std::string(open_ ? "v  " : "^  ") + titleFor(kind);
+        std::string(open_ ? "▾  " : "▴  ") +
+        titleFor(kind);
 
     if (
         ImGui::Selectable(
             label.c_str(),
             false,
             0,
-            ImVec2(0.0f, 22.0f)
+            ImVec2(0.0f, 24.0f)
         )
     ) {
         open_ = !open_;
@@ -316,7 +373,10 @@ void ViewportControlsPanel::renderActivePanel(
             break;
 
         case ViewportViewKind::Animation:
-            renderAnimationArchiveView(state);
+            AnimationViewPanel{}.render(
+                state,
+                renderAnimationControls
+            );
             break;
 
         case ViewportViewKind::Interface:
@@ -344,236 +404,6 @@ void ViewportControlsPanel::renderActivePanel(
                 "Select a map, MIDI, animation, interface, NPC, object, SpotAnim, model, or texture."
             );
             break;
-    }
-}
-
-const char* ViewportControlsPanel::transformTypeName(
-    std::uint8_t type
-) {
-    switch (type) {
-        case 0:
-            return "Pivot";
-        case 1:
-            return "Translate";
-        case 2:
-            return "Rotate";
-        case 3:
-            return "Scale";
-        case 4:
-            return "Unknown4";
-        case 5:
-            return "Alpha";
-        default:
-            return "Unknown";
-    }
-}
-
-void ViewportControlsPanel::renderAnimationArchiveView(
-    CacheExplorerState& state
-) {
-    if (!state.activeAnimation.has_value()) {
-        return;
-    }
-
-    const AnimationInspection& info = *state.activeAnimation;
-    const eld::animation::Animation& animation = info.animation;
-    const std::size_t frameCount = animation.asset.frames.size();
-
-    ImGui::Text(
-        "Animation %u",
-        static_cast<unsigned int>(animation.id)
-    );
-    ImGui::SameLine();
-    ImGui::TextDisabled(
-        "| %zu frames | %zu skeleton slots",
-        frameCount,
-        animation.asset.skeleton.slots.size()
-    );
-    ImGui::TextDisabled(
-        "%zu referenced sequences | %zu known uses",
-        info.sequences.size(),
-        info.uses.size()
-    );
-
-    if (frameCount == 0) {
-        ImGui::Spacing();
-        ImGui::TextDisabled(
-            "This animation contains no decoded frames."
-        );
-        return;
-    }
-
-    state.activeAnimationFrameIndex = std::min(
-        state.activeAnimationFrameIndex,
-        frameCount - 1
-    );
-
-    ImGui::Spacing();
-
-    if (ImGui::Button("< Frame")) {
-        if (state.activeAnimationFrameIndex > 0) {
-            --state.activeAnimationFrameIndex;
-        }
-        else {
-            state.activeAnimationFrameIndex = frameCount - 1;
-        }
-    }
-
-    ImGui::SameLine();
-
-    int frameIndex = static_cast<int>(
-        state.activeAnimationFrameIndex
-    );
-
-    ImGui::SetNextItemWidth(
-        std::clamp(
-            ImGui::GetContentRegionAvail().x - 110.0f,
-            80.0f,
-            360.0f
-        )
-    );
-
-    if (
-        ImGui::SliderInt(
-            "##AnimationFrameIndex",
-            &frameIndex,
-            0,
-            static_cast<int>(frameCount - 1),
-            "Frame %d"
-        )
-    ) {
-        state.activeAnimationFrameIndex =
-            static_cast<std::size_t>(frameIndex);
-    }
-
-    ImGui::SameLine();
-
-    if (ImGui::Button("Frame >")) {
-        state.activeAnimationFrameIndex =
-            (state.activeAnimationFrameIndex + 1) % frameCount;
-    }
-
-    const eld::animation::AnimationFrame& frame =
-        animation.asset.frames[state.activeAnimationFrameIndex];
-
-    std::array<std::size_t, 7> transformCounts{};
-
-    for (
-        const eld::animation::FrameTransform& transform :
-        frame.transforms
-    ) {
-        std::uint8_t type = 6;
-
-        if (transform.slot < animation.asset.skeleton.slots.size()) {
-            const std::uint8_t sourceType =
-                animation.asset.skeleton.slots[transform.slot].type;
-            type = sourceType <= 5 ? sourceType : 6;
-        }
-
-        ++transformCounts[type];
-    }
-
-    ImGui::Spacing();
-    ImGui::Separator();
-
-    ImGui::Text(
-        "Global frame %u | delay %u | %zu transforms",
-        static_cast<unsigned int>(frame.id),
-        static_cast<unsigned int>(frame.delay),
-        frame.transforms.size()
-    );
-
-    ImGui::Text(
-        "Pivot %zu  Translate %zu  Rotate %zu  Scale %zu  Alpha %zu",
-        transformCounts[0],
-        transformCounts[1],
-        transformCounts[2],
-        transformCounts[3],
-        transformCounts[5]
-    );
-
-    if (transformCounts[4] != 0 || transformCounts[6] != 0) {
-        ImGui::TextDisabled(
-            "Unknown4 %zu  Other %zu",
-            transformCounts[4],
-            transformCounts[6]
-        );
-    }
-
-    if (ImGui::CollapsingHeader("Selected frame transforms")) {
-        if (frame.transforms.empty()) {
-            ImGui::TextDisabled(
-                "No explicit transforms in this frame."
-            );
-        }
-
-        for (
-            const eld::animation::FrameTransform& transform :
-            frame.transforms
-        ) {
-            std::uint8_t type = 255;
-
-            if (transform.slot < animation.asset.skeleton.slots.size()) {
-                type =
-                    animation.asset.skeleton.slots[transform.slot].type;
-            }
-
-            ImGui::Text(
-                "slot %u  %-9s  x=%d y=%d z=%d",
-                static_cast<unsigned int>(transform.slot),
-                transformTypeName(type),
-                transform.x,
-                transform.y,
-                transform.z
-            );
-        }
-    }
-
-    if (ImGui::CollapsingHeader("Referenced sequences")) {
-        if (info.sequences.empty()) {
-            ImGui::TextDisabled("No sequence references found.");
-        }
-
-        for (
-            const AnimationSequenceReference& sequence :
-            info.sequences
-        ) {
-            const std::size_t matching =
-                sequence.matchingPrimaryFrames +
-                sequence.matchingSecondaryFrames;
-
-            ImGui::Text(
-                "Sequence %u  %zu/%zu refs",
-                static_cast<unsigned int>(sequence.sequenceId),
-                matching,
-                sequence.totalFrameReferences
-            );
-        }
-    }
-
-    if (ImGui::CollapsingHeader("Known uses")) {
-        if (info.uses.empty()) {
-            ImGui::TextDisabled(
-                "No known cache/content users found."
-            );
-        }
-
-        for (const AnimationUse& use : info.uses) {
-            std::string label =
-                use.source + " " + std::to_string(use.sourceId);
-
-            if (!use.sourceName.empty()) {
-                label += " - " + use.sourceName;
-            }
-
-            label +=
-                " - " + use.role +
-                " - Seq " + std::to_string(use.sequenceId);
-
-            label += " [" + use.provenance + "]";
-
-            ImGui::TextWrapped("%s", label.c_str());
-        }
     }
 }
 

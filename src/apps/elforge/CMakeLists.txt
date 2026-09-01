@@ -2,6 +2,11 @@ add_executable(elforge
     main.cpp
 
     app/AppShell.cpp
+    ui/ElForgeTheme.cpp
+    ui/IconButton.cpp
+    ui/Carousel.cpp
+    dump/AssetDumpWriter.cpp
+    dump/AnimationDumper.cpp
     export/AnimationExporter.cpp
     inspection/AnimationInspector.cpp
     explorer/CacheExplorer.cpp
@@ -9,6 +14,8 @@ add_executable(elforge
     explorer/CacheExplorerItem.cpp
     explorer/CacheExplorerSelection.cpp
     explorer/tree/CacheTreeBuilder.cpp
+    views/animation/AnimationViewPanel.cpp
+    views/animation/AnimationViewOverlay.cpp
     views/floor/FloorView.cpp
     views/font/FontView.cpp
     views/identity_kit/IdentityKitView.cpp
@@ -27,6 +34,7 @@ add_executable(elforge
     explorer/CacheInspectorPanel.cpp
     explorer/tree/CacheTreePanel.cpp
     viewport/ViewportPanel.cpp
+    viewport/ViewportSurface.cpp
     views/interface/InterfaceViewPanel.cpp
     views/map/MapViewSurface.cpp
     views/model/ModelViewPanel.cpp

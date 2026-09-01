@@ -24,6 +24,7 @@ struct AnimationSequenceReference {
     std::size_t matchingPrimaryFrames = 0;
     std::size_t matchingSecondaryFrames = 0;
     std::size_t totalFrameReferences = 0;
+    std::uint64_t durationMilliseconds = 0;
 };
 
 struct AnimationUse {

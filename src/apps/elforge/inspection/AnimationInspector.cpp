@@ -1,3 +1,4 @@
+#include "animation/AnimationPlayer.h"
 #include "inspection/AnimationInspector.h"
 
 #include <algorithm>
@@ -12,6 +13,47 @@
 namespace eld::elforge {
 
 namespace {
+
+std::uint64_t sequenceDurationMilliseconds(
+    const eld::animation::AnimationFrameIndex& frames,
+    const eld::definition::SequenceDefinition& sequence
+) {
+    eld::graphics::AnimationPlayer player(
+        frames
+    );
+
+    player.setSequence(
+        sequence
+    );
+
+    player.setLooping(
+        false
+    );
+
+    player.pause();
+
+    std::uint64_t total = 0;
+
+    const std::size_t frameCount =
+        player.frameCount();
+
+    for (
+        std::size_t index = 0;
+        index < frameCount;
+        ++index
+    ) {
+        total +=
+            player.
+                currentFrameDurationMilliseconds();
+
+        if (index + 1 < frameCount) {
+            player.stepForward();
+        }
+    }
+
+    return total;
+}
+
 
 using eld::animation::presentation::AnimationAction;
 using eld::animation::presentation::AnimationBinding;
@@ -265,7 +307,12 @@ AnimationInspection AnimationInspector::inspect(
             .sequenceId = sequence.id,
             .matchingPrimaryFrames = usage.primary,
             .matchingSecondaryFrames = usage.secondary,
-            .totalFrameReferences = usage.totalReferences
+            .totalFrameReferences = usage.totalReferences,
+            .durationMilliseconds =
+                sequenceDurationMilliseconds(
+                    *frames_,
+                    sequence
+                )
         });
     }
 

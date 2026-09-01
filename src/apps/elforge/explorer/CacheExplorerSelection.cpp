@@ -23,6 +23,8 @@ void CacheExplorer::handleSelectionChanged() {
     midiPlayer_.unload();
 
     state_.activeAnimation.reset();
+    state_.animationView = {};
+    state_.animationDumpStatus.clear();
     state_.animationExportStatus.clear();
     state_.animationExportAllRequested = false;
 
@@ -90,6 +92,8 @@ void CacheExplorer::handleSelectionChanged() {
                             state_.selection.fileId
                         )
                     );
+
+                rebuildAnimationPreviewUses();
             }
             catch (const std::exception& exception) {
                 state_.activeAnimation.reset();
@@ -470,8 +474,8 @@ void CacheExplorer::handleSelectionChanged() {
 
                     if (animationSource.has_value()) {
                         animationSource_ = animationSource->mesh;
-                        animationViewKind_ =
-                            AnimationViewKind::SpotAnimation;
+                        animationTargetKind_ =
+                            AnimationTargetKind::SpotAnimation;
 
                         startAnimationView(
                             definition->sequenceId
@@ -571,8 +575,8 @@ void CacheExplorer::handleSelectionChanged() {
                     animationSource_ =
                         state_.activeModel->mesh;
 
-                    animationViewKind_ =
-                        AnimationViewKind::Npc;
+                    animationTargetKind_ =
+                        AnimationTargetKind::Npc;
 
                     const std::optional<std::uint16_t>
                         initialSequence =
@@ -631,8 +635,8 @@ void CacheExplorer::handleSelectionChanged() {
 
                     if (animationSource.has_value()) {
                         animationSource_ = animationSource->mesh;
-                        animationViewKind_ =
-                            AnimationViewKind::Location;
+                        animationTargetKind_ =
+                            AnimationTargetKind::Location;
 
                         startAnimationView(
                             definition->animationId

@@ -1,16 +1,18 @@
 #pragma once
 
+#include <functional>
+
 namespace eld::elforge {
 
 struct CacheExplorerState;
 
-class CacheTreePanel {
+class AnimationViewPanel {
 public:
     void render(
         CacheExplorerState& state,
-        float width,
-        float height
-    );
+        const std::function<void()>&
+            renderPlayerHud
+    ) const;
 };
 
 }

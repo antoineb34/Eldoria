@@ -88,6 +88,12 @@ private:
 
     void rebuildAnimationFrame();
 
+    void rebuildAnimationPreviewUses();
+
+    bool activateAnimationPreviewUse(
+        std::size_t previewIndex
+    );
+
     void selectNextNpcWithProjectile();
 
     void selectNextWearableItem();
@@ -97,7 +103,7 @@ private:
     void renderLocationAnimationControls();
     void renderSpotAnimationControls();
     void renderAnimationControls();
-    void renderAnimationPlaybackControls();
+    void renderAnimationPlayerHud();
     void clearNpcActionView();
 
     void startNpcActionView(
@@ -141,6 +147,9 @@ private:
     eld::cache::Cache cache_;
     eld::map::MapLoader mapLoader_;
     eld::midi::MidiRepository midiRepository_;
+    bool explorerPanelOpen_ = true;
+bool inspectorPanelOpen_ = true;
+
     eld::audio::MidiPlayer midiPlayer_;
 
     eld::animation::AnimationRepository animationRepository_;
@@ -149,7 +158,7 @@ private:
     eld::graphics::AnimationPlayer animationPlayer_;
     eld::graphics::ModelAnimator modelAnimator_;
 
-    enum class AnimationViewKind {
+    enum class AnimationTargetKind {
         None,
         Npc,
         Item,
@@ -160,8 +169,8 @@ private:
     eld::animation::presentation::AnimationPresentationCatalog
         animationPresentationCatalog_;
 
-    AnimationViewKind animationViewKind_ =
-        AnimationViewKind::None;
+    AnimationTargetKind animationTargetKind_ =
+        AnimationTargetKind::None;
 
 
     struct NpcActionEffectState {

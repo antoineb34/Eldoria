@@ -118,7 +118,7 @@ void CacheExplorer::showItemEquippedView(
     state_.activeModel = std::move(*model);
 
     animationSource_ = state_.activeModel->mesh;
-    animationViewKind_ = AnimationViewKind::Item;
+    animationTargetKind_ = AnimationTargetKind::Item;
 
     itemViewMode_ =
         gender == ItemViewGender::Male
@@ -533,7 +533,7 @@ void CacheExplorer::renderItemAnimationControls() {
         }
     }
 
-    renderAnimationPlaybackControls();
+    renderAnimationPlayerHud();
     ImGui::Separator();
 }
 

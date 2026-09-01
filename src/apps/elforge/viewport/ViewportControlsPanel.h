@@ -33,7 +33,7 @@ struct ViewportControlsLayout {
 
 class ViewportControlsPanel {
 public:
-    static constexpr float CollapsedHeight = 30.0f;
+    static constexpr float CollapsedHeight = 32.0f;
 
     ViewportViewKind kindFor(
         const CacheExplorerState& state
@@ -72,19 +72,13 @@ private:
         const std::function<void()>& renderMidiControls
     );
 
-    static const char* transformTypeName(std::uint8_t type);
-
-    static void renderAnimationArchiveView(
-        CacheExplorerState& state
-    );
-
     InterfaceViewPanel interfaceViewPanel_;
     ModelViewPanel modelViewPanel_;
     TextureViewPanel textureViewPanel_;
 
     bool open_ = false;
     ViewportViewKind lastKind_ = ViewportViewKind::None;
-    float preferredHeight_ = 300.0f;
+    float preferredHeight_ = 175.0f;
     float animatedHeight_ = CollapsedHeight;
 };
 

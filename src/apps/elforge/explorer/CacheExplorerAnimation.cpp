@@ -1,4 +1,6 @@
+#include "ui/ElForgeTheme.h"
 #include "explorer/CacheExplorer.h"
+#include "views/animation/AnimationHudLayout.h"
 
 #include <algorithm>
 #include <cmath>
@@ -13,7 +15,9 @@
 #include <imgui.h>
 
 #include "views/location/LocationView.h"
+#include "views/npc/NpcView.h"
 #include "views/spot_animation/SpotAnimationView.h"
+#include "ui/IconButton.h"
 
 namespace eld::elforge {
 
@@ -41,12 +45,318 @@ void CacheExplorer::resetAnimationView() {
 
     animationPlayer_.clear();
 
-    animationViewKind_ =
-        AnimationViewKind::None;
+    animationTargetKind_ =
+        AnimationTargetKind::None;
 
     animationSource_.reset();
     animationHandles_.clear();
 }
+
+void CacheExplorer::rebuildAnimationPreviewUses() {
+    AnimationViewState& view =
+        state_.animationView;
+
+    view.previewUseIndices.clear();
+    view.selectedPreviewUseIndex = 0;
+    view.activePreviewUseIndex =
+        AnimationViewState::NoActivePreview;
+    view.previewStatus.clear();
+
+    if (!state_.activeAnimation.has_value()) {
+        return;
+    }
+
+    const AnimationInspection& inspection =
+        *state_.activeAnimation;
+
+    for (
+        std::size_t index = 0;
+        index < inspection.uses.size();
+        ++index
+    ) {
+        const AnimationUse& use =
+            inspection.uses[index];
+
+        // First useful version:
+        // entities with an existing, proven standalone
+        // animation-source construction path.
+        if (
+            use.source == "NPC" ||
+            use.source == "Location" ||
+            use.source == "SpotAnim"
+        ) {
+            view.previewUseIndices.push_back(
+                index
+            );
+        }
+    }
+
+    if (view.previewUseIndices.empty()) {
+        view.previewStatus =
+            "No previewable 3D model usage found";
+    }
+    else {
+        view.previewStatus =
+            std::to_string(
+                view.previewUseIndices.size()
+            ) +
+            " previewable 3D use(s)";
+    }
+}
+
+
+bool CacheExplorer::activateAnimationPreviewUse(
+    std::size_t previewIndex
+) {
+    if (!state_.activeAnimation.has_value()) {
+        return false;
+    }
+
+    AnimationViewState& viewState =
+        state_.animationView;
+
+    if (
+        previewIndex >=
+        viewState.previewUseIndices.size()
+    ) {
+        return false;
+    }
+
+    const AnimationInspection& inspection =
+        *state_.activeAnimation;
+
+    const std::size_t useIndex =
+        viewState.previewUseIndices[
+            previewIndex
+        ];
+
+    if (useIndex >= inspection.uses.size()) {
+        return false;
+    }
+
+    const AnimationUse& use =
+        inspection.uses[useIndex];
+
+    // Mark this attempt consumed even if its model is bad.
+    // That prevents repeatedly rebuilding a broken usage
+    // every frame.
+    viewState.activePreviewUseIndex =
+        previewIndex;
+
+    const eld::definition::SequenceDefinition* sequence =
+        sequenceRepository_.find(
+            use.sequenceId
+        );
+
+    if (
+        sequence == nullptr ||
+        sequence->frames.empty()
+    ) {
+        viewState.previewStatus =
+            "Sequence " +
+            std::to_string(use.sequenceId) +
+            " is unavailable or empty";
+
+        return false;
+    }
+
+    // Reset only the active presentation runtime.
+    // The selected raw AnimationInspection stays active.
+    resetAnimationView();
+
+    state_.activeNpc.reset();
+    state_.activeLocation.reset();
+    state_.activeSpotAnimation.reset();
+    state_.activeItem.reset();
+
+    state_.activeModel.reset();
+    state_.activeModelHandle.reset();
+
+    if (use.source == "NPC") {
+        const eld::definition::NpcDefinition* definition =
+            npcRepository_.find(
+                use.sourceId
+            );
+
+        if (definition == nullptr) {
+            viewState.previewStatus =
+                "NPC " +
+                std::to_string(use.sourceId) +
+                " was not found";
+
+            return false;
+        }
+
+        const NpcView view;
+
+        std::optional<eld::model::Model> model =
+            view.build(
+                *definition,
+                modelRepository_
+            );
+
+        if (!model.has_value()) {
+            viewState.previewStatus =
+                "Could not build NPC " +
+                std::to_string(use.sourceId);
+
+            return false;
+        }
+
+        state_.activeNpc =
+            *definition;
+
+        state_.activeModel =
+            std::move(*model);
+
+        animationSource_ =
+            state_.activeModel->mesh;
+
+        animationTargetKind_ =
+            AnimationTargetKind::Npc;
+    }
+    else if (use.source == "Location") {
+        const eld::definition::LocationDefinition* definition =
+            locationRepository_.find(
+                use.sourceId
+            );
+
+        if (definition == nullptr) {
+            viewState.previewStatus =
+                "Location " +
+                std::to_string(use.sourceId) +
+                " was not found";
+
+            return false;
+        }
+
+        const LocationView view;
+
+        std::optional<eld::model::Model> model =
+            view.build(
+                *definition,
+                modelRepository_
+            );
+
+        std::optional<eld::model::Model> animationSource =
+            view.buildAnimationSource(
+                *definition,
+                modelRepository_
+            );
+
+        if (
+            !model.has_value() ||
+            !animationSource.has_value()
+        ) {
+            viewState.previewStatus =
+                "Could not build location " +
+                std::to_string(use.sourceId);
+
+            return false;
+        }
+
+        state_.activeLocation =
+            *definition;
+
+        state_.activeModel =
+            std::move(*model);
+
+        animationSource_ =
+            animationSource->mesh;
+
+        animationTargetKind_ =
+            AnimationTargetKind::Location;
+    }
+    else if (use.source == "SpotAnim") {
+        const eld::definition::SpotAnimationDefinition* definition =
+            spotAnimationRepository_.find(
+                use.sourceId
+            );
+
+        if (definition == nullptr) {
+            viewState.previewStatus =
+                "Spot animation " +
+                std::to_string(use.sourceId) +
+                " was not found";
+
+            return false;
+        }
+
+        const SpotAnimationView view;
+
+        std::optional<eld::model::Model> model =
+            view.build(
+                *definition,
+                modelRepository_
+            );
+
+        std::optional<eld::model::Model> animationSource =
+            view.buildAnimationSource(
+                *definition,
+                modelRepository_
+            );
+
+        if (
+            !model.has_value() ||
+            !animationSource.has_value()
+        ) {
+            viewState.previewStatus =
+                "Could not build spot animation " +
+                std::to_string(use.sourceId);
+
+            return false;
+        }
+
+        state_.activeSpotAnimation =
+            *definition;
+
+        state_.activeModel =
+            std::move(*model);
+
+        animationSource_ =
+            animationSource->mesh;
+
+        animationTargetKind_ =
+            AnimationTargetKind::SpotAnimation;
+    }
+    else {
+        viewState.previewStatus =
+            "This usage does not have a 3D preview yet";
+
+        return false;
+    }
+
+    state_.activeModelHandle =
+        graphicsResources_.resolveModel(
+            state_.activeModel->mesh
+        );
+
+    startAnimationView(
+        use.sequenceId
+    );
+
+    std::string label =
+        use.source +
+        " " +
+        std::to_string(use.sourceId);
+
+    if (!use.sourceName.empty()) {
+        label += " - ";
+        label += use.sourceName;
+    }
+
+    label +=
+        " | " +
+        use.role +
+        " | seq=" +
+        std::to_string(use.sequenceId);
+
+    viewState.previewStatus =
+        std::move(label);
+
+    return true;
+}
+
 
 void CacheExplorer::startAnimationView(
     const std::optional<std::uint16_t>& sequenceId
@@ -116,7 +426,7 @@ void CacheExplorer::rebuildAnimationFrame() {
         animated.mesh;
 
     if (
-        animationViewKind_ == AnimationViewKind::Location &&
+        animationTargetKind_ == AnimationTargetKind::Location &&
         state_.activeLocation.has_value()
     ) {
         const LocationView view;
@@ -126,7 +436,7 @@ void CacheExplorer::rebuildAnimationFrame() {
         );
     }
     else if (
-        animationViewKind_ == AnimationViewKind::SpotAnimation &&
+        animationTargetKind_ == AnimationTargetKind::SpotAnimation &&
         state_.activeSpotAnimation.has_value()
     ) {
         const SpotAnimationView view;
@@ -1232,82 +1542,1145 @@ void CacheExplorer::renderManualNpcActionComposer() {
     }
 }
 
-void CacheExplorer::renderAnimationPlaybackControls() {
+void CacheExplorer::renderAnimationPlayerHud() {
     const eld::definition::SequenceDefinition* sequence =
         animationPlayer_.sequence();
 
     if (sequence == nullptr) {
-        ImGui::TextUnformatted("No animation sequence");
         return;
     }
 
-    if (
-        ImGui::Button(
-            animationPlayer_.isPlaying()
-                ? "Pause"
-                : "Play"
+    const std::size_t frameCount =
+        animationPlayer_.frameCount();
+
+    const std::size_t frameIndex =
+        animationPlayer_.frameIndex();
+
+    const eld::animation::ResolvedAnimationFrame
+        currentResolved =
+            animationPlayer_.
+                currentResolvedFrame();
+
+    const ImVec2 viewportPosition{
+        static_cast<float>(
+            state_.viewportX
+        ),
+        static_cast<float>(
+            state_.viewportY
         )
-    ) {
-        animationPlayer_.setPlaying(
-            !animationPlayer_.isPlaying()
+    };
+
+    const ImVec2 viewportSize{
+        static_cast<float>(
+            state_.viewportWidth
+        ),
+        static_cast<float>(
+            state_.viewportHeight
+        )
+    };
+
+        constexpr float HorizontalInset =
+        animation_hud::HorizontalInset;
+
+    const float timelineWidth =
+        std::max(
+            viewportSize.x -
+                HorizontalInset *
+                    2.0f,
+            100.0f
+        );
+
+    constexpr float TimelineHitHeight =
+        24.0f;
+
+    // Animation playback is rendered from inside
+    // ##AnimationBottomHud, so its top edge is the timeline
+    // anchor. No duplicated HUD-height math required.
+    const float timelineY =
+        state_.activeAnimation.has_value()
+            ? ImGui::GetWindowPos().y
+            : viewportPosition.y +
+                viewportSize.y -
+                154.0f;
+
+    // --------------------------------------------------------
+    // THIN TIMELINE
+    // --------------------------------------------------------
+
+    ImGui::SetCursorScreenPos(
+        ImVec2(
+            viewportPosition.x +
+                HorizontalInset,
+            timelineY
+        )
+    );
+
+    ImGui::InvisibleButton(
+        "##AnimationTimeline",
+        ImVec2(
+            timelineWidth,
+            TimelineHitHeight
+        )
+    );
+
+    const ImVec2 minimum =
+        ImGui::GetItemRectMin();
+
+    const ImVec2 maximum =
+        ImGui::GetItemRectMax();
+
+    ImDrawList* drawList =
+        ImGui::GetWindowDrawList();
+
+    const float lineStart =
+        minimum.x + 3.0f;
+
+    const float lineEnd =
+        maximum.x - 3.0f;
+
+    const float centerY =
+        state_.activeAnimation.has_value()
+            ? minimum.y + 5.0f
+            : (
+                  minimum.y +
+                  maximum.y
+              ) *
+                  0.5f;
+
+    drawList->AddLine(
+        ImVec2(
+            lineStart,
+            centerY
+        ),
+        ImVec2(
+            lineEnd,
+            centerY
+        ),
+        ImGui::GetColorU32(
+            ImGuiCol_Separator
+        ),
+        4.0f
+    );
+
+    if (frameCount > 0) {
+        const float playheadRatio =
+            (
+                static_cast<float>(
+                    frameIndex +
+                    1
+                )
+            ) /
+            static_cast<float>(
+                frameCount
+            );
+
+        const float playheadX =
+            lineStart +
+            (
+                lineEnd -
+                lineStart
+            ) *
+            playheadRatio;
+
+        drawList->AddLine(
+            ImVec2(
+                lineStart,
+                centerY
+            ),
+            ImVec2(
+                playheadX,
+                centerY
+            ),
+            ImGui::GetColorU32(
+                ImGuiCol_SliderGrabActive
+            ),
+            7.0f
+        );
+
+        if (frameCount <= 64) {
+            for (
+                std::size_t index = 0;
+                index <= frameCount;
+                ++index
+            ) {
+                const float x =
+                    lineStart +
+                    (
+                        lineEnd -
+                        lineStart
+                    ) *
+                    (
+                        static_cast<float>(
+                            index
+                        ) /
+                        static_cast<float>(
+                            frameCount
+                        )
+                    );
+
+                drawList->AddLine(
+                    ImVec2(
+                        x,
+                        centerY - 4.0f
+                    ),
+                    ImVec2(
+                        x,
+                        centerY + 8.0f
+                    ),
+                    ImGui::GetColorU32(
+                        ImGuiCol_TextDisabled
+                    ),
+                    1.4f
+                );
+            }
+        }
+
+        drawList->AddCircleFilled(
+            ImVec2(
+                playheadX,
+                centerY
+            ),
+            5.0f,
+            ImGui::GetColorU32(
+                ImGuiCol_SliderGrabActive
+            )
         );
     }
 
-    ImGui::SameLine();
+    // Hovered frame metadata.
+    if (
+        frameCount > 0 &&
+        ImGui::IsItemHovered()
+    ) {
+        const float ratio =
+            std::clamp(
+                (
+                    ImGui::GetIO().MousePos.x -
+                    lineStart
+                ) /
+                std::max(
+                    lineEnd -
+                        lineStart,
+                    1.0f
+                ),
+                0.0f,
+                0.999999f
+            );
 
-    if (ImGui::Button("< Frame")) {
-        animationPlayer_.pause();
-        if (animationPlayer_.stepBackward()) {
-            rebuildAnimationFrame();
+        const std::size_t hoverIndex =
+            std::min(
+                static_cast<std::size_t>(
+                    ratio *
+                    static_cast<float>(
+                        frameCount
+                    )
+                ),
+                frameCount - 1
+            );
+
+        eld::graphics::AnimationPlayer hoverPlayer(
+            animationFrameIndex_
+        );
+
+        hoverPlayer.setSequence(
+            *sequence
+        );
+
+        hoverPlayer.setLooping(
+            false
+        );
+
+        hoverPlayer.pause();
+
+        for (
+            std::size_t index = 0;
+            index < hoverIndex;
+            ++index
+        ) {
+            if (!hoverPlayer.stepForward()) {
+                break;
+            }
         }
+
+        const eld::animation::ResolvedAnimationFrame
+            hoverResolved =
+                hoverPlayer.
+                    currentResolvedFrame();
+
+        ImGui::BeginTooltip();
+
+        ImGui::Text(
+            "Frame %zu / %zu",
+            hoverIndex + 1,
+            frameCount
+        );
+
+        if (hoverResolved) {
+            ImGui::Separator();
+
+            ImGui::Text(
+                "Global frame: %u",
+                static_cast<unsigned int>(
+                    hoverResolved.frame->id
+                )
+            );
+
+            ImGui::Text(
+                "Duration: %u ms",
+                static_cast<unsigned int>(
+                    hoverPlayer.
+                        currentFrameDurationMilliseconds()
+                )
+            );
+
+            ImGui::Text(
+                "Transforms: %zu",
+                hoverResolved.frame->
+                    transforms.size()
+            );
+        }
+
+        ImGui::EndTooltip();
     }
 
-    ImGui::SameLine();
+    // Seek by clicking timeline.
+    if (
+        frameCount > 0 &&
+        ImGui::IsItemClicked()
+    ) {
+        const float ratio =
+            std::clamp(
+                (
+                    ImGui::GetIO().MousePos.x -
+                    lineStart
+                ) /
+                std::max(
+                    lineEnd -
+                        lineStart,
+                    1.0f
+                ),
+                0.0f,
+                0.999999f
+            );
 
-    if (ImGui::Button("Frame >")) {
+        const std::size_t target =
+            std::min(
+                static_cast<std::size_t>(
+                    ratio *
+                    static_cast<float>(
+                        frameCount
+                    )
+                ),
+                frameCount - 1
+            );
+
         animationPlayer_.pause();
-        if (animationPlayer_.stepForward()) {
-            rebuildAnimationFrame();
-        }
-    }
-
-    ImGui::SameLine();
-
-    if (ImGui::Button("Restart")) {
         animationPlayer_.restart();
+        animationPlayer_.pause();
+
+        for (
+            std::size_t index = 0;
+            index < target;
+            ++index
+        ) {
+            if (
+                !animationPlayer_.
+                    stepForward()
+            ) {
+                break;
+            }
+        }
+
         rebuildAnimationFrame();
     }
+
+
+
+    // --------------------------------------------------------
+    // TRANSPORT CARD
+    // --------------------------------------------------------
+
+    const animation_hud::BottomRow hudLayout =
+        animation_hud::bottomRow(
+            viewportSize.x
+        );
+
+    constexpr float TransportWidth =
+        animation_hud::TransportWidth;
+
+    constexpr float TransportHeight =
+        animation_hud::CardHeight;
+
+    constexpr float BottomInset =
+        animation_hud::BottomInset;
+
+    const float TransportX =
+        hudLayout.transportX;
+
+    const float transportY =
+        std::max(
+            viewportSize.y -
+                BottomInset -
+                TransportHeight,
+            8.0f
+        );
+
+    ImGui::SetCursorScreenPos(
+        ImVec2(
+            viewportPosition.x +
+                TransportX,
+            viewportPosition.y +
+                transportY
+        )
+    );
+
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_ChildRounding,
+        7.0f
+    );
+
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_WindowPadding,
+        ImVec2(
+            10.0f,
+            9.0f
+        )
+    );
+
+    ImGui::PushStyleColor(
+        ImGuiCol_ChildBg,
+        ui::themePalette().hudBackground
+    );
+
+    ImGui::BeginChild(
+        "##AnimationTransportCard",
+        ImVec2(
+            TransportWidth,
+            TransportHeight
+        ),
+        false,
+        ImGuiWindowFlags_NoScrollbar |
+            ImGuiWindowFlags_NoScrollWithMouse
+    );
+
+    // Main media controls sit on their own centered row.
+    constexpr float PlaybackControlsWidth =
+        141.0f;
+
+    ImGui::SetCursorPos(
+        ImVec2(
+            std::max(
+                (
+                    TransportWidth -
+                    PlaybackControlsWidth
+                ) *
+                    0.5f,
+                8.0f
+            ),
+            7.0f
+        )
+    );
+
+
+    // --------------------------------------------------------
+    // MODERN MEDIA CONTROLS
+    //
+    // Secondary actions are essentially borderless icons.
+    // Play/pause gets stronger visual priority.
+    // --------------------------------------------------------
+
+    const auto mediaButton =
+        [](
+            const char* id,
+            ui::Icon icon,
+            const char* tooltip,
+            const ImVec2 size,
+            bool primary
+        ) {
+            const auto& palette =
+                ui::themePalette();
+
+            const ImVec4 transparent{
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f
+            };
+
+            const ImVec4 hover =
+                primary
+                    ? ImVec4(
+                          palette.primary.x,
+                          palette.primary.y,
+                          palette.primary.z,
+                          0.34f
+                      )
+                    : ImVec4(
+                          palette.text.x,
+                          palette.text.y,
+                          palette.text.z,
+                          0.09f
+                      );
+
+            const ImVec4 active =
+                primary
+                    ? ImVec4(
+                          palette.primary.x,
+                          palette.primary.y,
+                          palette.primary.z,
+                          0.46f
+                      )
+                    : ImVec4(
+                          palette.primary.x,
+                          palette.primary.y,
+                          palette.primary.z,
+                          0.18f
+                      );
+
+            const ImVec4 normal =
+                primary
+                    ? ImVec4(
+                          palette.primary.x,
+                          palette.primary.y,
+                          palette.primary.z,
+                          0.24f
+                      )
+                    : transparent;
+
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_FrameRounding,
+                size.y * 0.5f
+            );
+
+            ImGui::PushStyleVar(
+                ImGuiStyleVar_FrameBorderSize,
+                0.0f
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_Button,
+                normal
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_ButtonHovered,
+                hover
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_ButtonActive,
+                active
+            );
+
+            ImGui::PushStyleColor(
+                ImGuiCol_Text,
+                palette.text
+            );
+
+            const bool clicked =
+                ui::iconButton(
+                    id,
+                    icon,
+                    tooltip,
+                    size
+                );
+
+            ImGui::PopStyleColor(4);
+            ImGui::PopStyleVar(2);
+
+            return clicked;
+        };
+
+
+    constexpr ImVec2 SecondaryButtonSize{
+        30.0f,
+        30.0f
+    };
+
+    constexpr ImVec2 PrimaryButtonSize{
+        36.0f,
+        36.0f
+    };
+
+
+    if (
+        mediaButton(
+            "##AnimationStepBackward",
+            ui::Icon::StepBackward,
+            "Previous frame",
+            SecondaryButtonSize,
+            false
+        )
+    ) {
+        animationPlayer_.pause();
+
+        if (
+            animationPlayer_.
+                stepBackward()
+        ) {
+            rebuildAnimationFrame();
+        }
+    }
+
+
+    ImGui::SameLine(
+        0.0f,
+        5.0f
+    );
+
+
+    const bool playing =
+        animationPlayer_.isPlaying();
+
+    if (
+        mediaButton(
+            "##AnimationPlayPause",
+            playing
+                ? ui::Icon::Pause
+                : ui::Icon::Play,
+            playing
+                ? "Pause"
+                : "Play",
+            PrimaryButtonSize,
+            true
+        )
+    ) {
+        animationPlayer_.setPlaying(
+            !playing
+        );
+    }
+
+
+    ImGui::SameLine(
+        0.0f,
+        5.0f
+    );
+
+
+    if (
+        mediaButton(
+            "##AnimationStepForward",
+            ui::Icon::StepForward,
+            "Next frame",
+            SecondaryButtonSize,
+            false
+        )
+    ) {
+        animationPlayer_.pause();
+
+        if (
+            animationPlayer_.
+                stepForward()
+        ) {
+            rebuildAnimationFrame();
+        }
+    }
+
+
+    ImGui::SameLine(
+        0.0f,
+        5.0f
+    );
+
+
+    if (
+        mediaButton(
+            "##AnimationRestart",
+            ui::Icon::Restart,
+            "Restart animation",
+            SecondaryButtonSize,
+            false
+        )
+    ) {
+        animationPlayer_.restart();
+
+        rebuildAnimationFrame();
+    }
+
+
+    // --------------------------------------------------------
+    // PLAYBACK OPTIONS
+    // --------------------------------------------------------
+
+    const std::string rangeText =
+        "1-" +
+        std::to_string(
+            frameCount
+        );
+
+    constexpr float LoopWidth =
+        50.0f;
+
+    constexpr float OptionGapA =
+        7.0f;
+
+    constexpr float SpeedWidth =
+        72.0f;
+
+    constexpr float OptionGapB =
+        9.0f;
+
+    const float playbackOptionsWidth =
+        LoopWidth +
+        OptionGapA +
+        SpeedWidth +
+        OptionGapB +
+        ImGui::CalcTextSize(
+            rangeText.c_str()
+        ).x;
+
+    ImGui::SetCursorPos(
+        ImVec2(
+            std::max(
+                (
+                    TransportWidth -
+                    playbackOptionsWidth
+                ) *
+                    0.5f,
+                8.0f
+            ),
+            51.0f
+        )
+    );
+
+    const auto& optionPalette =
+        ui::themePalette();
+
+    bool looping =
+        animationPlayer_.looping();
+
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_FrameRounding,
+        13.0f
+    );
+
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_FrameBorderSize,
+        0.0f
+    );
+
+    ImGui::PushStyleColor(
+        ImGuiCol_Button,
+        looping
+            ? ImVec4(
+                  optionPalette.primary.x,
+                  optionPalette.primary.y,
+                  optionPalette.primary.z,
+                  0.22f
+              )
+            : ImVec4(
+                  optionPalette.text.x,
+                  optionPalette.text.y,
+                  optionPalette.text.z,
+                  0.055f
+              )
+    );
+
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonHovered,
+        ImVec4(
+            optionPalette.primary.x,
+            optionPalette.primary.y,
+            optionPalette.primary.z,
+            0.18f
+        )
+    );
+
+    ImGui::PushStyleColor(
+        ImGuiCol_ButtonActive,
+        ImVec4(
+            optionPalette.primary.x,
+            optionPalette.primary.y,
+            optionPalette.primary.z,
+            0.32f
+        )
+    );
+
+    if (
+        ImGui::Button(
+            "LOOP",
+            ImVec2(
+                50.0f,
+                27.0f
+            )
+        )
+    ) {
+        looping =
+            !looping;
+
+        animationPlayer_.setLooping(
+            looping
+        );
+    }
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(2);
+
+
+    ImGui::SameLine(
+        0.0f,
+        7.0f
+    );
+
 
     float speed =
         animationPlayer_.speed();
 
-    ImGui::SetNextItemWidth(180.0f);
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_FrameRounding,
+        13.0f
+    );
 
-    if (
-        ImGui::SliderFloat(
-            "Speed",
-            &speed,
-            0.10f,
-            3.00f,
-            "%.2fx"
-        )
-    ) {
-        animationPlayer_.setSpeed(speed);
-    }
+    ImGui::PushStyleVar(
+        ImGuiStyleVar_FrameBorderSize,
+        0.0f
+    );
 
-    ImGui::SameLine();
-
-    ImGui::Text(
-        "seq=%u  frame=%zu/%zu  %ums",
-        static_cast<unsigned int>(sequence->id),
-        animationPlayer_.frameIndex(),
-        animationPlayer_.frameCount() > 0
-            ? animationPlayer_.frameCount() - 1
-            : 0,
-        static_cast<unsigned int>(
-            animationPlayer_.currentFrameDurationMilliseconds()
+    ImGui::PushStyleColor(
+        ImGuiCol_FrameBg,
+        ImVec4(
+            optionPalette.text.x,
+            optionPalette.text.y,
+            optionPalette.text.z,
+            0.055f
         )
     );
+
+    ImGui::PushStyleColor(
+        ImGuiCol_FrameBgHovered,
+        ImVec4(
+            optionPalette.text.x,
+            optionPalette.text.y,
+            optionPalette.text.z,
+            0.10f
+        )
+    );
+
+    ImGui::PushStyleColor(
+        ImGuiCol_FrameBgActive,
+        ImVec4(
+            optionPalette.primary.x,
+            optionPalette.primary.y,
+            optionPalette.primary.z,
+            0.17f
+        )
+    );
+
+    ImGui::SetNextItemWidth(
+        72.0f
+    );
+
+    if (
+        ImGui::DragFloat(
+            "##AnimationSpeed",
+            &speed,
+            0.05f,
+            0.10f,
+            3.00f,
+            "%.2fx",
+            ImGuiSliderFlags_AlwaysClamp
+        )
+    ) {
+        animationPlayer_.setSpeed(
+            speed
+        );
+    }
+
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar(2);
+
+
+    ImGui::SameLine(
+        0.0f,
+        9.0f
+    );
+
+    ImGui::AlignTextToFramePadding();
+
+    ImGui::TextDisabled(
+        "%s",
+        rangeText.c_str()
+    );
+
+    if (
+        ImGui::IsItemHovered(
+            ImGuiHoveredFlags_DelayShort
+        )
+    ) {
+        ImGui::SetTooltip(
+            "Playback range: full sequence"
+        );
+    }
+
+
+    ImGui::EndChild();
+
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(2);
+
+
+
+
+
+
+    // --------------------------------------------------------
+    // CURRENT FRAME INSPECTOR
+    // --------------------------------------------------------
+
+    if (
+        state_.activeAnimation.has_value() &&
+        hudLayout.frameWidth >=
+            animation_hud::FrameMinimumWidth
+    ) {
+        ImGui::SetCursorScreenPos(
+            ImVec2(
+                viewportPosition.x +
+                    hudLayout.frameX,
+                viewportPosition.y +
+                    transportY
+            )
+        );
+
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_ChildRounding,
+            8.0f
+        );
+
+        ImGui::PushStyleVar(
+            ImGuiStyleVar_WindowPadding,
+            ImVec2(
+                14.0f,
+                10.0f
+            )
+        );
+
+        ImGui::PushStyleColor(
+            ImGuiCol_ChildBg,
+            ui::themePalette().
+                hudBackground
+        );
+
+        ImGui::BeginChild(
+            "##AnimationFrameInspector",
+            ImVec2(
+                hudLayout.frameWidth,
+                animation_hud::CardHeight
+            ),
+            true,
+            ImGuiWindowFlags_NoScrollbar |
+                ImGuiWindowFlags_NoScrollWithMouse
+        );
+
+
+        const auto drawTextAt =
+            [](
+                const std::string& text,
+                float x,
+                float y,
+                bool disabled
+            ) {
+                ImGui::SetCursorPos(
+                    ImVec2(
+                        x,
+                        y
+                    )
+                );
+
+                if (disabled) {
+                    ImGui::TextDisabled(
+                        "%s",
+                        text.c_str()
+                    );
+                }
+                else {
+                    ImGui::TextUnformatted(
+                        text.c_str()
+                    );
+                }
+            };
+
+
+        const auto drawCentered =
+            [&drawTextAt](
+                const std::string& text,
+                float y,
+                bool disabled
+            ) {
+                const float width =
+                    ImGui::CalcTextSize(
+                        text.c_str()
+                    ).x;
+
+                drawTextAt(
+                    text,
+                    std::max(
+                        (
+                            ImGui::GetWindowWidth() -
+                            width
+                        ) *
+                            0.5f,
+                        8.0f
+                    ),
+                    y,
+                    disabled
+                );
+            };
+
+
+        constexpr float ContentInset =
+            14.0f;
+
+        constexpr float ValueGap =
+            10.0f;
+
+
+        // Title.
+        drawCentered(
+            "FRAME",
+            10.0f,
+            true
+        );
+
+
+        // Frame position belongs on the left.
+        const std::string framePosition =
+            std::to_string(
+                frameCount > 0
+                    ? frameIndex + 1
+                    : 0
+            ) +
+            " / " +
+            std::to_string(
+                frameCount
+            );
+
+        drawTextAt(
+            framePosition,
+            ContentInset,
+            35.0f,
+            false
+        );
+
+
+        // Global frame ID belongs on the right.
+        const std::string globalFrame =
+            currentResolved
+                ? "#" +
+                    std::to_string(
+                        static_cast<unsigned int>(
+                            currentResolved.frame->id
+                        )
+                    )
+                : "-";
+
+        const float globalFrameWidth =
+            ImGui::CalcTextSize(
+                globalFrame.c_str()
+            ).x;
+
+        drawTextAt(
+            globalFrame,
+            ImGui::GetWindowWidth() -
+                ContentInset -
+                globalFrameWidth,
+            35.0f,
+            false
+        );
+
+
+        if (currentResolved) {
+            const unsigned int duration =
+                static_cast<unsigned int>(
+                    animationPlayer_.
+                        currentFrameDurationMilliseconds()
+                );
+
+            const std::size_t transformCount =
+                currentResolved.frame->
+                    transforms.size();
+
+
+            // Duration belongs on the left.
+            const std::string durationText =
+                std::to_string(
+                    duration
+                ) +
+                " ms";
+
+
+            // Transform count belongs on the right.
+            // Prefer the full word and abbreviate only if the
+            // actual current card width requires it.
+            const std::string transformText =
+                std::to_string(
+                    transformCount
+                ) +
+                " transforms";
+
+            const std::string compactTransformText =
+                std::to_string(
+                    transformCount
+                ) +
+                " xforms";
+
+
+            const float durationWidth =
+                ImGui::CalcTextSize(
+                    durationText.c_str()
+                ).x;
+
+            const float availableWidth =
+                std::max(
+                    ImGui::GetWindowWidth() -
+                        ContentInset *
+                            2.0f,
+                    1.0f
+                );
+
+            const float transformWidth =
+                ImGui::CalcTextSize(
+                    transformText.c_str()
+                ).x;
+
+
+            const std::string& visibleTransformText =
+                durationWidth +
+                    ValueGap +
+                    transformWidth <=
+                        availableWidth
+                    ? transformText
+                    : compactTransformText;
+
+            const float visibleTransformWidth =
+                ImGui::CalcTextSize(
+                    visibleTransformText.c_str()
+                ).x;
+
+
+            drawTextAt(
+                durationText,
+                ContentInset,
+                62.0f,
+                true
+            );
+
+            drawTextAt(
+                visibleTransformText,
+                ImGui::GetWindowWidth() -
+                    ContentInset -
+                    visibleTransformWidth,
+                62.0f,
+                true
+            );
+        }
+
+
+        ImGui::EndChild();
+
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(2);
+    }
+
 }
 
 void CacheExplorer::selectNextNpcWithProjectile() {
@@ -1556,7 +2929,7 @@ void CacheExplorer::renderNpcAnimationControls() {
         }
     }
 
-    renderAnimationPlaybackControls();
+    renderAnimationPlayerHud();
     renderManualNpcActionComposer();
     ImGui::Separator();
 }
@@ -1580,7 +2953,7 @@ void CacheExplorer::renderLocationAnimationControls() {
         ImGui::TextUnformatted("Definition sequence: (none)");
     }
 
-    renderAnimationPlaybackControls();
+    renderAnimationPlayerHud();
     ImGui::Separator();
 }
 
@@ -1613,11 +2986,16 @@ void CacheExplorer::renderSpotAnimationControls() {
         );
     }
 
-    renderAnimationPlaybackControls();
+    renderAnimationPlayerHud();
     ImGui::Separator();
 }
 
 void CacheExplorer::renderAnimationControls() {
+    if (state_.activeAnimation.has_value()) {
+        renderAnimationPlayerHud();
+        return;
+    }
+
     if (state_.activeNpc.has_value()) {
         renderNpcAnimationControls();
         return;

@@ -1,3 +1,4 @@
+#include "ui/ElForgeTheme.h"
 #include "explorer/CacheExplorer.h"
 
 #include <cmath>
@@ -319,6 +320,17 @@ void CacheExplorer::update() {
     }
 
     if (
+        state_.activeAnimation.has_value() &&
+        !state_.animationView.previewUseIndices.empty() &&
+        state_.animationView.selectedPreviewUseIndex !=
+            state_.animationView.activePreviewUseIndex
+    ) {
+        activateAnimationPreviewUse(
+            state_.animationView.selectedPreviewUseIndex
+        );
+    }
+
+    if (
         animationSource_.has_value() &&
         animationPlayer_.update(
             delta
@@ -391,14 +403,110 @@ void CacheExplorer::renderUi() {
         shellFlags
     );
 
-    ImGui::TextUnformatted(
-        "ElForge"
+    const bool animationWorkspace =
+        state_.activeAnimation.has_value();
+
+    // --------------------------------------------------------
+    // Application bar
+    // --------------------------------------------------------
+
+    ImGui::AlignTextToFramePadding();
+
+    ImGui::PushStyleColor(
+        ImGuiCol_Text,
+        ui::themePalette().primary
     );
+
+    ImGui::TextUnformatted(
+        "ELFORGE"
+    );
+
+    ImGui::PopStyleColor();
+
+    if (!state_.selection.label.empty()) {
+        ImGui::SameLine();
+
+        ImGui::TextDisabled(
+            "/  %s",
+            state_.selection.label.c_str()
+        );
+    }
+
+    const char* explorerButton =
+        explorerPanelOpen_
+            ? "Explorer -"
+            : "Explorer +";
+
+    const char* inspectorButton =
+        inspectorPanelOpen_
+            ? "Inspector -"
+            : "Inspector +";
+
+    float rightControlsWidth =
+        ImGui::CalcTextSize(
+            explorerButton
+        ).x +
+        20.0f;
+
+    if (!animationWorkspace) {
+        rightControlsWidth +=
+            ImGui::CalcTextSize(
+                inspectorButton
+            ).x +
+            12.0f;
+    }
+
+    const float rightX =
+        ImGui::GetWindowContentRegionMax().x -
+        rightControlsWidth;
+
+    if (
+        rightX >
+        ImGui::GetCursorPosX()
+    ) {
+        ImGui::SameLine(
+            rightX
+        );
+    }
+    else {
+        ImGui::SameLine();
+    }
+
+    // Animation uses its own contextual details card,
+    // therefore the generic Inspector does not apply.
+    if (!animationWorkspace) {
+        if (
+            ImGui::SmallButton(
+                inspectorButton
+            )
+        ) {
+            inspectorPanelOpen_ =
+                !inspectorPanelOpen_;
+        }
+
+        ImGui::SameLine();
+    }
+if (
+        ImGui::SmallButton(
+            explorerButton
+        )
+    ) {
+        explorerPanelOpen_ =
+            !explorerPanelOpen_;
+    }
 
     ImGui::Separator();
 
-    const float treeWidth = 300.0f;
-    const float inspectorWidth = 320.0f;
+    // --------------------------------------------------------
+    // Workspace allocation
+    // --------------------------------------------------------
+
+    constexpr float ExplorerWidth =
+        252.0f;
+
+    constexpr float InspectorWidth =
+        274.0f;
+
     const float spacing =
         ImGui::GetStyle().ItemSpacing.x;
 
@@ -408,27 +516,35 @@ void CacheExplorer::renderUi() {
     const float height =
         available.y;
 
-    float viewportWidth =
-        available.x -
-        treeWidth -
-        inspectorWidth -
-        spacing * 2.0f;
+    const bool showInspector =
+        inspectorPanelOpen_ &&
+        !animationWorkspace;
 
-    if (viewportWidth < 100.0f) {
-        viewportWidth = 100.0f;
+    float workspaceWidth =
+        available.x;
+
+    if (showInspector) {
+        workspaceWidth -=
+            InspectorWidth +
+            spacing;
     }
 
-    treePanel_.render(
-        state_,
-        treeWidth,
-        height
-    );
+    if (explorerPanelOpen_) {
+        workspaceWidth -=
+            ExplorerWidth +
+            spacing;
+    }
 
-    ImGui::SameLine();
+    workspaceWidth =
+        std::max(
+            workspaceWidth,
+            120.0f
+        );
 
+    // Main asset workspace always starts at the left.
     viewportPanel_.render(
         state_,
-        viewportWidth,
+        workspaceWidth,
         height,
         midiPlayer_,
         [this]() {
@@ -436,15 +552,31 @@ void CacheExplorer::renderUi() {
         }
     );
 
-    ImGui::SameLine();
+    // Transitional generic inspector for asset types that
+    // don't own a bespoke workspace yet.
+    if (showInspector) {
+        ImGui::SameLine();
 
-    inspectorPanel_.render(
-        state_,
-        inspectorWidth,
-        height
-    );
+        inspectorPanel_.render(
+            state_,
+            InspectorWidth,
+            height
+        );
+    }
+
+    // Navigation always lives on the far-right.
+    if (explorerPanelOpen_) {
+        ImGui::SameLine();
+
+        treePanel_.render(
+            state_,
+            ExplorerWidth,
+            height
+        );
+    }
 
     ImGui::End();
+
 }
 
 }

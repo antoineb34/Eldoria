@@ -45,6 +45,10 @@ public:
     bool isPlaying() const;
 
     void setLooping(bool looping);
+
+    [[nodiscard]] bool looping() const {
+        return looping_;
+    }
     bool isLooping() const;
 
     void setSpeed(float speed);
