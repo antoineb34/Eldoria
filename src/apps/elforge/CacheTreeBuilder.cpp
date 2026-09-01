@@ -2272,10 +2272,93 @@ void addIndex(
     );
 }
 
+
+bool populateTextureArchive(
+    CacheTreeNode& node,
+    const std::vector<std::uint16_t>& textureIds
+) {
+    constexpr int ConfigIndexId = 0;
+    constexpr int TextureArchiveId = 6;
+
+    if (
+        node.type == CacheTreeNodeType::Archive &&
+        node.indexId == ConfigIndexId &&
+        node.archiveId == TextureArchiveId
+    ) {
+        node.label =
+            "Archive 6 - Textures";
+
+        node.children.clear();
+
+        node.children.reserve(
+            textureIds.size()
+        );
+
+        for (
+            const std::uint16_t textureId :
+            textureIds
+        ) {
+            CacheTreeNode textureNode;
+
+            textureNode.type =
+                CacheTreeNodeType::Texture;
+
+            textureNode.label =
+                "Texture " +
+                std::to_string(
+                    textureId
+                );
+
+            textureNode.key =
+                node.key +
+                "/texture/" +
+                std::to_string(
+                    textureId
+                );
+
+            textureNode.indexId =
+                node.indexId;
+
+            textureNode.archiveId =
+                node.archiveId;
+
+            textureNode.fileId =
+                static_cast<int>(
+                    textureId
+                );
+
+            node.children.push_back(
+                std::move(
+                    textureNode
+                )
+            );
+        }
+
+        return true;
+    }
+
+    for (
+        CacheTreeNode& child :
+        node.children
+    ) {
+        if (
+            populateTextureArchive(
+                child,
+                textureIds
+            )
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 }
 
 CacheTreeNode CacheTreeBuilder::build(
-    const eld::cache::Cache& cache
+    const eld::cache::Cache& cache,
+    const std::vector<std::uint16_t>& textureIds
 ) const {
     CacheTreeNode root =
         makeRoot();
@@ -2290,6 +2373,11 @@ CacheTreeNode CacheTreeBuilder::build(
             index
         );
     }
+
+    populateTextureArchive(
+        root,
+        textureIds
+    );
 
     return root;
 }

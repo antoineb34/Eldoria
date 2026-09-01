@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include "PanelUi.h"
+
 namespace eld::elforge {
 
 void InterfaceViewPanel::render(bool hasInterface) {
@@ -15,9 +17,7 @@ void InterfaceViewPanel::render(bool hasInterface) {
 
     renderPresets();
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("CONTENT");
-    ImGui::Separator();
+    ui::sectionHeader("CONTENT");
 
     ImGui::Checkbox(
         "Show hidden widgets",
@@ -36,9 +36,7 @@ void InterfaceViewPanel::render(bool hasInterface) {
     ImGui::SameLine();
     ImGui::Checkbox("Item lists", &options_.showItemLists);
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("LAYOUT OVERLAYS");
-    ImGui::Separator();
+    ui::sectionHeader("LAYOUT OVERLAYS");
 
     ImGui::Checkbox(
         "Canvas bounds",

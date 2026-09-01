@@ -39,14 +39,12 @@
 
 namespace eld::elforge {
 
-// ELFORGE_EDITOR_VIEWPORT_V1
 enum class ViewportGizmoMode : std::uint8_t {
     Move,
     Rotate,
     Scale
 };
 
-// ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
 struct PresentationRenderObject {
     eld::graphics::ModelHandle model;
     eld::render::Transform transform;
@@ -75,7 +73,6 @@ struct CacheExplorerState {
     bool showViewportGizmo = true;
     bool showEditorGrid = true;
 
-    // ELFORGE_CAMERA_NAVIGATION_V1
     // Editor camera orbit state. This is independent from modelTransform:
     // the model moves through the world, while the camera moves around it.
     eld::math::Vec3 viewportCameraPivot{

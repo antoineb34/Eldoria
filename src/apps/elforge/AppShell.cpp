@@ -1,5 +1,4 @@
 #include "AppShell.h"
-#include "../../platform/imgui/ImGuiTheme.h"
 
 #include <SDL3/SDL.h>
 
@@ -7,18 +6,37 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
-#include "../platform/sdl/SdlContext.h"
+#include "ImGuiTheme.h"
+#include "sdl/SdlContext.h"
 
 namespace eld::elforge {
 
-int AppShell::run() {
-    constexpr int WINDOW_WIDTH = 1280;
-    constexpr int WINDOW_HEIGHT = 720;
+namespace {
 
+constexpr char AppTitle[] = "ElForge";
+constexpr int WindowWidth = 1280;
+constexpr int WindowHeight = 720;
+constexpr float UiFontSize = 18.0f;
+
+void configureFonts(ImGuiIO& io) {
+    ImFont* font =
+        io.Fonts->AddFontFromFileTTF(
+            "/usr/share/fonts/jetbrains-mono-fonts/JetBrainsMono-Regular.otf",
+            UiFontSize
+        );
+
+    if (font == nullptr) {
+        io.Fonts->AddFontDefault();
+    }
+}
+
+}
+
+int AppShell::run() {
     eld::platform::SdlContext sdl(
-        "RuneForge Cache Explorer",
-        WINDOW_WIDTH,
-        WINDOW_HEIGHT
+        AppTitle,
+        WindowWidth,
+        WindowHeight
     );
 
     SDL_Window* window = sdl.window();
@@ -35,10 +53,7 @@ int AppShell::run() {
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    io.Fonts->AddFontFromFileTTF(
-        "/usr/share/fonts/jetbrains-mono-fonts/JetBrainsMono-Regular.otf",
-        18.0f
-    );
+    configureFonts(io);
 
     ImGui::StyleColorsDark();
     eld::platform::imgui::applyImGuiTheme();

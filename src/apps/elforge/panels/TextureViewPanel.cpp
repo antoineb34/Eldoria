@@ -2,6 +2,8 @@
 
 #include <imgui.h>
 
+#include "PanelUi.h"
+
 namespace eld::elforge {
 
 float TextureViewOptions::fixedScale() const {
@@ -31,9 +33,7 @@ void TextureViewPanel::render(bool hasTexture) {
 
     renderPresets();
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("ZOOM");
-    ImGui::Separator();
+    ui::sectionHeader("ZOOM");
 
     static const char* ZoomModes[] = {
         "Fit",
@@ -62,9 +62,7 @@ void TextureViewPanel::render(bool hasTexture) {
     ImGui::SameLine();
     ImGui::Checkbox("Nearest", &options_.nearestSampling);
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("CHANNELS");
-    ImGui::Separator();
+    ui::sectionHeader("CHANNELS");
 
     ImGui::Checkbox("R", &options_.showRed);
     ImGui::SameLine();
@@ -76,9 +74,7 @@ void TextureViewPanel::render(bool hasTexture) {
     ImGui::SameLine();
     ImGui::Checkbox("Alpha only", &options_.alphaOnly);
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("OVERLAYS");
-    ImGui::Separator();
+    ui::sectionHeader("OVERLAYS");
 
     ImGui::Checkbox(
         "Checkerboard",

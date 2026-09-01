@@ -4,6 +4,8 @@
 
 #include <imgui.h>
 
+#include "PanelUi.h"
+
 #include "../CacheExplorerState.h"
 
 namespace eld::elforge {
@@ -48,15 +50,11 @@ void ModelViewPanel::render(
 
     renderViewPresets(state);
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("TRANSFORM");
-    ImGui::Separator();
+    ui::sectionHeader("TRANSFORM");
 
     renderTransformControls(state);
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("DISPLAY");
-    ImGui::Separator();
+    ui::sectionHeader("DISPLAY");
 
     ImGui::Checkbox("Solid", &options_.showSolid);
     ImGui::SameLine();
@@ -68,9 +66,7 @@ void ModelViewPanel::render(
     ImGui::SameLine();
     ImGui::Checkbox("Axes", &options_.showAxes);
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("MOTION");
-    ImGui::Separator();
+    ui::sectionHeader("MOTION");
 
     ImGui::Checkbox("Auto rotate", &options_.autoRotate);
 
@@ -86,9 +82,7 @@ void ModelViewPanel::render(
         );
     }
 
-    ImGui::Spacing();
-    ImGui::TextUnformatted("BACKGROUND");
-    ImGui::Separator();
+    ui::sectionHeader("BACKGROUND");
 
     static const char* Backgrounds[] = {
         "Neutral",

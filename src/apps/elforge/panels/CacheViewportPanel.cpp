@@ -17,9 +17,6 @@
 
 #include "audio/MidiPlayer.h"
 
-#include <array>
-#include <vector>
-
 #include "math/Mat4.h"
 #include "math/Vec3.h"
 #include "math/Vec4.h"
@@ -1643,7 +1640,6 @@ private:
     > textures_;
 };
 
-// ELFORGE_EDITOR_VIEWPORT_V1
 enum class GizmoAxis : int {
     None = -1,
     X = 0,
@@ -1945,7 +1941,6 @@ void drawEditorGrid(
         return;
     }
 
-    // ELFORGE_WORLD_STATIONARY_GRID_V1
     // The editor grid is world space, not part of the selected model.
     // Moving/rotating/scaling the model must not drag the floor with it.
     const eld::math::Mat4 model =
@@ -2730,7 +2725,6 @@ void drawRotateGizmo(
     }
 }
 
-// ELFORGE_CAMERA_NAVIGATION_V1
 eld::math::Vec3 editorCameraForward(
     const CacheExplorerState& state
 ) {
@@ -3196,7 +3190,6 @@ void drawEditorGridSdl(
         return;
     }
 
-    // ELFORGE_WORLD_STATIONARY_GRID_V1
     // The editor grid is world space, not part of the selected model.
     // Moving/rotating/scaling the model must not drag the floor with it.
     const eld::math::Mat4 model =
@@ -6115,7 +6108,6 @@ void CacheViewportPanel::shutdown() {
     mapGpuRenderer_.shutdown();
 }
 
-// ELFORGE_NPC_ANIMATION_DRAWER_V1
 void CacheViewportPanel::render(
     CacheExplorerState& state,
     float width,
@@ -6249,7 +6241,6 @@ void CacheViewportPanel::render(
         );
         ImGui::Separator();
     }
-    // ELFORGE_DIRECT_VIEWPORT_SDL_OVERLAY_V1
     else if (state.activeModelHandle.has_value()) {
         renderViewportToolbar(
             state,
@@ -6488,7 +6479,6 @@ void CacheViewportPanel::renderViewport(
     );
 
 
-    // ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
     for (
         const PresentationRenderObject& presentationObject :
         state.presentationObjects

@@ -33,7 +33,6 @@ class CacheViewportPanel {
 public:
     void shutdown();
 
-    // ELFORGE_NPC_ANIMATION_DRAWER_V1
     void render(
         CacheExplorerState& state,
         float width,

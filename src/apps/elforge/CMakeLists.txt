@@ -5,9 +5,15 @@ add_executable(elforge
     AnimationDump.cpp
     AnimationRelations.cpp
     CacheExplorer.cpp
+    CacheExplorerAnimation.cpp
+    CacheExplorerItem.cpp
+    CacheExplorerSelection.cpp
     CacheTreeBuilder.cpp
+    FloorPreviewBuilder.cpp
     FontPreviewBuilder.cpp
     IdentityKitPreviewBuilder.cpp
+    InterfaceDumpBuilder.cpp
+    ItemAnimationPresets.cpp
     ItemPreviewBuilder.cpp
     LocationPreviewBuilder.cpp
     MapPreview.cpp

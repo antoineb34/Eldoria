@@ -79,14 +79,7 @@ public:
     );
 
 private:
-    bool hasAlphaFaces(
-        const eld::model::ModelMesh& model
-    ) const;
-
     void handleSelectionChanged();
-    void findNextAlphaModel();
-
-    // ELFORGE_NPC_ANIMATION_PREVIEW_V1
     void resetAnimationPreview();
 
     void startAnimationPreview(
@@ -95,10 +88,8 @@ private:
 
     void rebuildAnimationFrame();
 
-    // ELFORGE_NEXT_NPC_WITH_PROJECTILE_V1
     void selectNextNpcWithProjectile();
 
-    // ELFORGE_NEXT_WEARABLE_ITEM_V1
     void selectNextWearableItem();
 
     void renderNpcAnimationControls();
@@ -107,7 +98,6 @@ private:
     void renderSpotAnimationControls();
     void renderAnimationControls();
     void renderAnimationPlaybackControls();
-    // ELFORGE_COMPOSITE_ACTION_PREVIEW_V1
     void clearNpcActionPreview();
 
     void startNpcActionPreview(
@@ -137,7 +127,6 @@ private:
     );
 
     void ensureActionTargetMarker();
-    // ELFORGE_CLICK_TARGET_GRID_V1
     void ensureActionGrid();
 
     bool placeActionTargetFromViewport(
@@ -145,7 +134,6 @@ private:
         float mouseY
     );
 
-    // ELFORGE_NPC_FACE_ACTION_TARGET_V1
     void faceNpcTowardActionTarget();
 
     void renderManualNpcActionComposer();
@@ -223,7 +211,6 @@ private:
     bool showActionGrid_ = false;
     bool placeActionTargetOnClick_ = false;
 
-    // ELFORGE_TARGET_LOCK_PRESETS_V1
     bool lockNpcFacingToActionTarget_ = true;
 
     float actionPreviewArcHeight_ = 70.0f;
@@ -272,7 +259,6 @@ private:
     eld::interface::InterfaceRepository interfaceRepository_;
 
     eld::graphics::GraphicsResources graphicsResources_;
-    std::optional<eld::sprite::Sprite> activeSprite;
 
     CacheExplorerState state_;
     CacheTreeBuilder treeBuilder_;
