@@ -41,9 +41,6 @@ struct IndexedImagePixel {
 };
 
 struct IndexedImageFile {
-    std::vector<std::uint8_t> dataPayload;
-    std::vector<std::uint8_t> indexPayload;
-
     IndexedImageMetadata metadata;
     std::vector<IndexedImageColor> palette;
     std::vector<IndexedImagePixel> pixels;

@@ -1,5 +1,6 @@
 #include "MidiRepository.h"
 
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -20,22 +21,23 @@ MidiFile MidiRepository::get(
     const eld::cache::File cacheFile =
         store_.get(id);
 
-    std::optional<MidiFileData> data =
-        parser_.parse(
-            cacheFile.getBytes()
-        );
+    try {
+        MidiFile midi =
+            decoder_.decode(
+                cacheFile.getBytes()
+            );
 
-    if (!data.has_value()) {
+        midi.id = id;
+        return midi;
+    }
+    catch (const std::exception& error) {
         throw std::runtime_error(
-            "Failed to parse MIDI " +
-            std::to_string(id)
+            "Failed to decode MIDI " +
+            std::to_string(id) +
+            ": " +
+            error.what()
         );
     }
-
-    return MidiFile{
-        .id = id,
-        .data = std::move(*data)
-    };
 }
 
 std::optional<MidiFile> MidiRepository::find(

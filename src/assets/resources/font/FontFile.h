@@ -26,8 +26,6 @@ struct FontGlyphFile {
 };
 
 struct FontFile {
-    std::vector<std::uint8_t> dataPayload;
-    std::vector<std::uint8_t> indexPayload;
     std::vector<FontGlyphFile> glyphs;
 };
 

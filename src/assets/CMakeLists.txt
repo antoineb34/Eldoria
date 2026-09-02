@@ -12,6 +12,7 @@ add_library(eldoria_assets STATIC
     content/map/TerrainDecoder.cpp
     content/map/LocationSpawnDecoder.cpp
     resources/midi/MidiFileParser.cpp
+    resources/midi/MidiDecoder.cpp
     resources/midi/MidiRepository.cpp
     resources/model/ModelDecoder.cpp
     resources/model/ModelRepository.cpp

@@ -9,8 +9,8 @@
 namespace eld::font {
 
 std::optional<FontFile> FontFileParser::parse(
-    const std::vector<std::uint8_t>& dataPayload,
-    const std::vector<std::uint8_t>& indexPayload
+    std::span<const std::uint8_t> dataPayload,
+    std::span<const std::uint8_t> indexPayload
 ) const {
     try {
         eld::binary::ByteReader dataReader(
@@ -106,8 +106,6 @@ std::optional<FontFile> FontFileParser::parse(
         }
 
         return FontFile{
-            .dataPayload = dataPayload,
-            .indexPayload = indexPayload,
             .glyphs = std::move(glyphs)
         };
     }

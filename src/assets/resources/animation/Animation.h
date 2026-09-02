@@ -1,15 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include "AnimationAsset.h"
-#include "AnimationFile.h"
 
 namespace eld::animation {
 
 struct Animation {
     std::uint16_t id = 0;
-    AnimationFile file;
+    std::vector<std::uint8_t> bytes;
     AnimationAsset asset;
 };
 

@@ -65,74 +65,33 @@ SpriteRepository::getDataFile(
     return archive_.get(fileId);
 }
 
-eld::image::IndexedImageFile
-SpriteRepository::parseFile(
-    const eld::archive::ArchiveFile& dataFile,
-    std::uint16_t frameId
-) const {
-    std::optional<eld::image::IndexedImageFile> file =
-        parser_.parse(
-            dataFile.payload,
-            getIndexFile().payload,
-            frameId
-        );
-
-    if (!file.has_value()) {
-        throw std::runtime_error(
-            "Failed to parse sprite frame " +
-            std::to_string(frameId)
-        );
-    }
-
-    return std::move(*file);
-}
-
-eld::image::IndexedImageFile SpriteRepository::getFile(
-    std::string_view groupName,
-    std::uint16_t frameId
-) const {
-    return parseFile(
-        getDataFile(groupName),
-        frameId
-    );
-}
-
-eld::image::IndexedImageFile SpriteRepository::getFile(
-    std::uint16_t fileId,
-    std::uint16_t frameId
-) const {
-    return parseFile(
-        getDataFile(fileId),
-        frameId
-    );
-}
-
 Sprite SpriteRepository::decodeSprite(
     const eld::archive::ArchiveFile& dataFile,
     std::string_view groupName,
     std::uint16_t frameId
 ) const {
-    eld::image::IndexedImageFile file =
-        parseFile(
-            dataFile,
-            frameId
+    try {
+        eld::image::Image image =
+            decoder_.decode(
+                dataFile.payload,
+                getIndexFile().payload,
+                frameId
+            );
+
+        return Sprite{
+            .groupName = std::string(groupName),
+            .frameId = frameId,
+            .image = std::move(image)
+        };
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode sprite frame " +
+            std::to_string(frameId) +
+            ": " +
+            error.what()
         );
-
-    eld::image::IndexedImageSourceMap sourceMap;
-
-    eld::image::Image image =
-        decoder_.decode(
-            file,
-            sourceMap
-        );
-
-    return Sprite{
-        .groupName = std::string(groupName),
-        .frameId = frameId,
-        .file = std::move(file),
-        .image = std::move(image),
-        .sourceMap = std::move(sourceMap)
-    };
+    }
 }
 
 Sprite SpriteRepository::get(

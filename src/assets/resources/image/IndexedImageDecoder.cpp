@@ -1,6 +1,9 @@
 #include "IndexedImageDecoder.h"
 
+#include "IndexedImageFileParser.h"
+
 #include <cstddef>
+#include <optional>
 #include <stdexcept>
 
 namespace eld::image {
@@ -179,6 +182,29 @@ Image IndexedImageDecoder::decodeImage(
     }
 
     return image;
+}
+
+Image IndexedImageDecoder::decode(
+    std::span<const std::uint8_t> dataPayload,
+    std::span<const std::uint8_t> indexPayload,
+    std::uint16_t frameId
+) const {
+    IndexedImageFileParser parser;
+
+    std::optional<IndexedImageFile> file =
+        parser.parse(
+            dataPayload,
+            indexPayload,
+            frameId
+        );
+
+    if (!file.has_value()) {
+        throw std::runtime_error(
+            "Invalid indexed-image payload"
+        );
+    }
+
+    return decode(*file);
 }
 
 Image IndexedImageDecoder::decode(

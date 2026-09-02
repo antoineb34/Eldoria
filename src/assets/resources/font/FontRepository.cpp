@@ -59,23 +59,21 @@ Font FontRepository::get(
             name
         );
 
-    std::optional<FontFile> file =
-        parser_.parse(
+    try {
+        return decoder_.decode(
             dataFile.payload,
-            indexFile.payload
-        );
-
-    if (!file.has_value()) {
-        throw std::runtime_error(
-            "Failed to parse font " +
+            indexFile.payload,
             std::string(name)
         );
     }
-
-    return decoder_.decode(
-        std::move(*file),
-        std::string(name)
-    );
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode font " +
+            std::string(name) +
+            ": " +
+            error.what()
+        );
+    }
 }
 
 std::optional<Font> FontRepository::find(

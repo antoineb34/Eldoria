@@ -9,7 +9,6 @@
 #include "archive/Archive.h"
 #include "cache/Store.h"
 #include "image/IndexedImageDecoder.h"
-#include "image/IndexedImageFileParser.h"
 
 namespace eld::sprite {
 
@@ -36,16 +35,6 @@ public:
     ) const;
 
     std::optional<Sprite> find(
-        std::uint16_t fileId,
-        std::uint16_t frameId = 0
-    ) const;
-
-    eld::image::IndexedImageFile getFile(
-        std::string_view groupName,
-        std::uint16_t frameId = 0
-    ) const;
-
-    eld::image::IndexedImageFile getFile(
         std::uint16_t fileId,
         std::uint16_t frameId = 0
     ) const;
@@ -92,11 +81,6 @@ private:
         std::uint16_t fileId
     ) const;
 
-    eld::image::IndexedImageFile parseFile(
-        const eld::archive::ArchiveFile& dataFile,
-        std::uint16_t frameId
-    ) const;
-
     Sprite decodeSprite(
         const eld::archive::ArchiveFile& dataFile,
         std::string_view groupName,
@@ -105,7 +89,6 @@ private:
 
 private:
     eld::archive::Archive archive_;
-    eld::image::IndexedImageFileParser parser_;
     eld::image::IndexedImageDecoder decoder_;
 };
 

@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 
-#include "FontFile.h"
-
 namespace eld::font {
 
 struct Glyph {
@@ -24,8 +22,6 @@ struct Glyph {
 struct Font {
     std::string name;
     std::uint16_t lineHeight = 0;
-
-    FontFile file;
     std::vector<Glyph> glyphs;
 };
 

@@ -5,8 +5,8 @@
 #include <optional>
 #include <vector>
 
+#include "MidiDecoder.h"
 #include "MidiFile.h"
-#include "MidiFileParser.h"
 #include "cache/Store.h"
 
 namespace eld::midi {
@@ -35,7 +35,7 @@ public:
 
 private:
     eld::cache::Store store_;
-    MidiFileParser parser_;
+    MidiDecoder decoder_;
 };
 
 }

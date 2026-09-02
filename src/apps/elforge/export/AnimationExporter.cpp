@@ -83,23 +83,10 @@ void writeInfo(
     output << "\"animationId\": " << animation.id << ",\n";
 
     writeIndent(output, indent + 2);
-    output << "\"storedDecodedBytes\": " << animation.file.bytes.size() << ",\n";
+    output << "\"storedDecodedBytes\": " << animation.bytes.size() << ",\n";
 
     writeIndent(output, indent + 2);
     output << "\"frameCount\": " << animation.asset.frames.size() << ",\n";
-
-    writeIndent(output, indent + 2);
-    output << "\"fileLayout\": {\n";
-    writeIndent(output, indent + 4);
-    output << "\"frameHeaderBytes\": " << animation.file.footer.frameHeaderBytes << ",\n";
-    writeIndent(output, indent + 4);
-    output << "\"flagBytes\": " << animation.file.footer.flagBytes << ",\n";
-    writeIndent(output, indent + 4);
-    output << "\"valueBytes\": " << animation.file.footer.valueBytes << ",\n";
-    writeIndent(output, indent + 4);
-    output << "\"delayBytes\": " << animation.file.footer.delayBytes << "\n";
-    writeIndent(output, indent + 2);
-    output << "},\n";
 
     writeIndent(output, indent + 2);
     output << "\"skeleton\": {\n";

@@ -401,7 +401,7 @@ void AssetDetailsPanel::render(
 
         ImGui::Text(
             "Raw file bytes: %zu",
-            animation.file.bytes.size()
+            animation.bytes.size()
         );
 
         if (!animation.asset.frames.empty()) {

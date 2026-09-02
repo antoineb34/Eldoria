@@ -2,20 +2,15 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <vector>
 
 #include "Texture.h"
 #include "image/IndexedImageDecoder.h"
-#include "image/IndexedImageFileParser.h"
 #include "archive/Archive.h"
 #include "cache/Store.h"
 
 namespace eld::texture {
-
-using TexturePredicate =
-    std::function<bool(const Texture&)>;
 
 class TextureRepository {
 public:
@@ -31,29 +26,13 @@ public:
         std::uint16_t id
     ) const;
 
-    eld::image::IndexedImageFile getFile(
-        std::uint16_t id
-    ) const;
-
-    eld::image::Image getImage(
-        std::uint16_t id
-    ) const;
-
     std::vector<std::uint16_t> listIds() const;
-
-    std::vector<std::uint16_t> filterIds(
-        const TexturePredicate& predicate
-    ) const;
 
     bool contains(
         std::uint16_t id
     ) const;
 
     std::size_t count() const;
-
-    std::size_t count(
-        const TexturePredicate& predicate
-    ) const;
 
 private:
     static eld::archive::Archive loadArchive(
@@ -67,8 +46,6 @@ private:
     ) const;
 
     eld::archive::Archive archive_;
-
-    eld::image::IndexedImageFileParser parser_;
     eld::image::IndexedImageDecoder decoder_;
 };
 

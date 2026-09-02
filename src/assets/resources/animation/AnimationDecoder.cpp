@@ -1,7 +1,10 @@
 #include "AnimationDecoder.h"
 
+#include "AnimationFileParser.h"
+
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -246,7 +249,7 @@ std::vector<FrameHeader> decodeFrameHeaders(
 
 }
 
-AnimationAsset AnimationDecoder::decode(
+AnimationAsset AnimationDecoder::decodeAsset(
     const AnimationFile& file
 ) const {
     AnimationAsset asset;
@@ -455,6 +458,34 @@ AnimationAsset AnimationDecoder::decode(
     }
 
     return asset;
+}
+
+Animation AnimationDecoder::decode(
+    std::span<const std::uint8_t> payload
+) const {
+    AnimationFileParser parser;
+
+    std::vector<std::uint8_t> bytes(
+        payload.begin(),
+        payload.end()
+    );
+
+    std::optional<AnimationFile> file =
+        parser.parse(bytes);
+
+    if (!file.has_value()) {
+        throw std::runtime_error(
+            "Invalid animation payload"
+        );
+    }
+
+    AnimationAsset asset =
+        decodeAsset(*file);
+
+    return Animation{
+        .bytes = std::move(file->bytes),
+        .asset = std::move(asset)
+    };
 }
 
 }

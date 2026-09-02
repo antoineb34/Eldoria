@@ -1,7 +1,10 @@
 #include "FontDecoder.h"
 
+#include "FontFileParser.h"
+
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 
@@ -131,8 +134,8 @@ Glyph FontDecoder::decodeGlyph(
     return glyph;
 }
 
-Font FontDecoder::decode(
-    FontFile file,
+Font FontDecoder::decodeFile(
+    const FontFile& file,
     std::string name
 ) const {
     std::vector<Glyph> glyphs;
@@ -168,9 +171,30 @@ Font FontDecoder::decode(
     return Font{
         .name = std::move(name),
         .lineHeight = lineHeight,
-        .file = std::move(file),
         .glyphs = std::move(glyphs)
     };
+}
+
+Font FontDecoder::decode(
+    std::span<const std::uint8_t> dataPayload,
+    std::span<const std::uint8_t> indexPayload,
+    std::string name
+) const {
+    FontFileParser parser;
+
+    std::optional<FontFile> file =
+        parser.parse(
+            dataPayload,
+            indexPayload
+        );
+
+    if (!file.has_value()) {
+        throw std::runtime_error(
+            "Invalid font payload"
+        );
+    }
+
+    return decodeFile(*file, std::move(name));
 }
 
 }

@@ -107,8 +107,8 @@ std::vector<IndexedImagePixel> readPixels(
 }
 
 std::optional<IndexedImageFile> IndexedImageFileParser::parse(
-    const std::vector<std::uint8_t>& dataPayload,
-    const std::vector<std::uint8_t>& indexPayload,
+    std::span<const std::uint8_t> dataPayload,
+    std::span<const std::uint8_t> indexPayload,
     std::uint16_t frameId
 ) const {
     try {
@@ -234,8 +234,6 @@ std::optional<IndexedImageFile> IndexedImageFileParser::parse(
         }
 
         return IndexedImageFile{
-            .dataPayload = dataPayload,
-            .indexPayload = indexPayload,
             .metadata = metadata,
             .palette = std::move(palette),
             .pixels = std::move(pixels)

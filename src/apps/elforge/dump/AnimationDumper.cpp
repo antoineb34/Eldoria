@@ -51,7 +51,7 @@ bool dumpAnimation(
                 << inspection.uses.size()
                 << "\n"
                 << "Raw file payload bytes: "
-                << animation.file.bytes.size()
+                << animation.bytes.size()
                 << "\n\n";
 
             output << "[Skeleton]\n";
@@ -220,21 +220,20 @@ bool dumpAnimation(
 
             output
                 << "\n[Raw File Bytes]\n"
-                << "This is the exact byte buffer stored in "
-                   "AnimationFile and passed through the "
+                << "This is the exact byte buffer passed through the "
                    "animation decoding pipeline.\n"
                 << "Size: "
-                << animation.file.bytes.size()
+                << animation.bytes.size()
                 << " bytes\n\n";
 
-            if (animation.file.bytes.empty()) {
+            if (animation.bytes.empty()) {
                 output << "(empty)\n";
             }
             else {
                 writeHexDump(
                     output,
-                    animation.file.bytes.data(),
-                    animation.file.bytes.size()
+                    animation.bytes.data(),
+                    animation.bytes.size()
                 );
             }
         },

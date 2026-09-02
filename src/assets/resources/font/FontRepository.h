@@ -6,7 +6,6 @@
 
 #include "Font.h"
 #include "FontDecoder.h"
-#include "FontFileParser.h"
 
 #include "archive/Archive.h"
 #include "cache/Store.h"
@@ -40,8 +39,6 @@ private:
 
 private:
     eld::archive::Archive archive_;
-
-    FontFileParser parser_;
     FontDecoder decoder_;
 };
 

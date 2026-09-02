@@ -27,14 +27,14 @@ TextureHandle TextureResolver::resolve(
         return existing->second;
     }
 
-    eld::image::Image source =
-        repository_.getImage(
+    const eld::texture::Texture sourceTexture =
+        repository_.get(
             sourceTextureId
         );
 
     GraphicsTexture texture =
         converter_.convert(
-            source
+            sourceTexture.image
         );
 
     const TextureHandle handle =
