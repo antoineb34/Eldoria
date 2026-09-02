@@ -43,7 +43,7 @@ const char* nodeTypeName(
         case CacheTreeNodeType::ParameterDefinition: return "Parameter";
         case CacheTreeNodeType::MessageDefinition: return "Message";
         case CacheTreeNodeType::MessageAnimationDefinition: return "Message Animation";
-        case CacheTreeNodeType::InterfaceDefinition: return "Interface";
+        case CacheTreeNodeType::InterfaceWidget: return "Interface";
         case CacheTreeNodeType::Midi: return "MIDI";
         case CacheTreeNodeType::MapRegion: return "Map Region";
         case CacheTreeNodeType::Font: return "Font";

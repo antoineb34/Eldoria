@@ -53,7 +53,7 @@ InterfaceFileParser::parse(
         file.declaredCount =
             reader.readU16();
 
-        std::vector<InterfaceFileWidget> widgets;
+        std::vector<InterfaceWidget> widgets;
         widgets.reserve(file.declaredCount);
 
         std::optional<std::uint16_t> parentId;
@@ -70,7 +70,7 @@ InterfaceFileParser::parse(
                     reader.readU16();
             }
 
-            InterfaceFileWidget definition;
+            InterfaceWidget definition;
             definition.id = id;
             definition.parentId = parentId;
 
@@ -113,7 +113,7 @@ InterfaceFileParser::parse(
                 const std::uint16_t length =
                     reader.readU16();
 
-                InterfaceFileScript script;
+                InterfaceScript script;
                 script.instructions.reserve(length);
 
                 for (

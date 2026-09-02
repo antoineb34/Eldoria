@@ -65,7 +65,7 @@ struct SpriteTexture {
 };
 
 PixelSize widgetPixelSize(
-    const eld::interface::InterfaceFileWidget& widget
+    const eld::interface::InterfaceWidget& widget
 ) {
     if (widget.type == 2) {
         const int columns =
@@ -3612,7 +3612,7 @@ void renderModelOverlays(
 
 void renderInterfaceText(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceFileWidget& widget,
+    const eld::interface::InterfaceWidget& widget,
     int x,
     int y,
     int width
@@ -3694,7 +3694,7 @@ void renderInterfaceText(
 
 void renderInterfaceSprite(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceFileWidget& widget,
+    const eld::interface::InterfaceWidget& widget,
     int x,
     int y,
     InterfaceSpriteCache& spriteCache
@@ -3737,13 +3737,13 @@ void renderInterfaceSprite(
 
 void renderInterfaceInventory(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceFileWidget& widget,
+    const eld::interface::InterfaceWidget& widget,
     int x,
     int y,
     InterfaceSpriteCache& spriteCache
 ) {
     for (
-        const eld::interface::InterfaceFileSpriteSlot& slot :
+        const eld::interface::InterfaceSpriteSlot& slot :
         widget.inventorySprites
     ) {
         SpriteTexture* texture =
@@ -3903,7 +3903,7 @@ void renderInterfaceInventory(
 
 void renderInterfaceItemList(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceFileWidget& widget,
+    const eld::interface::InterfaceWidget& widget,
     int x,
     int y
 ) {

@@ -31,7 +31,7 @@ namespace eld::elforge {
         ParameterDefinition,
         MessageDefinition,
         MessageAnimationDefinition,
-        InterfaceDefinition,
+        InterfaceWidget,
         Midi,
         MapRegion,
     };

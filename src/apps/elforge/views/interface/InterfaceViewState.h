@@ -22,7 +22,7 @@ struct InterfaceViewModel {
 };
 
 struct InterfaceViewNode {
-    eld::interface::InterfaceFileWidget widget;
+    eld::interface::InterfaceWidget widget;
 
     int x = 0;
     int y = 0;

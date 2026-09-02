@@ -97,7 +97,7 @@ void appendInterfaceDump(
             << "  inventorySprites=" << widget.inventorySprites.size()
             << "\n";
 
-        for (const eld::interface::InterfaceFileSpriteSlot& slot : widget.inventorySprites) {
+        for (const eld::interface::InterfaceSpriteSlot& slot : widget.inventorySprites) {
             stream
                 << indent
                 << "    slot=" << static_cast<int>(slot.slot)
@@ -106,7 +106,7 @@ void appendInterfaceDump(
         }
     }
 
-    for (const eld::interface::InterfaceFileChild& child : widget.children) {
+    for (const eld::interface::InterfaceChild& child : widget.children) {
         const eld::interface::InterfaceWidget* childWidget =
             repository.find(child.id);
 

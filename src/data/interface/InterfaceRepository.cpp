@@ -17,9 +17,9 @@ InterfaceRepository::InterfaceRepository(
     const eld::cache::File cacheFile =
         store.get(archiveId);
 
-    eld::archive::ArchiveParser archiveParser;
+    const eld::archive::ArchiveParser archiveParser;
 
-    std::optional<eld::archive::Archive> archive =
+    const std::optional<eld::archive::Archive> archive =
         archiveParser.parse(
             cacheFile.getBytes()
         );
@@ -42,23 +42,17 @@ InterfaceRepository::InterfaceRepository(
         );
     }
 
-    interface_.file =
-        std::move(*file);
+    file_ = std::move(*file);
 }
 
-const Interface& InterfaceRepository::get() const {
-    return interface_;
+const InterfaceFile& InterfaceRepository::file() const {
+    return file_;
 }
 
-const InterfaceFile& InterfaceRepository::getFile() const {
-    return interface_.file;
-}
-
-const InterfaceWidget& InterfaceRepository::getWidget(
+const InterfaceWidget& InterfaceRepository::get(
     std::uint16_t id
 ) const {
-    const InterfaceWidget* widget =
-        findWidget(id);
+    const InterfaceWidget* widget = find(id);
 
     if (widget == nullptr) {
         throw std::out_of_range(
@@ -69,10 +63,10 @@ const InterfaceWidget& InterfaceRepository::getWidget(
     return *widget;
 }
 
-const InterfaceWidget* InterfaceRepository::findWidget(
+const InterfaceWidget* InterfaceRepository::find(
     std::uint16_t id
 ) const {
-    for (const InterfaceWidget& widget : interface_.file.widgets) {
+    for (const InterfaceWidget& widget : file_.widgets) {
         if (widget.id == id) {
             return &widget;
         }
@@ -81,27 +75,17 @@ const InterfaceWidget* InterfaceRepository::findWidget(
     return nullptr;
 }
 
-const InterfaceWidget& InterfaceRepository::get(
-    std::uint16_t id
-) const {
-    return getWidget(id);
+const std::vector<InterfaceWidget>&
+InterfaceRepository::list() const {
+    return file_.widgets;
 }
 
-const InterfaceWidget* InterfaceRepository::find(
-    std::uint16_t id
-) const {
-    return findWidget(id);
-}
-
-const std::vector<InterfaceWidget>& InterfaceRepository::list() const {
-    return interface_.file.widgets;
-}
-
-std::vector<std::uint16_t> InterfaceRepository::listIds() const {
+std::vector<std::uint16_t>
+InterfaceRepository::listIds() const {
     std::vector<std::uint16_t> ids;
-    ids.reserve(interface_.file.widgets.size());
+    ids.reserve(file_.widgets.size());
 
-    for (const InterfaceWidget& widget : interface_.file.widgets) {
+    for (const InterfaceWidget& widget : file_.widgets) {
         ids.push_back(widget.id);
     }
 
@@ -111,11 +95,11 @@ std::vector<std::uint16_t> InterfaceRepository::listIds() const {
 bool InterfaceRepository::contains(
     std::uint16_t id
 ) const {
-    return findWidget(id) != nullptr;
+    return find(id) != nullptr;
 }
 
 std::size_t InterfaceRepository::count() const {
-    return interface_.file.widgets.size();
+    return file_.widgets.size();
 }
 
 }

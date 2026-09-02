@@ -200,7 +200,7 @@ CacheTreeNode makeInterfaceNode(
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::InterfaceDefinition;
+        CacheTreeNodeType::InterfaceWidget;
 
     node.key =
         "index/" +
@@ -233,7 +233,7 @@ CacheTreeNode makeInterfaceNode(
     }
 
     for (
-        const eld::interface::InterfaceFileChild& child :
+        const eld::interface::InterfaceChild& child :
         definition.children
     ) {
         const auto* childDefinition =

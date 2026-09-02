@@ -140,7 +140,7 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::MessageAnimationDefinition:
             return "Message Animation";
 
-        case CacheTreeNodeType::InterfaceDefinition:
+        case CacheTreeNodeType::InterfaceWidget:
             return "Interface";
 
         case CacheTreeNodeType::Midi:

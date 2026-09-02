@@ -267,7 +267,7 @@ private:
         );
 
         for (
-            const eld::interface::InterfaceFileChild& child :
+            const eld::interface::InterfaceChild& child :
             widget.children
         ) {
             const eld::interface::InterfaceWidget* childWidget =

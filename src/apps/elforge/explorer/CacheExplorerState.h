@@ -34,7 +34,7 @@
 #include "definition/parameter/ParameterDefinition.h"
 #include "definition/message/MessageDefinition.h"
 #include "definition/message_animation/MessageAnimationDefinition.h"
-#include "interface/InterfaceDefinition.h"
+#include "interface/InterfaceWidget.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"

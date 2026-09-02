@@ -296,7 +296,7 @@ void CacheExplorer::handleSelectionChanged() {
         case CacheTreeNodeType::DefinitionGroup:
             break;
 
-        case CacheTreeNodeType::InterfaceDefinition: {
+        case CacheTreeNodeType::InterfaceWidget: {
             if (state_.selection.definitionId >= 0) {
                 const auto* definition =
                     interfaceRepository_.find(
