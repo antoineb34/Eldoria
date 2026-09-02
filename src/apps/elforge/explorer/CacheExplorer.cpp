@@ -15,7 +15,7 @@ namespace eld::elforge {
 
 CacheExplorer::CacheExplorer()
     : cache_("cache"),
-      mapLoader_(cache_),
+      mapRepository_(cache_),
       midiRepository_(
           cache_.open(
               eld::cache::IndexId::Midi
@@ -70,61 +70,61 @@ CacheExplorer::CacheExplorer()
           ),
           1
       ),
-      definitionRepository_(
+      definitionArchive_(
           cache_.open(
               eld::cache::IndexId::Config
           ),
           2
       ),
       floorRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "flo"
           )
       ),
       identityKitRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "idk"
           )
       ),
       locationRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "loc"
           )
       ),
       npcRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "npc"
           )
       ),
       itemRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "obj"
           )
       ),
       sequenceRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "seq"
           )
       ),
       spotAnimationRepository_(
-          definitionRepository_.get(
+          definitionArchive_.get(
               "spotanim"
           )
       ),
       varpRepository_(
-          definitionRepository_.get("varp")
+          definitionArchive_.get("varp")
       ),
       varbitRepository_(
-          definitionRepository_.get("varbit")
+          definitionArchive_.get("varbit")
       ),
       parameterRepository_(
-          definitionRepository_.get("param")
+          definitionArchive_.get("param")
       ),
       messageRepository_(
-          definitionRepository_.get("mes")
+          definitionArchive_.get("mes")
       ),
       messageAnimationRepository_(
-          definitionRepository_.get("mesanim")
+          definitionArchive_.get("mesanim")
       ),
       interfaceRepository_(
           cache_.open(

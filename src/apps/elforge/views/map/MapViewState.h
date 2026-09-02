@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "map/MapIndex.h"
 #include "map/MapRegion.h"
 #include "render/map/SceneLocationBuilder.h"
 #include "render/scene/RenderScene.h"

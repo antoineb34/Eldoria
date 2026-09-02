@@ -12,9 +12,9 @@
 
 namespace eld::definition {
 
-class DefinitionRepository {
+class DefinitionArchive {
 public:
-    DefinitionRepository(
+    DefinitionArchive(
         eld::cache::Store store,
         std::uint16_t archiveId
     );

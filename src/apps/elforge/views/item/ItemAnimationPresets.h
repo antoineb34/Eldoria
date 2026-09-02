@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "animation_presentation/AnimationPresentation.h"
+#include "animation/AnimationPresentation.h"
 
 namespace eld::definition {
 struct ItemDefinition;

@@ -1,5 +1,5 @@
 add_library(eldoria_assets STATIC
-    content/animation_presentation/AnimationPresentationCatalog.cpp
+    content/animation/AnimationPresentationCatalog.cpp
     resources/animation/AnimationFrameIndex.cpp
     resources/animation/AnimationFileParser.cpp
     resources/animation/AnimationDecoder.cpp
@@ -7,9 +7,10 @@ add_library(eldoria_assets STATIC
     content/interface/InterfaceFileParser.cpp
     content/interface/InterfaceRepository.cpp
     content/map/MapFileReader.cpp
-    content/map/MapLoader.cpp
-    content/map/decoder/TerrainDecoder.cpp
-    content/map/decoder/LocationSpawnDecoder.cpp
+    content/map/MapIndexParser.cpp
+    content/map/MapRepository.cpp
+    content/map/TerrainDecoder.cpp
+    content/map/LocationSpawnDecoder.cpp
     resources/midi/MidiFileParser.cpp
     resources/midi/MidiRepository.cpp
     resources/model/ModelDecoder.cpp
@@ -22,7 +23,7 @@ add_library(eldoria_assets STATIC
     resources/font/FontDecoder.cpp
     resources/font/FontRepository.cpp
     resources/definition/DefinitionTableParser.cpp
-    resources/definition/DefinitionRepository.cpp
+    resources/definition/DefinitionArchive.cpp
     content/floor/FloorDefinitionParser.cpp
     content/floor/FloorRepository.cpp
     content/identity_kit/IdentityKitDefinitionParser.cpp

@@ -6,7 +6,7 @@
 #include "floor/FloorRepository.h"
 #include "location/LocationRepository.h"
 #include "render/GraphicsResources.h"
-#include "map/MapLoader.h"
+#include "map/MapRepository.h"
 #include "model/ModelRepository.h"
 
 namespace eld::elforge {
@@ -14,7 +14,7 @@ namespace eld::elforge {
 class MapView {
 public:
     MapView(
-        const eld::map::MapLoader& loader,
+        const eld::map::MapRepository& loader,
         const eld::definition::FloorRepository& floors,
         const eld::definition::LocationRepository& locations,
         eld::model::ModelRepository& models,
@@ -26,7 +26,7 @@ public:
     ) const;
 
 private:
-    const eld::map::MapLoader& loader_;
+    const eld::map::MapRepository& loader_;
     const eld::definition::FloorRepository& floors_;
     const eld::definition::LocationRepository& locations_;
     eld::model::ModelRepository& models_;

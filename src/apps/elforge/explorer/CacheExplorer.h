@@ -13,7 +13,7 @@
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
-#include "map/MapLoader.h"
+#include "map/MapRepository.h"
 #include "midi/MidiRepository.h"
 #include "midi/MidiPlayer.h"
 
@@ -21,7 +21,7 @@
 #include "animation/AnimationRepository.h"
 #include "animation/AnimationPlayer.h"
 #include "animation/ModelAnimator.h"
-#include "animation_presentation/AnimationPresentationCatalog.h"
+#include "animation/AnimationPresentationCatalog.h"
 #include "model/ModelMesh.h"
 
 #include "explorer/CacheExplorerState.h"
@@ -37,7 +37,7 @@
 #include "sprite/SpriteRepository.h"
 #include "image/JpegRepository.h"
 #include "font/FontRepository.h"
-#include "definition/DefinitionRepository.h"
+#include "definition/DefinitionArchive.h"
 #include "floor/FloorRepository.h"
 #include "identity_kit/IdentityKitRepository.h"
 #include "location/LocationRepository.h"
@@ -145,7 +145,7 @@ private:
     void renderManualNpcActionComposer();
 
     eld::cache::Cache cache_;
-    eld::map::MapLoader mapLoader_;
+    eld::map::MapRepository mapRepository_;
     eld::midi::MidiRepository midiRepository_;
     bool explorerPanelOpen_ = true;
 
@@ -251,7 +251,7 @@ private:
     eld::sprite::SpriteRepository mediaSpriteRepository_;
     eld::image::JpegRepository titleJpegRepository_;
     eld::font::FontRepository titleFontRepository_;
-    eld::definition::DefinitionRepository definitionRepository_;
+    eld::definition::DefinitionArchive definitionArchive_;
     eld::definition::FloorRepository floorRepository_;
     eld::definition::IdentityKitRepository identityKitRepository_;
     eld::definition::LocationRepository locationRepository_;

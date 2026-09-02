@@ -49,20 +49,4 @@ struct MapRegion {
         return tiles.at(tileIndex(plane, x, y));
     }
 };
-
-struct MapIndexEntry {
-    std::uint16_t regionId = 0;
-    std::uint16_t terrainFileId = 0;
-    std::uint16_t locationFileId = 0;
-    bool shouldPreload = false;
-
-    int regionX() const {
-        return static_cast<int>(regionId >> 8);
-    }
-
-    int regionY() const {
-        return static_cast<int>(regionId & 0xFFu);
-    }
-};
-
 }

@@ -1,4 +1,4 @@
-#include "DefinitionRepository.h"
+#include "DefinitionArchive.h"
 
 #include <exception>
 #include <stdexcept>
@@ -10,7 +10,7 @@
 namespace eld::definition {
 
 eld::archive::Archive
-DefinitionRepository::loadArchive(
+DefinitionArchive::loadArchive(
     const eld::cache::Store& store,
     std::uint16_t archiveId
 ) {
@@ -35,7 +35,7 @@ DefinitionRepository::loadArchive(
     return std::move(*archive);
 }
 
-DefinitionRepository::DefinitionRepository(
+DefinitionArchive::DefinitionArchive(
     eld::cache::Store store,
     std::uint16_t archiveId
 )
@@ -47,7 +47,7 @@ DefinitionRepository::DefinitionRepository(
       ) {
 }
 
-DefinitionTable DefinitionRepository::get(
+DefinitionTable DefinitionArchive::get(
     std::string_view name
 ) const {
     const std::string dataName =
@@ -85,7 +85,7 @@ DefinitionTable DefinitionRepository::get(
 }
 
 std::optional<DefinitionTable>
-DefinitionRepository::find(
+DefinitionArchive::find(
     std::string_view name
 ) const {
     if (!contains(name)) {
@@ -100,7 +100,7 @@ DefinitionRepository::find(
     }
 }
 
-bool DefinitionRepository::contains(
+bool DefinitionArchive::contains(
     std::string_view name
 ) const {
     return

@@ -4,17 +4,18 @@
 #include <vector>
 
 #include "MapFileReader.h"
+#include "MapIndex.h"
 #include "MapRegion.h"
 #include "cache/Cache.h"
 #include "cache/Store.h"
-#include "decoder/LocationSpawnDecoder.h"
-#include "decoder/TerrainDecoder.h"
+#include "LocationSpawnDecoder.h"
+#include "TerrainDecoder.h"
 
 namespace eld::map {
 
-class MapLoader {
+class MapRepository {
 public:
-    explicit MapLoader(
+    explicit MapRepository(
         const eld::cache::Cache& cache
     );
 
@@ -33,7 +34,7 @@ public:
     ) const;
 
 private:
-    std::vector<MapIndexEntry> readMapIndex(
+    MapIndex readMapIndex(
         const eld::cache::Cache& cache
     ) const;
 
@@ -43,7 +44,7 @@ private:
 
 private:
     eld::cache::Store maps_;
-    std::vector<MapIndexEntry> entries_;
+    MapIndex index_;
 
     MapFileReader fileReader_;
     TerrainDecoder terrainDecoder_;

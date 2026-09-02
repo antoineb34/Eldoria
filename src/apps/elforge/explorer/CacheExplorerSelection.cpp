@@ -166,7 +166,7 @@ void CacheExplorer::handleSelectionChanged() {
 
             try {
                 const MapView view(
-                    mapLoader_,
+                    mapRepository_,
                     floorRepository_,
                     locationRepository_,
                     modelRepository_,

@@ -11,7 +11,7 @@
 #include "parameter/ParameterRepository.h"
 #include "message/MessageRepository.h"
 #include "message_animation/MessageAnimationRepository.h"
-#include "map/MapLoader.h"
+#include "map/MapRepository.h"
 #include "interface/InterfaceRepository.h"
 
 #include <array>
@@ -27,7 +27,7 @@
 #include "archive/ArchiveParser.h"
 #include "cache/Store.h"
 #include "sprite/SpriteRepository.h"
-#include "definition/DefinitionRepository.h"
+#include "definition/DefinitionArchive.h"
 #include "floor/FloorRepository.h"
 
 namespace eld::elforge {
@@ -1568,8 +1568,8 @@ std::optional<CacheTreeNode> makeArchiveNode(
     }
 
     std::optional<
-        eld::definition::DefinitionRepository
-    > definitionRepository;
+        eld::definition::DefinitionArchive
+    > definitionArchive;
 
     std::optional<
         eld::definition::FloorRepository
@@ -1620,71 +1620,71 @@ std::optional<CacheTreeNode> makeArchiveNode(
     > messageAnimationRepository;
 
     if (entry.fileId == 2) {
-        definitionRepository.emplace(
+        definitionArchive.emplace(
             store,
             entry.fileId
         );
 
         floorRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "flo"
             )
         );
 
         identityKitRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "idk"
             )
         );
 
         locationRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "loc"
             )
         );
 
         npcRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "npc"
             )
         );
 
         itemRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "obj"
             )
         );
 
         sequenceRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "seq"
             )
         );
 
         spotAnimationRepository.emplace(
-            definitionRepository->get(
+            definitionArchive->get(
                 "spotanim"
             )
         );
 
         varpRepository.emplace(
-            definitionRepository->get("varp")
+            definitionArchive->get("varp")
         );
 
         varbitRepository.emplace(
-            definitionRepository->get("varbit")
+            definitionArchive->get("varbit")
         );
 
         parameterRepository.emplace(
-            definitionRepository->get("param")
+            definitionArchive->get("param")
         );
 
         messageRepository.emplace(
-            definitionRepository->get("mes")
+            definitionArchive->get("mes")
         );
 
         messageAnimationRepository.emplace(
-            definitionRepository->get("mesanim")
+            definitionArchive->get("mesanim")
         );
     }
 
@@ -2209,7 +2209,7 @@ void addIndex(
         index.id ==
         eld::cache::IndexId::Maps
     ) {
-        const eld::map::MapLoader loader(cache);
+        const eld::map::MapRepository loader(cache);
 
         for (
             const eld::map::MapIndexEntry& entry :

@@ -32,7 +32,7 @@ struct TerrainNeighborhood {
 };
 
 TerrainNeighborhood loadTerrainNeighborhood(
-    const eld::map::MapLoader& loader,
+    const eld::map::MapRepository& loader,
     const eld::map::MapIndexEntry& center
 ) {
     TerrainNeighborhood result;
@@ -225,7 +225,7 @@ eld::render::Transform classicMapTransform() {
 }
 
 MapView::MapView(
-    const eld::map::MapLoader& loader,
+    const eld::map::MapRepository& loader,
     const eld::definition::FloorRepository& floors,
     const eld::definition::LocationRepository& locations,
     eld::model::ModelRepository& models,

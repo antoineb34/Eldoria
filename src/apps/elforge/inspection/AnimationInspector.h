@@ -9,7 +9,7 @@
 #include "animation/Animation.h"
 #include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"
-#include "animation_presentation/AnimationPresentationCatalog.h"
+#include "animation/AnimationPresentationCatalog.h"
 #include "item/ItemRepository.h"
 #include "location/LocationRepository.h"
 #include "npc/NpcRepository.h"

@@ -1,4 +1,4 @@
-#include "MapLoader.h"
+#include "MapRepository.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -8,28 +8,28 @@
 
 #include "archive/Archive.h"
 #include "archive/ArchiveParser.h"
-#include "binary/ByteReader.h"
+#include "MapIndexParser.h"
 #include "cache/File.h"
 
 namespace eld::map {
 
-MapLoader::MapLoader(
+MapRepository::MapRepository(
     const eld::cache::Cache& cache
 )
     : maps_(cache.open(eld::cache::IndexId::Maps)),
-      entries_(readMapIndex(cache)) {
+      index_(readMapIndex(cache)) {
 }
 
-const std::vector<MapIndexEntry>& MapLoader::entries() const {
-    return entries_;
+const std::vector<MapIndexEntry>& MapRepository::entries() const {
+    return index_.entries;
 }
 
-const MapIndexEntry* MapLoader::find(
+const MapIndexEntry* MapRepository::find(
     std::uint16_t regionId
 ) const {
     const auto it = std::lower_bound(
-        entries_.begin(),
-        entries_.end(),
+        index_.entries.begin(),
+        index_.entries.end(),
         regionId,
         [](const MapIndexEntry& entry, std::uint16_t id) {
             return entry.regionId < id;
@@ -37,12 +37,12 @@ const MapIndexEntry* MapLoader::find(
     );
 
     return
-        it != entries_.end() && it->regionId == regionId
+        it != index_.entries.end() && it->regionId == regionId
             ? &*it
             : nullptr;
 }
 
-const MapIndexEntry& MapLoader::requireEntry(
+const MapIndexEntry& MapRepository::requireEntry(
     std::uint16_t regionId
 ) const {
     const MapIndexEntry* entry = find(regionId);
@@ -55,7 +55,7 @@ const MapIndexEntry& MapLoader::requireEntry(
     return *entry;
 }
 
-MapRegion MapLoader::loadTerrain(
+MapRegion MapRepository::loadTerrain(
     std::uint16_t regionId
 ) const {
     const MapIndexEntry& entry = requireEntry(regionId);
@@ -75,7 +75,7 @@ MapRegion MapLoader::loadTerrain(
     return region;
 }
 
-MapRegion MapLoader::load(
+MapRegion MapRepository::load(
     std::uint16_t regionId
 ) const {
     MapRegion region = loadTerrain(regionId);
@@ -85,7 +85,7 @@ MapRegion MapLoader::load(
     return region;
 }
 
-std::vector<MapIndexEntry> MapLoader::readMapIndex(
+MapIndex MapRepository::readMapIndex(
     const eld::cache::Cache& cache
 ) const {
     const eld::cache::Store config =
@@ -97,70 +97,44 @@ std::vector<MapIndexEntry> MapLoader::readMapIndex(
         );
     }
 
-    const eld::cache::File versionListFile = config.get(5);
+    const eld::cache::File versionListFile =
+        config.get(5);
+
     const std::vector<std::uint8_t> archiveBytes =
         versionListFile.getBytes();
 
-    const eld::archive::ArchiveParser parser;
+    const eld::archive::ArchiveParser archiveParser;
+
     const std::optional<eld::archive::Archive> archive =
-        parser.parse(archiveBytes);
+        archiveParser.parse(archiveBytes);
+
     if (!archive.has_value()) {
         throw std::runtime_error(
             "idx0 file 5 is not a valid JAG archive"
         );
     }
 
-    const eld::archive::ArchiveFile* mapIndex =
+    const eld::archive::ArchiveFile* mapIndexFile =
         archive->find("map_index");
-    if (mapIndex == nullptr) {
+
+    if (mapIndexFile == nullptr) {
         throw std::runtime_error(
             "versionlist archive has no map_index"
         );
     }
 
-    constexpr std::size_t RecordSize = 7;
-    const std::vector<std::uint8_t>& bytes = mapIndex->payload;
-    if (bytes.empty() || bytes.size() % RecordSize != 0) {
+    const MapIndexParser parser;
+
+    std::optional<MapIndex> index =
+        parser.parse(mapIndexFile->payload);
+
+    if (!index.has_value()) {
         throw std::runtime_error(
-            "map_index is not a non-empty sequence of 7-byte records"
+            "Failed to parse map_index"
         );
     }
 
-    eld::binary::ByteReader reader(bytes);
-    std::vector<MapIndexEntry> entries;
-    entries.reserve(bytes.size() / RecordSize);
-
-    while (!reader.atEnd()) {
-        MapIndexEntry entry;
-        entry.regionId = reader.readU16();
-        entry.terrainFileId = reader.readU16();
-        entry.locationFileId = reader.readU16();
-        entry.shouldPreload = reader.readU8() != 0;
-        entries.push_back(entry);
-    }
-
-    std::sort(
-        entries.begin(),
-        entries.end(),
-        [](const MapIndexEntry& a, const MapIndexEntry& b) {
-            return a.regionId < b.regionId;
-        }
-    );
-
-    const auto duplicate = std::adjacent_find(
-        entries.begin(),
-        entries.end(),
-        [](const MapIndexEntry& a, const MapIndexEntry& b) {
-            return a.regionId == b.regionId;
-        }
-    );
-    if (duplicate != entries.end()) {
-        throw std::runtime_error(
-            "map_index contains duplicate region ids"
-        );
-    }
-
-    return entries;
+    return std::move(*index);
 }
 
 }
