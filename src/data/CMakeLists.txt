@@ -25,7 +25,7 @@ add_library(eldoria_data STATIC
     map/MapFileReader.cpp
     map/MapLoader.cpp
     map/decoder/TerrainDecoder.cpp
-    map/decoder/ObjectSpawnDecoder.cpp
+    map/decoder/LocationSpawnDecoder.cpp
 
     midi/MidiFileParser.cpp
     midi/MidiRepository.cpp
@@ -44,8 +44,8 @@ add_library(eldoria_data STATIC
     definition/DefinitionRepository.cpp
     definition/floor/FloorDefinitionParser.cpp
     definition/floor/FloorRepository.cpp
-    definition/idk/IdentityKitDefinitionParser.cpp
-    definition/idk/IdentityKitRepository.cpp
+    definition/identity_kit/IdentityKitDefinitionParser.cpp
+    definition/identity_kit/IdentityKitRepository.cpp
     definition/location/LocationDefinitionParser.cpp
     definition/location/LocationRepository.cpp
     definition/npc/NpcDefinitionParser.cpp

@@ -163,22 +163,22 @@ const char* getNodeTypeName(
 }
 
 const char* mapLocKindName(
-    eld::graphics::map::SceneLocKind kind
+    eld::graphics::map::SceneLocationKind kind
 ) {
     switch (kind) {
-        case eld::graphics::map::SceneLocKind::Wall:
+        case eld::graphics::map::SceneLocationKind::Wall:
             return "Wall";
 
-        case eld::graphics::map::SceneLocKind::WallDecoration:
+        case eld::graphics::map::SceneLocationKind::WallDecoration:
             return "Wall Decoration";
 
-        case eld::graphics::map::SceneLocKind::GroundDecoration:
+        case eld::graphics::map::SceneLocationKind::GroundDecoration:
             return "Ground Decoration";
 
-        case eld::graphics::map::SceneLocKind::Location:
+        case eld::graphics::map::SceneLocationKind::Location:
             return "Location";
 
-        case eld::graphics::map::SceneLocKind::Roof:
+        case eld::graphics::map::SceneLocationKind::Roof:
             return "Roof";
     }
 
@@ -375,7 +375,7 @@ void AssetDetailsPanel::render(
 
         ImGui::Text(
             "Object file: %d",
-            state.selection.objectFileId
+            state.selection.locationFileId
         );
     }
 
@@ -627,7 +627,7 @@ void AssetDetailsPanel::render(
 
         ImGui::Text(
             "Decoded object spawns: %zu",
-            map.centerRegion.objects.size()
+            map.centerRegion.locations.size()
         );
 
         ImGui::Text(
@@ -794,7 +794,7 @@ void AssetDetailsPanel::render(
             state.selectedMapLocIndex.has_value() &&
             *state.selectedMapLocIndex < map.sceneLocs.size()
         ) {
-            const eld::graphics::map::SceneLocPlacement& loc =
+            const eld::graphics::map::SceneLocationPlacement& loc =
                 map.sceneLocs[*state.selectedMapLocIndex];
 
             ImGui::Spacing();
@@ -883,7 +883,7 @@ void AssetDetailsPanel::render(
                 loc.cornerHeights[3]
             );
 
-            if (loc.kind == eld::graphics::map::SceneLocKind::Wall) {
+            if (loc.kind == eld::graphics::map::SceneLocationKind::Wall) {
                 ImGui::Text(
                     "Wall types: %d, %d",
                     loc.wallTypeA,
@@ -893,7 +893,7 @@ void AssetDetailsPanel::render(
 
             if (
                 loc.kind ==
-                    eld::graphics::map::SceneLocKind::WallDecoration
+                    eld::graphics::map::SceneLocationKind::WallDecoration
             ) {
                 ImGui::Text(
                     "Decoration type / angle: %d / %d",

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "ClassicTerrainAppearance.h"
-#include "SceneLocModelBuilder.h"
+#include "SceneLocationModelBuilder.h"
 #include "GraphicsResources.h"
 #include "definition/floor/FloorRepository.h"
 #include "model/RenderModel.h"
@@ -25,7 +25,7 @@ struct SceneTerrainRenderBuildResult {
     SceneTerrainRenderStats stats;
 };
 
-struct SceneLocCameraRenderVariant {
+struct SceneLocationCameraRenderVariant {
     std::uint8_t scenePlane = 0;
     std::uint8_t rotation = 0;
     int sceneX = 0;
@@ -35,7 +35,7 @@ struct SceneLocCameraRenderVariant {
     eld::graphics::RenderModel outsetModel;
 };
 
-struct SceneLocRenderStats {
+struct SceneLocationRenderStats {
     std::size_t instances = 0;
     std::size_t parts = 0;
     std::size_t triangles = 0;
@@ -43,11 +43,11 @@ struct SceneLocRenderStats {
     std::size_t cameraDependentParts = 0;
 };
 
-struct SceneLocRenderBuildResult {
+struct SceneLocationRenderBuildResult {
     std::array<eld::graphics::RenderModel, eld::map::PlaneCount>
         staticPlaneModels;
-    std::vector<SceneLocCameraRenderVariant> cameraVariants;
-    SceneLocRenderStats stats;
+    std::vector<SceneLocationCameraRenderVariant> cameraVariants;
+    SceneLocationRenderStats stats;
 };
 
 // Converts already-decoded/classified map graphics into generic RenderModel
@@ -62,8 +62,8 @@ public:
         eld::graphics::GraphicsResources& resources
     ) const;
 
-    SceneLocRenderBuildResult buildLocs(
-        const SceneLocModelBuildResult& locModels,
+    SceneLocationRenderBuildResult buildLocs(
+        const SceneLocationModelBuildResult& locModels,
         const std::vector<eld::graphics::ModelHandle>& variantHandles,
         const eld::graphics::GraphicsResources& resources
     ) const;

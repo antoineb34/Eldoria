@@ -1,10 +1,10 @@
-#include "viewport/ViewportControlsPanel.h"
+#include "viewport/ViewportWorkspaceRouter.h"
 
 #include "explorer/CacheExplorerState.h"
 
 namespace eld::elforge {
 
-ViewportViewKind ViewportControlsPanel::kindFor(
+ViewportViewKind ViewportWorkspaceRouter::kindFor(
     const CacheExplorerState& state
 ) const {
     if (state.activeMap.has_value()) {
@@ -70,7 +70,7 @@ ViewportViewKind ViewportControlsPanel::kindFor(
 }
 
 
-void ViewportControlsPanel::update(
+void ViewportWorkspaceRouter::update(
     CacheExplorerState& state,
     ViewportViewKind kind
 ) {
@@ -88,7 +88,7 @@ void ViewportControlsPanel::update(
 }
 
 
-void ViewportControlsPanel::
+void ViewportWorkspaceRouter::
 renderInterfaceWorkspace(
     CacheExplorerState& state,
     const ImVec2& controlsPosition,
@@ -103,7 +103,7 @@ renderInterfaceWorkspace(
 }
 
 
-void ViewportControlsPanel::
+void ViewportWorkspaceRouter::
 renderModelWorkspace(
     CacheExplorerState& state
 ) {
@@ -114,7 +114,7 @@ renderModelWorkspace(
 }
 
 
-void ViewportControlsPanel::
+void ViewportWorkspaceRouter::
 renderTextureWorkspace(
     CacheExplorerState& state,
     const ImVec2& controlsPosition,
@@ -130,21 +130,21 @@ renderTextureWorkspace(
 
 
 const InterfaceViewOptions&
-ViewportControlsPanel::interfaceOptions() const {
+ViewportWorkspaceRouter::interfaceOptions() const {
     return
         interfaceViewPanel_.options();
 }
 
 
 const ModelViewOptions&
-ViewportControlsPanel::modelOptions() const {
+ViewportWorkspaceRouter::modelOptions() const {
     return
         modelViewPanel_.options();
 }
 
 
 const TextureViewOptions&
-ViewportControlsPanel::textureOptions() const {
+ViewportWorkspaceRouter::textureOptions() const {
     return
         textureViewPanel_.options();
 }

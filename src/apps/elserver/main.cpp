@@ -1,6 +1,6 @@
-#include "ElServerApp.h"
+#include "app/ElServerApp.h"
 
-using eldoria::apps::elserver::ElServerApp;
+using eld::elserver::ElServerApp;
 
 int main() {
     ElServerApp application;

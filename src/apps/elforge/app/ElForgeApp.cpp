@@ -1,4 +1,4 @@
-#include "app/AppShell.h"
+#include "app/ElForgeApp.h"
 #include <string>
 #include "ui/ElForgeTheme.h"
 
@@ -34,7 +34,7 @@ void configureFonts(ImGuiIO& io) {
 
 }
 
-int AppShell::run() {
+int ElForgeApp::run() {
     eld::platform::SdlContext sdl(
         AppTitle,
         WindowWidth,

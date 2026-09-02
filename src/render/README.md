@@ -44,7 +44,7 @@ once, and keeps the resulting GPU buffers and textures resident for later
 frames. The current baseline is OpenGL 3.3 core.
 
 `SoftwareRenderBackend` remains a CPU reference/fallback implementation. It
-uses the same `IRenderBackend` contract and normalized graphics resources.
+uses the same `RenderBackend` contract and normalized graphics resources.
 
 Backend code must stay source-agnostic: RuneScape map/model interpretation
 continues to belong to `graphics` and `data`, not to the GPU backend.

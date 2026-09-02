@@ -7,9 +7,9 @@
 
 namespace eld::map {
 
-class ObjectSpawnDecoder {
+class LocationSpawnDecoder {
 public:
-    std::vector<MapObjectSpawn> decode(
+    std::vector<MapLocationSpawn> decode(
         const std::vector<std::uint8_t>& bytes
     ) const;
 };

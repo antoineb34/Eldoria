@@ -1,4 +1,4 @@
-#include "SceneLocModelBuilder.h"
+#include "SceneLocationModelBuilder.h"
 
 #include <algorithm>
 #include <array>
@@ -198,20 +198,20 @@ void scaleAndTranslate(
     }
 }
 
-SceneLocModelPart standardPart(
+SceneLocationModelPart standardPart(
     std::size_t variantIndex,
     int sceneYaw = 0
 ) {
-    return SceneLocModelPart{
+    return SceneLocationModelPart{
         .variantIndex = variantIndex,
         .sceneYaw = sceneYaw,
-        .drawMode = SceneLocDrawMode::Standard
+        .drawMode = SceneLocationDrawMode::Standard
     };
 }
 
 }
 
-eld::model::ModelMesh SceneLocModelBuilder::transformModel(
+eld::model::ModelMesh SceneLocationModelBuilder::transformModel(
     eld::model::ModelMesh mesh,
     const eld::definition::LocationDefinition& definition,
     int modelRotation
@@ -236,12 +236,12 @@ eld::model::ModelMesh SceneLocModelBuilder::transformModel(
     return mesh;
 }
 
-SceneLocModelBuildResult SceneLocModelBuilder::build(
-    const std::vector<SceneLocPlacement>& placements,
+SceneLocationModelBuildResult SceneLocationModelBuilder::build(
+    const std::vector<SceneLocationPlacement>& placements,
     const eld::definition::LocationRepository& locations,
     const eld::model::ModelRepository& models
 ) const {
-    SceneLocModelBuildResult result;
+    SceneLocationModelBuildResult result;
     result.instances.reserve(placements.size());
     result.stats.placements = placements.size();
 
@@ -308,7 +308,7 @@ SceneLocModelBuildResult SceneLocModelBuilder::build(
         return index;
     };
 
-    for (const SceneLocPlacement& placement : placements) {
+    for (const SceneLocationPlacement& placement : placements) {
         const eld::definition::LocationDefinition* definition =
             locations.find(placement.id);
 
@@ -317,7 +317,7 @@ SceneLocModelBuildResult SceneLocModelBuilder::build(
             continue;
         }
 
-        SceneLocModelInstance instance;
+        SceneLocationModelInstance instance;
         instance.id = placement.id;
         instance.shape = placement.shape;
         instance.rotation = placement.rotation;
@@ -375,7 +375,7 @@ SceneLocModelBuildResult SceneLocModelBuilder::build(
                         .variantIndex = *variant,
                         .sceneYaw = 0,
                         .drawMode =
-                            SceneLocDrawMode::WallDecorationInset
+                            SceneLocationDrawMode::WallDecorationInset
                     });
                 }
                 else if (shape == 7) {
@@ -383,7 +383,7 @@ SceneLocModelBuildResult SceneLocModelBuilder::build(
                         .variantIndex = *variant,
                         .sceneYaw = 0,
                         .drawMode =
-                            SceneLocDrawMode::WallDecorationOutset
+                            SceneLocationDrawMode::WallDecorationOutset
                     });
                 }
                 else {
@@ -391,14 +391,14 @@ SceneLocModelBuildResult SceneLocModelBuilder::build(
                         .variantIndex = *variant,
                         .sceneYaw = 0,
                         .drawMode =
-                            SceneLocDrawMode::WallDecorationDiagonalBoth
+                            SceneLocationDrawMode::WallDecorationDiagonalBoth
                     });
                 }
             }
         }
         else {
             const std::uint8_t modelType =
-                SceneLocBuilder::normalizedModelType(shape);
+                SceneLocationBuilder::normalizedModelType(shape);
             const std::optional<std::size_t> variant =
                 resolveVariant(*definition, modelType, rotation);
 

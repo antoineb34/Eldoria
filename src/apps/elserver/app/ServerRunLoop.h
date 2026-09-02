@@ -1,6 +1,6 @@
 #pragma once
 
-namespace eldoria::apps::elserver {
+namespace eld::elserver {
 
 class ServerRunLoop {
 public:

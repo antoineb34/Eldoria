@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-namespace eldoria::apps::elserver {
+namespace eld::elserver {
 
 int ElServerApp::run() {
     ServerRunLoop runLoop;

@@ -1,4 +1,4 @@
-#include "ObjectSpawnDecoder.h"
+#include "LocationSpawnDecoder.h"
 
 #include <limits>
 #include <stdexcept>
@@ -7,11 +7,11 @@
 
 namespace eld::map {
 
-std::vector<MapObjectSpawn> ObjectSpawnDecoder::decode(
+std::vector<MapLocationSpawn> LocationSpawnDecoder::decode(
     const std::vector<std::uint8_t>& bytes
 ) const {
     eld::binary::ByteReader reader(bytes);
-    std::vector<MapObjectSpawn> objects;
+    std::vector<MapLocationSpawn> objects;
 
     int objectId = -1;
 
@@ -81,7 +81,7 @@ std::vector<MapObjectSpawn> ObjectSpawnDecoder::decode(
                 );
             }
 
-            objects.push_back(MapObjectSpawn{
+            objects.push_back(MapLocationSpawn{
                 static_cast<std::uint16_t>(objectId),
                 static_cast<std::uint8_t>(plane),
                 static_cast<std::uint8_t>(x),

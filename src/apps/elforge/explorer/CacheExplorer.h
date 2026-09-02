@@ -39,7 +39,7 @@
 #include "font/FontRepository.h"
 #include "definition/DefinitionRepository.h"
 #include "definition/floor/FloorRepository.h"
-#include "definition/idk/IdentityKitRepository.h"
+#include "definition/identity_kit/IdentityKitRepository.h"
 #include "definition/location/LocationRepository.h"
 #include "definition/npc/NpcRepository.h"
 #include "definition/item/ItemRepository.h"

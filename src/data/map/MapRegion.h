@@ -7,7 +7,7 @@
 
 namespace eld::map {
 
-struct MapObjectSpawn {
+struct MapLocationSpawn {
     std::uint16_t id = 0;
     std::uint8_t plane = 0;
     std::uint8_t x = 0;
@@ -19,11 +19,11 @@ struct MapObjectSpawn {
 struct MapRegion {
     std::uint16_t regionId = 0;
     std::uint16_t terrainFileId = 0;
-    std::uint16_t objectFileId = 0;
+    std::uint16_t locationFileId = 0;
     bool shouldPreload = false;
 
     MapTileArray tiles{};
-    std::vector<MapObjectSpawn> objects;
+    std::vector<MapLocationSpawn> locations;
 
     int regionX() const {
         return static_cast<int>(regionId >> 8);
@@ -53,7 +53,7 @@ struct MapRegion {
 struct MapIndexEntry {
     std::uint16_t regionId = 0;
     std::uint16_t terrainFileId = 0;
-    std::uint16_t objectFileId = 0;
+    std::uint16_t locationFileId = 0;
     bool shouldPreload = false;
 
     int regionX() const {

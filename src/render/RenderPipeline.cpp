@@ -5,7 +5,7 @@ namespace eld::render {
 void RenderPipeline::render(
     const RenderScene& scene,
     const eld::graphics::GraphicsResources& resources,
-    IRenderBackend& backend
+    RenderBackend& backend
 ) const {
     backend.beginFrame(
         scene.camera

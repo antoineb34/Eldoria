@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "map/MapRegion.h"
-#include "graphics/map/SceneLocBuilder.h"
+#include "graphics/map/SceneLocationBuilder.h"
 #include "render/scene/RenderScene.h"
 
 namespace eld::elforge {
@@ -38,7 +38,7 @@ struct MapViewState {
     eld::map::MapIndexEntry indexEntry;
     eld::map::MapRegion centerRegion;
 
-    std::vector<eld::graphics::map::SceneLocPlacement>
+    std::vector<eld::graphics::map::SceneLocationPlacement>
         sceneLocs;
 
     std::array<float, eld::map::PlaneCount>

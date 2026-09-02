@@ -4,7 +4,7 @@
 
 namespace eld::elforge {
 
-class AppShell {
+class ElForgeApp {
 public:
     int run();
 

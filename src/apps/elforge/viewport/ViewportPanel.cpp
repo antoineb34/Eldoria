@@ -4905,7 +4905,7 @@ void pickMapElement(
             index < viewState.sceneLocs.size();
             ++index
         ) {
-            const eld::graphics::map::SceneLocPlacement& loc =
+            const eld::graphics::map::SceneLocationPlacement& loc =
                 viewState.sceneLocs[index];
 
             if (loc.scenePlane != state.mapPlane) {
@@ -5072,7 +5072,7 @@ void ViewportPanel::shutdown() {
     viewportSurface_.shutdown();
     viewportRenderer_ = nullptr;
 
-    mapGpuRenderer_.shutdown();
+    mapViewSurface_.shutdown();
 }
 
 
@@ -5796,11 +5796,11 @@ void ViewportPanel::render(
         ImGui::GetContentRegionAvail();
 
     const ViewportViewKind viewKind =
-        controlsPanel_.kindFor(
+        workspaceRouter_.kindFor(
             state
         );
 
-    controlsPanel_.update(
+    workspaceRouter_.update(
         state,
         viewKind
     );
@@ -6115,7 +6115,7 @@ void ViewportPanel::render(
         case ViewportViewKind::Location:
         case ViewportViewKind::SpotAnimation:
         case ViewportViewKind::Model:
-            controlsPanel_.
+            workspaceRouter_.
                 renderModelWorkspace(
                     state
                 );
@@ -6177,7 +6177,7 @@ void ViewportPanel::render(
                 break;
 
             case ViewportViewKind::Interface:
-                controlsPanel_.
+                workspaceRouter_.
                     renderInterfaceWorkspace(
                         state,
                         controlsPosition,
@@ -6186,7 +6186,7 @@ void ViewportPanel::render(
                 break;
 
             case ViewportViewKind::Texture:
-                controlsPanel_.
+                workspaceRouter_.
                     renderTextureWorkspace(
                         state,
                         controlsPosition,
@@ -6241,14 +6241,14 @@ void ViewportPanel::prepareViewport(
     }
 
     if (
-        !mapGpuRenderer_.prepare(
+        !mapViewSurface_.prepare(
             renderer,
             state,
             resources
         )
     ) {
         state.mapViewError =
-            mapGpuRenderer_.error();
+            mapViewSurface_.error();
     }
     else {
         state.mapViewError.clear();
@@ -6347,7 +6347,7 @@ void ViewportPanel::renderViewport(
 
 
     if (state.activeMap.has_value()) {
-        mapGpuRenderer_.draw(
+        mapViewSurface_.draw(
             renderer,
             state
         );
@@ -6371,7 +6371,7 @@ void ViewportPanel::renderViewport(
                 *viewState,
                 interfaceSprites,
                 resources,
-                controlsPanel_.interfaceOptions()
+                workspaceRouter_.interfaceOptions()
             );
         }
 
@@ -6403,7 +6403,7 @@ void ViewportPanel::renderViewport(
             renderer,
             state,
             state.activeTexture->image,
-            &controlsPanel_.textureOptions()
+            &workspaceRouter_.textureOptions()
         );
 
         return;
@@ -6464,7 +6464,7 @@ void ViewportPanel::renderViewport(
     }
 
     const ModelViewOptions& modelOptions =
-        controlsPanel_.modelOptions();
+        workspaceRouter_.modelOptions();
 
     const std::array<std::uint8_t, 4>
         background =

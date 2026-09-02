@@ -12,7 +12,7 @@
 
 namespace eld::graphics::map {
 
-enum class SceneLocKind : std::uint8_t {
+enum class SceneLocationKind : std::uint8_t {
     Wall,
     WallDecoration,
     GroundDecoration,
@@ -20,7 +20,7 @@ enum class SceneLocKind : std::uint8_t {
     Roof
 };
 
-struct SceneLocPlacement {
+struct SceneLocationPlacement {
     std::uint16_t id = 0;
     std::uint8_t shape = 0;
     std::uint8_t rotation = 0;
@@ -60,13 +60,13 @@ struct SceneLocPlacement {
     int decorationOffsetZ = 0;
 
     std::array<int, 4> cornerHeights{};
-    SceneLocKind kind = SceneLocKind::Location;
+    SceneLocationKind kind = SceneLocationKind::Location;
 };
 
-using SceneLocTileSampler =
+using SceneLocationTileSampler =
     std::function<const eld::map::MapTile*(std::size_t, int, int)>;
 
-class SceneLocBuilder {
+class SceneLocationBuilder {
 public:
     static constexpr int TileSize = 128;
     static constexpr int FullTurn = 2048;
@@ -87,10 +87,10 @@ public:
         return shape;
     }
 
-    std::vector<SceneLocPlacement> build(
-        const std::vector<eld::map::MapObjectSpawn>& spawns,
+    std::vector<SceneLocationPlacement> build(
+        const std::vector<eld::map::MapLocationSpawn>& spawns,
         const eld::definition::LocationRepository& locations,
-        const SceneLocTileSampler& sampleTile
+        const SceneLocationTileSampler& sampleTile
     ) const;
 };
 

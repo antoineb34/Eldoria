@@ -1,8 +1,8 @@
 add_executable(elserver
     main.cpp
 
-    ElServerApp.cpp
-    ServerRunLoop.cpp
+    app/ElServerApp.cpp
+    app/ServerRunLoop.cpp
 )
 
 target_include_directories(elserver PRIVATE

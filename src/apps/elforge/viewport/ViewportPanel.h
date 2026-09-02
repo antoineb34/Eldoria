@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <functional>
 
-#include "viewport/ViewportControlsPanel.h"
+#include "viewport/ViewportWorkspaceRouter.h"
 #include "viewport/ViewportSurface.h"
 #include "views/map/MapViewSurface.h"
 #include "views/map/MapViewPanel.h"
@@ -68,8 +68,8 @@ private:
     // the target before ImGui records its texture reference.
     SDL_Renderer* viewportRenderer_ = nullptr;
 
-    ViewportControlsPanel controlsPanel_;
-    MapViewSurface mapGpuRenderer_;
+    ViewportWorkspaceRouter workspaceRouter_;
+    MapViewSurface mapViewSurface_;
     MapViewPanel mapViewPanel_;
 
     MidiView midiView_;

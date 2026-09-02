@@ -7,8 +7,8 @@ add_library(eldoria_graphics STATIC
     model/RenderModelAssembler.cpp
 
     map/ClassicTerrainAppearance.cpp
-    map/SceneLocBuilder.cpp
-    map/SceneLocModelBuilder.cpp
+    map/SceneLocationBuilder.cpp
+    map/SceneLocationModelBuilder.cpp
     map/SceneMapRenderModelBuilder.cpp
     map/SceneTerrainBuilder.cpp
 

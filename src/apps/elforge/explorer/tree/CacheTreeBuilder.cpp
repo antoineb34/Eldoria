@@ -1,6 +1,6 @@
 #include "explorer/tree/CacheTreeBuilder.h"
 
-#include "definition/idk/IdentityKitRepository.h"
+#include "definition/identity_kit/IdentityKitRepository.h"
 #include "definition/location/LocationRepository.h"
 #include "definition/npc/NpcRepository.h"
 #include "definition/item/ItemRepository.h"
@@ -2122,8 +2122,8 @@ CacheTreeNode makeMapRegionNode(
     node.terrainFileId =
         static_cast<int>(entry.terrainFileId);
 
-    node.objectFileId =
-        static_cast<int>(entry.objectFileId);
+    node.locationFileId =
+        static_cast<int>(entry.locationFileId);
 
     CacheTreeNode terrain;
     terrain.type = CacheTreeNodeType::File;
@@ -2141,25 +2141,25 @@ CacheTreeNode makeMapRegionNode(
         static_cast<int>(entry.terrainFileId);
     terrain.regionId = node.regionId;
     terrain.terrainFileId = node.terrainFileId;
-    terrain.objectFileId = node.objectFileId;
+    terrain.locationFileId = node.locationFileId;
 
     CacheTreeNode objects;
     objects.type = CacheTreeNodeType::File;
     objects.key =
         node.key + "/objects/" +
-        std::to_string(entry.objectFileId);
+        std::to_string(entry.locationFileId);
     objects.label =
         "Object file " +
-        std::to_string(entry.objectFileId);
+        std::to_string(entry.locationFileId);
     objects.indexId =
         static_cast<int>(
             eld::cache::IndexId::Maps
         );
     objects.fileId =
-        static_cast<int>(entry.objectFileId);
+        static_cast<int>(entry.locationFileId);
     objects.regionId = node.regionId;
     objects.terrainFileId = node.terrainFileId;
-    objects.objectFileId = node.objectFileId;
+    objects.locationFileId = node.locationFileId;
 
     node.children.push_back(
         std::move(terrain)

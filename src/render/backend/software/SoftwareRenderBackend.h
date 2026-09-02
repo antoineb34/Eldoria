@@ -4,14 +4,14 @@
 
 #include <SDL3/SDL.h>
 
-#include "../IRenderBackend.h"
+#include "../RenderBackend.h"
 #include "Framebuffer.h"
 #include "SoftwareMeshProjector.h"
 #include "TriangleRasterizer.h"
 
 namespace eld::render {
 
-class SoftwareRenderBackend : public IRenderBackend {
+class SoftwareRenderBackend : public RenderBackend {
 public:
     explicit SoftwareRenderBackend(
         SDL_Renderer* renderer

@@ -47,7 +47,7 @@ struct CacheTreeNode {
     int definitionId = -1;
     int regionId = -1;
     int terrainFileId = -1;
-    int objectFileId = -1;
+    int locationFileId = -1;
 
     int indexId = -1;
     int archiveId = -1;

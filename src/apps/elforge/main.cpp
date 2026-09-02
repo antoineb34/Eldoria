@@ -1,6 +1,6 @@
-#include "app/AppShell.h"
+#include "app/ElForgeApp.h"
 
 int main() {
-    eld::elforge::AppShell app;
+    eld::elforge::ElForgeApp app;
     return app.run();
 }

@@ -1,7 +1,7 @@
 add_executable(elforge
     main.cpp
 
-    app/AppShell.cpp
+    app/ElForgeApp.cpp
     ui/ElForgeTheme.cpp
     ui/IconButton.cpp
     ui/Carousel.cpp
@@ -40,7 +40,7 @@ add_executable(elforge
     views/map/MapViewSurface.cpp
     views/model/ModelViewPanel.cpp
     views/texture/TextureViewPanel.cpp
-    viewport/ViewportControlsPanel.cpp
+    viewport/ViewportWorkspaceRouter.cpp
 )
 
 target_include_directories(elforge PRIVATE
@@ -50,6 +50,7 @@ target_include_directories(elforge PRIVATE
 target_link_libraries(elforge PRIVATE
     Eldoria::Audio
     Eldoria::Data
+    Eldoria::Graphics
     Eldoria::Platform
     Eldoria::PlatformImGui
     Eldoria::Render

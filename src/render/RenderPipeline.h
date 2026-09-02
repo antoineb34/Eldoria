@@ -1,6 +1,6 @@
 #pragma once
 
-#include "backend/IRenderBackend.h"
+#include "backend/RenderBackend.h"
 #include "graphics/GraphicsResources.h"
 #include "scene/RenderScene.h"
 
@@ -11,7 +11,7 @@ public:
     void render(
         const RenderScene& scene,
         const eld::graphics::GraphicsResources& resources,
-        IRenderBackend& backend
+        RenderBackend& backend
     ) const;
 };
 

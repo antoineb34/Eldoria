@@ -7,9 +7,9 @@
 
 namespace eld::render {
 
-class IRenderBackend {
+class RenderBackend {
 public:
-    virtual ~IRenderBackend() = default;
+    virtual ~RenderBackend() = default;
 
     virtual void beginFrame(
         const Camera& camera

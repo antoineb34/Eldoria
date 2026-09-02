@@ -7,8 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include "graphics/map/SceneLocBuilder.h"
-#include "graphics/map/SceneLocModelBuilder.h"
+#include "graphics/map/SceneLocationBuilder.h"
+#include "graphics/map/SceneLocationModelBuilder.h"
 #include "graphics/map/SceneMapRenderModelBuilder.h"
 #include "render/scene/Transform.h"
 
@@ -292,7 +292,7 @@ MapViewState MapView::build(
             );
         };
 
-    const eld::graphics::map::SceneLocTileSampler locSampler =
+    const eld::graphics::map::SceneLocationTileSampler locSampler =
         [&](std::size_t plane, int x, int y) {
             return sampleTerrainNeighborhood(
                 neighborhood,
@@ -302,21 +302,21 @@ MapViewState MapView::build(
             );
         };
 
-    eld::graphics::map::SceneLocBuilder locBuilder;
+    eld::graphics::map::SceneLocationBuilder locBuilder;
 
-    const std::vector<eld::graphics::map::SceneLocPlacement>
+    const std::vector<eld::graphics::map::SceneLocationPlacement>
         sceneLocs =
             locBuilder.build(
-                viewState.centerRegion.objects,
+                viewState.centerRegion.locations,
                 locations_,
                 locSampler
             );
 
     viewState.sceneLocs = sceneLocs;
 
-    eld::graphics::map::SceneLocModelBuilder locModelBuilder;
+    eld::graphics::map::SceneLocationModelBuilder locModelBuilder;
 
-    const eld::graphics::map::SceneLocModelBuildResult
+    const eld::graphics::map::SceneLocationModelBuildResult
         locModels =
             locModelBuilder.build(
                 sceneLocs,
@@ -332,7 +332,7 @@ MapViewState MapView::build(
     );
 
     for (
-        const eld::graphics::map::SceneLocModelVariant& variant :
+        const eld::graphics::map::SceneLocationModelVariant& variant :
         locModels.variants
     ) {
         variantHandles.push_back(
@@ -364,7 +364,7 @@ MapViewState MapView::build(
             );
     }
 
-    eld::graphics::map::SceneLocRenderBuildResult locRender =
+    eld::graphics::map::SceneLocationRenderBuildResult locRender =
         renderModelBuilder.buildLocs(
             locModels,
             variantHandles,
@@ -427,7 +427,7 @@ MapViewState MapView::build(
     );
 
     for (
-        eld::graphics::map::SceneLocCameraRenderVariant& variant :
+        eld::graphics::map::SceneLocationCameraRenderVariant& variant :
         locRender.cameraVariants
     ) {
         const eld::graphics::ModelHandle insetHandle =

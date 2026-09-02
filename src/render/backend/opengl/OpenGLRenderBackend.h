@@ -8,7 +8,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "../IRenderBackend.h"
+#include "../RenderBackend.h"
 #include "OpenGLApi.h"
 #include "math/Vec4.h"
 
@@ -21,7 +21,7 @@ struct OpenGLBackendStats {
     std::size_t drawCalls = 0;
 };
 
-class OpenGLRenderBackend : public IRenderBackend {
+class OpenGLRenderBackend : public RenderBackend {
 public:
     explicit OpenGLRenderBackend(
         SDL_Window* window

@@ -174,24 +174,24 @@ eld::graphics::RenderMaterial terrainMaterial(
     return material;
 }
 
-struct SceneLocDrawTransform {
+struct SceneLocationDrawTransform {
     int sceneX = 0;
     int sceneZ = 0;
     int yaw = 0;
 };
 
-SceneLocDrawTransform locDrawTransform(
-    const SceneLocModelInstance& instance,
-    const SceneLocModelPart& part,
+SceneLocationDrawTransform locDrawTransform(
+    const SceneLocationModelInstance& instance,
+    const SceneLocationModelPart& part,
     bool diagonalInset
 ) {
-    SceneLocDrawTransform result{
+    SceneLocationDrawTransform result{
         instance.sceneX,
         instance.sceneZ,
         part.sceneYaw
     };
 
-    if (part.drawMode == SceneLocDrawMode::Standard) {
+    if (part.drawMode == SceneLocationDrawMode::Standard) {
         return result;
     }
 
@@ -202,11 +202,11 @@ SceneLocDrawTransform locDrawTransform(
 
     const int rotation = instance.rotation & 3;
     bool useInset =
-        part.drawMode == SceneLocDrawMode::WallDecorationInset;
+        part.drawMode == SceneLocationDrawMode::WallDecorationInset;
 
     if (
         part.drawMode ==
-        SceneLocDrawMode::WallDecorationDiagonalBoth
+        SceneLocationDrawMode::WallDecorationDiagonalBoth
     ) {
         useInset = diagonalInset;
     }
@@ -243,7 +243,7 @@ eld::math::Vec3 rotateYaw(
 }
 
 float contourDelta(
-    const SceneLocModelInstance& instance,
+    const SceneLocationModelInstance& instance,
     float modelX,
     float modelZ
 ) {
@@ -272,8 +272,8 @@ float contourDelta(
 
 eld::graphics::RenderVertex transformLocVertex(
     eld::graphics::RenderVertex vertex,
-    const SceneLocModelInstance& instance,
-    const SceneLocDrawTransform& draw
+    const SceneLocationModelInstance& instance,
+    const SceneLocationDrawTransform& draw
 ) {
     eld::math::Vec3 local = vertex.position;
 
@@ -302,9 +302,9 @@ eld::graphics::RenderVertex transformLocVertex(
 
 std::size_t appendLocPart(
     std::vector<RenderBucket>& buckets,
-    const SceneLocModelInstance& instance,
-    const SceneLocModelPart& part,
-    const SceneLocDrawTransform& draw,
+    const SceneLocationModelInstance& instance,
+    const SceneLocationModelPart& part,
+    const SceneLocationDrawTransform& draw,
     const std::vector<eld::graphics::ModelHandle>& variantHandles,
     const eld::graphics::GraphicsResources& resources
 ) {
@@ -614,31 +614,31 @@ SceneMapRenderModelBuilder::buildTerrainPlane(
     return result;
 }
 
-SceneLocRenderBuildResult
+SceneLocationRenderBuildResult
 SceneMapRenderModelBuilder::buildLocs(
-    const SceneLocModelBuildResult& locModels,
+    const SceneLocationModelBuildResult& locModels,
     const std::vector<eld::graphics::ModelHandle>& variantHandles,
     const eld::graphics::GraphicsResources& resources
 ) const {
-    SceneLocRenderBuildResult result;
+    SceneLocationRenderBuildResult result;
     std::array<std::vector<RenderBucket>, eld::map::PlaneCount>
         planeBuckets;
 
     result.cameraVariants.reserve(32);
 
-    for (const SceneLocModelInstance& instance : locModels.instances) {
+    for (const SceneLocationModelInstance& instance : locModels.instances) {
         if (instance.scenePlane >= eld::map::PlaneCount) {
             continue;
         }
 
         ++result.stats.instances;
 
-        for (const SceneLocModelPart& part : instance.parts) {
+        for (const SceneLocationModelPart& part : instance.parts) {
             ++result.stats.parts;
 
             if (
                 part.drawMode ==
-                SceneLocDrawMode::WallDecorationDiagonalBoth
+                SceneLocationDrawMode::WallDecorationDiagonalBoth
             ) {
                 std::vector<RenderBucket> insetBuckets;
                 std::vector<RenderBucket> outsetBuckets;
@@ -662,7 +662,7 @@ SceneMapRenderModelBuilder::buildLocs(
                     resources
                 );
 
-                SceneLocCameraRenderVariant variant;
+                SceneLocationCameraRenderVariant variant;
                 variant.scenePlane = instance.scenePlane;
                 variant.rotation = instance.rotation;
                 variant.sceneX = instance.sceneX;

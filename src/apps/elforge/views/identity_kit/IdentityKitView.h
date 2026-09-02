@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "definition/idk/IdentityKitDefinition.h"
+#include "definition/identity_kit/IdentityKitDefinition.h"
 #include "model/Model.h"
 #include "model/ModelRepository.h"
 

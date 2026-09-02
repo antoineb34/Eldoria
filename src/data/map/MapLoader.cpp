@@ -65,7 +65,7 @@ MapRegion MapLoader::loadTerrain(
     MapRegion region;
     region.regionId = entry.regionId;
     region.terrainFileId = entry.terrainFileId;
-    region.objectFileId = entry.objectFileId;
+    region.locationFileId = entry.locationFileId;
     region.shouldPreload = entry.shouldPreload;
     region.tiles =
         terrainDecoder_.decode(
@@ -79,9 +79,9 @@ MapRegion MapLoader::load(
     std::uint16_t regionId
 ) const {
     MapRegion region = loadTerrain(regionId);
-    const MapFile objectFile =
-        fileReader_.read(maps_, region.objectFileId);
-    region.objects = objectDecoder_.decode(objectFile.bytes);
+    const MapFile locationFile =
+        fileReader_.read(maps_, region.locationFileId);
+    region.locations = locationDecoder_.decode(locationFile.bytes);
     return region;
 }
 
@@ -134,7 +134,7 @@ std::vector<MapIndexEntry> MapLoader::readMapIndex(
         MapIndexEntry entry;
         entry.regionId = reader.readU16();
         entry.terrainFileId = reader.readU16();
-        entry.objectFileId = reader.readU16();
+        entry.locationFileId = reader.readU16();
         entry.shouldPreload = reader.readU8() != 0;
         entries.push_back(entry);
     }

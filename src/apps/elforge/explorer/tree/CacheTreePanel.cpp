@@ -100,8 +100,8 @@ void selectNode(
     state.selection.terrainFileId =
         node.terrainFileId;
 
-    state.selection.objectFileId =
-        node.objectFileId;
+    state.selection.locationFileId =
+        node.locationFileId;
 }
 
 

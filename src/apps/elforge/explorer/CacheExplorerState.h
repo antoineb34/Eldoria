@@ -23,7 +23,7 @@
 #include "image/Image.h"
 #include "font/Font.h"
 #include "definition/floor/FloorDefinition.h"
-#include "definition/idk/IdentityKitDefinition.h"
+#include "definition/identity_kit/IdentityKitDefinition.h"
 #include "definition/location/LocationDefinition.h"
 #include "definition/npc/NpcDefinition.h"
 #include "definition/item/ItemDefinition.h"

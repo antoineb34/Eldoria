@@ -29,7 +29,7 @@ enum class ViewportViewKind {
 };
 
 
-class ViewportControlsPanel {
+class ViewportWorkspaceRouter {
 public:
     ViewportViewKind kindFor(
         const CacheExplorerState& state

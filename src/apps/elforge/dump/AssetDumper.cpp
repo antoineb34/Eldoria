@@ -497,7 +497,7 @@ bool dumpActiveAsset(
                 << map.centerRegion.worldBaseY()
                 << "\n";
             out << "Objects: "
-                << map.centerRegion.objects.size()
+                << map.centerRegion.locations.size()
                 << "\n";
             out << "Scene locs: "
                 << map.sceneLocs.size()

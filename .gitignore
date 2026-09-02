@@ -48,3 +48,7 @@ compile_commands.json
 
 # Local patch/install backups
 *.before_*
+
+# Temporary source bundles produced while inspecting/refactoring ElForge.
+elforge_*_sources.txt
+elforge_*_bundle.txt

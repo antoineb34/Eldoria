@@ -7,7 +7,7 @@
 #include "MapRegion.h"
 #include "cache/Cache.h"
 #include "cache/Store.h"
-#include "decoder/ObjectSpawnDecoder.h"
+#include "decoder/LocationSpawnDecoder.h"
 #include "decoder/TerrainDecoder.h"
 
 namespace eld::map {
@@ -47,7 +47,7 @@ private:
 
     MapFileReader fileReader_;
     TerrainDecoder terrainDecoder_;
-    ObjectSpawnDecoder objectDecoder_;
+    LocationSpawnDecoder locationDecoder_;
 };
 
 }

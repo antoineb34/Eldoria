@@ -1,4 +1,4 @@
-#include "SceneLocBuilder.h"
+#include "SceneLocationBuilder.h"
 
 #include <array>
 #include <cstddef>
@@ -41,35 +41,35 @@ std::size_t wallOffsetIndex(
         z;
 }
 
-SceneLocKind kindForShape(std::uint8_t shape) {
+SceneLocationKind kindForShape(std::uint8_t shape) {
     if (shape <= 3) {
-        return SceneLocKind::Wall;
+        return SceneLocationKind::Wall;
     }
 
     if (shape >= 4 && shape <= 8) {
-        return SceneLocKind::WallDecoration;
+        return SceneLocationKind::WallDecoration;
     }
 
     if (shape >= 12 && shape <= 21) {
-        return SceneLocKind::Roof;
+        return SceneLocationKind::Roof;
     }
 
     if (shape == 22) {
-        return SceneLocKind::GroundDecoration;
+        return SceneLocationKind::GroundDecoration;
     }
 
-    return SceneLocKind::Location;
+    return SceneLocationKind::Location;
 }
 
 
 }
 
-std::vector<SceneLocPlacement> SceneLocBuilder::build(
-    const std::vector<eld::map::MapObjectSpawn>& spawns,
+std::vector<SceneLocationPlacement> SceneLocationBuilder::build(
+    const std::vector<eld::map::MapLocationSpawn>& spawns,
     const eld::definition::LocationRepository& locations,
-    const SceneLocTileSampler& sampleTile
+    const SceneLocationTileSampler& sampleTile
 ) const {
-    std::vector<SceneLocPlacement> result;
+    std::vector<SceneLocationPlacement> result;
     result.reserve(spawns.size());
 
     // World3D starts wall-decoration displacement at 16. Straight and L walls
@@ -77,7 +77,7 @@ std::vector<SceneLocPlacement> SceneLocBuilder::build(
     std::array<std::uint8_t, WallOffsetCount> wallOffsets{};
     wallOffsets.fill(16);
 
-    for (const eld::map::MapObjectSpawn& spawn : spawns) {
+    for (const eld::map::MapLocationSpawn& spawn : spawns) {
         if (
             spawn.plane >= eld::map::PlaneCount ||
             spawn.x >= eld::map::RegionSize ||
@@ -128,7 +128,7 @@ std::vector<SceneLocPlacement> SceneLocBuilder::build(
             continue;
         }
 
-        SceneLocPlacement placement;
+        SceneLocationPlacement placement;
         placement.id = spawn.id;
         placement.shape = spawn.type;
         placement.rotation = spawn.rotation;

@@ -147,7 +147,7 @@ void drawMapSelectionOverlay(
         state.selectedMapLocIndex.has_value() &&
         *state.selectedMapLocIndex < viewState.sceneLocs.size()
     ) {
-        const eld::graphics::map::SceneLocPlacement& loc =
+        const eld::graphics::map::SceneLocationPlacement& loc =
             viewState.sceneLocs[*state.selectedMapLocIndex];
 
         drawMapSelectionCross(
