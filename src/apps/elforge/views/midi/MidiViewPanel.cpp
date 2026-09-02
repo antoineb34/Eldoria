@@ -2,15 +2,365 @@
 
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 #include <imgui.h>
 
 #include "midi/MidiPlayer.h"
 
+#include "explorer/CacheExplorerState.h"
+#include "ui/WorkspaceUi.h"
+
 #include "midi/MidiFile.h"
 #include "views/midi/MidiViewState.h"
 
 namespace eld::elforge {
+
+
+void MidiViewPanel::renderWorkspace(
+    CacheExplorerState& state,
+    const eld::midi::MidiFile* midi,
+    MidiViewState& viewState,
+    eld::audio::MidiPlayer& midiPlayer,
+    const ImVec2& controlsPosition,
+    const ImVec2& controlsSize
+) {
+    if (midi == nullptr) {
+        return;
+    }
+
+
+    const viewport_workspace::BottomRow layout =
+        viewport_workspace::bottomRow(
+            controlsSize.x
+        );
+
+    ui::workspace::beginDockedHud(
+        "##MidiBottomHud",
+        controlsPosition,
+        controlsSize
+    );
+
+    const float cardY =
+        ui::workspace::dockedCardY(
+            controlsPosition,
+            controlsSize
+        );
+
+
+    // --------------------------------------------------------
+    // LEFT — playback
+    // --------------------------------------------------------
+
+    ui::workspace::beginCard(
+        "##MidiPlaybackCard",
+        ImVec2(
+            controlsPosition.x +
+                layout.leftX,
+            cardY
+        ),
+        ImVec2(
+            viewport_workspace::
+                LeftWidth,
+            viewport_workspace::
+                CardHeight
+        )
+    );
+
+    ui::workspace::centeredText(
+        "PLAYBACK",
+        7.0f,
+        true
+    );
+
+    const eld::audio::MidiPlayerState playbackState =
+        midiPlayer.state();
+
+    constexpr float Gap =
+        6.0f;
+
+    constexpr float ButtonWidth =
+        68.0f;
+
+    constexpr float RowWidth =
+        ButtonWidth *
+            3.0f +
+        Gap *
+            2.0f;
+
+    ImGui::SetCursorPos(
+        ImVec2(
+            (
+                viewport_workspace::
+                    LeftWidth -
+                RowWidth
+            ) *
+                0.5f,
+            28.0f
+        )
+    );
+
+    if (
+        ui::workspace::pillButton(
+            "MidiPlay",
+            "PLAY",
+            playbackState ==
+                eld::audio::
+                    MidiPlayerState::Playing,
+            ImVec2(
+                ButtonWidth,
+                24.0f
+            )
+        )
+    ) {
+        if (!midiPlayer.play()) {
+            viewState.playbackStatus =
+                midiPlayer.statusMessage();
+        }
+        else {
+            viewState.playbackStatus =
+                "Playing";
+        }
+    }
+
+    ImGui::SameLine(
+        0.0f,
+        Gap
+    );
+
+    if (
+        ui::workspace::pillButton(
+            "MidiPause",
+            "PAUSE",
+            playbackState ==
+                eld::audio::
+                    MidiPlayerState::Paused,
+            ImVec2(
+                ButtonWidth,
+                24.0f
+            )
+        )
+    ) {
+        midiPlayer.pause();
+
+        viewState.playbackStatus =
+            midiPlayer.statusMessage();
+    }
+
+    ImGui::SameLine(
+        0.0f,
+        Gap
+    );
+
+    if (
+        ui::workspace::pillButton(
+            "MidiStop",
+            "STOP",
+            playbackState ==
+                eld::audio::
+                    MidiPlayerState::Stopped,
+            ImVec2(
+                ButtonWidth,
+                24.0f
+            )
+        )
+    ) {
+        midiPlayer.stop();
+
+        viewState.seekTick = 0;
+        viewState.seekActive = false;
+
+        viewState.playbackStatus =
+            midiPlayer.statusMessage();
+    }
+
+
+    float volume =
+        midiPlayer.volume();
+
+    ImGui::SetCursorPos(
+        ImVec2(
+            26.0f,
+            64.0f
+        )
+    );
+
+    ImGui::TextDisabled(
+        "VOL"
+    );
+
+    ImGui::SameLine(
+        0.0f,
+        8.0f
+    );
+
+    ImGui::SetNextItemWidth(
+        178.0f
+    );
+
+    if (
+        ImGui::SliderFloat(
+            "##MidiWorkspaceVolume",
+            &volume,
+            0.0f,
+            1.0f,
+            "%.2f"
+        )
+    ) {
+        midiPlayer.setVolume(
+            volume
+        );
+    }
+
+    ui::workspace::endCard();
+
+
+    // --------------------------------------------------------
+    // CENTER — transport position
+    // --------------------------------------------------------
+
+    if (
+        layout.centerWidth >=
+        150.0f
+    ) {
+        ui::workspace::beginCard(
+            "##MidiPositionCard",
+            ImVec2(
+                controlsPosition.x +
+                    layout.centerX,
+                cardY
+            ),
+            ImVec2(
+                layout.centerWidth,
+                viewport_workspace::
+                    CardHeight
+            )
+        );
+
+        ui::workspace::centeredText(
+            "POSITION",
+            7.0f,
+            true
+        );
+
+        const int currentTick =
+            midiPlayer.currentTick();
+
+        const int totalTicks =
+            std::max(
+                midiPlayer.totalTicks(),
+                viewState.totalTicks
+            );
+
+        ui::workspace::centeredText(
+            std::to_string(
+                currentTick
+            ) +
+                " / " +
+                std::to_string(
+                    totalTicks
+                ),
+            30.0f
+        );
+
+        const int bpm =
+            midiPlayer.currentBpm();
+
+        ui::workspace::centeredText(
+            bpm > 0
+                ? std::to_string(
+                      bpm
+                  ) +
+                      " BPM"
+                : "tempo --",
+            52.0f,
+            true
+        );
+
+        ui::workspace::centeredText(
+            "click waveform to seek",
+            70.0f,
+            true
+        );
+
+        ui::workspace::endCard();
+    }
+
+
+    // --------------------------------------------------------
+    // RIGHT — MIDI identity / status
+    // --------------------------------------------------------
+
+    ui::workspace::beginCard(
+        "##MidiStatusCard",
+        ImVec2(
+            controlsPosition.x +
+                layout.rightX,
+            cardY
+        ),
+        ImVec2(
+            layout.rightWidth,
+            viewport_workspace::
+                CardHeight
+        )
+    );
+
+    ui::workspace::centeredText(
+        "MIDI",
+        7.0f,
+        true
+    );
+
+    ui::workspace::centeredText(
+        "#" +
+            std::to_string(
+                midi->id
+            ),
+        29.0f
+    );
+
+    ui::workspace::centeredText(
+        eld::audio::midiPlayerStateName(
+            midiPlayer.state()
+        ),
+        50.0f,
+        true
+    );
+
+    std::string status =
+        viewState.playbackStatus;
+
+    if (status.empty()) {
+        status =
+            midiPlayer.statusMessage();
+    }
+
+    if (status.empty()) {
+        status =
+            midiPlayer.isAvailable()
+                ? "ready"
+                : "playback unavailable";
+    }
+
+    if (status.size() > 42) {
+        status =
+            status.substr(
+                0,
+                39
+            ) +
+            "...";
+    }
+
+    ui::workspace::centeredText(
+        status,
+        69.0f,
+        true
+    );
+
+    ui::workspace::endCard();
+
+    ui::workspace::endDockedHud();
+}
 
 void MidiViewPanel::renderControls(
     const eld::midi::MidiFile* midi,

@@ -1,6 +1,10 @@
 #pragma once
 
+#include <imgui.h>
+
 namespace eld::elforge {
+
+struct CacheExplorerState;
 
 struct InterfaceViewOptions {
     bool showHiddenWidgets = false;
@@ -29,6 +33,13 @@ struct InterfaceViewOptions {
 class InterfaceViewPanel {
 public:
     void render(bool hasInterface);
+
+    void renderWorkspace(
+        CacheExplorerState& state,
+        bool hasInterface,
+        const ImVec2& controlsPosition,
+        const ImVec2& controlsSize
+    );
 
     const InterfaceViewOptions& options() const;
 

@@ -1,6 +1,9 @@
 #include "ui/ElForgeTheme.h"
 #include "explorer/CacheExplorer.h"
+#include "dump/AssetDumper.h"
+#include "ui/IconButton.h"
 
+#include <algorithm>
 #include <cmath>
 #include <exception>
 #include <filesystem>
@@ -437,10 +440,14 @@ void CacheExplorer::renderUi() {
             ? "Explorer -"
             : "Explorer +";
 
-    const char* inspectorButton =
-        inspectorPanelOpen_
-            ? "Inspector -"
-            : "Inspector +";
+    const bool hasSelection =
+        !state_.selection.key.empty();
+
+    constexpr float ActionButtonSize =
+        28.0f;
+
+    constexpr float ActionButtonGap =
+        5.0f;
 
     float rightControlsWidth =
         ImGui::CalcTextSize(
@@ -448,12 +455,11 @@ void CacheExplorer::renderUi() {
         ).x +
         20.0f;
 
-    if (!animationWorkspace) {
+    if (hasSelection) {
         rightControlsWidth +=
-            ImGui::CalcTextSize(
-                inspectorButton
-            ).x +
-            12.0f;
+            ActionButtonSize * 2.0f +
+            ActionButtonGap +
+            10.0f;
     }
 
     const float rightX =
@@ -472,27 +478,189 @@ void CacheExplorer::renderUi() {
         ImGui::SameLine();
     }
 
-    // Animation uses its own contextual details card,
-    // therefore the generic Inspector does not apply.
-    if (!animationWorkspace) {
+    if (hasSelection) {
         if (
-            ImGui::SmallButton(
-                inspectorButton
+            ui::iconButton(
+                "##AssetDetails",
+                ui::Icon::Info,
+                "Asset details",
+                ImVec2(
+                    ActionButtonSize,
+                    ActionButtonSize
+                )
             )
         ) {
-            inspectorPanelOpen_ =
-                !inspectorPanelOpen_;
+            ImGui::OpenPopup(
+                "##AssetDetailsPopup"
+            );
         }
 
-        ImGui::SameLine();
+        ImGui::SameLine(
+            0.0f,
+            ActionButtonGap
+        );
+
+        if (
+            ui::iconButton(
+                "##AssetDump",
+                ui::Icon::Download,
+                "Dump full asset",
+                ImVec2(
+                    ActionButtonSize,
+                    ActionButtonSize
+                )
+            )
+        ) {
+            const std::filesystem::path path =
+                defaultAssetDumpPath(
+                    state_
+                );
+
+            std::string error;
+
+            if (
+                dumpActiveAsset(
+                    state_,
+                    path,
+                    error
+                )
+            ) {
+                state_.assetDumpStatus =
+                    "Dumped: " +
+                    path.string();
+            }
+            else {
+                state_.assetDumpStatus =
+                    "Dump failed: " +
+                    error;
+            }
+
+            ImGui::OpenPopup(
+                "##AssetDetailsPopup"
+            );
+        }
+
+        ImGui::SameLine(
+            0.0f,
+            10.0f
+        );
     }
-if (
+
+    if (
         ImGui::SmallButton(
             explorerButton
         )
     ) {
         explorerPanelOpen_ =
             !explorerPanelOpen_;
+    }
+
+    // Details belongs to the asset workspace, never to the
+    // Explorer/navigation column. Keep the popup dynamically
+    // clamped to the current workspace even if Explorer is
+    // opened or closed while Details is visible.
+    constexpr float DetailsExplorerWidth =
+        252.0f;
+
+    constexpr float DetailsInset =
+        8.0f;
+
+    const ImVec2 shellPosition =
+        ImGui::GetWindowPos();
+
+    const ImVec2 contentMinimum =
+        ImGui::GetWindowContentRegionMin();
+
+    const ImVec2 contentMaximum =
+        ImGui::GetWindowContentRegionMax();
+
+    const float detailsWorkspaceLeft =
+        shellPosition.x +
+        contentMinimum.x;
+
+    float detailsWorkspaceRight =
+        shellPosition.x +
+        contentMaximum.x;
+
+    if (explorerPanelOpen_) {
+        detailsWorkspaceRight -=
+            DetailsExplorerWidth +
+            ImGui::GetStyle().ItemSpacing.x;
+    }
+
+    const float detailsWorkspaceWidth =
+        std::max(
+            detailsWorkspaceRight -
+                detailsWorkspaceLeft,
+            1.0f
+        );
+
+    const float detailsWidth =
+        std::max(
+            std::min(
+                560.0f,
+                detailsWorkspaceWidth -
+                    DetailsInset * 2.0f
+            ),
+            100.0f
+        );
+
+    const float detailsHeight =
+        std::max(
+            std::min(
+                viewport->WorkSize.y -
+                    90.0f,
+                640.0f
+            ),
+            120.0f
+        );
+
+    const float detailsX =
+        std::max(
+            detailsWorkspaceLeft +
+                DetailsInset,
+            detailsWorkspaceRight -
+                detailsWidth -
+                DetailsInset
+        );
+
+    const float detailsY =
+        ImGui::GetCursorScreenPos().y +
+        ImGui::GetFrameHeightWithSpacing();
+
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            detailsX,
+            detailsY
+        ),
+        ImGuiCond_Always
+    );
+
+    ImGui::SetNextWindowSize(
+        ImVec2(
+            detailsWidth,
+            detailsHeight
+        ),
+        ImGuiCond_Always
+    );
+
+    if (
+        ImGui::BeginPopup(
+            "##AssetDetailsPopup",
+            ImGuiWindowFlags_NoSavedSettings |
+                ImGuiWindowFlags_NoMove
+        )
+    ) {
+        const ImVec2 detailsSize =
+            ImGui::GetContentRegionAvail();
+
+        detailsPanel_.render(
+            state_,
+            detailsSize.x,
+            detailsSize.y
+        );
+
+        ImGui::EndPopup();
     }
 
     ImGui::Separator();
@@ -504,9 +672,6 @@ if (
     constexpr float ExplorerWidth =
         252.0f;
 
-    constexpr float InspectorWidth =
-        274.0f;
-
     const float spacing =
         ImGui::GetStyle().ItemSpacing.x;
 
@@ -516,18 +681,8 @@ if (
     const float height =
         available.y;
 
-    const bool showInspector =
-        inspectorPanelOpen_ &&
-        !animationWorkspace;
-
     float workspaceWidth =
         available.x;
-
-    if (showInspector) {
-        workspaceWidth -=
-            InspectorWidth +
-            spacing;
-    }
 
     if (explorerPanelOpen_) {
         workspaceWidth -=
@@ -551,18 +706,6 @@ if (
             renderAnimationControls();
         }
     );
-
-    // Transitional generic inspector for asset types that
-    // don't own a bespoke workspace yet.
-    if (showInspector) {
-        ImGui::SameLine();
-
-        inspectorPanel_.render(
-            state_,
-            InspectorWidth,
-            height
-        );
-    }
 
     // Navigation always lives on the far-right.
     if (explorerPanelOpen_) {

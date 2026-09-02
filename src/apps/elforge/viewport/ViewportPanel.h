@@ -8,6 +8,7 @@
 #include "viewport/ViewportControlsPanel.h"
 #include "viewport/ViewportSurface.h"
 #include "views/map/MapViewSurface.h"
+#include "views/map/MapViewPanel.h"
 #include "views/midi/MidiView.h"
 #include "views/midi/MidiViewPanel.h"
 
@@ -69,6 +70,7 @@ private:
 
     ViewportControlsPanel controlsPanel_;
     MapViewSurface mapGpuRenderer_;
+    MapViewPanel mapViewPanel_;
 
     MidiView midiView_;
     MidiViewPanel midiViewPanel_;

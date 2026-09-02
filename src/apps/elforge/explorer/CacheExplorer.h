@@ -28,7 +28,7 @@
 #include "explorer/tree/CacheTreeBuilder.h"
 #include "views/item/ItemView.h"
 
-#include "explorer/CacheInspectorPanel.h"
+#include "inspection/AssetDetailsPanel.h"
 #include "explorer/tree/CacheTreePanel.h"
 #include "viewport/ViewportPanel.h"
 
@@ -148,7 +148,6 @@ private:
     eld::map::MapLoader mapLoader_;
     eld::midi::MidiRepository midiRepository_;
     bool explorerPanelOpen_ = true;
-bool inspectorPanelOpen_ = true;
 
     eld::audio::MidiPlayer midiPlayer_;
 
@@ -274,7 +273,7 @@ bool inspectorPanelOpen_ = true;
 
     CacheTreePanel treePanel_;
     ViewportPanel viewportPanel_;
-    CacheInspectorPanel inspectorPanel_;
+    AssetDetailsPanel detailsPanel_;
 
     std::string lastSelectedKey_;
 };

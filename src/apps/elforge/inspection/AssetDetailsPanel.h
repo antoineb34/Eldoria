@@ -4,7 +4,7 @@ namespace eld::elforge {
 
 struct CacheExplorerState;
 
-class CacheInspectorPanel {
+class AssetDetailsPanel {
 public:
     void render(
         CacheExplorerState& state,

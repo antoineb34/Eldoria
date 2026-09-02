@@ -1,6 +1,7 @@
 #include "dump/AnimationDumper.h"
-#include "explorer/CacheInspectorPanel.h"
+#include "inspection/AssetDetailsPanel.h"
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <cstdint>
@@ -309,18 +310,18 @@ std::string buildModelDebugText(
 
 }
 
-void CacheInspectorPanel::render(
+void AssetDetailsPanel::render(
     CacheExplorerState& state,
     float width,
     float height
 ) {
     ImGui::BeginChild(
-        "CacheInspectorPanel",
+        "AssetDetailsPanel",
         ImVec2(width, height),
         true
     );
 
-    ImGui::TextUnformatted("INSPECTOR");
+    ImGui::TextUnformatted("DETAILS");
     ImGui::Separator();
 
     ImGui::Text(
@@ -351,6 +352,15 @@ void CacheInspectorPanel::render(
         "File: %d",
         state.selection.fileId
     );
+
+    if (!state.assetDumpStatus.empty()) {
+        ImGui::Spacing();
+
+        ImGui::TextWrapped(
+            "%s",
+            state.assetDumpStatus.c_str()
+        );
+    }
 
     if (state.selection.regionId >= 0) {
         ImGui::Text(
@@ -1938,6 +1948,107 @@ void CacheInspectorPanel::render(
             floor.occlude
                 ? "true"
                 : "false"
+        );
+    }
+
+    if (state.activeTexture.has_value()) {
+        const auto& texture =
+            *state.activeTexture;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("TEXTURE");
+
+        ImGui::Text(
+            "Size: %u x %u",
+            static_cast<unsigned int>(
+                texture.image.width
+            ),
+            static_cast<unsigned int>(
+                texture.image.height
+            )
+        );
+
+        ImGui::Text(
+            "Decoded pixels: %zu",
+            texture.image.pixels.size()
+        );
+    }
+
+    if (state.activeSprite.has_value()) {
+        const auto& sprite =
+            *state.activeSprite;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("SPRITE");
+
+        ImGui::Text(
+            "Size: %u x %u",
+            static_cast<unsigned int>(
+                sprite.image.width
+            ),
+            static_cast<unsigned int>(
+                sprite.image.height
+            )
+        );
+
+        ImGui::Text(
+            "Frame: %d",
+            std::max(
+                state.selection.frameId,
+                0
+            )
+        );
+
+        ImGui::Text(
+            "Decoded pixels: %zu",
+            sprite.image.pixels.size()
+        );
+    }
+
+    if (state.activeImage.has_value()) {
+        const auto& image =
+            *state.activeImage;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("IMAGE");
+
+        ImGui::Text(
+            "Size: %u x %u",
+            static_cast<unsigned int>(
+                image.width
+            ),
+            static_cast<unsigned int>(
+                image.height
+            )
+        );
+
+        ImGui::Text(
+            "Decoded pixels: %zu",
+            image.pixels.size()
+        );
+    }
+
+    if (state.activeFont.has_value()) {
+        const auto& font =
+            *state.activeFont;
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::TextUnformatted("FONT");
+
+        ImGui::Text(
+            "Glyphs: %zu",
+            font.glyphs.size()
+        );
+
+        ImGui::Text(
+            "Line height: %u",
+            static_cast<unsigned int>(
+                font.lineHeight
+            )
         );
     }
 

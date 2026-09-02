@@ -20,6 +20,8 @@ namespace eld::elforge {
 void CacheExplorer::handleSelectionChanged() {
     resetAnimationView();
 
+    state_.assetDumpStatus.clear();
+
     midiPlayer_.unload();
 
     state_.activeAnimation.reset();

@@ -6,6 +6,7 @@ add_executable(elforge
     ui/IconButton.cpp
     ui/Carousel.cpp
     dump/AssetDumpWriter.cpp
+    dump/AssetDumper.cpp
     dump/AnimationDumper.cpp
     export/AnimationExporter.cpp
     inspection/AnimationInspector.cpp
@@ -15,7 +16,6 @@ add_executable(elforge
     explorer/CacheExplorerSelection.cpp
     explorer/tree/CacheTreeBuilder.cpp
     views/animation/AnimationViewPanel.cpp
-    views/animation/AnimationViewOverlay.cpp
     views/floor/FloorView.cpp
     views/font/FontView.cpp
     views/identity_kit/IdentityKitView.cpp
@@ -25,13 +25,14 @@ add_executable(elforge
     views/location/LocationView.cpp
     views/map/MapViewState.cpp
     views/map/MapView.cpp
+    views/map/MapViewPanel.cpp
     views/midi/MidiView.cpp
     views/midi/MidiViewPanel.cpp
     export/MidiExporter.cpp
     views/npc/NpcView.cpp
     views/spot_animation/SpotAnimationView.cpp
 
-    explorer/CacheInspectorPanel.cpp
+    inspection/AssetDetailsPanel.cpp
     explorer/tree/CacheTreePanel.cpp
     viewport/ViewportPanel.cpp
     viewport/ViewportSurface.cpp

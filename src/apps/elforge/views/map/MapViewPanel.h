@@ -4,9 +4,9 @@ namespace eld::elforge {
 
 struct CacheExplorerState;
 
-class AnimationViewOverlay {
+class MapViewPanel {
 public:
-    void renderHeader(
+    void render(
         CacheExplorerState& state
     ) const;
 };

@@ -1,7 +1,7 @@
 #include "ui/ElForgeTheme.h"
 #include "ui/IconButton.h"
+#include "ui/WorkspaceUi.h"
 #include "viewport/ViewportPanel.h"
-#include "views/animation/AnimationViewOverlay.h"
 #include "views/animation/AnimationViewPanel.h"
 
 #include <algorithm>
@@ -5076,184 +5076,65 @@ void ViewportPanel::shutdown() {
 }
 
 
-void renderAnimationToolRail(
+
+namespace {
+
+bool isModelWorkspace(
+    ViewportViewKind kind
+) {
+    switch (kind) {
+        case ViewportViewKind::Animation:
+        case ViewportViewKind::Npc:
+        case ViewportViewKind::Location:
+        case ViewportViewKind::SpotAnimation:
+        case ViewportViewKind::Model:
+            return true;
+
+        case ViewportViewKind::None:
+        case ViewportViewKind::Map:
+        case ViewportViewKind::Midi:
+        case ViewportViewKind::Interface:
+        case ViewportViewKind::Texture:
+        case ViewportViewKind::Image:
+        case ViewportViewKind::Sprite:
+            return false;
+    }
+
+    return false;
+}
+
+
+bool isDockedWorkspace(
+    ViewportViewKind kind
+) {
+    switch (kind) {
+        case ViewportViewKind::Midi:
+        case ViewportViewKind::Interface:
+        case ViewportViewKind::Texture:
+        case ViewportViewKind::Image:
+        case ViewportViewKind::Sprite:
+            return true;
+
+        case ViewportViewKind::None:
+        case ViewportViewKind::Map:
+        case ViewportViewKind::Animation:
+        case ViewportViewKind::Npc:
+        case ViewportViewKind::Location:
+        case ViewportViewKind::SpotAnimation:
+        case ViewportViewKind::Model:
+            return false;
+    }
+
+    return false;
+}
+
+
+
+void renderViewportToolRail(
     CacheExplorerState& state
 ) {
-    constexpr ImVec2 ButtonSize{
-        34.0f,
-        34.0f
-    };
-
-    constexpr float ButtonGap =
-        2.0f;
-
-    constexpr float DividerGap =
-        5.0f;
-
-
-    const auto centerButton =
-        [&]() {
-            ImGui::SetCursorPosX(
-                (
-                    ImGui::GetWindowWidth() -
-                    ButtonSize.x
-                ) *
-                    0.5f
-            );
-        };
-
-
-    const auto toolButton =
-        [&](
-            const char* id,
-            ui::Icon icon,
-            const char* tooltip,
-            bool active = false
-        ) {
-            const auto& palette =
-                ui::themePalette();
-
-            centerButton();
-
-            ImGui::PushStyleVar(
-                ImGuiStyleVar_FrameRounding,
-                ButtonSize.y *
-                    0.5f
-            );
-
-            ImGui::PushStyleVar(
-                ImGuiStyleVar_FrameBorderSize,
-                0.0f
-            );
-
-            ImGui::PushStyleColor(
-                ImGuiCol_Button,
-                active
-                    ? ImVec4(
-                          palette.primary.x,
-                          palette.primary.y,
-                          palette.primary.z,
-                          0.22f
-                      )
-                    : ImVec4(
-                          0.0f,
-                          0.0f,
-                          0.0f,
-                          0.0f
-                      )
-            );
-
-            ImGui::PushStyleColor(
-                ImGuiCol_ButtonHovered,
-                ImVec4(
-                    palette.primary.x,
-                    palette.primary.y,
-                    palette.primary.z,
-                    active
-                        ? 0.32f
-                        : 0.14f
-                )
-            );
-
-            ImGui::PushStyleColor(
-                ImGuiCol_ButtonActive,
-                ImVec4(
-                    palette.primary.x,
-                    palette.primary.y,
-                    palette.primary.z,
-                    0.40f
-                )
-            );
-
-            ImGui::PushStyleColor(
-                ImGuiCol_Text,
-                active
-                    ? palette.primary
-                    : palette.text
-            );
-
-            const bool clicked =
-                ui::iconButton(
-                    id,
-                    icon,
-                    tooltip,
-                    ButtonSize
-                );
-
-            ImGui::PopStyleColor(4);
-            ImGui::PopStyleVar(2);
-
-            return clicked;
-        };
-
-
-    const auto divider =
-        [&]() {
-            ImGui::SetCursorPosY(
-                ImGui::GetCursorPosY() +
-                    DividerGap *
-                        0.5f
-            );
-
-            constexpr float DividerInset =
-                10.0f;
-
-            const ImVec2 windowPosition =
-                ImGui::GetWindowPos();
-
-            const float y =
-                ImGui::GetCursorScreenPos().y;
-
-            const auto& palette =
-                ui::themePalette();
-
-            ImGui::GetWindowDrawList()->AddLine(
-                ImVec2(
-                    windowPosition.x +
-                        DividerInset,
-                    y
-                ),
-                ImVec2(
-                    windowPosition.x +
-                        ImGui::GetWindowWidth() -
-                        DividerInset,
-                    y
-                ),
-                ImGui::ColorConvertFloat4ToU32(
-                    ImVec4(
-                        palette.border.x,
-                        palette.border.y,
-                        palette.border.z,
-                        0.65f
-                    )
-                ),
-                1.0f
-            );
-
-            ImGui::Dummy(
-                ImVec2(
-                    1.0f,
-                    DividerGap
-                )
-            );
-        };
-
-
-    ImGui::PushStyleVar(
-        ImGuiStyleVar_ItemSpacing,
-        ImVec2(
-            0.0f,
-            ButtonGap
-        )
-    );
-
-
-    // --------------------------------------------------------
-    // TRANSFORM
-    // --------------------------------------------------------
-
     if (
-        toolButton(
+        ui::workspace::toolButton(
             "Move",
             ui::Icon::Move,
             "Move [W]",
@@ -5265,9 +5146,8 @@ void renderAnimationToolRail(
             ViewportGizmoMode::Move;
     }
 
-
     if (
-        toolButton(
+        ui::workspace::toolButton(
             "Rotate",
             ui::Icon::Rotate,
             "Rotate [E]",
@@ -5279,9 +5159,8 @@ void renderAnimationToolRail(
             ViewportGizmoMode::Rotate;
     }
 
-
     if (
-        toolButton(
+        ui::workspace::toolButton(
             "Scale",
             ui::Icon::Scale,
             "Scale [R]",
@@ -5293,16 +5172,10 @@ void renderAnimationToolRail(
             ViewportGizmoMode::Scale;
     }
 
-
-    divider();
-
-
-    // --------------------------------------------------------
-    // VIEW
-    // --------------------------------------------------------
+    ui::workspace::toolDivider();
 
     if (
-        toolButton(
+        ui::workspace::toolButton(
             "Grid",
             ui::Icon::Grid,
             state.showEditorGrid
@@ -5315,9 +5188,8 @@ void renderAnimationToolRail(
             !state.showEditorGrid;
     }
 
-
     if (
-        toolButton(
+        ui::workspace::toolButton(
             "Focus",
             ui::Icon::Focus,
             "Focus model [F]"
@@ -5331,16 +5203,10 @@ void renderAnimationToolRail(
         );
     }
 
-
-    divider();
-
-
-    // --------------------------------------------------------
-    // RESET
-    // --------------------------------------------------------
+    ui::workspace::toolDivider();
 
     if (
-        toolButton(
+        ui::workspace::toolButton(
             "ResetView",
             ui::Icon::Restart,
             "Reset viewport"
@@ -5350,10 +5216,562 @@ void renderAnimationToolRail(
             state
         );
     }
-
-
-    ImGui::PopStyleVar();
 }
+
+
+std::string selectedNumericId(
+    const CacheExplorerState& state
+) {
+    if (
+        state.selection.definitionId >=
+        0
+    ) {
+        return
+            std::to_string(
+                state.selection.definitionId
+            );
+    }
+
+    if (
+        state.selection.fileId >=
+        0
+    ) {
+        return
+            std::to_string(
+                state.selection.fileId
+            );
+    }
+
+    if (
+        state.selection.regionId >=
+        0
+    ) {
+        return
+            std::to_string(
+                state.selection.regionId
+            );
+    }
+
+    return {};
+}
+
+
+std::string workspaceIdentity(
+    const CacheExplorerState& state,
+    ViewportViewKind kind
+) {
+    const std::string id =
+        selectedNumericId(
+            state
+        );
+
+    const auto withId =
+        [&id](
+            const char* label
+        ) {
+            return
+                id.empty()
+                    ? std::string(label)
+                    : std::string(label) +
+                        " " +
+                        id;
+        };
+
+    switch (kind) {
+        case ViewportViewKind::Map:
+            if (state.activeMap.has_value()) {
+                return
+                    "MAP " +
+                    std::to_string(
+                        state.activeMap->
+                            indexEntry.regionId
+                    );
+            }
+
+            return withId(
+                "MAP"
+            );
+
+        case ViewportViewKind::Midi:
+            return withId(
+                "MIDI"
+            );
+
+        case ViewportViewKind::Interface:
+            return withId(
+                "INTERFACE"
+            );
+
+        case ViewportViewKind::Npc:
+            return withId(
+                "NPC"
+            );
+
+        case ViewportViewKind::Location:
+            return withId(
+                "OBJECT"
+            );
+
+        case ViewportViewKind::SpotAnimation:
+            return withId(
+                "SPOT ANIMATION"
+            );
+
+        case ViewportViewKind::Model:
+            if (state.activeModel.has_value()) {
+                return
+                    "MODEL " +
+                    std::to_string(
+                        state.activeModel->id
+                    );
+            }
+
+            return withId(
+                "MODEL"
+            );
+
+        case ViewportViewKind::Texture:
+            return withId(
+                "TEXTURE"
+            );
+
+        case ViewportViewKind::Image:
+            return
+                state.selection.name.empty()
+                    ? std::string(
+                          "IMAGE"
+                      )
+                    : std::string(
+                          "IMAGE "
+                      ) +
+                          state.selection.name;
+
+        case ViewportViewKind::Sprite:
+            if (
+                !state.selection.name.empty()
+            ) {
+                return
+                    std::string(
+                        "SPRITE "
+                    ) +
+                    state.selection.name;
+            }
+
+            return withId(
+                "SPRITE"
+            );
+
+        case ViewportViewKind::Animation:
+            if (state.activeAnimation.has_value()) {
+                return
+                    "ANIMATION " +
+                    std::to_string(
+                        state.activeAnimation->
+                            animation.id
+                    );
+            }
+
+            return withId(
+                "ANIMATION"
+            );
+
+        case ViewportViewKind::None:
+        default:
+            return "VIEW";
+    }
+}
+
+
+std::string workspaceSummary(
+    const CacheExplorerState& state,
+    ViewportViewKind kind
+) {
+    switch (kind) {
+        case ViewportViewKind::Map:
+            if (state.activeMap.has_value()) {
+                return
+                    std::to_string(
+                        state.activeMap->
+                            indexEntry.regionX()
+                    ) +
+                    ", " +
+                    std::to_string(
+                        state.activeMap->
+                            indexEntry.regionY()
+                    ) +
+                    "  ·  " +
+                    std::to_string(
+                        state.activeMap->
+                            stats.locPlacements
+                    ) +
+                    " objects";
+            }
+            break;
+
+        case ViewportViewKind::Midi:
+            return
+                state.midiView.totalTicks > 0
+                    ? std::to_string(
+                          state.midiView.totalTicks
+                      ) +
+                          " ticks"
+                    : state.midiView.
+                        playbackStatus;
+
+        case ViewportViewKind::Interface:
+            return
+                state.selection.label;
+
+        case ViewportViewKind::Npc:
+        case ViewportViewKind::Location:
+        case ViewportViewKind::SpotAnimation:
+        case ViewportViewKind::Model:
+            if (state.activeModel.has_value()) {
+                return
+                    std::to_string(
+                        state.activeModel->
+                            mesh.vertices.size()
+                    ) +
+                    " vertices  ·  " +
+                    std::to_string(
+                        state.activeModel->
+                            mesh.faces.size()
+                    ) +
+                    " faces";
+            }
+            break;
+
+        case ViewportViewKind::Texture:
+            if (state.activeTexture.has_value()) {
+                return
+                    std::to_string(
+                        state.activeTexture->
+                            image.width
+                    ) +
+                    " x " +
+                    std::to_string(
+                        state.activeTexture->
+                            image.height
+                    );
+            }
+            break;
+
+        case ViewportViewKind::Image:
+            if (state.activeImage.has_value()) {
+                return
+                    std::to_string(
+                        state.activeImage->
+                            width
+                    ) +
+                    " x " +
+                    std::to_string(
+                        state.activeImage->
+                            height
+                    );
+            }
+            break;
+
+        case ViewportViewKind::Sprite:
+            if (state.activeSprite.has_value()) {
+                return
+                    std::to_string(
+                        state.activeSprite->
+                            image.width
+                    ) +
+                    " x " +
+                    std::to_string(
+                        state.activeSprite->
+                            image.height
+                    ) +
+                    "  ·  frame " +
+                    std::to_string(
+                        std::max(
+                            state.selection.frameId,
+                            0
+                        )
+                    );
+            }
+            break;
+
+        case ViewportViewKind::Animation:
+            if (state.activeAnimation.has_value()) {
+                return
+                    std::to_string(
+                        state.activeAnimation->
+                            animation.asset.frames.size()
+                    ) +
+                    " frames  ·  " +
+                    std::to_string(
+                        state.activeAnimation->
+                            animation.asset.skeleton.slots.size()
+                    ) +
+                    " slots";
+            }
+            break;
+
+        case ViewportViewKind::None:
+            break;
+    }
+
+    return {};
+}
+
+
+void renderWorkspaceHeader(
+    const CacheExplorerState& state,
+    ViewportViewKind kind
+) {
+    ui::workspace::renderIdentityHeader(
+        workspaceIdentity(
+            state,
+            kind
+        ),
+        workspaceSummary(
+            state,
+            kind
+        )
+    );
+}
+
+
+void renderImageWorkspace(
+    CacheExplorerState& state,
+    ViewportViewKind kind,
+    const ImVec2& controlsPosition,
+    const ImVec2& controlsSize
+) {
+    const bool sprite =
+        kind ==
+        ViewportViewKind::Sprite;
+
+    const std::uint32_t width =
+        sprite
+            ? (
+                  state.activeSprite.has_value()
+                      ? state.activeSprite->
+                            image.width
+                      : 0
+              )
+            : (
+                  state.activeImage.has_value()
+                      ? state.activeImage->
+                            width
+                      : 0
+              );
+
+    const std::uint32_t height =
+        sprite
+            ? (
+                  state.activeSprite.has_value()
+                      ? state.activeSprite->
+                            image.height
+                      : 0
+              )
+            : (
+                  state.activeImage.has_value()
+                      ? state.activeImage->
+                            height
+                      : 0
+              );
+
+
+    const viewport_workspace::BottomRow layout =
+        viewport_workspace::bottomRow(
+            controlsSize.x
+        );
+
+    ui::workspace::beginDockedHud(
+        sprite
+            ? "##SpriteBottomHud"
+            : "##ImageBottomHud",
+        controlsPosition,
+        controlsSize
+    );
+
+    const float cardY =
+        ui::workspace::dockedCardY(
+            controlsPosition,
+            controlsSize
+        );
+
+
+    ui::workspace::beginCard(
+        sprite
+            ? "##SpriteViewCard"
+            : "##ImageViewCard",
+        ImVec2(
+            controlsPosition.x +
+                layout.leftX,
+            cardY
+        ),
+        ImVec2(
+            viewport_workspace::
+                LeftWidth,
+            viewport_workspace::
+                CardHeight
+        )
+    );
+
+    ui::workspace::centeredText(
+        "VIEW",
+        7.0f,
+        true
+    );
+
+    ui::workspace::centeredText(
+        "FIT",
+        34.0f
+    );
+
+    ui::workspace::centeredText(
+        "native pixels",
+        61.0f,
+        true
+    );
+
+    ui::workspace::endCard();
+
+
+    if (
+        layout.centerWidth >=
+        150.0f
+    ) {
+        ui::workspace::beginCard(
+            sprite
+                ? "##SpriteInfoCard"
+                : "##ImageInfoCard",
+            ImVec2(
+                controlsPosition.x +
+                    layout.centerX,
+                cardY
+            ),
+            ImVec2(
+                layout.centerWidth,
+                viewport_workspace::
+                    CardHeight
+            )
+        );
+
+        ui::workspace::centeredText(
+            sprite
+                ? "SPRITE"
+                : "IMAGE",
+            7.0f,
+            true
+        );
+
+        ui::workspace::centeredText(
+            std::to_string(
+                width
+            ) +
+                " x " +
+                std::to_string(
+                    height
+                ),
+            34.0f
+        );
+
+        if (sprite) {
+            ui::workspace::centeredText(
+                "frame " +
+                    std::to_string(
+                        std::max(
+                            state.selection.frameId,
+                            0
+                        )
+                    ),
+                61.0f,
+                true
+            );
+        }
+
+        ui::workspace::endCard();
+    }
+
+
+    ui::workspace::beginCard(
+        sprite
+            ? "##SpriteSourceCard"
+            : "##ImageSourceCard",
+        ImVec2(
+            controlsPosition.x +
+                layout.rightX,
+            cardY
+        ),
+        ImVec2(
+            layout.rightWidth,
+            viewport_workspace::
+                CardHeight
+        )
+    );
+
+    ui::workspace::centeredText(
+        "SOURCE",
+        7.0f,
+        true
+    );
+
+    std::string source =
+        state.selection.label;
+
+    if (source.empty()) {
+        source =
+            state.selection.name;
+    }
+
+    if (source.empty()) {
+        source =
+            "cache asset";
+    }
+
+    if (source.size() > 38) {
+        source =
+            source.substr(
+                0,
+                35
+            ) +
+            "...";
+    }
+
+    ui::workspace::centeredText(
+        source,
+        34.0f
+    );
+
+    std::string sourceIds =
+        "archive " +
+        std::to_string(
+            state.selection.archiveId
+        ) +
+        "  ·  file " +
+        std::to_string(
+            state.selection.fileId
+        );
+
+    if (sprite) {
+        sourceIds +=
+            "  ·  frame " +
+            std::to_string(
+                std::max(
+                    state.selection.frameId,
+                    0
+                )
+            );
+    }
+
+    ui::workspace::centeredText(
+        sourceIds,
+        61.0f,
+        true
+    );
+
+    ui::workspace::endCard();
+
+    ui::workspace::endDockedHud();
+}
+
+}
+
 
 
 void ViewportPanel::render(
@@ -5366,7 +5784,10 @@ void ViewportPanel::render(
 ) {
     ImGui::BeginChild(
         "ViewportPanel",
-        ImVec2(width, height),
+        ImVec2(
+            width,
+            height
+        ),
         true
     );
 
@@ -5391,68 +5812,113 @@ void ViewportPanel::render(
         state.midiView
     );
 
-    const float spacing =
-        ImGui::GetStyle().ItemSpacing.y;
 
-    // Animation has bespoke workspace chrome above the
-    // renderer-backed canvas.
-    constexpr float AnimationHeaderHeight =
-        34.0f;
+    const bool workspaceActive =
+        viewKind !=
+        ViewportViewKind::None;
 
-    const float headerHeight =
-        state.activeAnimation.has_value()
-            ? AnimationHeaderHeight + spacing
-            : 0.0f;
-
-    const bool animationWorkspace =
-        state.activeAnimation.has_value();
-
-    const ViewportControlsLayout controlsLayout =
-        controlsPanel_.updateLayout(
-            std::max(
-                available.y -
-                    headerHeight,
-                1.0f
-            )
+    const bool modelWorkspace =
+        isModelWorkspace(
+            viewKind
         );
 
-    const float bottomControlsHeight =
-        animationWorkspace
-            ? 0.0f
-            : controlsLayout.controlsHeight +
-                controlsLayout.resizeHandleHeight +
-                spacing;
+    const bool dockedWorkspace =
+        isDockedWorkspace(
+            viewKind
+        );
 
-    const float viewportHeight =
+    const bool immersiveWorkspace =
+        modelWorkspace ||
+        viewKind ==
+            ViewportViewKind::Map;
+
+
+    const float spacing =
+        ImGui::GetStyle().
+            ItemSpacing.y;
+
+    const float headerHeight =
+        workspaceActive
+            ? ui::workspace::
+                  HeaderHeight +
+                  spacing
+            : 0.0f;
+
+    const float bodyHeight =
         std::max(
             available.y -
-                headerHeight -
-                bottomControlsHeight,
+                headerHeight,
             1.0f
         );
 
-    if (state.activeAnimation.has_value()) {
+
+    // --------------------------------------------------------
+    // SHARED IDENTITY HEADER
+    // --------------------------------------------------------
+
+    if (workspaceActive) {
         ImGui::BeginChild(
-            "##AnimationWorkspaceHeader",
+            "##ViewportWorkspaceHeader",
             ImVec2(
                 0.0f,
-                AnimationHeaderHeight
+                ui::workspace::
+                    HeaderHeight
             ),
             false,
             ImGuiWindowFlags_NoScrollbar |
                 ImGuiWindowFlags_NoScrollWithMouse
         );
 
-        AnimationViewOverlay{}.renderHeader(
-            state
+        renderWorkspaceHeader(
+            state,
+            viewKind
         );
 
         ImGui::EndChild();
     }
 
-    // The renderer-backed viewport is essentially edge-to-edge
-    // for bespoke animation workspaces.
-    if (animationWorkspace) {
+
+    // --------------------------------------------------------
+    // WORKSPACE COMPOSITION
+    //
+    // 3D / map:
+    //   canvas fills the body and HUD floats inside it.
+    //
+    // 2D / MIDI:
+    //   canvas is display-faithful and stops BEFORE controls.
+    //   controls live in a real dock underneath it.
+    // --------------------------------------------------------
+
+    constexpr float MinimumCanvasHeight =
+        80.0f;
+
+    const float dockHeight =
+        dockedWorkspace
+            ? std::min(
+                  ui::workspace::DockHeight,
+                  std::max(
+                      bodyHeight -
+                          MinimumCanvasHeight -
+                          spacing,
+                      0.0f
+                  )
+              )
+            : 0.0f;
+
+    const float canvasHeight =
+        std::max(
+            bodyHeight -
+                (
+                    dockHeight > 0.0f
+                        ? dockHeight +
+                            spacing
+                        : 0.0f
+                ),
+            1.0f
+        );
+
+
+    if (workspaceActive) {
         ImGui::PushStyleVar(
             ImGuiStyleVar_WindowPadding,
             ImVec2(
@@ -5466,52 +5932,18 @@ void ViewportPanel::render(
         "ViewportCanvasWindow",
         ImVec2(
             0.0f,
-            viewportHeight
+            canvasHeight
         ),
-        !animationWorkspace,
+        dockedWorkspace ||
+            !workspaceActive,
         ImGuiWindowFlags_NoScrollbar |
             ImGuiWindowFlags_NoScrollWithMouse
     );
 
-    if (animationWorkspace) {
+    if (workspaceActive) {
         ImGui::PopStyleVar();
     }
 
-    if (state.activeMap.has_value()) {
-        renderMapToolbar(
-            state
-        );
-
-        ImGui::TextDisabled(
-            "RMB orbit | wheel zoom | select plane to inspect scene levels"
-        );
-
-        if (!state.mapViewError.empty()) {
-            ImGui::TextWrapped(
-                "Map renderer: %s",
-                state.mapViewError.c_str()
-            );
-        }
-
-        ImGui::Separator();
-    }
-    else if (state.activeMidi.has_value()) {
-        ImGui::TextDisabled(
-            "MIDI activity visualization | click waveform to seek"
-        );
-        ImGui::Separator();
-    }
-    else if (
-        state.activeModelHandle.has_value() &&
-        !animationWorkspace
-    ) {
-        renderViewportToolbar(
-            state,
-            {}
-        );
-
-        ImGui::Separator();
-    }
 
     const ImVec2 viewportPosition =
         ImGui::GetCursorScreenPos();
@@ -5519,6 +5951,9 @@ void ViewportPanel::render(
     const ImVec2 viewportSize =
         ImGui::GetContentRegionAvail();
 
+
+    // state.viewport* always means the TRUE render canvas.
+    // It never includes a 2D control dock.
     state.viewportX =
         static_cast<int>(
             viewportPosition.x
@@ -5546,12 +5981,6 @@ void ViewportPanel::render(
         );
 
 
-    // Resize/create the renderer target before ImGui records
-    // the texture for this frame.
-    //
-    // The first frame may not yet know the SDL renderer; the
-    // render pass below establishes it and the next frame uses
-    // the surface normally.
     if (viewportRenderer_ != nullptr) {
         viewportSurface_.ensure(
             viewportRenderer_,
@@ -5560,12 +5989,16 @@ void ViewportPanel::render(
         );
     }
 
-    // MIDI is already a native ImGui visualization.
-    // Every renderer-backed view is now an actual image inside
-    // the ImGui workspace instead of painting over the window.
+
+    // --------------------------------------------------------
+    // BASE CANVAS
+    // --------------------------------------------------------
+
     if (
-        !state.activeMidi.has_value() &&
-        viewportSurface_.texture() != nullptr
+        viewKind !=
+            ViewportViewKind::Midi &&
+        viewportSurface_.texture() !=
+            nullptr
     ) {
         const ImVec2 viewportEnd{
             viewportPosition.x +
@@ -5574,373 +6007,229 @@ void ViewportPanel::render(
                 viewportSize.y
         };
 
-        ImDrawList* viewportDrawList =
-            ImGui::GetWindowDrawList();
-
-        viewportDrawList->AddImage(
-            (ImTextureID)(
-                std::intptr_t
-            ) viewportSurface_.texture(),
-            viewportPosition,
-            viewportEnd
-        );
-
-        if (animationWorkspace) {
-            // -----------------------------------------------
-            // Forest viewport atmosphere:
-            // - soft light haze at the top
-            // - darker side vignette
-            // - strong bottom falloff behind HUD overlays
-            // -----------------------------------------------
-
-            const float topLightBottomY =
-                viewportPosition.y +
-                viewportSize.y *
-                    0.44f;
-
-            viewportDrawList->
-                AddRectFilledMultiColor(
-                    viewportPosition,
-                    ImVec2(
-                        viewportEnd.x,
-                        topLightBottomY
-                    ),
-
-                    IM_COL32(
-                        228,
-                        236,
-                        223,
-                        30
-                    ),
-
-                    IM_COL32(
-                        228,
-                        236,
-                        223,
-                        30
-                    ),
-
-                    IM_COL32(
-                        228,
-                        236,
-                        223,
-                        0
-                    ),
-
-                    IM_COL32(
-                        228,
-                        236,
-                        223,
-                        0
-                    )
-                );
-
-
-            const float sideVignetteWidth =
-                viewportSize.x *
-                0.18f;
-
-            viewportDrawList->
-                AddRectFilledMultiColor(
-                    viewportPosition,
-                    ImVec2(
-                        viewportPosition.x +
-                            sideVignetteWidth,
-                        viewportEnd.y
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        32
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        0
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        0
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        32
-                    )
-                );
-
-            viewportDrawList->
-                AddRectFilledMultiColor(
-                    ImVec2(
-                        viewportEnd.x -
-                            sideVignetteWidth,
-                        viewportPosition.y
-                    ),
-
-                    viewportEnd,
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        0
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        32
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        32
-                    ),
-
-                    IM_COL32(
-                        16,
-                        21,
-                        17,
-                        0
-                    )
-                );
-
-
-            const float lowerFadeY =
-                viewportPosition.y +
-                viewportSize.y *
-                    0.52f;
-
-            viewportDrawList->
-                AddRectFilledMultiColor(
-                    ImVec2(
-                        viewportPosition.x,
-                        lowerFadeY
-                    ),
-
-                    viewportEnd,
-
-                    IM_COL32(
-                        12,
-                        17,
-                        13,
-                        0
-                    ),
-
-                    IM_COL32(
-                        12,
-                        17,
-                        13,
-                        0
-                    ),
-
-                    IM_COL32(
-                        12,
-                        17,
-                        13,
-                        164
-                    ),
-
-                    IM_COL32(
-                        12,
-                        17,
-                        13,
-                        164
-                    )
-                );
-
-            const float footerShadowY =
-                viewportPosition.y +
-                viewportSize.y *
-                    0.76f;
-
-            viewportDrawList->
-                AddRectFilledMultiColor(
-                    ImVec2(
-                        viewportPosition.x,
-                        footerShadowY
-                    ),
-
-                    viewportEnd,
-
-                    IM_COL32(
-                        7,
-                        10,
-                        8,
-                        0
-                    ),
-
-                    IM_COL32(
-                        7,
-                        10,
-                        8,
-                        0
-                    ),
-
-                    IM_COL32(
-                        7,
-                        10,
-                        8,
-                        92
-                    ),
-
-                    IM_COL32(
-                        7,
-                        10,
-                        8,
-                        92
-                    )
-                );
-        }
+        ImGui::GetWindowDrawList()->
+            AddImage(
+                (ImTextureID)(
+                    std::intptr_t
+                ) viewportSurface_.
+                    texture(),
+                viewportPosition,
+                viewportEnd
+            );
     }
 
-    if (state.activeMidi.has_value()) {
-        midiViewPanel_.renderVisualization(
-            state.midiView,
-            midiPlayer,
-            viewportSize
-        );
+
+    if (
+        viewKind ==
+        ViewportViewKind::Midi
+    ) {
+        midiViewPanel_.
+            renderVisualization(
+                state.midiView,
+                midiPlayer,
+                viewportSize
+            );
     }
-    else if (state.activeMap.has_value()) {
+
+
+    // The soft light/vignette is presentation for 3D scenes.
+    // Never tint a texture, sprite, image, interface, or MIDI
+    // visualization while somebody is inspecting its pixels.
+    if (immersiveWorkspace) {
+        ui::workspace::
+            drawViewportAtmosphere(
+                ImGui::GetWindowDrawList(),
+                viewportPosition,
+                viewportSize
+            );
+    }
+
+
+    // --------------------------------------------------------
+    // VIEWPORT INTERACTION
+    // --------------------------------------------------------
+
+    if (
+        viewKind ==
+        ViewportViewKind::Map
+    ) {
+        ImGui::SetCursorScreenPos(
+            viewportPosition
+        );
+
         renderMapInteraction(
             state,
             viewportSize
         );
     }
-    else {
+    else if (modelWorkspace) {
         renderEditorOverlay(
             state,
             viewportPosition,
             viewportSize
         );
-
-        if (animationWorkspace) {
-            // ------------------------------------------------
-            // LEFT TOOL RAIL
-            // ------------------------------------------------
-
-            constexpr float ToolRailWidth =
-                52.0f;
-
-            constexpr float toolRailHeight =
-                244.0f;
-
-            constexpr float ToolRailX =
-                20.0f;
-
-            constexpr float ToolRailY =
-                20.0f;
-
-            ImGui::SetCursorScreenPos(
-                ImVec2(
-                    viewportPosition.x +
-                        ToolRailX,
-                    viewportPosition.y +
-                        ToolRailY
-                )
-            );
-
-            ImGui::PushStyleVar(
-                ImGuiStyleVar_ChildRounding,
-                7.0f
-            );
-
-            ImGui::PushStyleVar(
-                ImGuiStyleVar_WindowPadding,
-                ImVec2(
-                    1.0f,
-                    2.0f
-                )
-            );
-
-            ImGui::PushStyleColor(
-                ImGuiCol_ChildBg,
-                ui::themePalette().hudBackground
-            );
-
-            ImGui::BeginChild(
-                "##AnimationToolRail",
-                ImVec2(
-                    ToolRailWidth,
-                    toolRailHeight
-                ),
-                true,
-                ImGuiWindowFlags_NoScrollbar |
-                    ImGuiWindowFlags_NoScrollWithMouse
-            );
-
-            ImGui::SetCursorPosY(
-                5.0f
-            );
-
-            renderAnimationToolRail(
-                state
-            );
-
-            ImGui::EndChild();
-
-            ImGui::PopStyleColor();
-            ImGui::PopStyleVar(2);
+    }
 
 
-            // Animation controls are individual HUD surfaces:
-            // timeline + metadata + transport + context.
+    // --------------------------------------------------------
+    // SHARED 3D TOOL RAIL
+    // --------------------------------------------------------
+
+    if (
+        modelWorkspace &&
+        state.activeModelHandle.
+            has_value()
+    ) {
+        ui::workspace::beginToolRail(
+            "##ViewportToolRail",
+            viewportPosition
+        );
+
+        renderViewportToolRail(
+            state
+        );
+
+        ui::workspace::endToolRail();
+    }
+
+
+    // --------------------------------------------------------
+    // IMMERSIVE CONTENT
+    // --------------------------------------------------------
+
+    switch (viewKind) {
+        case ViewportViewKind::Animation:
             AnimationViewPanel{}.render(
                 state,
                 renderAnimationControls
             );
+            break;
 
-            // Overlay children move ImGui's layout cursor.
-            // Restore the real canvas origin before reserving
-            // the viewport item.
-            ImGui::SetCursorScreenPos(
-                viewportPosition
+        case ViewportViewKind::Map:
+            mapViewPanel_.render(
+                state
             );
-        }
+            break;
 
-        ImGui::Dummy(
-            viewportSize
-        );
+        case ViewportViewKind::Npc:
+        case ViewportViewKind::Location:
+        case ViewportViewKind::SpotAnimation:
+        case ViewportViewKind::Model:
+            controlsPanel_.
+                renderModelWorkspace(
+                    state
+                );
+            break;
+
+        case ViewportViewKind::Midi:
+        case ViewportViewKind::Interface:
+        case ViewportViewKind::Texture:
+        case ViewportViewKind::Image:
+        case ViewportViewKind::Sprite:
+        case ViewportViewKind::None:
+        default:
+            break;
     }
+
+
+    // Absolute overlay children move ImGui's cursor. Restore the
+    // canvas item so this child consumes the exact canvas height.
+    ImGui::SetCursorScreenPos(
+        viewportPosition
+    );
+
+    ImGui::Dummy(
+        viewportSize
+    );
 
     ImGui::EndChild();
 
-    if (!animationWorkspace) {
-        controlsPanel_.renderResizeHandle(
-            controlsLayout
+
+    // --------------------------------------------------------
+    // DOCKED 2D / MEDIA CONTROLS
+    // --------------------------------------------------------
+
+    if (
+        dockedWorkspace &&
+        dockHeight > 0.0f
+    ) {
+        const ImVec2 controlsPosition =
+            ImGui::GetCursorScreenPos();
+
+        const ImVec2 controlsSize{
+            ImGui::GetContentRegionAvail().x,
+            dockHeight
+        };
+
+        switch (viewKind) {
+            case ViewportViewKind::Midi:
+                midiViewPanel_.
+                    renderWorkspace(
+                        state,
+                        state.activeMidi.has_value()
+                            ? &*state.activeMidi
+                            : nullptr,
+                        state.midiView,
+                        midiPlayer,
+                        controlsPosition,
+                        controlsSize
+                    );
+                break;
+
+            case ViewportViewKind::Interface:
+                controlsPanel_.
+                    renderInterfaceWorkspace(
+                        state,
+                        controlsPosition,
+                        controlsSize
+                    );
+                break;
+
+            case ViewportViewKind::Texture:
+                controlsPanel_.
+                    renderTextureWorkspace(
+                        state,
+                        controlsPosition,
+                        controlsSize
+                    );
+                break;
+
+            case ViewportViewKind::Image:
+            case ViewportViewKind::Sprite:
+                renderImageWorkspace(
+                    state,
+                    viewKind,
+                    controlsPosition,
+                    controlsSize
+                );
+                break;
+
+            case ViewportViewKind::None:
+            case ViewportViewKind::Map:
+            case ViewportViewKind::Animation:
+            case ViewportViewKind::Npc:
+            case ViewportViewKind::Location:
+            case ViewportViewKind::SpotAnimation:
+            case ViewportViewKind::Model:
+            default:
+                break;
+        }
+
+        // Keep the parent layout honest even though the dock uses
+        // absolute placement internally.
+        ImGui::SetCursorScreenPos(
+            controlsPosition
         );
 
-        controlsPanel_.render(
-            state,
-            viewKind,
-            controlsLayout.controlsHeight,
-            renderAnimationControls,
-            [this, &state, &midiPlayer]() {
-                midiViewPanel_.renderControls(
-                    state.activeMidi.has_value()
-                        ? &*state.activeMidi
-                        : nullptr,
-                    state.midiView,
-                    midiPlayer
-                );
-            }
+        ImGui::Dummy(
+            controlsSize
         );
     }
+
 
     ImGui::EndChild();
 }
+
 
 void ViewportPanel::prepareViewport(
     SDL_Renderer* renderer,

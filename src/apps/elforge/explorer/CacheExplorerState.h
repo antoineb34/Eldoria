@@ -88,6 +88,8 @@ struct CacheExplorerState {
     CacheSelection selection;
     CacheTreeNode rootNode;
 
+    std::string assetDumpStatus;
+
     std::optional<AnimationInspection> activeAnimation;
     AnimationViewState animationView;
     std::string animationDumpStatus;

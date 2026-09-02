@@ -1,6 +1,10 @@
 #pragma once
 
+#include <imgui.h>
+
 namespace eld::elforge {
+
+struct CacheExplorerState;
 
 enum class TextureZoomMode {
     Fit,
@@ -32,6 +36,13 @@ struct TextureViewOptions {
 class TextureViewPanel {
 public:
     void render(bool hasTexture);
+
+    void renderWorkspace(
+        CacheExplorerState& state,
+        bool hasTexture,
+        const ImVec2& controlsPosition,
+        const ImVec2& controlsSize
+    );
 
     const TextureViewOptions& options() const;
 

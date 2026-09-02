@@ -1,144 +1,83 @@
 #pragma once
 
-#include <algorithm>
+#include "viewport/ViewportWorkspaceLayout.h"
 
 namespace eld::elforge::animation_hud {
 
-inline constexpr float BottomHeight = 160.0f;
-inline constexpr float FadeHeight = 125.0f;
+inline constexpr float BottomHeight =
+    viewport_workspace::BottomHeight;
 
-inline constexpr float HorizontalInset = 34.0f;
-inline constexpr float BottomInset = 26.0f;
-inline constexpr float ColumnGap = 16.0f;
+inline constexpr float FadeHeight =
+    viewport_workspace::FadeHeight;
 
-inline constexpr float CardHeight = 92.0f;
-inline constexpr float TransportWidth = 270.0f;
+inline constexpr float HorizontalInset =
+    viewport_workspace::HorizontalInset;
 
-inline constexpr float FramePreferredWidth = 250.0f;
-inline constexpr float FrameMinimumWidth = 210.0f;
+inline constexpr float BottomInset =
+    viewport_workspace::BottomInset;
 
-inline constexpr float ContextWidthRatio = 0.36f;
-inline constexpr float ContextMinimumWidth = 380.0f;
-inline constexpr float ContextMaximumWidth = 490.0f;
+inline constexpr float ColumnGap =
+    viewport_workspace::ColumnGap;
+
+inline constexpr float CardHeight =
+    viewport_workspace::CardHeight;
+
+inline constexpr float TransportWidth =
+    viewport_workspace::LeftWidth;
+
+inline constexpr float FramePreferredWidth =
+    viewport_workspace::CenterPreferredWidth;
+
+inline constexpr float FrameMinimumWidth =
+    viewport_workspace::CenterMinimumWidth;
+
+inline constexpr float ContextWidthRatio =
+    viewport_workspace::RightWidthRatio;
+
+inline constexpr float ContextMinimumWidth =
+    viewport_workspace::RightMinimumWidth;
+
+inline constexpr float ContextMaximumWidth =
+    viewport_workspace::RightMaximumWidth;
+
 
 struct BottomRow {
     float transportX = 0.0f;
+
     float frameX = 0.0f;
     float frameWidth = 0.0f;
+
     float contextX = 0.0f;
     float contextWidth = 0.0f;
 };
 
+
 [[nodiscard]] inline float contextWidth(
     float viewportWidth
 ) noexcept {
-    return std::clamp(
-        viewportWidth * ContextWidthRatio,
-        ContextMinimumWidth,
-        ContextMaximumWidth
-    );
+    return
+        viewport_workspace::
+            preferredRightWidth(
+                viewportWidth
+            );
 }
+
 
 [[nodiscard]] inline BottomRow bottomRow(
     float viewportWidth
 ) noexcept {
-    BottomRow result;
-
-    result.transportX =
-        HorizontalInset;
-
-
-    // --------------------------------------------------------
-    // Available width for FRAME + CONTEXT.
-    //
-    // Playback owns its fixed 270px.
-    // The two column gaps are also reserved here.
-    // --------------------------------------------------------
-
-    const float availableWidth =
-        std::max(
-            viewportWidth -
-                HorizontalInset * 2.0f -
-                TransportWidth -
-                ColumnGap * 2.0f,
-            0.0f
-        );
-
-
-    // --------------------------------------------------------
-    // Context is flexible.
-    //
-    // Start with its preferred responsive width, but never
-    // allow it to consume the space reserved for FRAME.
-    // --------------------------------------------------------
-
-    const float desiredContextWidth =
-        contextWidth(
+    const viewport_workspace::BottomRow row =
+        viewport_workspace::bottomRow(
             viewportWidth
         );
 
-    const float maximumContextWidth =
-        std::max(
-            availableWidth -
-                FrameMinimumWidth,
-            0.0f
-        );
-
-    result.contextWidth =
-        std::min(
-            desiredContextWidth,
-            maximumContextWidth
-        );
-
-    result.contextX =
-        std::max(
-            viewportWidth -
-                HorizontalInset -
-                result.contextWidth,
-            8.0f
-        );
-
-
-    // --------------------------------------------------------
-    // Frame gets the space between Playback and Context.
-    // It prefers 250px but can gracefully shrink to its
-    // protected minimum.
-    // --------------------------------------------------------
-
-    const float middleStart =
-        result.transportX +
-        TransportWidth +
-        ColumnGap;
-
-    const float middleEnd =
-        result.contextX -
-        ColumnGap;
-
-    const float middleWidth =
-        std::max(
-            middleEnd -
-                middleStart,
-            0.0f
-        );
-
-    result.frameWidth =
-        std::min(
-            FramePreferredWidth,
-            middleWidth
-        );
-
-    result.frameX =
-        middleStart +
-        std::max(
-            (
-                middleWidth -
-                    result.frameWidth
-            ) *
-                0.5f,
-            0.0f
-        );
-
-    return result;
+    return {
+        row.leftX,
+        row.centerX,
+        row.centerWidth,
+        row.rightX,
+        row.rightWidth
+    };
 }
 
 }
