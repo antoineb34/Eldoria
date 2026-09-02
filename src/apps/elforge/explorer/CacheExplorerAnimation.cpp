@@ -415,7 +415,7 @@ void CacheExplorer::rebuildAnimationFrame() {
         return;
     }
 
-    const eld::graphics::AnimatedModelFrame animated =
+    const eld::render::AnimatedModelFrame animated =
         modelAnimator_.apply(
             *animationSource_,
             *resolved.frame,
@@ -463,7 +463,7 @@ void CacheExplorer::rebuildAnimationFrame() {
         return;
     }
 
-    const eld::graphics::ModelHandle handle =
+    const eld::render::ModelHandle handle =
         graphicsResources_.resolveModel(
             displayMesh
         );
@@ -919,7 +919,7 @@ void CacheExplorer::appendActionEffects(
                 !sequence->frames.empty()
             ) {
                 effect.player =
-                    std::make_unique<eld::graphics::AnimationPlayer>(
+                    std::make_unique<eld::render::AnimationPlayer>(
                         animationFrameIndex_
                     );
                 effect.player->setSequence(*sequence);
@@ -1778,7 +1778,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
                 frameCount - 1
             );
 
-        eld::graphics::AnimationPlayer hoverPlayer(
+        eld::render::AnimationPlayer hoverPlayer(
             animationFrameIndex_
         );
 

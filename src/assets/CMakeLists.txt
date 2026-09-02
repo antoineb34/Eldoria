@@ -1,0 +1,64 @@
+add_library(eldoria_assets STATIC
+    animation/presentation/AnimationPresentationCatalog.cpp
+    animation/AnimationFrameIndex.cpp
+    animation/AnimationFileParser.cpp
+    animation/AnimationDecoder.cpp
+    animation/AnimationRepository.cpp
+    interface/InterfaceFileParser.cpp
+    interface/InterfaceRepository.cpp
+    map/MapFileReader.cpp
+    map/MapLoader.cpp
+    map/decoder/TerrainDecoder.cpp
+    map/decoder/LocationSpawnDecoder.cpp
+    midi/MidiFileParser.cpp
+    midi/MidiRepository.cpp
+    model/ModelDecoder.cpp
+    model/ModelFileParser.cpp
+    model/ModelRepository.cpp
+    image/IndexedImageDecoder.cpp
+    image/JpegDecoder.cpp
+    image/JpegRepository.cpp
+    font/FontFileParser.cpp
+    font/FontDecoder.cpp
+    font/FontRepository.cpp
+    definition/DefinitionTableParser.cpp
+    definition/DefinitionRepository.cpp
+    definition/floor/FloorDefinitionParser.cpp
+    definition/floor/FloorRepository.cpp
+    definition/identity_kit/IdentityKitDefinitionParser.cpp
+    definition/identity_kit/IdentityKitRepository.cpp
+    definition/location/LocationDefinitionParser.cpp
+    definition/location/LocationRepository.cpp
+    definition/npc/NpcDefinitionParser.cpp
+    definition/npc/NpcRepository.cpp
+    definition/item/ItemDefinitionParser.cpp
+    definition/item/ItemRepository.cpp
+    definition/sequence/SequenceDefinitionParser.cpp
+    definition/sequence/SequenceRepository.cpp
+    definition/spot_animation/SpotAnimationDefinitionParser.cpp
+    definition/spot_animation/SpotAnimationRepository.cpp
+    definition/varp/VarpDefinitionParser.cpp
+    definition/varp/VarpRepository.cpp
+    definition/varbit/VarbitDefinitionParser.cpp
+    definition/varbit/VarbitRepository.cpp
+    definition/parameter/ParameterDefinitionParser.cpp
+    definition/parameter/ParameterRepository.cpp
+    definition/message/MessageDefinitionParser.cpp
+    definition/message/MessageRepository.cpp
+    definition/message_animation/MessageAnimationDefinitionParser.cpp
+    definition/message_animation/MessageAnimationRepository.cpp
+    image/IndexedImageFileParser.cpp
+    texture/TextureRepository.cpp
+    sprite/SpriteRepository.cpp
+)
+
+add_library(Eldoria::Assets ALIAS eldoria_assets)
+
+target_include_directories(eldoria_assets PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_assets PUBLIC
+    Eldoria::Storage
+    JPEG::JPEG
+)

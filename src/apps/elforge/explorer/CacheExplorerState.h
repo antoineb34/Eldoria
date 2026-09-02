@@ -16,7 +16,7 @@
 #include "views/animation/AnimationViewState.h"
 #include "views/midi/MidiViewState.h"
 
-#include "graphics/model/ModelHandle.h"
+#include "render/model/ModelHandle.h"
 #include "model/Model.h"
 #include "texture/Texture.h"
 #include "sprite/Sprite.h"
@@ -48,7 +48,7 @@ enum class ViewportGizmoMode : std::uint8_t {
 };
 
 struct PresentationRenderObject {
-    eld::graphics::ModelHandle model;
+    eld::render::ModelHandle model;
     eld::render::Transform transform;
 };
 
@@ -116,7 +116,7 @@ struct CacheExplorerState {
 
     std::optional<eld::model::Model> activeModel;
 
-    std::optional<eld::graphics::ModelHandle>
+    std::optional<eld::render::ModelHandle>
         activeModelHandle;
 
     std::vector<PresentationRenderObject>

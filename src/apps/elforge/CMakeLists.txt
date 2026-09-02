@@ -49,11 +49,10 @@ target_include_directories(elforge PRIVATE
 
 target_link_libraries(elforge PRIVATE
     Eldoria::Audio
-    Eldoria::Data
-    Eldoria::Graphics
-    Eldoria::Platform
-    Eldoria::PlatformImGui
+    Eldoria::Assets
     Eldoria::Render
+    Eldoria::Host
+    Eldoria::HostImGui
 )
 
 set_target_properties(elforge PROPERTIES

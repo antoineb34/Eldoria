@@ -221,7 +221,7 @@ void CacheExplorer::handleSelectionChanged() {
                     );
 
                 if (model.has_value()) {
-                    const eld::graphics::ModelHandle handle =
+                    const eld::render::ModelHandle handle =
                         graphicsResources_.resolveModel(
                             modelId
                         );

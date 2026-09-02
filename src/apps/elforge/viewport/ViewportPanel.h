@@ -16,7 +16,7 @@ namespace eld::audio {
 class MidiPlayer;
 }
 
-namespace eld::graphics {
+namespace eld::render {
 class GraphicsResources;
 }
 
@@ -48,13 +48,13 @@ public:
     void prepareViewport(
         SDL_Renderer* renderer,
         CacheExplorerState& state,
-        eld::graphics::GraphicsResources& resources
+        eld::render::GraphicsResources& resources
     );
 
     void renderViewport(
         SDL_Renderer* renderer,
         CacheExplorerState& state,
-        eld::graphics::GraphicsResources& resources,
+        eld::render::GraphicsResources& resources,
         const eld::interface::InterfaceRepository& interfaces,
         eld::sprite::SpriteRepository& interfaceSprites
     );

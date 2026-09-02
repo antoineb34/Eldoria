@@ -147,7 +147,7 @@ void drawMapSelectionOverlay(
         state.selectedMapLocIndex.has_value() &&
         *state.selectedMapLocIndex < viewState.sceneLocs.size()
     ) {
-        const eld::graphics::map::SceneLocationPlacement& loc =
+        const eld::render::map::SceneLocationPlacement& loc =
             viewState.sceneLocs[*state.selectedMapLocIndex];
 
         drawMapSelectionCross(
@@ -405,7 +405,7 @@ bool MapViewSurface::makeMapContextCurrent() {
 bool MapViewSurface::prepare(
     SDL_Renderer* renderer,
     CacheExplorerState& state,
-    eld::graphics::GraphicsResources& resources
+    eld::render::GraphicsResources& resources
 ) {
     if (!state.activeMap.has_value()) {
         return false;

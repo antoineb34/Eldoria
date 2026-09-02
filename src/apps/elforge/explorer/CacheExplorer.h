@@ -52,7 +52,7 @@
 #include "definition/message_animation/MessageAnimationRepository.h"
 #include "interface/InterfaceRepository.h"
 
-#include "graphics/GraphicsResources.h"
+#include "render/GraphicsResources.h"
 
 namespace eld::elforge {
 
@@ -154,8 +154,8 @@ private:
     eld::animation::AnimationRepository animationRepository_;
     eld::animation::AnimationFrameIndex animationFrameIndex_;
 
-    eld::graphics::AnimationPlayer animationPlayer_;
-    eld::graphics::ModelAnimator modelAnimator_;
+    eld::render::AnimationPlayer animationPlayer_;
+    eld::render::ModelAnimator modelAnimator_;
 
     enum class AnimationTargetKind {
         None,
@@ -177,10 +177,10 @@ private:
         eld::definition::SpotAnimationDefinition definition;
         eld::model::ModelMesh sourceMesh;
 
-        std::unique_ptr<eld::graphics::AnimationPlayer>
+        std::unique_ptr<eld::render::AnimationPlayer>
             player;
 
-        std::optional<eld::graphics::ModelHandle>
+        std::optional<eld::render::ModelHandle>
             modelHandle;
 
         std::uint64_t elapsedMilliseconds = 0;
@@ -204,10 +204,10 @@ private:
     ItemViewMode itemViewMode_ =
         ItemViewMode::Inventory;
 
-    std::optional<eld::graphics::ModelHandle>
+    std::optional<eld::render::ModelHandle>
         actionTargetHandle_;
 
-    std::optional<eld::graphics::ModelHandle>
+    std::optional<eld::render::ModelHandle>
         actionGridHandle_;
 
     eld::math::Vec3 actionTargetWorld_{
@@ -239,7 +239,7 @@ private:
 
     std::map<
         std::pair<std::uint16_t, std::size_t>,
-        eld::graphics::ModelHandle
+        eld::render::ModelHandle
     > animationHandles_;
 
     std::uint64_t lastAnimationUpdateMs_ = 0;
@@ -266,7 +266,7 @@ private:
     eld::definition::MessageAnimationRepository messageAnimationRepository_;
     eld::interface::InterfaceRepository interfaceRepository_;
 
-    eld::graphics::GraphicsResources graphicsResources_;
+    eld::render::GraphicsResources graphicsResources_;
 
     CacheExplorerState state_;
     CacheTreeBuilder treeBuilder_;

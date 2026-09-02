@@ -163,22 +163,22 @@ const char* getNodeTypeName(
 }
 
 const char* mapLocKindName(
-    eld::graphics::map::SceneLocationKind kind
+    eld::render::map::SceneLocationKind kind
 ) {
     switch (kind) {
-        case eld::graphics::map::SceneLocationKind::Wall:
+        case eld::render::map::SceneLocationKind::Wall:
             return "Wall";
 
-        case eld::graphics::map::SceneLocationKind::WallDecoration:
+        case eld::render::map::SceneLocationKind::WallDecoration:
             return "Wall Decoration";
 
-        case eld::graphics::map::SceneLocationKind::GroundDecoration:
+        case eld::render::map::SceneLocationKind::GroundDecoration:
             return "Ground Decoration";
 
-        case eld::graphics::map::SceneLocationKind::Location:
+        case eld::render::map::SceneLocationKind::Location:
             return "Location";
 
-        case eld::graphics::map::SceneLocationKind::Roof:
+        case eld::render::map::SceneLocationKind::Roof:
             return "Roof";
     }
 
@@ -794,7 +794,7 @@ void AssetDetailsPanel::render(
             state.selectedMapLocIndex.has_value() &&
             *state.selectedMapLocIndex < map.sceneLocs.size()
         ) {
-            const eld::graphics::map::SceneLocationPlacement& loc =
+            const eld::render::map::SceneLocationPlacement& loc =
                 map.sceneLocs[*state.selectedMapLocIndex];
 
             ImGui::Spacing();
@@ -883,7 +883,7 @@ void AssetDetailsPanel::render(
                 loc.cornerHeights[3]
             );
 
-            if (loc.kind == eld::graphics::map::SceneLocationKind::Wall) {
+            if (loc.kind == eld::render::map::SceneLocationKind::Wall) {
                 ImGui::Text(
                     "Wall types: %d, %d",
                     loc.wallTypeA,
@@ -893,7 +893,7 @@ void AssetDetailsPanel::render(
 
             if (
                 loc.kind ==
-                    eld::graphics::map::SceneLocationKind::WallDecoration
+                    eld::render::map::SceneLocationKind::WallDecoration
             ) {
                 ImGui::Text(
                     "Decoration type / angle: %d / %d",

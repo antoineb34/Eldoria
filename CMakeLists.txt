@@ -21,15 +21,11 @@ find_package(BZip2 REQUIRED)
 find_package(JPEG REQUIRED)
 
 # Shared modules.
-eldoria_add_module(data src/data)
-eldoria_add_module(audio src/audio)
-eldoria_add_module(world src/world)
-eldoria_add_module(game src/game)
-eldoria_add_module(network src/network)
-eldoria_add_module(platform src/platform)
-eldoria_add_module(render src/render)
-eldoria_add_module(graphics src/graphics)
-eldoria_add_module(math src/math)
+eldoria_add_module(binary src/binary)
+eldoria_add_module(storage src/storage)
+eldoria_add_module(assets src/assets)
+eldoria_add_module(host src/host)
+eldoria_add_module(runtime src/runtime)
 
 # Eldoria applications.
 eldoria_add_app(elforge src/apps/elforge)

@@ -7,7 +7,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "graphics/GraphicsResources.h"
+#include "render/GraphicsResources.h"
 #include "render/RenderPipeline.h"
 #include "render/backend/opengl/OpenGLRenderBackend.h"
 
@@ -35,7 +35,7 @@ public:
     bool prepare(
         SDL_Renderer* renderer,
         CacheExplorerState& state,
-        eld::graphics::GraphicsResources& resources
+        eld::render::GraphicsResources& resources
     );
 
     void draw(

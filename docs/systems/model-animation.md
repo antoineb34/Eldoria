@@ -9,7 +9,7 @@ Index 2 animation archives
     -> global frame id -> AnimationFrame + Skeleton
 
 ModelMesh + AnimationFrame + Skeleton
-    -> graphics/animation/ModelAnimator
+    -> render/animation/ModelAnimator
     -> deformed ModelMesh
     -> GraphicsResources
     -> Render
@@ -38,7 +38,7 @@ The working NPC animation probe uses the production `AnimationFrameIndex`, `Anim
 
 ## Playback
 
-`eld::graphics::AnimationPlayer` owns reusable sequence playback state.
+`eld::render::AnimationPlayer` owns reusable sequence playback state.
 
 It tracks the selected sequence, current frame, elapsed frame time,
 play/pause state, playback speed and looping. It does not own a model or any

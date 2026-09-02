@@ -5,7 +5,7 @@
 #include "views/map/MapViewState.h"
 #include "definition/floor/FloorRepository.h"
 #include "definition/location/LocationRepository.h"
-#include "graphics/GraphicsResources.h"
+#include "render/GraphicsResources.h"
 #include "map/MapLoader.h"
 #include "model/ModelRepository.h"
 
@@ -18,7 +18,7 @@ public:
         const eld::definition::FloorRepository& floors,
         const eld::definition::LocationRepository& locations,
         eld::model::ModelRepository& models,
-        eld::graphics::GraphicsResources& graphics
+        eld::render::GraphicsResources& graphics
     );
 
     MapViewState build(
@@ -30,7 +30,7 @@ private:
     const eld::definition::FloorRepository& floors_;
     const eld::definition::LocationRepository& locations_;
     eld::model::ModelRepository& models_;
-    eld::graphics::GraphicsResources& graphics_;
+    eld::render::GraphicsResources& graphics_;
 };
 
 }

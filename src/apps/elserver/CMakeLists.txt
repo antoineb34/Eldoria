@@ -10,7 +10,7 @@ target_include_directories(elserver PRIVATE
 )
 
 target_link_libraries(elserver PRIVATE
-    Eldoria::Data
+    Eldoria::Assets
     Eldoria::Game
     Eldoria::Network
     Eldoria::World

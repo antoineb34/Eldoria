@@ -35,7 +35,7 @@ void configureFonts(ImGuiIO& io) {
 }
 
 int ElForgeApp::run() {
-    eld::platform::SdlContext sdl(
+    eld::host::SdlContext sdl(
         AppTitle,
         WindowWidth,
         WindowHeight
@@ -58,7 +58,7 @@ int ElForgeApp::run() {
     configureFonts(io);
 
     ImGui::StyleColorsDark();
-    eld::platform::imgui::applyImGuiTheme();
+    eld::host::imgui::applyImGuiTheme();
     eld::elforge::ui::applyElForgeTheme(
         eld::elforge::ui::ElForgeTheme::Forest
     );

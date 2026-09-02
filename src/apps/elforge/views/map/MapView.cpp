@@ -7,9 +7,9 @@
 #include <utility>
 #include <vector>
 
-#include "graphics/map/SceneLocationBuilder.h"
-#include "graphics/map/SceneLocationModelBuilder.h"
-#include "graphics/map/SceneMapRenderModelBuilder.h"
+#include "render/map/SceneLocationBuilder.h"
+#include "render/map/SceneLocationModelBuilder.h"
+#include "render/map/SceneMapRenderModelBuilder.h"
 #include "render/scene/Transform.h"
 
 namespace eld::elforge {
@@ -229,7 +229,7 @@ MapView::MapView(
     const eld::definition::FloorRepository& floors,
     const eld::definition::LocationRepository& locations,
     eld::model::ModelRepository& models,
-    eld::graphics::GraphicsResources& graphics
+    eld::render::GraphicsResources& graphics
 )
     : loader_(loader),
       floors_(floors),
@@ -282,7 +282,7 @@ MapViewState MapView::build(
     viewState.missingNeighborRegionIds =
         neighborhood.missingRegionIds;
 
-    const eld::graphics::map::TerrainTileSampler terrainSampler =
+    const eld::render::map::TerrainTileSampler terrainSampler =
         [&](std::size_t plane, int x, int y) {
             return sampleTerrainNeighborhood(
                 neighborhood,
@@ -292,7 +292,7 @@ MapViewState MapView::build(
             );
         };
 
-    const eld::graphics::map::SceneLocationTileSampler locSampler =
+    const eld::render::map::SceneLocationTileSampler locSampler =
         [&](std::size_t plane, int x, int y) {
             return sampleTerrainNeighborhood(
                 neighborhood,
@@ -302,9 +302,9 @@ MapViewState MapView::build(
             );
         };
 
-    eld::graphics::map::SceneLocationBuilder locBuilder;
+    eld::render::map::SceneLocationBuilder locBuilder;
 
-    const std::vector<eld::graphics::map::SceneLocationPlacement>
+    const std::vector<eld::render::map::SceneLocationPlacement>
         sceneLocs =
             locBuilder.build(
                 viewState.centerRegion.locations,
@@ -314,9 +314,9 @@ MapViewState MapView::build(
 
     viewState.sceneLocs = sceneLocs;
 
-    eld::graphics::map::SceneLocationModelBuilder locModelBuilder;
+    eld::render::map::SceneLocationModelBuilder locModelBuilder;
 
-    const eld::graphics::map::SceneLocationModelBuildResult
+    const eld::render::map::SceneLocationModelBuildResult
         locModels =
             locModelBuilder.build(
                 sceneLocs,
@@ -324,7 +324,7 @@ MapViewState MapView::build(
                 models_
             );
 
-    std::vector<eld::graphics::ModelHandle>
+    std::vector<eld::render::ModelHandle>
         variantHandles;
 
     variantHandles.reserve(
@@ -332,7 +332,7 @@ MapViewState MapView::build(
     );
 
     for (
-        const eld::graphics::map::SceneLocationModelVariant& variant :
+        const eld::render::map::SceneLocationModelVariant& variant :
         locModels.variants
     ) {
         variantHandles.push_back(
@@ -342,11 +342,11 @@ MapViewState MapView::build(
         );
     }
 
-    eld::graphics::map::SceneMapRenderModelBuilder
+    eld::render::map::SceneMapRenderModelBuilder
         renderModelBuilder;
 
     std::array<
-        eld::graphics::map::SceneTerrainRenderBuildResult,
+        eld::render::map::SceneTerrainRenderBuildResult,
         eld::map::PlaneCount
     > terrainBuilds;
 
@@ -364,7 +364,7 @@ MapViewState MapView::build(
             );
     }
 
-    eld::graphics::map::SceneLocationRenderBuildResult locRender =
+    eld::render::map::SceneLocationRenderBuildResult locRender =
         renderModelBuilder.buildLocs(
             locModels,
             variantHandles,
@@ -383,14 +383,14 @@ MapViewState MapView::build(
         plane < eld::map::PlaneCount;
         ++plane
     ) {
-        const eld::graphics::ModelHandle terrainHandle =
+        const eld::render::ModelHandle terrainHandle =
             graphics_.registerModel(
                 std::move(
                     terrainBuilds[plane].model
                 )
             );
 
-        const eld::graphics::ModelHandle locHandle =
+        const eld::render::ModelHandle locHandle =
             graphics_.registerModel(
                 std::move(
                     locRender.staticPlaneModels[plane]
@@ -427,15 +427,15 @@ MapViewState MapView::build(
     );
 
     for (
-        eld::graphics::map::SceneLocationCameraRenderVariant& variant :
+        eld::render::map::SceneLocationCameraRenderVariant& variant :
         locRender.cameraVariants
     ) {
-        const eld::graphics::ModelHandle insetHandle =
+        const eld::render::ModelHandle insetHandle =
             graphics_.registerModel(
                 std::move(variant.insetModel)
             );
 
-        const eld::graphics::ModelHandle outsetHandle =
+        const eld::render::ModelHandle outsetHandle =
             graphics_.registerModel(
                 std::move(variant.outsetModel)
             );

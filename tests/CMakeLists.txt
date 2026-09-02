@@ -13,4 +13,4 @@ list(APPEND CMAKE_MODULE_PATH
     ${catch2_SOURCE_DIR}/extras
 )
 
-add_subdirectory(data/cache)
+add_subdirectory(storage/cache)

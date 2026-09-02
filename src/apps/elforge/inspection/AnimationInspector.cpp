@@ -18,7 +18,7 @@ std::uint64_t sequenceDurationMilliseconds(
     const eld::animation::AnimationFrameIndex& frames,
     const eld::definition::SequenceDefinition& sequence
 ) {
-    eld::graphics::AnimationPlayer player(
+    eld::render::AnimationPlayer player(
         frames
     );
 

@@ -30,14 +30,14 @@
 #include "explorer/CacheExplorerState.h"
 #include "views/interface/InterfaceView.h"
 
-#include "graphics/GraphicsResources.h"
+#include "render/GraphicsResources.h"
 #include "interface/InterfaceRepository.h"
 #include "sprite/SpriteRepository.h"
 
-#include "../../../render/RenderPipeline.h"
-#include "../../../render/backend/software/SoftwareRenderBackend.h"
-#include "../../../render/camera/Projection.h"
-#include "../../../render/scene/Transform.h"
+#include "render/RenderPipeline.h"
+#include "render/backend/software/SoftwareRenderBackend.h"
+#include "render/camera/Projection.h"
+#include "render/scene/Transform.h"
 
 namespace eld::elforge {
 
@@ -4018,14 +4018,14 @@ void renderInterfaceModel(
     const InterfaceViewNode& node,
     int x,
     int y,
-    eld::graphics::GraphicsResources& resources
+    eld::render::GraphicsResources& resources
 ) {
     if (!node.model.has_value()) {
         return;
     }
 
     try {
-        const eld::graphics::ModelHandle handle =
+        const eld::render::ModelHandle handle =
             resources.resolveModel(
                 node.model->modelId
             );
@@ -4158,7 +4158,7 @@ void renderInterfaceNode(
     int parentY,
     const SDL_Rect& clip,
     InterfaceSpriteCache& spriteCache,
-    eld::graphics::GraphicsResources& resources,
+    eld::render::GraphicsResources& resources,
     const InterfaceViewOptions& options
 ) {
     if (
@@ -4540,7 +4540,7 @@ void renderInterfaceView(
     const CacheExplorerState& state,
     const InterfaceViewState& viewState,
     eld::sprite::SpriteRepository& spriteRepository,
-    eld::graphics::GraphicsResources& resources,
+    eld::render::GraphicsResources& resources,
     const InterfaceViewOptions& options
 ) {
     const SDL_Rect viewportClip{
@@ -4905,7 +4905,7 @@ void pickMapElement(
             index < viewState.sceneLocs.size();
             ++index
         ) {
-            const eld::graphics::map::SceneLocationPlacement& loc =
+            const eld::render::map::SceneLocationPlacement& loc =
                 viewState.sceneLocs[index];
 
             if (loc.scenePlane != state.mapPlane) {
@@ -6234,7 +6234,7 @@ void ViewportPanel::render(
 void ViewportPanel::prepareViewport(
     SDL_Renderer* renderer,
     CacheExplorerState& state,
-    eld::graphics::GraphicsResources& resources
+    eld::render::GraphicsResources& resources
 ) {
     if (!state.activeMap.has_value()) {
         return;
@@ -6258,7 +6258,7 @@ void ViewportPanel::prepareViewport(
 void ViewportPanel::renderViewport(
     SDL_Renderer* renderer,
     CacheExplorerState& state,
-    eld::graphics::GraphicsResources& resources,
+    eld::render::GraphicsResources& resources,
     const eld::interface::InterfaceRepository& interfaces,
     eld::sprite::SpriteRepository& interfaceSprites
 ) {
