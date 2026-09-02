@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "definition/spot_animation/SpotAnimationDefinition.h"
+#include "spot_animation/SpotAnimationDefinition.h"
 #include "model/Model.h"
 #include "model/ModelRepository.h"
 

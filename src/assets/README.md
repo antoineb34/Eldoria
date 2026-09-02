@@ -1,10 +1,39 @@
 # Assets
 
-Source-format parsing and semantic interpretation of game content.
+Assets are split by semantic role.
 
-An asset domain may contain its encoded representation, parser, decoder,
-semantic representation, repository, and source mapping when those roles are
-actually needed.
+## resources/
 
-Assets may depend on Storage/Binary. They must not depend on runtime rendering,
-audio playback, application UI, or host integration.
+Reusable building blocks that other assets can reference:
+
+- animation
+- font
+- image
+- midi
+- model
+- sequence
+- sprite
+- texture
+
+## content/
+
+Game-authored concepts composed from or referring to resources:
+
+- animation presentation
+- floor
+- identity kit
+- interface
+- item
+- location
+- map
+- message
+- message animation
+- NPC
+- parameter
+- spot animation
+- varbit
+- varp
+
+`content/definition/` contains only the shared definition-table format
+infrastructure. Individual game domains do not live under a generic
+`definition/` umbrella.

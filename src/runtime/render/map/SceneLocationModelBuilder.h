@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "SceneLocationBuilder.h"
-#include "definition/location/LocationRepository.h"
+#include "location/LocationRepository.h"
 #include "model/ModelMesh.h"
 #include "model/ModelRepository.h"
 

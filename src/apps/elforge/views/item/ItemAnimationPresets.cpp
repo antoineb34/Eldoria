@@ -4,7 +4,7 @@
 #include <cctype>
 #include <string>
 
-#include "definition/item/ItemDefinition.h"
+#include "item/ItemDefinition.h"
 
 namespace eld::elforge {
 

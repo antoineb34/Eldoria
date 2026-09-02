@@ -6,7 +6,7 @@
 #include <functional>
 #include <vector>
 
-#include "definition/location/LocationRepository.h"
+#include "location/LocationRepository.h"
 #include "map/MapRegion.h"
 #include "map/MapTile.h"
 

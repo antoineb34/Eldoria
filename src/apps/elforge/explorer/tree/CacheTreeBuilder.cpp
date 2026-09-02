@@ -1,16 +1,16 @@
 #include "explorer/tree/CacheTreeBuilder.h"
 
-#include "definition/identity_kit/IdentityKitRepository.h"
-#include "definition/location/LocationRepository.h"
-#include "definition/npc/NpcRepository.h"
-#include "definition/item/ItemRepository.h"
-#include "definition/sequence/SequenceRepository.h"
-#include "definition/spot_animation/SpotAnimationRepository.h"
-#include "definition/varp/VarpRepository.h"
-#include "definition/varbit/VarbitRepository.h"
-#include "definition/parameter/ParameterRepository.h"
-#include "definition/message/MessageRepository.h"
-#include "definition/message_animation/MessageAnimationRepository.h"
+#include "identity_kit/IdentityKitRepository.h"
+#include "location/LocationRepository.h"
+#include "npc/NpcRepository.h"
+#include "item/ItemRepository.h"
+#include "sequence/SequenceRepository.h"
+#include "spot_animation/SpotAnimationRepository.h"
+#include "varp/VarpRepository.h"
+#include "varbit/VarbitRepository.h"
+#include "parameter/ParameterRepository.h"
+#include "message/MessageRepository.h"
+#include "message_animation/MessageAnimationRepository.h"
 #include "map/MapLoader.h"
 #include "interface/InterfaceRepository.h"
 
@@ -28,7 +28,7 @@
 #include "cache/Store.h"
 #include "sprite/SpriteRepository.h"
 #include "definition/DefinitionRepository.h"
-#include "definition/floor/FloorRepository.h"
+#include "floor/FloorRepository.h"
 
 namespace eld::elforge {
 

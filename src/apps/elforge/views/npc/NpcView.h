@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "definition/npc/NpcDefinition.h"
+#include "npc/NpcDefinition.h"
 #include "model/Model.h"
 #include "model/ModelRepository.h"
 

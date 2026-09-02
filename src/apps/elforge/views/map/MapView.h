@@ -3,8 +3,8 @@
 #include <cstdint>
 
 #include "views/map/MapViewState.h"
-#include "definition/floor/FloorRepository.h"
-#include "definition/location/LocationRepository.h"
+#include "floor/FloorRepository.h"
+#include "location/LocationRepository.h"
 #include "render/GraphicsResources.h"
 #include "map/MapLoader.h"
 #include "model/ModelRepository.h"

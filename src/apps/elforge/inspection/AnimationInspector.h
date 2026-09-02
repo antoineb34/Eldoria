@@ -9,12 +9,12 @@
 #include "animation/Animation.h"
 #include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"
-#include "animation/presentation/AnimationPresentationCatalog.h"
-#include "definition/item/ItemRepository.h"
-#include "definition/location/LocationRepository.h"
-#include "definition/npc/NpcRepository.h"
-#include "definition/sequence/SequenceRepository.h"
-#include "definition/spot_animation/SpotAnimationRepository.h"
+#include "animation_presentation/AnimationPresentationCatalog.h"
+#include "item/ItemRepository.h"
+#include "location/LocationRepository.h"
+#include "npc/NpcRepository.h"
+#include "sequence/SequenceRepository.h"
+#include "spot_animation/SpotAnimationRepository.h"
 #include "interface/InterfaceRepository.h"
 
 namespace eld::elforge {

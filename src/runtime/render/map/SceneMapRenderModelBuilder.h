@@ -8,7 +8,7 @@
 #include "ClassicTerrainAppearance.h"
 #include "SceneLocationModelBuilder.h"
 #include "GraphicsResources.h"
-#include "definition/floor/FloorRepository.h"
+#include "floor/FloorRepository.h"
 #include "model/RenderModel.h"
 
 namespace eld::render::map {

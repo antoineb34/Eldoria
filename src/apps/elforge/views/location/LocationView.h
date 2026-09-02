@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "definition/location/LocationDefinition.h"
+#include "location/LocationDefinition.h"
 #include "model/Model.h"
 #include "model/ModelRepository.h"
 

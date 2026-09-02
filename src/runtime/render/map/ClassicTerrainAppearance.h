@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "SceneTerrainBuilder.h"
-#include "definition/floor/FloorRepository.h"
+#include "floor/FloorRepository.h"
 #include "map/MapTile.h"
 
 namespace eld::render::map {

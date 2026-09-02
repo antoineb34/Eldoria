@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include "animation/AnimationFrameIndex.h"
-#include "definition/sequence/SequenceDefinition.h"
+#include "sequence/SequenceDefinition.h"
 
 namespace eld::render {
 

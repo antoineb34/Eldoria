@@ -1,6 +1,6 @@
 #pragma once
 
-#include "definition/floor/FloorDefinition.h"
+#include "floor/FloorDefinition.h"
 #include "image/Image.h"
 
 namespace eld::elforge {
