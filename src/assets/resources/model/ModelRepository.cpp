@@ -1,5 +1,6 @@
 #include "ModelRepository.h"
 
+#include <exception>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -12,27 +13,36 @@ ModelRepository::ModelRepository(
     : store_(std::move(store)) {
 }
 
+
 Model ModelRepository::get(
     std::uint16_t id
 ) const {
-    ModelFile file =
-        getFile(id);
-
-    ModelSourceMap sourceMap;
-
-    ModelMesh mesh =
-        decoder_.decode(
-            file,
-            sourceMap
+    eld::cache::File file =
+        store_.get(
+            id
         );
 
-    return Model{
-        .id = id,
-        .file = std::move(file),
-        .mesh = std::move(mesh),
-        .sourceMap = std::move(sourceMap)
-    };
+    try {
+        Model model =
+            decoder_.decode(
+                file.getBytes()
+            );
+
+        model.id =
+            id;
+
+        return model;
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode model " +
+            std::to_string(id) +
+            ": " +
+            error.what()
+        );
+    }
 }
+
 
 std::optional<Model> ModelRepository::find(
     std::uint16_t id
@@ -41,40 +51,11 @@ std::optional<Model> ModelRepository::find(
         return std::nullopt;
     }
 
-    return get(id);
-}
-
-ModelFile ModelRepository::getFile(
-    std::uint16_t id
-) const {
-    eld::cache::File cacheFile =
-        store_.get(id);
-
-    std::optional<ModelFile> file =
-        parser_.parse(
-            cacheFile.getBytes()
-        );
-
-    if (!file.has_value()) {
-        throw std::runtime_error(
-            "Failed to parse model " +
-            std::to_string(id)
-        );
-    }
-
-    return std::move(*file);
-}
-
-ModelMesh ModelRepository::getMesh(
-    std::uint16_t id
-) const {
-    const ModelFile file =
-        getFile(id);
-
-    return decoder_.decode(
-        file
+    return get(
+        id
     );
 }
+
 
 std::vector<std::uint16_t>
 ModelRepository::listIds() const {
@@ -87,7 +68,10 @@ ModelRepository::listIds() const {
         entries.size()
     );
 
-    for (const eld::cache::FileEntry& entry : entries) {
+    for (
+        const eld::cache::FileEntry& entry :
+        entries
+    ) {
         ids.push_back(
             entry.fileId
         );
@@ -96,52 +80,19 @@ ModelRepository::listIds() const {
     return ids;
 }
 
-std::vector<std::uint16_t>
-ModelRepository::filterIds(
-    const ModelPredicate& predicate
-) const {
-    const std::vector<std::uint16_t> ids =
-        listIds();
-
-    std::vector<std::uint16_t> matchingIds;
-
-    for (const std::uint16_t id : ids) {
-        const Model model =
-            get(id);
-
-        if (predicate(model)) {
-            matchingIds.push_back(id);
-        }
-    }
-
-    return matchingIds;
-}
 
 bool ModelRepository::contains(
     std::uint16_t id
 ) const {
-    return store_.contains(id);
+    return store_.contains(
+        id
+    );
 }
+
 
 std::size_t ModelRepository::count() const {
     return store_.count();
 }
 
-std::size_t ModelRepository::count(
-    const ModelPredicate& predicate
-) const {
-    const std::vector<std::uint16_t> ids =
-        listIds();
-
-    std::size_t matchingCount = 0;
-
-    for (const std::uint16_t id : ids) {
-        if (predicate(get(id))) {
-            matchingCount++;
-        }
-    }
-
-    return matchingCount;
-}
 
 }

@@ -10,7 +10,7 @@ namespace eld::elforge {
 namespace {
 
 void applyRecolors(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::definition::IdentityKitDefinition& definition
 ) {
     for (eld::model::Face& face : mesh.faces) {
@@ -34,8 +34,8 @@ void applyRecolors(
 }
 
 void appendMesh(
-    eld::model::ModelMesh& destination,
-    eld::model::ModelMesh source
+    eld::model::Model& destination,
+    eld::model::Model source
 ) {
     const std::uint32_t vertexOffset =
         static_cast<std::uint32_t>(
@@ -121,13 +121,13 @@ IdentityKitView::build(
         }
 
         applyRecolors(
-            model->mesh,
+            *model,
             definition
         );
 
         appendMesh(
-            combined.mesh,
-            std::move(model->mesh)
+            combined,
+            std::move(*model)
         );
 
         foundModel = true;

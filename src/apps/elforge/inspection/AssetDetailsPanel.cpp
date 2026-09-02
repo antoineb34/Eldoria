@@ -203,8 +203,8 @@ std::string buildModelDebugText(
     const CacheExplorerState& state,
     const eld::model::Model& model
 ) {
-    const eld::model::ModelMesh& asset =
-        model.mesh;
+    const eld::model::Model& asset =
+        model;
 
     std::array<int, 12> priorityCounts {};
     std::array<int, 4> renderTypeCounts {};
@@ -267,14 +267,8 @@ std::string buildModelDebugText(
         std::to_string(asset.textureMappings.size()) +
         "\n";
 
-    debug += "Source vertices: " +
-        std::to_string(model.sourceMap.vertices.size()) +
-        "\n";
-
-    debug += "Source faces: " +
-        std::to_string(model.sourceMap.faces.size()) +
-        "\n";
-
+    
+    
     debug += "Alpha faces: " +
         std::to_string(alphaFaces) +
         "\n";
@@ -2056,8 +2050,8 @@ void AssetDetailsPanel::render(
         const eld::model::Model& model =
             *state.activeModel;
 
-        const eld::model::ModelMesh& asset =
-            model.mesh;
+        const eld::model::Model& asset =
+            model;
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -2090,16 +2084,8 @@ void AssetDetailsPanel::render(
             asset.textureMappings.size()
         );
 
-        ImGui::Text(
-            "Source vertices: %zu",
-            model.sourceMap.vertices.size()
-        );
-
-        ImGui::Text(
-            "Source faces: %zu",
-            model.sourceMap.faces.size()
-        );
-
+        
+        
         std::array<int, 12> priorityCounts {};
 
         for (const eld::model::Face& face : asset.faces) {

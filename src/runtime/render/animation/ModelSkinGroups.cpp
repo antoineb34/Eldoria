@@ -3,7 +3,7 @@
 namespace eld::render {
 
 ModelSkinGroups ModelSkinGroups::build(
-    const eld::model::ModelMesh& mesh
+    const eld::model::Model& mesh
 ) {
     ModelSkinGroups groups;
 

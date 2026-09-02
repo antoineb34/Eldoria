@@ -10,7 +10,7 @@ namespace eld::elforge {
 namespace {
 
 void prepareMesh(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::definition::LocationDefinition& definition
 ) {
     for (eld::model::Vertex& vertex : mesh.vertices) {
@@ -48,8 +48,8 @@ void prepareMesh(
 }
 
 void appendMesh(
-    eld::model::ModelMesh& destination,
-    eld::model::ModelMesh source
+    eld::model::Model& destination,
+    eld::model::Model source
 ) {
     const std::uint32_t vertexOffset =
         static_cast<std::uint32_t>(
@@ -174,8 +174,8 @@ LocationView::buildAnimationSource(
         }
 
         appendMesh(
-            combined.mesh,
-            std::move(model->mesh)
+            combined,
+            std::move(*model)
         );
 
         found = true;
@@ -188,7 +188,7 @@ LocationView::buildAnimationSource(
 
 void LocationView::prepareAnimatedMesh(
     const eld::definition::LocationDefinition& definition,
-    eld::model::ModelMesh& mesh
+    eld::model::Model& mesh
 ) const {
     prepareMesh(
         mesh,
@@ -213,7 +213,7 @@ LocationView::build(
 
     prepareAnimatedMesh(
         definition,
-        model->mesh
+        *model
     );
 
     return model;

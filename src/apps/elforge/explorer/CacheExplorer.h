@@ -22,7 +22,7 @@
 #include "animation/AnimationPlayer.h"
 #include "animation/ModelAnimator.h"
 #include "animation/AnimationPresentationCatalog.h"
-#include "model/ModelMesh.h"
+#include "model/Model.h"
 
 #include "explorer/CacheExplorerState.h"
 #include "explorer/tree/CacheTreeBuilder.h"
@@ -175,7 +175,7 @@ private:
     struct NpcActionEffectState {
         eld::animation::presentation::AnimationEffectBinding binding;
         eld::definition::SpotAnimationDefinition definition;
-        eld::model::ModelMesh sourceMesh;
+        eld::model::Model sourceMesh;
 
         std::unique_ptr<eld::render::AnimationPlayer>
             player;
@@ -234,7 +234,7 @@ private:
     int manualActionDelayMilliseconds_ = 0;
     int manualActionDurationMilliseconds_ = 700;
 
-    std::optional<eld::model::ModelMesh>
+    std::optional<eld::model::Model>
         animationSource_;
 
     std::map<

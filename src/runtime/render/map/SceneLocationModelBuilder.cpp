@@ -80,16 +80,16 @@ std::vector<std::uint16_t> modelIdsForType(
     return ids;
 }
 
-eld::model::ModelMesh combineMeshes(
-    const std::vector<eld::model::ModelMesh>& meshes
+eld::model::Model combineMeshes(
+    const std::vector<eld::model::Model>& meshes
 ) {
-    eld::model::ModelMesh result;
+    eld::model::Model result;
 
     std::size_t vertexCount = 0;
     std::size_t faceCount = 0;
     std::size_t mappingCount = 0;
 
-    for (const eld::model::ModelMesh& mesh : meshes) {
+    for (const eld::model::Model& mesh : meshes) {
         vertexCount += mesh.vertices.size();
         faceCount += mesh.faces.size();
         mappingCount += mesh.textureMappings.size();
@@ -99,7 +99,7 @@ eld::model::ModelMesh combineMeshes(
     result.faces.reserve(faceCount);
     result.textureMappings.reserve(mappingCount);
 
-    for (const eld::model::ModelMesh& mesh : meshes) {
+    for (const eld::model::Model& mesh : meshes) {
         const std::uint32_t vertexOffset =
             static_cast<std::uint32_t>(result.vertices.size());
         const std::uint32_t mappingOffset =
@@ -134,7 +134,7 @@ eld::model::ModelMesh combineMeshes(
     return result;
 }
 
-void rotateY90(eld::model::ModelMesh& mesh) {
+void rotateY90(eld::model::Model& mesh) {
     for (eld::model::Vertex& vertex : mesh.vertices) {
         const float oldX = vertex.x;
         vertex.x = vertex.z;
@@ -142,7 +142,7 @@ void rotateY90(eld::model::ModelMesh& mesh) {
     }
 }
 
-void rotateY180Mirrored(eld::model::ModelMesh& mesh) {
+void rotateY180Mirrored(eld::model::Model& mesh) {
     for (eld::model::Vertex& vertex : mesh.vertices) {
         vertex.z = -vertex.z;
     }
@@ -154,7 +154,7 @@ void rotateY180Mirrored(eld::model::ModelMesh& mesh) {
 }
 
 void recolor(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::definition::LocationDefinition& definition
 ) {
     for (
@@ -170,13 +170,13 @@ void recolor(
 }
 
 void scaleAndTranslate(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::definition::LocationDefinition& definition
 ) {
     constexpr int BaseScale = 128;
 
     for (eld::model::Vertex& vertex : mesh.vertices) {
-        // Cache vertices are integral even though ModelMesh stores floats. The
+        // Cache vertices are integral even though Model stores floats. The
         // classic Model scaler performs integer arithmetic, including its
         // truncate-toward-zero division by 128.
         const int x = static_cast<int>(vertex.x);
@@ -211,8 +211,8 @@ SceneLocationModelPart standardPart(
 
 }
 
-eld::model::ModelMesh SceneLocationModelBuilder::transformModel(
-    eld::model::ModelMesh mesh,
+eld::model::Model SceneLocationModelBuilder::transformModel(
+    eld::model::Model mesh,
     const eld::definition::LocationDefinition& definition,
     int modelRotation
 ) {
@@ -272,7 +272,7 @@ SceneLocationModelBuildResult SceneLocationModelBuilder::build(
             return std::nullopt;
         }
 
-        std::vector<eld::model::ModelMesh> sourceMeshes;
+        std::vector<eld::model::Model> sourceMeshes;
         sourceMeshes.reserve(sourceIds.size());
 
         for (const std::uint16_t sourceId : sourceIds) {
@@ -282,11 +282,11 @@ SceneLocationModelBuildResult SceneLocationModelBuilder::build(
             }
 
             sourceMeshes.push_back(
-                models.getMesh(sourceId)
+                models.get(sourceId)
             );
         }
 
-        eld::model::ModelMesh mesh =
+        eld::model::Model mesh =
             sourceMeshes.size() == 1
                 ? std::move(sourceMeshes.front())
                 : combineMeshes(sourceMeshes);

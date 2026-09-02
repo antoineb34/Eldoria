@@ -5,7 +5,7 @@
 #include "model/ModelHandle.h"
 #include "model/ModelRegistry.h"
 #include "model/ModelResolver.h"
-#include "model/ModelMesh.h"
+#include "model/Model.h"
 #include "texture/GraphicsTexture.h"
 #include "texture/TextureHandle.h"
 #include "texture/TextureRegistry.h"
@@ -25,12 +25,12 @@ public:
     );
 
     ModelHandle resolveModel(
-        const eld::model::ModelMesh& source
+        const eld::model::Model& source
     );
 
     // Register an already-normalized backend-independent render model.
     // This is used by graphics builders (for example static map batches)
-    // that are not sourced from a single cache ModelMesh.
+    // that are not sourced from a single cache Model.
     ModelHandle registerModel(
         RenderModel model
     );

@@ -5,14 +5,14 @@
 #include <cstdint>
 #include <vector>
 
-#include "model/ModelMesh.h"
+#include "model/Model.h"
 
 namespace eld::render {
 
 class ModelSkinGroups {
 public:
     static ModelSkinGroups build(
-        const eld::model::ModelMesh& mesh
+        const eld::model::Model& mesh
     );
 
     const std::vector<std::size_t>& vertices(

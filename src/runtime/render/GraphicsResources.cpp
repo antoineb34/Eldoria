@@ -28,7 +28,7 @@ ModelHandle GraphicsResources::resolveModel(
 }
 
 ModelHandle GraphicsResources::resolveModel(
-    const eld::model::ModelMesh& source
+    const eld::model::Model& source
 ) {
     return modelResolver_.resolve(
         source

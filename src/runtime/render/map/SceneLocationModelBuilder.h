@@ -7,7 +7,7 @@
 
 #include "SceneLocationBuilder.h"
 #include "location/LocationRepository.h"
-#include "model/ModelMesh.h"
+#include "model/Model.h"
 #include "model/ModelRepository.h"
 
 namespace eld::render::map {
@@ -23,7 +23,7 @@ struct SceneLocationModelVariant {
     std::uint16_t locationId = 0;
     std::uint8_t modelType = 0;
     std::uint8_t modelRotation = 0;
-    eld::model::ModelMesh mesh;
+    eld::model::Model mesh;
 };
 
 struct SceneLocationModelPart {
@@ -88,8 +88,8 @@ public:
     // Exposed as a small deterministic conversion primitive so the cache
     // reader stays in data/model while location-specific source transforms stay in
     // render/map and can be tested independently.
-    static eld::model::ModelMesh transformModel(
-        eld::model::ModelMesh mesh,
+    static eld::model::Model transformModel(
+        eld::model::Model mesh,
         const eld::definition::LocationDefinition& definition,
         int modelRotation
     );

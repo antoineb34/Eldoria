@@ -159,13 +159,6 @@ std::vector<std::uint8_t> ByteReader::readBytes(
     );
 }
 
-std::vector<std::uint8_t>
-ByteReader::readRemainingBytes() {
-    return readBytes(
-        remaining()
-    );
-}
-
 std::span<const std::uint8_t> ByteReader::readSpan(
     std::size_t amount
 ) {
@@ -180,14 +173,6 @@ std::span<const std::uint8_t> ByteReader::readSpan(
     position_ += amount;
 
     return result;
-}
-
-ByteReader ByteReader::readSubReader(
-    std::size_t amount
-) {
-    return ByteReader(
-        readSpan(amount)
-    );
 }
 
 std::string ByteReader::readTerminatedString(
@@ -215,10 +200,6 @@ std::string ByteReader::readTerminatedString(
     );
 }
 
-std::string ByteReader::readNullTerminatedString() {
-    return readTerminatedString(0);
-}
-
 std::uint8_t ByteReader::peekU8() const {
     requireReadable(1);
 
@@ -241,16 +222,8 @@ void ByteReader::setPosition(
     position_ = position;
 }
 
-void ByteReader::reset() {
-    position_ = 0;
-}
-
 std::size_t ByteReader::position() const {
     return position_;
-}
-
-std::size_t ByteReader::size() const {
-    return data_.size();
 }
 
 std::size_t ByteReader::remaining() const {

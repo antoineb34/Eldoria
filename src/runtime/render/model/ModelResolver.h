@@ -24,7 +24,7 @@ public:
     );
 
     ModelHandle resolve(
-        const eld::model::ModelMesh& source
+        const eld::model::Model& source
     );
 
 private:

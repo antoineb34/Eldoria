@@ -227,29 +227,23 @@ void writeModel(
     out << "[Model]\n";
     out << "ID: " << model.id << "\n";
     out << "Vertices: "
-        << model.mesh.vertices.size()
+        << model.vertices.size()
         << "\n";
     out << "Faces: "
-        << model.mesh.faces.size()
+        << model.faces.size()
         << "\n";
     out << "Texture mappings: "
-        << model.mesh.textureMappings.size()
+        << model.textureMappings.size()
         << "\n";
-    out << "Source vertices: "
-        << model.sourceMap.vertices.size()
-        << "\n";
-    out << "Source faces: "
-        << model.sourceMap.faces.size()
-        << "\n\n";
-
+        
     out << "Vertices\n";
     for (
         std::size_t index = 0;
-        index < model.mesh.vertices.size();
+        index < model.vertices.size();
         ++index
     ) {
         const auto& vertex =
-            model.mesh.vertices[index];
+            model.vertices[index];
 
         out << index
             << ": "
@@ -270,11 +264,11 @@ void writeModel(
     out << "\nFaces\n";
     for (
         std::size_t index = 0;
-        index < model.mesh.faces.size();
+        index < model.faces.size();
         ++index
     ) {
         const auto& face =
-            model.mesh.faces[index];
+            model.faces[index];
 
         out << index
             << ": "
@@ -312,11 +306,11 @@ void writeModel(
     out << "\nTexture Mappings\n";
     for (
         std::size_t index = 0;
-        index < model.mesh.textureMappings.size();
+        index < model.textureMappings.size();
         ++index
     ) {
         const auto& mapping =
-            model.mesh.textureMappings[index];
+            model.textureMappings[index];
 
         out << index
             << ": origin="
@@ -329,14 +323,7 @@ void writeModel(
     }
 
     out << "\n[Raw Source]\n";
-    out << "Model payload: "
-        << model.file.payload.size()
-        << " bytes\n\n";
-    out << "[Raw Bytes]\n";
-    writeHexBytes(
-        out,
-        model.file.payload
-    );
+        out << "[Raw Bytes]\n";
 }
 
 }

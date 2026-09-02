@@ -210,7 +210,7 @@ bool CacheExplorer::activateAnimationPreviewUse(
             std::move(*model);
 
         animationSource_ =
-            state_.activeModel->mesh;
+            *state_.activeModel;
 
         animationTargetKind_ =
             AnimationTargetKind::Npc;
@@ -262,7 +262,7 @@ bool CacheExplorer::activateAnimationPreviewUse(
             std::move(*model);
 
         animationSource_ =
-            animationSource->mesh;
+            *animationSource;
 
         animationTargetKind_ =
             AnimationTargetKind::Location;
@@ -314,7 +314,7 @@ bool CacheExplorer::activateAnimationPreviewUse(
             std::move(*model);
 
         animationSource_ =
-            animationSource->mesh;
+            *animationSource;
 
         animationTargetKind_ =
             AnimationTargetKind::SpotAnimation;
@@ -328,7 +328,7 @@ bool CacheExplorer::activateAnimationPreviewUse(
 
     state_.activeModelHandle =
         graphicsResources_.resolveModel(
-            state_.activeModel->mesh
+            *state_.activeModel
         );
 
     startAnimationView(
@@ -422,7 +422,7 @@ void CacheExplorer::rebuildAnimationFrame() {
             *resolved.skeleton
         );
 
-    eld::model::ModelMesh displayMesh =
+    eld::model::Model displayMesh =
         animated.mesh;
 
     if (
@@ -446,7 +446,7 @@ void CacheExplorer::rebuildAnimationFrame() {
         );
     }
 
-    state_.activeModel->mesh =
+    *state_.activeModel =
         displayMesh;
 
     const std::pair<std::uint16_t, std::size_t> key{
@@ -491,7 +491,7 @@ void CacheExplorer::ensureActionGrid() {
         return;
     }
 
-    eld::model::ModelMesh grid;
+    eld::model::Model grid;
 
     constexpr int HalfLines = 10;
     constexpr float Spacing = 50.0f;
@@ -758,7 +758,7 @@ void CacheExplorer::ensureActionTargetMarker() {
         return;
     }
 
-    eld::model::ModelMesh marker;
+    eld::model::Model marker;
 
     marker.vertices.resize(5);
     marker.vertices[0].x = 0.0f;
@@ -816,7 +816,7 @@ void CacheExplorer::rebuildNpcActionEffect(
     NpcActionEffectState& effect =
         npcActionEffects_.at(effectIndex);
 
-    eld::model::ModelMesh displayMesh =
+    eld::model::Model displayMesh =
         effect.sourceMesh;
 
     if (effect.player) {
@@ -908,7 +908,7 @@ void CacheExplorer::appendActionEffects(
         NpcActionEffectState effect;
         effect.binding = effectBinding;
         effect.definition = *definition;
-        effect.sourceMesh = std::move(source->mesh);
+        effect.sourceMesh = std::move(*source);
 
         if (definition->sequenceId.has_value()) {
             const eld::definition::SequenceDefinition* sequence =

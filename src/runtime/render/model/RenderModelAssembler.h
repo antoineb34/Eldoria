@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RenderModel.h"
-#include "model/ModelMesh.h"
+#include "model/Model.h"
 #include "texture/TextureResolver.h"
 
 namespace eld::render {
@@ -13,7 +13,7 @@ public:
     );
 
     RenderModel assemble(
-        const eld::model::ModelMesh& source
+        const eld::model::Model& source
     );
 
 private:

@@ -34,23 +34,13 @@ public:
         std::size_t amount
     );
 
-    std::vector<std::uint8_t> readRemainingBytes();
-
     std::span<const std::uint8_t> readSpan(
-        std::size_t amount
-    );
-
-    ByteReader readSubReader(
         std::size_t amount
     );
 
     std::string readTerminatedString(
         std::uint8_t terminator
     );
-
-    std::string readNullTerminatedString();
-
-    std::uint8_t peekU8() const;
 
     void skip(
         std::size_t amount
@@ -60,10 +50,7 @@ public:
         std::size_t position
     );
 
-    void reset();
-
     std::size_t position() const;
-    std::size_t size() const;
     std::size_t remaining() const;
 
     bool atEnd() const;
@@ -73,6 +60,8 @@ public:
     ) const;
 
 private:
+    std::uint8_t peekU8() const;
+
     void requireReadable(
         std::size_t amount
     ) const;

@@ -110,7 +110,7 @@ eld::math::Vec4 convertColor(
 
 void validateFace(
     const eld::model::Face& face,
-    const eld::model::ModelMesh& source
+    const eld::model::Model& source
 ) {
     if (
         face.a >= source.vertices.size() ||
@@ -125,7 +125,7 @@ void validateFace(
 
 eld::math::Vec3 calculateFaceNormal(
     const eld::model::Face& face,
-    const eld::model::ModelMesh& source
+    const eld::model::Model& source
 ) {
     const eld::math::Vec3 a =
         toGraphicsPosition(source.vertices.at(face.a));
@@ -174,7 +174,7 @@ eld::math::Vec2 projectUv(
 
 std::array<eld::math::Vec2, 3> calculateFaceUvs(
     const eld::model::Face& face,
-    const eld::model::ModelMesh& source
+    const eld::model::Model& source
 ) {
     std::array<eld::math::Vec2, 3> result{
         eld::math::Vec2{0.0f, 0.0f},
@@ -333,7 +333,7 @@ RenderModelAssembler::RenderModelAssembler(
 }
 
 RenderModel RenderModelAssembler::assemble(
-    const eld::model::ModelMesh& source
+    const eld::model::Model& source
 ) {
     RenderModel model;
     RenderMesh mesh;

@@ -86,7 +86,7 @@ void CacheExplorer::showItemInventoryView() {
     resetAnimationView();
 
     state_.activeModelHandle =
-        graphicsResources_.resolveModel(model->mesh);
+        graphicsResources_.resolveModel(*model);
     state_.activeModel = std::move(*model);
     itemViewMode_ = ItemViewMode::Inventory;
 }
@@ -114,10 +114,10 @@ void CacheExplorer::showItemEquippedView(
     resetAnimationView();
 
     state_.activeModelHandle =
-        graphicsResources_.resolveModel(model->mesh);
+        graphicsResources_.resolveModel(*model);
     state_.activeModel = std::move(*model);
 
-    animationSource_ = state_.activeModel->mesh;
+    animationSource_ = *state_.activeModel;
     animationTargetKind_ = AnimationTargetKind::Item;
 
     itemViewMode_ =

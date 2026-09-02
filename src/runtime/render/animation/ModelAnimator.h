@@ -3,7 +3,7 @@
 #include <cstddef>
 
 #include "animation/AnimationAsset.h"
-#include "model/ModelMesh.h"
+#include "model/Model.h"
 
 namespace eld::render {
 
@@ -21,20 +21,20 @@ struct AnimationApplyStats {
 };
 
 struct AnimatedModelFrame {
-    eld::model::ModelMesh mesh;
+    eld::model::Model mesh;
     AnimationApplyStats stats;
 };
 
 class ModelAnimator {
 public:
     AnimatedModelFrame apply(
-        const eld::model::ModelMesh& source,
+        const eld::model::Model& source,
         const eld::animation::AnimationFrame& frame,
         const eld::animation::Skeleton& skeleton
     ) const;
 
     AnimationApplyStats applyInPlace(
-        eld::model::ModelMesh& mesh,
+        eld::model::Model& mesh,
         const eld::animation::AnimationFrame& frame,
         const eld::animation::Skeleton& skeleton
     ) const;

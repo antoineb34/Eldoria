@@ -7,7 +7,7 @@ namespace eld::elforge {
 namespace {
 
 void rotate90Degrees(
-    eld::model::ModelMesh& mesh
+    eld::model::Model& mesh
 ) {
     for (eld::model::Vertex& vertex : mesh.vertices) {
         const float x = vertex.x;
@@ -42,7 +42,7 @@ SpotAnimationView::buildAnimationSource(
 
 void SpotAnimationView::prepareAnimatedMesh(
     const eld::definition::SpotAnimationDefinition& definition,
-    eld::model::ModelMesh& mesh
+    eld::model::Model& mesh
 ) const {
     for (eld::model::Vertex& vertex : mesh.vertices) {
         vertex.x =
@@ -111,7 +111,7 @@ SpotAnimationView::build(
 
     prepareAnimatedMesh(
         definition,
-        model->mesh
+        *model
     );
 
     return model;

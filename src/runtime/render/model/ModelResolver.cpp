@@ -26,8 +26,8 @@ ModelHandle ModelResolver::resolve(
         return existing->second;
     }
 
-    const eld::model::ModelMesh source =
-        modelRepository_.getMesh(
+    const eld::model::Model source =
+        modelRepository_.get(
             sourceModelId
         );
 
@@ -50,7 +50,7 @@ ModelHandle ModelResolver::resolve(
 }
 
 ModelHandle ModelResolver::resolve(
-    const eld::model::ModelMesh& source
+    const eld::model::Model& source
 ) {
     RenderModel model =
         assembler_.assemble(

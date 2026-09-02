@@ -871,21 +871,21 @@ void ModelViewPanel::renderWorkspaceModelCard(
 
     const std::string geometryFull =
         std::to_string(
-            model.mesh.vertices.size()
+            model.vertices.size()
         ) +
         " vertices  ·  " +
         std::to_string(
-            model.mesh.faces.size()
+            model.faces.size()
         ) +
         " faces";
 
     const std::string geometryCompact =
         std::to_string(
-            model.mesh.vertices.size()
+            model.vertices.size()
         ) +
         "v  ·  " +
         std::to_string(
-            model.mesh.faces.size()
+            model.faces.size()
         ) +
         "f";
 
@@ -909,11 +909,11 @@ void ModelViewPanel::renderWorkspaceModelCard(
 
     const std::string textureText =
         std::to_string(
-            model.mesh.
+            model.
                 textureMappings.size()
         ) +
         (
-            model.mesh.
+            model.
                 textureMappings.size() ==
                     1
                 ? " texture map"

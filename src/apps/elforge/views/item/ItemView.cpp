@@ -14,8 +14,8 @@ namespace eld::elforge {
 namespace {
 
 void appendMesh(
-    eld::model::ModelMesh& destination,
-    eld::model::ModelMesh source
+    eld::model::Model& destination,
+    eld::model::Model source
 ) {
     const std::uint32_t vertexOffset =
         static_cast<std::uint32_t>(destination.vertices.size());
@@ -59,7 +59,7 @@ void appendMesh(
 }
 
 void applyItemRecolors(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::definition::ItemDefinition& definition
 ) {
     for (eld::model::Face& face : mesh.faces) {
@@ -73,7 +73,7 @@ void applyItemRecolors(
 }
 
 void applyIdentityKitRecolors(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::definition::IdentityKitDefinition& definition
 ) {
     for (eld::model::Face& face : mesh.faces) {
@@ -263,7 +263,7 @@ ItemView::build(
 
     model->id = definition.id;
 
-    for (eld::model::Vertex& vertex : model->mesh.vertices) {
+    for (eld::model::Vertex& vertex : model->vertices) {
         vertex.x =
             vertex.x * static_cast<float>(definition.scaleX) / 128.0f;
         vertex.y =
@@ -272,7 +272,7 @@ ItemView::build(
             vertex.z * static_cast<float>(definition.scaleZ) / 128.0f;
     }
 
-    applyItemRecolors(model->mesh, definition);
+    applyItemRecolors(*model, definition);
 
     return model;
 }
@@ -336,8 +336,8 @@ ItemView::buildEquipped(
                 continue;
             }
 
-            applyIdentityKitRecolors(model->mesh, *kit);
-            appendMesh(combined.mesh, std::move(model->mesh));
+            applyIdentityKitRecolors(*model, *kit);
+            appendMesh(combined, std::move(*model));
             foundBody = true;
         }
     }
@@ -369,13 +369,13 @@ ItemView::buildEquipped(
         // authored size, receive only the gender-specific Y translation and
         // item recolours, and are then merged into the player appearance.
         if (verticalOffset != 0) {
-            for (eld::model::Vertex& vertex : model->mesh.vertices) {
+            for (eld::model::Vertex& vertex : model->vertices) {
                 vertex.y += static_cast<float>(verticalOffset);
             }
         }
 
-        applyItemRecolors(model->mesh, definition);
-        appendMesh(combined.mesh, std::move(model->mesh));
+        applyItemRecolors(*model, definition);
+        appendMesh(combined, std::move(*model));
         foundEquipment = true;
     }
 

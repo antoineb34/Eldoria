@@ -465,7 +465,7 @@ void CacheExplorer::handleSelectionChanged() {
                 if (model.has_value()) {
                     state_.activeModelHandle =
                         graphicsResources_.resolveModel(
-                            model->mesh
+                            *model
                         );
 
                     state_.activeModel =
@@ -475,7 +475,7 @@ void CacheExplorer::handleSelectionChanged() {
                         view.buildAnimationSource(*definition, modelRepository_);
 
                     if (animationSource.has_value()) {
-                        animationSource_ = animationSource->mesh;
+                        animationSource_ = *animationSource;
                         animationTargetKind_ =
                             AnimationTargetKind::SpotAnimation;
 
@@ -568,14 +568,14 @@ void CacheExplorer::handleSelectionChanged() {
                 if (model.has_value()) {
                     state_.activeModelHandle =
                         graphicsResources_.resolveModel(
-                            model->mesh
+                            *model
                         );
 
                     state_.activeModel =
                         std::move(*model);
 
                     animationSource_ =
-                        state_.activeModel->mesh;
+                        *state_.activeModel;
 
                     animationTargetKind_ =
                         AnimationTargetKind::Npc;
@@ -626,7 +626,7 @@ void CacheExplorer::handleSelectionChanged() {
                 if (model.has_value()) {
                     state_.activeModelHandle =
                         graphicsResources_.resolveModel(
-                            model->mesh
+                            *model
                         );
 
                     state_.activeModel =
@@ -636,7 +636,7 @@ void CacheExplorer::handleSelectionChanged() {
                         view.buildAnimationSource(*definition, modelRepository_);
 
                     if (animationSource.has_value()) {
-                        animationSource_ = animationSource->mesh;
+                        animationSource_ = *animationSource;
                         animationTargetKind_ =
                             AnimationTargetKind::Location;
 
@@ -681,7 +681,7 @@ void CacheExplorer::handleSelectionChanged() {
                 if (model.has_value()) {
                     state_.activeModelHandle =
                         graphicsResources_.resolveModel(
-                            model->mesh
+                            *model
                         );
 
                     state_.activeModel =

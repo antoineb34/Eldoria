@@ -24,7 +24,7 @@ int vertexCoordinate(float value) {
 
 template <typename Function>
 std::size_t forEachVertexInGroups(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const std::vector<std::uint8_t>& skinGroups,
     Function&& function
@@ -49,7 +49,7 @@ std::size_t forEachVertexInGroups(
 }
 
 void applyPivot(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const eld::animation::SkeletonSlot& slot,
     int x,
@@ -104,7 +104,7 @@ void applyPivot(
 }
 
 std::size_t applyTranslation(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const eld::animation::SkeletonSlot& slot,
     int x,
@@ -223,7 +223,7 @@ const std::array<int, 2048>& rsCosineTable() {
 // Each component becomes (value & 0xff) * 8 in the 2048-entry trig table.
 // Rotation order is exactly Z -> X -> Y around the current pivot.
 std::size_t applyRotation(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const eld::animation::SkeletonSlot& slot,
     int x,
@@ -331,7 +331,7 @@ std::size_t applyRotation(
 }
 
 std::size_t applyScale(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const eld::animation::SkeletonSlot& slot,
     int x,
@@ -389,7 +389,7 @@ std::size_t applyScale(
 // Classic transform type 5. Only X is used. RS alpha uses 0 = opaque,
 // 255 = transparent, and each animation unit changes alpha by x * 8.
 std::size_t applyAlpha(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const eld::animation::SkeletonSlot& slot,
     int x
@@ -427,7 +427,7 @@ std::size_t applyAlpha(
 }
 
 void applyTransform(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const ModelSkinGroups& groups,
     const eld::animation::SkeletonSlot& slot,
     int x,
@@ -514,7 +514,7 @@ void applyTransform(
 }
 
 AnimatedModelFrame ModelAnimator::apply(
-    const eld::model::ModelMesh& source,
+    const eld::model::Model& source,
     const eld::animation::AnimationFrame& frame,
     const eld::animation::Skeleton& skeleton
 ) const {
@@ -532,7 +532,7 @@ AnimatedModelFrame ModelAnimator::apply(
 }
 
 AnimationApplyStats ModelAnimator::applyInPlace(
-    eld::model::ModelMesh& mesh,
+    eld::model::Model& mesh,
     const eld::animation::AnimationFrame& frame,
     const eld::animation::Skeleton& skeleton
 ) const {

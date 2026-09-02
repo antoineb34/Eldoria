@@ -3045,7 +3045,7 @@ ModelDebugPoint projectModelPoint(
 
 std::vector<ModelDebugPoint>
 projectModelVertices(
-    const eld::model::ModelMesh& mesh,
+    const eld::model::Model& mesh,
     const CacheExplorerState& state
 ) {
     const eld::math::Mat4 modelMatrix =
@@ -3091,7 +3091,7 @@ projectModelVertices(
 
 void renderModelWireframe(
     SDL_Renderer* renderer,
-    const eld::model::ModelMesh& mesh,
+    const eld::model::Model& mesh,
     const CacheExplorerState& state
 ) {
     const std::vector<ModelDebugPoint> points =
@@ -3181,7 +3181,7 @@ void renderModelWireframe(
 
 void renderModelVertices(
     SDL_Renderer* renderer,
-    const eld::model::ModelMesh& mesh,
+    const eld::model::Model& mesh,
     const CacheExplorerState& state
 ) {
     const std::vector<ModelDebugPoint> points =
@@ -3222,7 +3222,7 @@ void renderModelVertices(
 
 void renderModelBounds(
     SDL_Renderer* renderer,
-    const eld::model::ModelMesh& mesh,
+    const eld::model::Model& mesh,
     const CacheExplorerState& state
 ) {
     if (mesh.vertices.empty()) {
@@ -3421,7 +3421,7 @@ void renderModelBounds(
 
 void renderModelAxes(
     SDL_Renderer* renderer,
-    const eld::model::ModelMesh& mesh,
+    const eld::model::Model& mesh,
     const CacheExplorerState& state
 ) {
     if (mesh.vertices.empty()) {
@@ -3573,7 +3573,7 @@ void renderModelAxes(
 
 void renderModelOverlays(
     SDL_Renderer* renderer,
-    const eld::model::ModelMesh& mesh,
+    const eld::model::Model& mesh,
     const CacheExplorerState& state,
     const ModelViewOptions& options
 ) {
@@ -5429,13 +5429,11 @@ std::string workspaceSummary(
             if (state.activeModel.has_value()) {
                 return
                     std::to_string(
-                        state.activeModel->
-                            mesh.vertices.size()
+                        state.activeModel->vertices.size()
                     ) +
                     " vertices  ·  " +
                     std::to_string(
-                        state.activeModel->
-                            mesh.faces.size()
+                        state.activeModel->faces.size()
                     ) +
                     " faces";
             }
@@ -6529,7 +6527,7 @@ void ViewportPanel::renderViewport(
     if (state.activeModel.has_value()) {
         renderModelOverlays(
             renderer,
-            state.activeModel->mesh,
+            *state.activeModel,
             state,
             modelOptions
         );

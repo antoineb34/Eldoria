@@ -22,7 +22,7 @@ public:
 
     void prepareAnimatedMesh(
         const eld::definition::SpotAnimationDefinition& definition,
-        eld::model::ModelMesh& mesh
+        eld::model::Model& mesh
     ) const;
 };
 

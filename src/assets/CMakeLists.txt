@@ -14,7 +14,6 @@ add_library(eldoria_assets STATIC
     resources/midi/MidiFileParser.cpp
     resources/midi/MidiRepository.cpp
     resources/model/ModelDecoder.cpp
-    resources/model/ModelFileParser.cpp
     resources/model/ModelRepository.cpp
     resources/image/IndexedImageDecoder.cpp
     resources/image/JpegDecoder.cpp

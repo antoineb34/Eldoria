@@ -2,529 +2,230 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
+#include <stdexcept>
 #include <utility>
+
+#include "binary/ByteReader.h"
 
 namespace eld::model {
 
-int ModelDecoder::readTriangleIndex(
-    const ModelSections& sections,
-    TriangleState& state,
-    FaceSource* faceSource
+Model ModelDecoder::decode(
+    std::span<const std::uint8_t> payload
 ) const {
-    const std::size_t unitIndex =
-        state.deltaUnitIndex++;
+    constexpr std::size_t FooterSize = 18;
 
-    const int index =
-        state.lastIndex +
-        sections.triangleData.units.at(
-            unitIndex
-        ).delta;
-
-    state.lastIndex =
-        index;
-
-    if (faceSource != nullptr) {
-        faceSource->triangleDeltaUnitIndices.push_back(
-            unitIndex
+    if (payload.size() < FooterSize) {
+        throw std::runtime_error(
+            "Model payload is too small"
         );
     }
 
-    return index;
-}
+    std::span<const std::uint8_t> body =
+        payload.first(payload.size() - FooterSize);
 
-void ModelDecoder::applyTriangleType(
-    std::uint8_t triangleType,
-    const ModelSections& sections,
-    TriangleState& state,
-    FaceSource* faceSource
-) const {
-    constexpr std::uint8_t TriangleTypeNew = 1;
-    constexpr std::uint8_t TriangleTypeReuseCAsB = 2;
-    constexpr std::uint8_t TriangleTypeReuseCAsA = 3;
-    constexpr std::uint8_t TriangleTypeSwapAB = 4;
-
-    switch (triangleType) {
-        case TriangleTypeNew:
-            state.a =
-                static_cast<std::uint32_t>(
-                    readTriangleIndex(
-                        sections,
-                        state,
-                        faceSource
-                    )
-                );
-
-            state.b =
-                static_cast<std::uint32_t>(
-                    readTriangleIndex(
-                        sections,
-                        state,
-                        faceSource
-                    )
-                );
-
-            state.c =
-                static_cast<std::uint32_t>(
-                    readTriangleIndex(
-                        sections,
-                        state,
-                        faceSource
-                    )
-                );
-
-            break;
-
-        case TriangleTypeReuseCAsB:
-            state.b =
-                state.c;
-
-            state.c =
-                static_cast<std::uint32_t>(
-                    readTriangleIndex(
-                        sections,
-                        state,
-                        faceSource
-                    )
-                );
-
-            break;
-
-        case TriangleTypeReuseCAsA:
-            state.a =
-                state.c;
-
-            state.c =
-                static_cast<std::uint32_t>(
-                    readTriangleIndex(
-                        sections,
-                        state,
-                        faceSource
-                    )
-                );
-
-            break;
-
-        case TriangleTypeSwapAB:
-            std::swap(
-                state.a,
-                state.b
-            );
-
-            state.c =
-                static_cast<std::uint32_t>(
-                    readTriangleIndex(
-                        sections,
-                        state,
-                        faceSource
-                    )
-                );
-
-            break;
-
-        default:
-            break;
-    }
-}
-
-std::vector<Vertex> ModelDecoder::decodeVertices(
-    const ModelFile& file,
-    ModelSourceMap* sourceMap
-) const {
-    const ModelSections& sections =
-        file.sections;
-
-    std::vector<Vertex> vertices;
-
-    vertices.reserve(
-        file.footer.vertexCount
+    eld::binary::ByteReader footer(
+        payload.last(FooterSize)
     );
 
-    if (sourceMap != nullptr) {
-        sourceMap->vertices.reserve(
-            file.footer.vertexCount
+    const auto vertexCount = footer.readU16();
+    const auto faceCount = footer.readU16();
+    const auto textureMappingCount = footer.readU8();
+
+    const auto texture = footer.readU8();
+    const auto priority = footer.readU8();
+    const auto alpha = footer.readU8();
+    const auto faceSkin = footer.readU8();
+    const auto vertexSkin = footer.readU8();
+
+    const auto xLength = footer.readU16();
+    const auto yLength = footer.readU16();
+    const auto zLength = footer.readU16();
+    const auto faceDataLength = footer.readU16();
+
+
+    // Body streams
+
+    std::size_t offset = 0;
+
+    auto section = [&](std::size_t size) {
+        if (
+            offset > body.size() ||
+            size > body.size() - offset
+        ) {
+            throw std::runtime_error(
+                "Model section exceeds body"
+            );
+        }
+
+        eld::binary::ByteReader reader(
+            body.subspan(offset)
+        );
+
+        offset += size;
+        return reader;
+    };
+
+    auto vertexFlags = section(vertexCount);
+    auto faceTypes = section(faceCount);
+
+    auto facePriorities =
+        section(priority == 255 ? faceCount : 0);
+
+    auto faceSkins =
+        section(faceSkin == 1 ? faceCount : 0);
+
+    auto faceTextures =
+        section(texture == 1 ? faceCount : 0);
+
+    auto vertexSkins =
+        section(vertexSkin == 1 ? vertexCount : 0);
+
+    auto faceAlphas =
+        section(alpha == 1 ? faceCount : 0);
+
+    auto faceData = section(faceDataLength);
+    auto faceColors = section(faceCount * 2);
+    auto textureTriangles = section(textureMappingCount * 6);
+
+    auto xData = section(xLength);
+    auto yData = section(yLength);
+    auto zData = section(zLength);
+
+    if (offset != body.size()) {
+        throw std::runtime_error(
+            "Invalid model layout"
         );
     }
 
-    int currentX = 0;
-    int currentY = 0;
-    int currentZ = 0;
 
-    std::size_t xDeltaUnitIndex = 0;
-    std::size_t yDeltaUnitIndex = 0;
-    std::size_t zDeltaUnitIndex = 0;
+    // Model
 
-    for (
-        std::size_t i = 0;
-        i < file.footer.vertexCount;
-        i++
-    ) {
-        const VertexFlagUnit& flag =
-            sections.vertexFlags.units.at(
-                i
-            );
+    Model model;
 
-        VertexSource source{};
+    model.vertices.resize(vertexCount);
+    model.faces.resize(faceCount);
+    model.textureMappings.resize(textureMappingCount);
 
-        source.flagUnitIndex =
-            i;
 
-        int deltaX = 0;
-        int deltaY = 0;
-        int deltaZ = 0;
+    // Vertices
 
-        if (flag.hasXDelta()) {
-            deltaX =
-                sections.xData.units.at(
-                    xDeltaUnitIndex
-                ).delta;
+    int x = 0;
+    int y = 0;
+    int z = 0;
 
-            source.xDeltaUnitIndex =
-                xDeltaUnitIndex;
+    for (Vertex& vertex : model.vertices) {
+        const auto flags = vertexFlags.readU8();
 
-            xDeltaUnitIndex++;
+        if (flags & 1) {
+            x += xData.readSignedSmart();
         }
 
-        if (flag.hasYDelta()) {
-            deltaY =
-                sections.yData.units.at(
-                    yDeltaUnitIndex
-                ).delta;
-
-            source.yDeltaUnitIndex =
-                yDeltaUnitIndex;
-
-            yDeltaUnitIndex++;
+        if (flags & 2) {
+            y += yData.readSignedSmart();
         }
 
-        if (flag.hasZDelta()) {
-            deltaZ =
-                sections.zData.units.at(
-                    zDeltaUnitIndex
-                ).delta;
-
-            source.zDeltaUnitIndex =
-                zDeltaUnitIndex;
-
-            zDeltaUnitIndex++;
+        if (flags & 4) {
+            z += zData.readSignedSmart();
         }
 
-        currentX +=
-            deltaX;
+        vertex.x = static_cast<float>(x);
+        vertex.y = static_cast<float>(y);
+        vertex.z = static_cast<float>(z);
 
-        currentY +=
-            deltaY;
-
-        currentZ +=
-            deltaZ;
-
-        Vertex vertex{};
-
-        vertex.x =
-            static_cast<float>(
-                currentX
-            );
-
-        vertex.y =
-            static_cast<float>(
-                currentY
-            );
-
-        vertex.z =
-            static_cast<float>(
-                currentZ
-            );
-
-        if (
-            i <
-            sections.vertexSkins.units.size()
-        ) {
-            vertex.skin =
-                sections.vertexSkins.units.at(
-                    i
-                ).skin;
-
-            source.skinUnitIndex =
-                i;
-        }
-
-        vertices.push_back(
-            vertex
-        );
-
-        if (sourceMap != nullptr) {
-            sourceMap->vertices.push_back(
-                std::move(source)
-            );
+        if (vertexSkin == 1) {
+            vertex.skin = vertexSkins.readU8();
         }
     }
 
-    return vertices;
-}
 
-std::vector<Face> ModelDecoder::decodeFaces(
-    const ModelFile& file,
-    ModelSourceMap* sourceMap
-) const {
-    constexpr std::uint8_t FlatShadingFlag = 1;
-    constexpr std::uint8_t TexturedFaceFlag = 2;
-    constexpr std::uint8_t TextureMappingShift = 2;
+    // Faces
 
-    const ModelSections& sections =
-        file.sections;
+    std::uint32_t a = 0;
+    std::uint32_t b = 0;
+    std::uint32_t c = 0;
 
-    std::vector<Face> faces;
+    int last = 0;
 
-    faces.reserve(
-        file.footer.triangleCount
-    );
+    auto index = [&] {
+        last += faceData.readSignedSmart();
 
-    if (sourceMap != nullptr) {
-        sourceMap->faces.reserve(
-            file.footer.triangleCount
+        return static_cast<std::uint32_t>(
+            last
         );
-    }
+    };
 
-    TriangleState triangleState{};
+    for (Face& face : model.faces) {
+        switch (faceTypes.readU8()) {
+            case 1:
+                a = index();
+                b = index();
+                c = index();
+                break;
 
-    for (
-        std::size_t i = 0;
-        i < file.footer.triangleCount;
-        i++
-    ) {
-        const std::uint8_t triangleType =
-            sections.triangleTypes.units.at(
-                i
-            ).type;
+            case 2:
+                b = c;
+                c = index();
+                break;
 
-        FaceSource source{};
+            case 3:
+                a = c;
+                c = index();
+                break;
 
-        source.triangleTypeUnitIndex =
-            i;
+            case 4:
+                std::swap(a, b);
+                c = index();
+                break;
 
-        source.colorUnitIndex =
-            i;
-
-        applyTriangleType(
-            triangleType,
-            sections,
-            triangleState,
-            sourceMap != nullptr
-                ? &source
-                : nullptr
-        );
-
-        Face face{};
-
-        face.a =
-            triangleState.a;
-
-        face.b =
-            triangleState.b;
-
-        face.c =
-            triangleState.c;
-
-        face.color =
-            sections.triangleColors.units.at(
-                i
-            ).color;
-
-        if (
-            i <
-            sections.trianglePriorities.units.size()
-        ) {
-            face.priority =
-                sections.trianglePriorities.units.at(
-                    i
-                ).priority;
-
-            source.priorityUnitIndex =
-                i;
-        }
-        else {
-            face.priority =
-                static_cast<std::uint8_t>(
-                    file.footer.priorityFlag
-                );
+            default:
+                break;
         }
 
-        if (
-            i <
-            sections.triangleAlphas.units.size()
-        ) {
-            face.alpha =
-                sections.triangleAlphas.units.at(
-                    i
-                ).alpha;
+        face.a = a;
+        face.b = b;
+        face.c = c;
+        face.color = faceColors.readU16();
 
-            source.alphaUnitIndex =
-                i;
+        face.priority =
+            priority == 255
+                ? facePriorities.readU8()
+                : priority;
+
+        if (alpha == 1) {
+            face.alpha = faceAlphas.readU8();
         }
 
-        if (
-            i <
-            sections.triangleSkins.units.size()
-        ) {
-            face.skin =
-                sections.triangleSkins.units.at(
-                    i
-                ).skin;
-
-            source.skinUnitIndex =
-                i;
+        if (faceSkin == 1) {
+            face.skin = faceSkins.readU8();
         }
 
-        if (
-            i <
-            sections.texturePointers.units.size()
-        ) {
-            const std::uint8_t textureInfo =
-                sections.texturePointers.units.at(
-                    i
-                ).value;
+        if (texture == 1) {
+            const auto info =
+                faceTextures.readU8();
 
-            face.renderType =
-                textureInfo &
-                FlatShadingFlag;
+            face.renderType = info & 1;
 
-            if (
-                (
-                    textureInfo &
-                    TexturedFaceFlag
-                ) != 0
-            ) {
-                face.textureId =
-                    face.color;
-
+            if (info & 2) {
+                face.textureId = face.color;
                 face.textureMappingIndex =
                     static_cast<std::uint32_t>(
-                        textureInfo >>
-                        TextureMappingShift
+                        info >> 2
                     );
             }
-
-            source.textureInfoUnitIndex =
-                i;
-        }
-
-        faces.push_back(
-            face
-        );
-
-        if (sourceMap != nullptr) {
-            sourceMap->faces.push_back(
-                std::move(source)
-            );
         }
     }
 
-    return faces;
-}
 
-std::vector<TextureMapping> ModelDecoder::decodeTextureMappings(
-    const ModelFile& file,
-    ModelSourceMap* sourceMap
-) const {
-    const ModelSections& sections =
-        file.sections;
+    // Texture mappings
 
-    std::vector<TextureMapping> mappings;
-
-    mappings.reserve(
-        sections.textureData.units.size()
-    );
-
-    if (sourceMap != nullptr) {
-        sourceMap->textureMappings.reserve(
-            sections.textureData.units.size()
-        );
+    for (TextureMapping& mapping : model.textureMappings) {
+        mapping.originVertex = textureTriangles.readU16();
+        mapping.uVertex = textureTriangles.readU16();
+        mapping.vVertex = textureTriangles.readU16();
     }
 
-    for (
-        std::size_t i = 0;
-        i < sections.textureData.units.size();
-        i++
-    ) {
-        const TextureTriangleUnit& unit =
-            sections.textureData.units.at(
-                i
-            );
-
-        mappings.push_back(
-            TextureMapping{
-                static_cast<std::uint32_t>(
-                    unit.originVertex
-                ),
-                static_cast<std::uint32_t>(
-                    unit.uVertex
-                ),
-                static_cast<std::uint32_t>(
-                    unit.vVertex
-                )
-            }
-        );
-
-        if (sourceMap != nullptr) {
-            sourceMap->textureMappings.push_back(
-                TextureMappingSource{
-                    i
-                }
-            );
-        }
-    }
-
-    return mappings;
-}
-
-ModelMesh ModelDecoder::decodeMesh(
-    const ModelFile& file,
-    ModelSourceMap* sourceMap
-) const {
-    if (sourceMap != nullptr) {
-        *sourceMap =
-            ModelSourceMap{};
-    }
-
-    ModelMesh mesh{};
-
-    mesh.vertices =
-        decodeVertices(
-            file,
-            sourceMap
-        );
-
-    mesh.faces =
-        decodeFaces(
-            file,
-            sourceMap
-        );
-
-    mesh.textureMappings =
-        decodeTextureMappings(
-            file,
-            sourceMap
-        );
-
-    return mesh;
-}
-
-ModelMesh ModelDecoder::decode(
-    const ModelFile& file
-) const {
-    return decodeMesh(
-        file,
-        nullptr
-    );
-}
-
-ModelMesh ModelDecoder::decode(
-    const ModelFile& file,
-    ModelSourceMap& sourceMap
-) const {
-    return decodeMesh(
-        file,
-        &sourceMap
-    );
+    return model;
 }
 
 }
