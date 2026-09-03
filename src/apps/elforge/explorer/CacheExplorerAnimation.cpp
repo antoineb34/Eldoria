@@ -408,8 +408,8 @@ void CacheExplorer::rebuildAnimationFrame() {
         return;
     }
 
-    const eld::animation::ResolvedAnimationFrame resolved =
-        animationPlayer_.currentResolvedFrame();
+    const auto resolved =
+        animationPlayer_.currentFrame();
 
     if (!resolved) {
         return;
@@ -418,8 +418,8 @@ void CacheExplorer::rebuildAnimationFrame() {
     const eld::render::AnimatedModelFrame animated =
         modelAnimator_.apply(
             *animationSource_,
-            *resolved.frame,
-            *resolved.skeleton
+            resolved->frame,
+            resolved->skeleton
         );
 
     eld::model::Model displayMesh =
@@ -820,15 +820,15 @@ void CacheExplorer::rebuildNpcActionEffect(
         effect.sourceMesh;
 
     if (effect.player) {
-        const eld::animation::ResolvedAnimationFrame resolved =
-            effect.player->currentResolvedFrame();
+        const auto resolved =
+            effect.player->currentFrame();
 
         if (resolved) {
             displayMesh =
                 modelAnimator_.apply(
                     effect.sourceMesh,
-                    *resolved.frame,
-                    *resolved.skeleton
+                    resolved->frame,
+                    resolved->skeleton
                 ).mesh;
         }
     }
@@ -920,7 +920,7 @@ void CacheExplorer::appendActionEffects(
             ) {
                 effect.player =
                     std::make_unique<eld::render::AnimationPlayer>(
-                        animationFrameIndex_
+                        animationRepository_
                     );
                 effect.player->setSequence(*sequence);
                 effect.player->setLooping(effectBinding.projectile);
@@ -1556,10 +1556,9 @@ void CacheExplorer::renderAnimationPlayerHud() {
     const std::size_t frameIndex =
         animationPlayer_.frameIndex();
 
-    const eld::animation::ResolvedAnimationFrame
-        currentResolved =
+    const auto currentResolved =
             animationPlayer_.
-                currentResolvedFrame();
+                currentFrame();
 
     const ImVec2 viewportPosition{
         static_cast<float>(
@@ -1779,7 +1778,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
             );
 
         eld::render::AnimationPlayer hoverPlayer(
-            animationFrameIndex_
+            animationRepository_
         );
 
         hoverPlayer.setSequence(
@@ -1802,10 +1801,9 @@ void CacheExplorer::renderAnimationPlayerHud() {
             }
         }
 
-        const eld::animation::ResolvedAnimationFrame
-            hoverResolved =
+        const auto hoverResolved =
                 hoverPlayer.
-                    currentResolvedFrame();
+                    currentFrame();
 
         ImGui::BeginTooltip();
 
@@ -1821,7 +1819,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
             ImGui::Text(
                 "Global frame: %u",
                 static_cast<unsigned int>(
-                    hoverResolved.frame->id
+                    hoverResolved->frame.id
                 )
             );
 
@@ -1835,7 +1833,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
 
             ImGui::Text(
                 "Transforms: %zu",
-                hoverResolved.frame->
+                hoverResolved->frame.
                     transforms.size()
             );
         }
@@ -2568,7 +2566,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
                 ? "#" +
                     std::to_string(
                         static_cast<unsigned int>(
-                            currentResolved.frame->id
+                            currentResolved->frame.id
                         )
                     )
                 : "-";
@@ -2596,7 +2594,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
                 );
 
             const std::size_t transformCount =
-                currentResolved.frame->
+                currentResolved->frame.
                     transforms.size();
 
 

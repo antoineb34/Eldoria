@@ -1,7 +1,5 @@
 add_library(eldoria_assets STATIC
     content/animation/AnimationPresentationCatalog.cpp
-    resources/animation/AnimationFrameIndex.cpp
-    resources/animation/AnimationFileParser.cpp
     resources/animation/AnimationDecoder.cpp
     resources/animation/AnimationRepository.cpp
     content/interface/InterfaceFileParser.cpp
@@ -16,9 +14,8 @@ add_library(eldoria_assets STATIC
     resources/midi/MidiRepository.cpp
     resources/model/ModelDecoder.cpp
     resources/model/ModelRepository.cpp
-    resources/image/IndexedImageDecoder.cpp
-    resources/image/JpegDecoder.cpp
-    resources/image/JpegRepository.cpp
+    resources/image/ImageDecoder.cpp
+    resources/image/ImageRepository.cpp
     resources/font/FontFileParser.cpp
     resources/font/FontDecoder.cpp
     resources/font/FontRepository.cpp
@@ -48,7 +45,6 @@ add_library(eldoria_assets STATIC
     content/message/MessageRepository.cpp
     content/message_animation/MessageAnimationDefinitionParser.cpp
     content/message_animation/MessageAnimationRepository.cpp
-    resources/image/IndexedImageFileParser.cpp
     resources/texture/TextureRepository.cpp
     resources/sprite/SpriteRepository.cpp
 )
@@ -63,5 +59,14 @@ target_include_directories(eldoria_assets PUBLIC
 
 target_link_libraries(eldoria_assets PUBLIC
     Eldoria::Storage
-    JPEG::JPEG
+)
+
+
+# Public asset-access facade.
+
+
+target_sources(
+    eldoria_assets
+    PRIVATE
+        ResourceProvider.cpp
 )

@@ -13,10 +13,18 @@ AnimationRepository::AnimationRepository(
     : store_(std::move(store)) {
 }
 
-Animation AnimationRepository::get(
+const Animation& AnimationRepository::load(
     std::uint16_t id
 ) const {
-    eld::cache::File file = store_.get(id);
+    const auto cached =
+        animations_.find(id);
+
+    if (cached != animations_.end()) {
+        return cached->second;
+    }
+
+    eld::cache::File file =
+        store_.get(id);
 
     try {
         Animation animation =
@@ -25,7 +33,15 @@ Animation AnimationRepository::get(
             );
 
         animation.id = id;
-        return animation;
+
+        const auto [entry, inserted] =
+            animations_.emplace(
+                id,
+                std::move(animation)
+            );
+
+        (void) inserted;
+        return entry->second;
     }
     catch (const std::exception& error) {
         throw std::runtime_error(
@@ -37,6 +53,12 @@ Animation AnimationRepository::get(
     }
 }
 
+Animation AnimationRepository::get(
+    std::uint16_t id
+) const {
+    return load(id);
+}
+
 std::optional<Animation>
 AnimationRepository::find(
     std::uint16_t id
@@ -46,6 +68,95 @@ AnimationRepository::find(
     }
 
     return get(id);
+}
+
+void AnimationRepository::ensureFrameIndex() const {
+    if (frameIndexBuilt_) {
+        return;
+    }
+
+    std::map<std::uint16_t, FrameLocation>
+        frameIndex;
+
+    for (
+        const std::uint16_t animationId :
+        listIds()
+    ) {
+        const Animation& animation =
+            load(animationId);
+
+        for (
+            std::size_t frameIndexValue = 0;
+            frameIndexValue < animation.frames.size();
+            ++frameIndexValue
+        ) {
+            const std::uint16_t frameId =
+                animation.frames[
+                    frameIndexValue
+                ].id;
+
+            const auto [entry, inserted] =
+                frameIndex.emplace(
+                    frameId,
+                    FrameLocation{
+                        animationId,
+                        frameIndexValue
+                    }
+                );
+
+            if (!inserted) {
+                throw std::runtime_error(
+                    "Duplicate global animation frame id " +
+                    std::to_string(frameId)
+                );
+            }
+
+            (void) entry;
+        }
+    }
+
+    frames_ = std::move(frameIndex);
+    frameIndexBuilt_ = true;
+}
+
+std::optional<AnimationFrameView>
+AnimationRepository::findFrame(
+    std::uint16_t frameId
+) const {
+    ensureFrameIndex();
+
+    const auto location =
+        frames_.find(frameId);
+
+    if (location == frames_.end()) {
+        return std::nullopt;
+    }
+
+    const Animation& animation =
+        load(
+            location->second.animationId
+        );
+
+    if (
+        location->second.frameIndex >=
+        animation.frames.size()
+    ) {
+        return std::nullopt;
+    }
+
+    return AnimationFrameView{
+        animation.frames[
+            location->second.frameIndex
+        ],
+        animation.skeleton
+    };
+}
+
+bool AnimationRepository::containsFrame(
+    std::uint16_t frameId
+) const {
+    ensureFrameIndex();
+    return frames_.contains(frameId);
 }
 
 std::vector<std::uint16_t>

@@ -26,11 +26,8 @@ CacheExplorer::CacheExplorer()
               eld::cache::IndexId::Animations
           )
       ),
-      animationFrameIndex_(
-          animationRepository_
-      ),
       animationPlayer_(
-          animationFrameIndex_
+          animationRepository_
       ),
       animationPresentationCatalog_(
           "content/animation_bindings.csv"
@@ -58,7 +55,7 @@ CacheExplorer::CacheExplorer()
           4
       ),
 
-      titleJpegRepository_(
+      titleImageRepository_(
           cache_.open(
               eld::cache::IndexId::Config
           ),
@@ -283,7 +280,6 @@ void CacheExplorer::update() {
         try {
             const AnimationInspector relations(
                 animationRepository_,
-                animationFrameIndex_,
                 sequenceRepository_,
                 npcRepository_,
                 locationRepository_,

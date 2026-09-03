@@ -1,161 +1,168 @@
 #include "AnimationDecoder.h"
 
-#include "AnimationFileParser.h"
-
 #include <cstddef>
 #include <cstdint>
-#include <optional>
+#include <span>
 #include <stdexcept>
 #include <utility>
-#include <vector>
+
+#include "binary/ByteReader.h"
 
 namespace eld::animation {
 
-namespace {
+Animation AnimationDecoder::decode(
+    std::span<const std::uint8_t> payload
+) const {
+    constexpr std::size_t FooterSize = 8;
+    constexpr std::size_t FrameCountSize = 2;
+    constexpr std::size_t FrameHeaderSize = 3;
 
-std::uint16_t readU16(
-    const std::vector<std::uint8_t>& bytes,
-    std::size_t& offset,
-    std::size_t end
-) {
     if (
-        offset + 2 >
-        end
+        payload.size() <
+        FrameCountSize + FooterSize
     ) {
         throw std::runtime_error(
-            "Animation u16 read crossed section boundary"
+            "Animation payload is too small"
         );
     }
 
-    const std::uint16_t value =
-        static_cast<std::uint16_t>(
-            (
-                static_cast<std::uint16_t>(
-                    bytes[offset]
-                ) << 8
-            ) |
-            static_cast<std::uint16_t>(
-                bytes[offset + 1]
-            )
-        );
+    eld::binary::ByteReader header(
+        payload.first(FrameCountSize)
+    );
 
-    offset += 2;
+    const auto frameCount =
+        header.readU16();
 
-    return value;
-}
+    eld::binary::ByteReader footer(
+        payload.last(FooterSize)
+    );
 
-std::uint8_t readU8(
-    const std::vector<std::uint8_t>& bytes,
-    std::size_t& offset,
-    std::size_t end
-) {
+    const auto frameHeaderBytes =
+        footer.readU16();
+
+    const auto flagBytes =
+        footer.readU16();
+
+    const auto valueBytes =
+        footer.readU16();
+
+    const auto delayBytes =
+        footer.readU16();
+
     if (
-        offset >=
-        end
+        frameHeaderBytes !=
+        static_cast<std::size_t>(
+            frameCount
+        ) *
+        FrameHeaderSize
     ) {
         throw std::runtime_error(
-            "Animation u8 read crossed section boundary"
+            "Invalid animation frame-header length"
         );
     }
 
-    return bytes[offset++];
-}
-
-int readSignedSmart(
-    const std::vector<std::uint8_t>& bytes,
-    std::size_t& offset,
-    std::size_t end
-) {
     if (
-        offset >=
-        end
+        delayBytes !=
+        frameCount
     ) {
         throw std::runtime_error(
-            "Animation signed-smart section ended early"
+            "Invalid animation delay length"
         );
     }
 
-    const std::uint8_t peek =
-        bytes[offset];
 
-    if (
-        peek <
-        128
-    ) {
-        ++offset;
+    // Body streams
 
-        return
-            static_cast<int>(
-                peek
-            ) -
-            64;
-    }
-
-    return
-        static_cast<int>(
-            readU16(
-                bytes,
-                offset,
-                end
-            )
-        ) -
-        49152;
-}
-
-Skeleton decodeSkeleton(
-    const AnimationFile& file
-) {
-    const std::vector<std::uint8_t>& bytes =
-        file.bytes;
+    const auto body =
+        payload.first(
+            payload.size() -
+            FooterSize
+        );
 
     std::size_t offset =
-        file.layout.skeletonOffset;
+        FrameCountSize;
 
-    const std::size_t end =
-        file.layout.footerOffset;
+    auto section = [&](std::size_t size) {
+        if (
+            offset > body.size() ||
+            size > body.size() - offset
+        ) {
+            throw std::runtime_error(
+                "Animation section exceeds body"
+            );
+        }
 
-    const std::uint8_t slotCount =
-        readU8(
-            bytes,
-            offset,
-            end
+        eld::binary::ByteReader reader(
+            body.subspan(
+                offset,
+                size
+            )
         );
 
-    Skeleton skeleton;
+        offset += size;
+        return reader;
+    };
 
-    skeleton.slots.resize(
-        slotCount
+    auto frameHeaders =
+        section(frameHeaderBytes);
+
+    auto flags =
+        section(flagBytes);
+
+    auto values =
+        section(valueBytes);
+
+    auto delays =
+        section(delayBytes);
+
+    if (
+        offset >=
+        body.size()
+    ) {
+        throw std::runtime_error(
+            "Invalid animation layout"
+        );
+    }
+
+    auto skeletonData =
+        section(
+            body.size() -
+            offset
+        );
+
+
+    // Animation
+
+    Animation animation;
+
+
+    // Skeleton
+
+    const auto skeletonSlotCount =
+        skeletonData.readU8();
+
+    animation.skeleton.resize(
+        skeletonSlotCount
     );
 
     for (
-        std::size_t slot = 0;
-        slot < slotCount;
-        ++slot
+        SkeletonSlot& slot :
+        animation.skeleton
     ) {
-        skeleton.slots[slot].type =
-            readU8(
-                bytes,
-                offset,
-                end
+        slot.type =
+            static_cast<TransformType>(
+                skeletonData.readU8()
             );
     }
 
     for (
-        std::size_t slot = 0;
-        slot < slotCount;
-        ++slot
+        SkeletonSlot& slot :
+        animation.skeleton
     ) {
-        const std::uint8_t groupCount =
-            readU8(
-                bytes,
-                offset,
-                end
-            );
+        const auto groupCount =
+            skeletonData.readU8();
 
-        std::vector<std::uint8_t>& groups =
-            skeleton.slots[slot].groups;
-
-        groups.reserve(
+        slot.groups.reserve(
             groupCount
         );
 
@@ -164,195 +171,67 @@ Skeleton decodeSkeleton(
             group < groupCount;
             ++group
         ) {
-            groups.push_back(
-                readU8(
-                    bytes,
-                    offset,
-                    end
-                )
+            slot.groups.push_back(
+                skeletonData.readU8()
             );
         }
     }
 
-    if (
-        offset !=
-        end
-    ) {
+    if (!skeletonData.atEnd()) {
         throw std::runtime_error(
             "Animation skeleton did not consume its section exactly"
         );
     }
 
-    return skeleton;
-}
 
-struct FrameHeader {
-    std::uint16_t id = 0;
-    std::uint8_t slotCount = 0;
-};
+    // Frames
 
-std::vector<FrameHeader> decodeFrameHeaders(
-    const AnimationFile& file
-) {
-    const std::vector<std::uint8_t>& bytes =
-        file.bytes;
-
-    std::size_t offset =
-        file.layout.frameHeaderOffset;
-
-    const std::size_t end =
-        file.layout.flagOffset;
-
-    std::vector<FrameHeader> headers;
-
-    headers.reserve(
-        file.frameCount
+    animation.frames.reserve(
+        frameCount
     );
 
     for (
-        std::size_t frame = 0;
-        frame < file.frameCount;
-        ++frame
+        std::size_t frameIndex = 0;
+        frameIndex < frameCount;
+        ++frameIndex
     ) {
-        FrameHeader header;
+        AnimationFrame frame;
 
-        header.id =
-            readU16(
-                bytes,
-                offset,
-                end
-            );
+        frame.id =
+            frameHeaders.readU16();
 
-        header.slotCount =
-            readU8(
-                bytes,
-                offset,
-                end
-            );
+        const auto slotCount =
+            frameHeaders.readU8();
 
-        headers.push_back(
-            header
-        );
-    }
-
-    if (
-        offset !=
-        end
-    ) {
-        throw std::runtime_error(
-            "Animation frame-header section was not consumed exactly"
-        );
-    }
-
-    return headers;
-}
-
-}
-
-AnimationAsset AnimationDecoder::decodeAsset(
-    const AnimationFile& file
-) const {
-    AnimationAsset asset;
-
-    asset.skeleton =
-        decodeSkeleton(
-            file
-        );
-
-    const std::vector<FrameHeader> headers =
-        decodeFrameHeaders(
-            file
-        );
-
-    const std::vector<std::uint8_t>& bytes =
-        file.bytes;
-
-    std::size_t flagOffset =
-        file.layout.flagOffset;
-
-    const std::size_t flagEnd =
-        file.layout.valueOffset;
-
-    std::size_t valueOffset =
-        file.layout.valueOffset;
-
-    const std::size_t valueEnd =
-        file.layout.delayOffset;
-
-    std::size_t delayOffset =
-        file.layout.delayOffset;
-
-    const std::size_t delayEnd =
-        file.layout.skeletonOffset;
-
-    asset.frames.reserve(
-        headers.size()
-    );
-
-    for (
-        const FrameHeader& header :
-        headers
-    ) {
         if (
-            header.slotCount >
-            asset.skeleton.slots.size()
+            slotCount >
+            animation.skeleton.size()
         ) {
             throw std::runtime_error(
                 "Animation frame references more slots than its skeleton owns"
             );
         }
 
-        AnimationFrame frame;
-
-        frame.id =
-            header.id;
-
-        frame.slotCount =
-            header.slotCount;
-
-        std::vector<std::uint8_t> flags;
-
-        flags.reserve(
-            header.slotCount
-        );
-
         for (
-            std::size_t slot = 0;
-            slot < header.slotCount;
-            ++slot
+            std::size_t slotIndex = 0;
+            slotIndex < slotCount;
+            ++slotIndex
         ) {
-            flags.push_back(
-                readU8(
-                    bytes,
-                    flagOffset,
-                    flagEnd
-                )
-            );
-        }
+            const auto sourceFlags =
+                flags.readU8();
 
-        for (
-            std::size_t slot = 0;
-            slot < flags.size();
-            ++slot
-        ) {
-            const std::uint8_t sourceFlags =
-                flags[slot];
-
-            if (
-                sourceFlags ==
-                0
-            ) {
+            if (sourceFlags == 0) {
                 continue;
             }
 
-            const std::uint8_t transformType =
-                asset.skeleton.slots[slot].type;
+            const TransformType transformType =
+                animation.skeleton[
+                    slotIndex
+                ].type;
 
             const int defaultValue =
                 transformType ==
-                    static_cast<std::uint8_t>(
-                        TransformType::Scale
-                    )
+                    TransformType::Scale
                     ? 128
                     : 0;
 
@@ -360,55 +239,26 @@ AnimationAsset AnimationDecoder::decodeAsset(
 
             transform.slot =
                 static_cast<std::uint16_t>(
-                    slot
+                    slotIndex
                 );
 
-            transform.flags =
-                sourceFlags;
+            transform.x = defaultValue;
+            transform.y = defaultValue;
+            transform.z = defaultValue;
 
-            transform.x =
-                defaultValue;
-
-            transform.y =
-                defaultValue;
-
-            transform.z =
-                defaultValue;
-
-            if (
-                sourceFlags &
-                0x1
-            ) {
+            if (sourceFlags & 1) {
                 transform.x =
-                    readSignedSmart(
-                        bytes,
-                        valueOffset,
-                        valueEnd
-                    );
+                    values.readSignedSmart();
             }
 
-            if (
-                sourceFlags &
-                0x2
-            ) {
+            if (sourceFlags & 2) {
                 transform.y =
-                    readSignedSmart(
-                        bytes,
-                        valueOffset,
-                        valueEnd
-                    );
+                    values.readSignedSmart();
             }
 
-            if (
-                sourceFlags &
-                0x4
-            ) {
+            if (sourceFlags & 4) {
                 transform.z =
-                    readSignedSmart(
-                        bytes,
-                        valueOffset,
-                        valueEnd
-                    );
+                    values.readSignedSmart();
             }
 
             frame.transforms.push_back(
@@ -417,75 +267,25 @@ AnimationAsset AnimationDecoder::decodeAsset(
         }
 
         frame.delay =
-            readU8(
-                bytes,
-                delayOffset,
-                delayEnd
-            );
+            delays.readU8();
 
-        asset.frames.push_back(
-            std::move(
-                frame
-            )
+        animation.frames.push_back(
+            std::move(frame)
         );
     }
 
     if (
-        flagOffset !=
-        flagEnd
+        !frameHeaders.atEnd() ||
+        !flags.atEnd() ||
+        !values.atEnd() ||
+        !delays.atEnd()
     ) {
         throw std::runtime_error(
-            "Animation flag section was not consumed exactly"
+            "Animation streams were not consumed exactly"
         );
     }
 
-    if (
-        valueOffset !=
-        valueEnd
-    ) {
-        throw std::runtime_error(
-            "Animation transform-value section was not consumed exactly"
-        );
-    }
-
-    if (
-        delayOffset !=
-        delayEnd
-    ) {
-        throw std::runtime_error(
-            "Animation delay section was not consumed exactly"
-        );
-    }
-
-    return asset;
-}
-
-Animation AnimationDecoder::decode(
-    std::span<const std::uint8_t> payload
-) const {
-    AnimationFileParser parser;
-
-    std::vector<std::uint8_t> bytes(
-        payload.begin(),
-        payload.end()
-    );
-
-    std::optional<AnimationFile> file =
-        parser.parse(bytes);
-
-    if (!file.has_value()) {
-        throw std::runtime_error(
-            "Invalid animation payload"
-        );
-    }
-
-    AnimationAsset asset =
-        decodeAsset(*file);
-
-    return Animation{
-        .bytes = std::move(file->bytes),
-        .asset = std::move(asset)
-    };
+    return animation;
 }
 
 }

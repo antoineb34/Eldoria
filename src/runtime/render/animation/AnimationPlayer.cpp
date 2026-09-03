@@ -5,9 +5,9 @@
 namespace eld::render {
 
 AnimationPlayer::AnimationPlayer(
-    const eld::animation::AnimationFrameIndex& frames
+    const eld::animation::AnimationRepository& animations
 )
-    : frames_(&frames) {
+    : animations_(&animations) {
 }
 
 void AnimationPlayer::setSequence(
@@ -42,19 +42,19 @@ AnimationPlayer::currentSequenceFrame() const {
     return &sequence_->frames[frameIndex_];
 }
 
-eld::animation::ResolvedAnimationFrame
-AnimationPlayer::currentResolvedFrame() const {
+std::optional<eld::animation::AnimationFrameView>
+AnimationPlayer::currentFrame() const {
     const auto* frame =
         currentSequenceFrame();
 
     if (
         frame == nullptr ||
-        frames_ == nullptr
+        animations_ == nullptr
     ) {
-        return {};
+        return std::nullopt;
     }
 
-    return frames_->resolve(
+    return animations_->findFrame(
         frame->primaryFrameId
     );
 }
@@ -83,11 +83,12 @@ AnimationPlayer::currentFrameDurationMilliseconds() const {
         sequenceFrame->duration;
 
     if (units == 0) {
-        const auto resolved =
-            currentResolvedFrame();
+        const auto frame =
+            currentFrame();
 
-        if (resolved.frame != nullptr) {
-            units = resolved.frame->delay;
+        if (frame.has_value()) {
+            units =
+                frame->frame.delay;
         }
     }
 

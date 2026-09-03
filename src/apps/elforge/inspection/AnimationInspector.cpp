@@ -15,11 +15,11 @@ namespace eld::elforge {
 namespace {
 
 std::uint64_t sequenceDurationMilliseconds(
-    const eld::animation::AnimationFrameIndex& frames,
+    const eld::animation::AnimationRepository& animations,
     const eld::definition::SequenceDefinition& sequence
 ) {
     eld::render::AnimationPlayer player(
-        frames
+        animations
     );
 
     player.setSequence(
@@ -66,20 +66,20 @@ struct SequenceArchiveUsage {
 
 SequenceArchiveUsage sequenceArchiveUsage(
     const eld::definition::SequenceDefinition& sequence,
-    std::uint16_t animationId,
-    const eld::animation::AnimationFrameIndex& frames
+    const std::unordered_set<std::uint16_t>& animationFrameIds
 ) {
     SequenceArchiveUsage usage;
 
-    for (const eld::definition::SequenceFrame& frame : sequence.frames) {
+    for (
+        const eld::definition::SequenceFrame& frame :
+        sequence.frames
+    ) {
         ++usage.totalReferences;
 
-        const eld::animation::ResolvedAnimationFrame primary =
-            frames.resolve(frame.primaryFrameId);
-
         if (
-            primary &&
-            primary.archiveId == animationId
+            animationFrameIds.contains(
+                frame.primaryFrameId
+            )
         ) {
             ++usage.primary;
         }
@@ -87,12 +87,10 @@ SequenceArchiveUsage sequenceArchiveUsage(
         if (frame.secondaryFrameId.has_value()) {
             ++usage.totalReferences;
 
-            const eld::animation::ResolvedAnimationFrame secondary =
-                frames.resolve(*frame.secondaryFrameId);
-
             if (
-                secondary &&
-                secondary.archiveId == animationId
+                animationFrameIds.contains(
+                    *frame.secondaryFrameId
+                )
             ) {
                 ++usage.secondary;
             }
@@ -258,7 +256,6 @@ void addPresentationBindingUses(
 
 AnimationInspector::AnimationInspector(
     const eld::animation::AnimationRepository& animations,
-    const eld::animation::AnimationFrameIndex& frames,
     const eld::definition::SequenceRepository& sequences,
     const eld::definition::NpcRepository& npcs,
     const eld::definition::LocationRepository& locations,
@@ -268,7 +265,6 @@ AnimationInspector::AnimationInspector(
     const eld::animation::presentation::AnimationPresentationCatalog& presentation
 )
     : animations_(&animations),
-      frames_(&frames),
       sequences_(&sequences),
       npcs_(&npcs),
       locations_(&locations),
@@ -284,6 +280,20 @@ AnimationInspection AnimationInspector::inspect(
     AnimationInspection info;
     info.animation = animations_->get(animationId);
 
+    std::unordered_set<std::uint16_t> animationFrameIds;
+    animationFrameIds.reserve(
+        info.animation.frames.size()
+    );
+
+    for (
+        const eld::animation::AnimationFrame& frame :
+        info.animation.frames
+    ) {
+        animationFrameIds.insert(
+            frame.id
+        );
+    }
+
     std::unordered_set<std::uint16_t> referencedSequenceIds;
 
     for (
@@ -293,8 +303,7 @@ AnimationInspection AnimationInspector::inspect(
         const SequenceArchiveUsage usage =
             sequenceArchiveUsage(
                 sequence,
-                animationId,
-                *frames_
+                animationFrameIds
             );
 
         if (usage.primary == 0 && usage.secondary == 0) {
@@ -310,7 +319,7 @@ AnimationInspection AnimationInspector::inspect(
             .totalFrameReferences = usage.totalReferences,
             .durationMilliseconds =
                 sequenceDurationMilliseconds(
-                    *frames_,
+                    *animations_,
                     sequence
                 )
         });

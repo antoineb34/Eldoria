@@ -5496,12 +5496,12 @@ std::string workspaceSummary(
                 return
                     std::to_string(
                         state.activeAnimation->
-                            animation.asset.frames.size()
+                            animation.frames.size()
                     ) +
                     " frames  ·  " +
                     std::to_string(
                         state.activeAnimation->
-                            animation.asset.skeleton.slots.size()
+                            animation.skeleton.size()
                     ) +
                     " slots";
             }

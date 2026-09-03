@@ -39,19 +39,16 @@ bool dumpAnimation(
             output
                 << "[Summary]\n"
                 << "Frames: "
-                << animation.asset.frames.size()
+                << animation.frames.size()
                 << "\n"
                 << "Skeleton slots: "
-                << animation.asset.skeleton.slots.size()
+                << animation.skeleton.size()
                 << "\n"
                 << "Sequence references: "
                 << inspection.sequences.size()
                 << "\n"
                 << "Known uses: "
                 << inspection.uses.size()
-                << "\n"
-                << "Raw file payload bytes: "
-                << animation.bytes.size()
                 << "\n\n";
 
             output << "[Skeleton]\n";
@@ -59,11 +56,11 @@ bool dumpAnimation(
             for (
                 std::size_t index = 0;
                 index <
-                    animation.asset.skeleton.slots.size();
+                    animation.skeleton.size();
                 ++index
             ) {
                 const eld::animation::SkeletonSlot& slot =
-                    animation.asset.skeleton.slots[index];
+                    animation.skeleton[index];
 
                 output
                     << "Slot " << index
@@ -95,21 +92,16 @@ bool dumpAnimation(
 
             for (
                 std::size_t index = 0;
-                index < animation.asset.frames.size();
+                index < animation.frames.size();
                 ++index
             ) {
                 const eld::animation::AnimationFrame& frame =
-                    animation.asset.frames[index];
+                    animation.frames[index];
 
                 output
                     << "Frame " << index << "\n"
                     << "  Global ID: "
                     << frame.id
-                    << "\n"
-                    << "  Slot count: "
-                    << static_cast<unsigned int>(
-                        frame.slotCount
-                    )
                     << "\n"
                     << "  Delay: "
                     << static_cast<unsigned int>(
@@ -137,12 +129,6 @@ bool dumpAnimation(
                         << transformIndex
                         << ": slot="
                         << transform.slot
-                        << " flags=0x"
-                        << std::hex
-                        << static_cast<unsigned int>(
-                            transform.flags
-                        )
-                        << std::dec
                         << " x=" << transform.x
                         << " y=" << transform.y
                         << " z=" << transform.z
@@ -218,24 +204,6 @@ bool dumpAnimation(
                     << "\n";
             }
 
-            output
-                << "\n[Raw File Bytes]\n"
-                << "This is the exact byte buffer passed through the "
-                   "animation decoding pipeline.\n"
-                << "Size: "
-                << animation.bytes.size()
-                << " bytes\n\n";
-
-            if (animation.bytes.empty()) {
-                output << "(empty)\n";
-            }
-            else {
-                writeHexDump(
-                    output,
-                    animation.bytes.data(),
-                    animation.bytes.size()
-                );
-            }
         },
         error
     );

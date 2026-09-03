@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 
-#include "animation/AnimationAsset.h"
+#include "animation/Animation.h"
 #include "model/Model.h"
 
 namespace eld::render {
@@ -30,13 +31,13 @@ public:
     AnimatedModelFrame apply(
         const eld::model::Model& source,
         const eld::animation::AnimationFrame& frame,
-        const eld::animation::Skeleton& skeleton
+        std::span<const eld::animation::SkeletonSlot> skeleton
     ) const;
 
     AnimationApplyStats applyInPlace(
         eld::model::Model& mesh,
         const eld::animation::AnimationFrame& frame,
-        const eld::animation::Skeleton& skeleton
+        std::span<const eld::animation::SkeletonSlot> skeleton
     ) const;
 };
 

@@ -5,16 +5,15 @@
 #include <string_view>
 
 #include "Image.h"
-#include "JpegDecoder.h"
-
+#include "ImageDecoder.h"
 #include "archive/Archive.h"
 #include "cache/Store.h"
 
 namespace eld::image {
 
-class JpegRepository {
+class ImageRepository {
 public:
-    JpegRepository(
+    ImageRepository(
         eld::cache::Store store,
         std::uint16_t archiveId
     );
@@ -37,9 +36,8 @@ private:
         std::uint16_t archiveId
     );
 
-private:
     eld::archive::Archive archive_;
-    JpegDecoder decoder_;
+    ImageDecoder decoder_;
 };
 
 }

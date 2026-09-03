@@ -5,7 +5,7 @@
 ```text
 Index 2 animation archives
     -> data/animation/AnimationRepository
-    -> data/animation/AnimationFrameIndex
+    -> data/animation/AnimationRepository
     -> global frame id -> AnimationFrame + Skeleton
 
 ModelMesh + AnimationFrame + Skeleton
@@ -34,7 +34,7 @@ The application step also reconstructs the classic implicit-pivot rule: before a
 
 ## Probe status
 
-The working NPC animation probe uses the production `AnimationFrameIndex`, `AnimationPlayer` and `ModelAnimator`. The older `visual_probe.cpp` remains only as a scratchpad/regression reference and is no longer included by the NPC path.
+The working NPC animation probe uses the production `AnimationRepository`, `AnimationPlayer` and `ModelAnimator`. The older `visual_probe.cpp` remains only as a scratchpad/regression reference and is no longer included by the NPC path.
 
 ## Playback
 

@@ -2,8 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
-#include "animation/AnimationFrameIndex.h"
+#include "animation/AnimationRepository.h"
 #include "sequence/SequenceDefinition.h"
 
 namespace eld::render {
@@ -13,7 +14,7 @@ public:
     static constexpr std::uint32_t ClientCycleMilliseconds = 20;
 
     explicit AnimationPlayer(
-        const eld::animation::AnimationFrameIndex& frames
+        const eld::animation::AnimationRepository& animations
     );
 
     void setSequence(
@@ -25,7 +26,8 @@ public:
     const eld::definition::SequenceDefinition* sequence() const;
     const eld::definition::SequenceFrame* currentSequenceFrame() const;
 
-    eld::animation::ResolvedAnimationFrame currentResolvedFrame() const;
+    std::optional<eld::animation::AnimationFrameView>
+    currentFrame() const;
 
     std::size_t frameIndex() const;
     std::size_t frameCount() const;
@@ -49,6 +51,7 @@ public:
     [[nodiscard]] bool looping() const {
         return looping_;
     }
+
     bool isLooping() const;
 
     void setSpeed(float speed);
@@ -60,7 +63,7 @@ private:
     std::size_t loopStart() const;
     bool advanceFrame();
 
-    const eld::animation::AnimationFrameIndex* frames_ = nullptr;
+    const eld::animation::AnimationRepository* animations_ = nullptr;
     const eld::definition::SequenceDefinition* sequence_ = nullptr;
 
     std::size_t frameIndex_ = 0;

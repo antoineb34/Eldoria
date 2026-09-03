@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "animation/Animation.h"
-#include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"
 #include "animation/AnimationPresentationCatalog.h"
 #include "item/ItemRepository.h"
@@ -47,7 +46,6 @@ class AnimationInspector {
 public:
     AnimationInspector(
         const eld::animation::AnimationRepository& animations,
-        const eld::animation::AnimationFrameIndex& frames,
         const eld::definition::SequenceRepository& sequences,
         const eld::definition::NpcRepository& npcs,
         const eld::definition::LocationRepository& locations,
@@ -65,7 +63,6 @@ public:
 
 private:
     const eld::animation::AnimationRepository* animations_ = nullptr;
-    const eld::animation::AnimationFrameIndex* frames_ = nullptr;
     const eld::definition::SequenceRepository* sequences_ = nullptr;
     const eld::definition::NpcRepository* npcs_ = nullptr;
     const eld::definition::LocationRepository* locations_ = nullptr;

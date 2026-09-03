@@ -186,16 +186,23 @@ const char* mapLocKindName(
 }
 
 const char* animationTransformTypeName(
-    std::uint8_t type
+    eld::animation::TransformType type
 ) {
     switch (type) {
-        case 0: return "Pivot";
-        case 1: return "Translate";
-        case 2: return "Rotate";
-        case 3: return "Scale";
-        case 4: return "Unknown 4";
-        case 5: return "Alpha";
-        default: return "Unknown";
+        case eld::animation::TransformType::Pivot:
+            return "Pivot";
+        case eld::animation::TransformType::Translate:
+            return "Translate";
+        case eld::animation::TransformType::Rotate:
+            return "Rotate";
+        case eld::animation::TransformType::Scale:
+            return "Scale";
+        case eld::animation::TransformType::Unknown4:
+            return "Unknown 4";
+        case eld::animation::TransformType::Alpha:
+            return "Alpha";
+        default:
+            return "Unknown";
     }
 }
 
@@ -391,29 +398,24 @@ void AssetDetailsPanel::render(
 
         ImGui::Text(
             "Frames: %zu",
-            animation.asset.frames.size()
+            animation.frames.size()
         );
 
         ImGui::Text(
             "Skeleton slots: %zu",
-            animation.asset.skeleton.slots.size()
+            animation.skeleton.size()
         );
 
-        ImGui::Text(
-            "Raw file bytes: %zu",
-            animation.bytes.size()
-        );
-
-        if (!animation.asset.frames.empty()) {
+        if (!animation.frames.empty()) {
             std::uint16_t minimumFrame =
-                animation.asset.frames.front().id;
+                animation.frames.front().id;
 
             std::uint16_t maximumFrame =
-                animation.asset.frames.front().id;
+                animation.frames.front().id;
 
             for (
                 const eld::animation::AnimationFrame& frame :
-                animation.asset.frames
+                animation.frames
             ) {
                 minimumFrame =
                     std::min(

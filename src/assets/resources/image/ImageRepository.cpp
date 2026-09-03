@@ -1,4 +1,4 @@
-#include "JpegRepository.h"
+#include "ImageRepository.h"
 
 #include <exception>
 #include <stdexcept>
@@ -9,25 +9,21 @@
 
 namespace eld::image {
 
-eld::archive::Archive JpegRepository::loadArchive(
+eld::archive::Archive ImageRepository::loadArchive(
     const eld::cache::Store& store,
     std::uint16_t archiveId
 ) {
-    const eld::cache::File cacheFile =
-        store.get(
-            archiveId
-        );
+    const eld::cache::File file =
+        store.get(archiveId);
 
     eld::archive::ArchiveParser parser;
 
     std::optional<eld::archive::Archive> archive =
-        parser.parse(
-            cacheFile.getBytes()
-        );
+        parser.parse(file.getBytes());
 
     if (!archive.has_value()) {
         throw std::runtime_error(
-            "Failed to parse JPEG archive " +
+            "Failed to parse image archive " +
             std::to_string(archiveId)
         );
     }
@@ -35,32 +31,30 @@ eld::archive::Archive JpegRepository::loadArchive(
     return std::move(*archive);
 }
 
-JpegRepository::JpegRepository(
+
+ImageRepository::ImageRepository(
     eld::cache::Store store,
     std::uint16_t archiveId
 )
     : archive_(
-          loadArchive(
-              store,
-              archiveId
-          )
+          loadArchive(store, archiveId)
       ) {
 }
 
-Image JpegRepository::get(
+
+Image ImageRepository::get(
     std::string_view fileName
 ) const {
     const eld::archive::ArchiveFile& file =
-        archive_.get(
-            fileName
-        );
+        archive_.get(fileName);
 
     return decoder_.decode(
         file.payload
     );
 }
 
-std::optional<Image> JpegRepository::find(
+
+std::optional<Image> ImageRepository::find(
     std::string_view fileName
 ) const {
     if (!contains(fileName)) {
@@ -68,21 +62,18 @@ std::optional<Image> JpegRepository::find(
     }
 
     try {
-        return get(
-            fileName
-        );
+        return get(fileName);
     }
     catch (const std::exception&) {
         return std::nullopt;
     }
 }
 
-bool JpegRepository::contains(
+
+bool ImageRepository::contains(
     std::string_view fileName
 ) const {
-    return archive_.contains(
-        fileName
-    );
+    return archive_.contains(fileName);
 }
 
 }

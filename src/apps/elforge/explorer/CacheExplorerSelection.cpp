@@ -78,7 +78,6 @@ void CacheExplorer::handleSelectionChanged() {
             try {
                 const AnimationInspector relations(
                     animationRepository_,
-                    animationFrameIndex_,
                     sequenceRepository_,
                     npcRepository_,
                     locationRepository_,
@@ -742,7 +741,7 @@ void CacheExplorer::handleSelectionChanged() {
                 !state_.selection.name.empty()
             ) {
                 state_.activeImage =
-                    titleJpegRepository_.find(
+                    titleImageRepository_.find(
                         state_.selection.name
                     );
             }

@@ -17,7 +17,6 @@
 #include "midi/MidiRepository.h"
 #include "midi/MidiPlayer.h"
 
-#include "animation/AnimationFrameIndex.h"
 #include "animation/AnimationRepository.h"
 #include "animation/AnimationPlayer.h"
 #include "animation/ModelAnimator.h"
@@ -35,7 +34,7 @@
 #include "model/ModelRepository.h"
 #include "texture/TextureRepository.h"
 #include "sprite/SpriteRepository.h"
-#include "image/JpegRepository.h"
+#include "image/ImageRepository.h"
 #include "font/FontRepository.h"
 #include "definition/DefinitionArchive.h"
 #include "floor/FloorRepository.h"
@@ -152,7 +151,6 @@ private:
     eld::audio::MidiPlayer midiPlayer_;
 
     eld::animation::AnimationRepository animationRepository_;
-    eld::animation::AnimationFrameIndex animationFrameIndex_;
 
     eld::render::AnimationPlayer animationPlayer_;
     eld::render::ModelAnimator modelAnimator_;
@@ -249,7 +247,7 @@ private:
     eld::model::ModelRepository modelRepository_;
     eld::sprite::SpriteRepository titleSpriteRepository_;
     eld::sprite::SpriteRepository mediaSpriteRepository_;
-    eld::image::JpegRepository titleJpegRepository_;
+    eld::image::ImageRepository titleImageRepository_;
     eld::font::FontRepository titleFontRepository_;
     eld::definition::DefinitionArchive definitionArchive_;
     eld::definition::FloorRepository floorRepository_;

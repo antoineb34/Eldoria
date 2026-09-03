@@ -438,7 +438,7 @@ void applyTransform(
     bool implicit
 ) {
     switch (slot.type) {
-        case 0:
+        case eld::animation::TransformType::Pivot:
             applyPivot(
                 mesh,
                 groups,
@@ -454,7 +454,7 @@ void applyTransform(
             }
             break;
 
-        case 1:
+        case eld::animation::TransformType::Translate:
             stats.translatedVertices +=
                 applyTranslation(
                     mesh,
@@ -466,7 +466,7 @@ void applyTransform(
                 );
             break;
 
-        case 2:
+        case eld::animation::TransformType::Rotate:
             stats.rotatedVertices +=
                 applyRotation(
                     mesh,
@@ -479,7 +479,7 @@ void applyTransform(
                 );
             break;
 
-        case 3:
+        case eld::animation::TransformType::Scale:
             stats.scaledVertices +=
                 applyScale(
                     mesh,
@@ -492,11 +492,11 @@ void applyTransform(
                 );
             break;
 
-        case 4:
+        case eld::animation::TransformType::Unknown4:
             ++stats.ignoredUnknownType4;
             break;
 
-        case 5:
+        case eld::animation::TransformType::Alpha:
             stats.alphaFaces +=
                 applyAlpha(
                     mesh,
@@ -516,7 +516,7 @@ void applyTransform(
 AnimatedModelFrame ModelAnimator::apply(
     const eld::model::Model& source,
     const eld::animation::AnimationFrame& frame,
-    const eld::animation::Skeleton& skeleton
+    std::span<const eld::animation::SkeletonSlot> skeleton
 ) const {
     AnimatedModelFrame result;
     result.mesh = source;
@@ -534,7 +534,7 @@ AnimatedModelFrame ModelAnimator::apply(
 AnimationApplyStats ModelAnimator::applyInPlace(
     eld::model::Model& mesh,
     const eld::animation::AnimationFrame& frame,
-    const eld::animation::Skeleton& skeleton
+    std::span<const eld::animation::SkeletonSlot> skeleton
 ) const {
     const ModelSkinGroups groups =
         ModelSkinGroups::build(mesh);
@@ -550,7 +550,7 @@ AnimationApplyStats ModelAnimator::applyInPlace(
     ) {
         ++stats.explicitTransforms;
 
-        if (transform.slot >= skeleton.slots.size()) {
+        if (transform.slot >= skeleton.size()) {
             ++stats.invalidSkeletonSlots;
             continue;
         }
@@ -559,12 +559,12 @@ AnimationApplyStats ModelAnimator::applyInPlace(
             static_cast<int>(transform.slot);
 
         const eld::animation::SkeletonSlot& current =
-            skeleton.slots[transform.slot];
+            skeleton[transform.slot];
 
         // Classic decoder/application behavior: when a non-pivot explicit
         // slot is reached, execute the nearest skipped type-0 slot between
         // the previous explicit transform and this one as an implicit pivot.
-        if (current.type != 0) {
+        if (current.type != eld::animation::TransformType::Pivot) {
             for (
                 int candidate = currentSlot - 1;
                 candidate > lastExplicitSlot;
@@ -575,11 +575,11 @@ AnimationApplyStats ModelAnimator::applyInPlace(
                 }
 
                 const eld::animation::SkeletonSlot& skipped =
-                    skeleton.slots[
+                    skeleton[
                         static_cast<std::size_t>(candidate)
                     ];
 
-                if (skipped.type == 0) {
+                if (skipped.type == eld::animation::TransformType::Pivot) {
                     applyTransform(
                         mesh,
                         groups,

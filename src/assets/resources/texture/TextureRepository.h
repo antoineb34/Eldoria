@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "Texture.h"
-#include "image/IndexedImageDecoder.h"
 #include "archive/Archive.h"
 #include "cache/Store.h"
+#include "image/ImageDecoder.h"
 
 namespace eld::texture {
 
@@ -39,14 +39,8 @@ private:
         const eld::cache::Store& store
     );
 
-    const eld::archive::ArchiveFile& getIndexFile() const;
-
-    const eld::archive::ArchiveFile& getDataFile(
-        std::uint16_t id
-    ) const;
-
     eld::archive::Archive archive_;
-    eld::image::IndexedImageDecoder decoder_;
+    eld::image::ImageDecoder decoder_;
 };
 
 }

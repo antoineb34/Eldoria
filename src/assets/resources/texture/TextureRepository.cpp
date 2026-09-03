@@ -1,6 +1,5 @@
 #include "TextureRepository.h"
 
-#include <cstdint>
 #include <exception>
 #include <limits>
 #include <stdexcept>
@@ -17,20 +16,17 @@ constexpr std::uint16_t TextureArchiveId = 6;
 
 }
 
+
 eld::archive::Archive TextureRepository::loadArchive(
     const eld::cache::Store& store
 ) {
-    const eld::cache::File cacheFile =
-        store.get(
-            TextureArchiveId
-        );
+    const eld::cache::File file =
+        store.get(TextureArchiveId);
 
     eld::archive::ArchiveParser parser;
 
     std::optional<eld::archive::Archive> archive =
-        parser.parse(
-            cacheFile.getBytes()
-        );
+        parser.parse(file.getBytes());
 
     if (!archive.has_value()) {
         throw std::runtime_error(
@@ -41,45 +37,32 @@ eld::archive::Archive TextureRepository::loadArchive(
     return std::move(*archive);
 }
 
+
 TextureRepository::TextureRepository(
     eld::cache::Store store
 )
     : archive_(loadArchive(store)) {
 }
 
-const eld::archive::ArchiveFile&
-TextureRepository::getIndexFile() const {
-    return archive_.get("index.dat");
-}
-
-const eld::archive::ArchiveFile&
-TextureRepository::getDataFile(
-    std::uint16_t id
-) const {
-    return archive_.get(
-        std::to_string(id) + ".dat"
-    );
-}
 
 Texture TextureRepository::get(
     std::uint16_t id
 ) const {
-    const eld::archive::ArchiveFile& indexFile =
-        getIndexFile();
+    const eld::archive::ArchiveFile& data =
+        archive_.get(
+            std::to_string(id) + ".dat"
+        );
 
-    const eld::archive::ArchiveFile& dataFile =
-        getDataFile(id);
+    const eld::archive::ArchiveFile& index =
+        archive_.get("index.dat");
 
     try {
-        eld::image::Image image =
-            decoder_.decode(
-                dataFile.payload,
-                indexFile.payload
-            );
-
         return Texture{
             .id = id,
-            .image = std::move(image)
+            .image = decoder_.decode(
+                data.payload,
+                index.payload
+            )
         };
     }
     catch (const std::exception& error) {
@@ -92,6 +75,7 @@ Texture TextureRepository::get(
     }
 }
 
+
 std::optional<Texture> TextureRepository::find(
     std::uint16_t id
 ) const {
@@ -102,26 +86,20 @@ std::optional<Texture> TextureRepository::find(
     return get(id);
 }
 
+
 std::vector<std::uint16_t>
 TextureRepository::listIds() const {
     std::vector<std::uint16_t> ids;
 
-    if (archive_.count() > 0) {
-        ids.reserve(
-            archive_.count() - 1
-        );
-    }
+    ids.reserve(count());
 
     for (
         std::uint32_t candidate = 0;
-        candidate <=
-            std::numeric_limits<std::uint16_t>::max();
-        candidate++
+        candidate <= std::numeric_limits<std::uint16_t>::max();
+        ++candidate
     ) {
-        const std::uint16_t id =
-            static_cast<std::uint16_t>(
-                candidate
-            );
+        const auto id =
+            static_cast<std::uint16_t>(candidate);
 
         if (contains(id)) {
             ids.push_back(id);
@@ -131,6 +109,7 @@ TextureRepository::listIds() const {
     return ids;
 }
 
+
 bool TextureRepository::contains(
     std::uint16_t id
 ) const {
@@ -139,8 +118,14 @@ bool TextureRepository::contains(
     );
 }
 
+
 std::size_t TextureRepository::count() const {
-    return listIds().size();
+    const std::size_t fileCount =
+        archive_.count();
+
+    return fileCount > 0
+        ? fileCount - 1
+        : 0;
 }
 
 }
