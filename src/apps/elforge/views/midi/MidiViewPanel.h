@@ -7,7 +7,7 @@ class MidiPlayer;
 }
 
 namespace eld::midi {
-struct MidiFile;
+struct Midi;
 }
 
 namespace eld::elforge {
@@ -19,7 +19,7 @@ class MidiViewPanel {
 public:
     void renderWorkspace(
         CacheExplorerState& state,
-        const eld::midi::MidiFile* midi,
+        const eld::midi::Midi* midi,
         MidiViewState& viewState,
         eld::audio::MidiPlayer& midiPlayer,
         const ImVec2& controlsPosition,
@@ -33,7 +33,7 @@ public:
     );
 
     void renderControls(
-        const eld::midi::MidiFile* midi,
+        const eld::midi::Midi* midi,
         MidiViewState& viewState,
         eld::audio::MidiPlayer& midiPlayer
     );

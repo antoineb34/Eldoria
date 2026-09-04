@@ -11,7 +11,7 @@
 #include "explorer/CacheExplorerState.h"
 #include "ui/WorkspaceUi.h"
 
-#include "midi/MidiFile.h"
+#include "Midi.h"
 #include "views/midi/MidiViewState.h"
 
 namespace eld::elforge {
@@ -19,7 +19,7 @@ namespace eld::elforge {
 
 void MidiViewPanel::renderWorkspace(
     CacheExplorerState& state,
-    const eld::midi::MidiFile* midi,
+    const eld::midi::Midi* midi,
     MidiViewState& viewState,
     eld::audio::MidiPlayer& midiPlayer,
     const ImVec2& controlsPosition,
@@ -363,7 +363,7 @@ void MidiViewPanel::renderWorkspace(
 }
 
 void MidiViewPanel::renderControls(
-    const eld::midi::MidiFile* midi,
+    const eld::midi::Midi* midi,
     MidiViewState& viewState,
     eld::audio::MidiPlayer& midiPlayer
 ) {

@@ -6,7 +6,7 @@
 #include "ModelHandle.h"
 #include "ModelRegistry.h"
 #include "RenderModelAssembler.h"
-#include "model/ModelRepository.h"
+#include "repositories/ModelRepository.h"
 #include "texture/TextureResolver.h"
 
 namespace eld::render {

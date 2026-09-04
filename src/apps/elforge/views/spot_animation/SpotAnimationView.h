@@ -2,26 +2,26 @@
 
 #include <optional>
 
-#include "spot_animation/SpotAnimationDefinition.h"
-#include "model/Model.h"
-#include "model/ModelRepository.h"
+#include "SpotAnimation.h"
+#include "Model.h"
+#include "repositories/ModelRepository.h"
 
 namespace eld::elforge {
 
 class SpotAnimationView {
 public:
     std::optional<eld::model::Model> build(
-        const eld::definition::SpotAnimationDefinition& definition,
+        const eld::spot_animation::SpotAnimation& definition,
         const eld::model::ModelRepository& repository
     ) const;
 
     std::optional<eld::model::Model> buildAnimationSource(
-        const eld::definition::SpotAnimationDefinition& definition,
+        const eld::spot_animation::SpotAnimation& definition,
         const eld::model::ModelRepository& repository
     ) const;
 
     void prepareAnimatedMesh(
-        const eld::definition::SpotAnimationDefinition& definition,
+        const eld::spot_animation::SpotAnimation& definition,
         eld::model::Model& mesh
     ) const;
 };

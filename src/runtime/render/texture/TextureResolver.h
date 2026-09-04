@@ -6,7 +6,7 @@
 #include "TextureConverter.h"
 #include "TextureHandle.h"
 #include "TextureRegistry.h"
-#include "texture/TextureRepository.h"
+#include "repositories/TextureRepository.h"
 
 namespace eld::render {
 

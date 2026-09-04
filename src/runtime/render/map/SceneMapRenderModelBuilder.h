@@ -8,7 +8,7 @@
 #include "ClassicTerrainAppearance.h"
 #include "SceneLocationModelBuilder.h"
 #include "GraphicsResources.h"
-#include "floor/FloorRepository.h"
+#include "repositories/FloorRepository.h"
 #include "model/RenderModel.h"
 
 namespace eld::render::map {
@@ -58,7 +58,7 @@ public:
     SceneTerrainRenderBuildResult buildTerrainPlane(
         std::size_t scenePlane,
         const TerrainTileSampler& sample,
-        const eld::definition::FloorRepository& floors,
+        const eld::floor::FloorRepository& floors,
         eld::render::GraphicsResources& resources
     ) const;
 

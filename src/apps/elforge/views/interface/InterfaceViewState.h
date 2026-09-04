@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-#include "interface/InterfaceFile.h"
+#include "Widget.h"
 #include "math/Vec3.h"
 
 namespace eld::elforge {
@@ -22,7 +22,7 @@ struct InterfaceViewModel {
 };
 
 struct InterfaceViewNode {
-    eld::interface::InterfaceWidget widget;
+    eld::interface::Widget widget;
 
     int x = 0;
     int y = 0;

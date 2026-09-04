@@ -5,7 +5,7 @@
 #include "model/ModelHandle.h"
 #include "model/ModelRegistry.h"
 #include "model/ModelResolver.h"
-#include "model/Model.h"
+#include "Model.h"
 #include "texture/GraphicsTexture.h"
 #include "texture/TextureHandle.h"
 #include "texture/TextureRegistry.h"

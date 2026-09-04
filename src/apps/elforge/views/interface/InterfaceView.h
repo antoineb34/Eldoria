@@ -9,15 +9,15 @@
 
 #include "views/interface/InterfaceViewState.h"
 
-#include "interface/InterfaceRepository.h"
+#include "repositories/WidgetRepository.h"
 
 namespace eld::elforge {
 
 class InterfaceView {
 public:
     std::optional<InterfaceViewState> build(
-        const eld::interface::InterfaceWidget& root,
-        const eld::interface::InterfaceRepository& repository
+        const eld::interface::Widget& root,
+        const eld::interface::WidgetRepository& repository
     ) const {
         std::unordered_set<std::uint16_t> stack;
 
@@ -59,7 +59,7 @@ public:
 private:
 
     static std::pair<int, int> viewSize(
-        const eld::interface::InterfaceWidget& widget
+        const eld::interface::Widget& widget
     ) {
         constexpr int SlotSize = 32;
 
@@ -206,7 +206,7 @@ private:
 
     static std::optional<InterfaceViewModel>
     buildModel(
-        const eld::interface::InterfaceWidget& widget
+        const eld::interface::Widget& widget
     ) {
         if (
             widget.type != 6 ||
@@ -235,8 +235,8 @@ private:
     }
 
     std::optional<InterfaceViewNode> buildNode(
-        const eld::interface::InterfaceWidget& widget,
-        const eld::interface::InterfaceRepository& repository,
+        const eld::interface::Widget& widget,
+        const eld::interface::WidgetRepository& repository,
         int x,
         int y,
         std::unordered_set<std::uint16_t>& stack
@@ -267,10 +267,10 @@ private:
         );
 
         for (
-            const eld::interface::InterfaceChild& child :
+            const eld::interface::WidgetChild& child :
             widget.children
         ) {
-            const eld::interface::InterfaceWidget* childWidget =
+            const eld::interface::Widget* childWidget =
                 repository.find(
                     child.id
                 );

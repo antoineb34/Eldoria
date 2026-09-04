@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GraphicsTexture.h"
-#include "image/Image.h"
+#include "Image.h"
 
 namespace eld::render {
 

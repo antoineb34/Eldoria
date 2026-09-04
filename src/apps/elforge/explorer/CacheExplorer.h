@@ -14,14 +14,15 @@
 
 #include "cache/Cache.h"
 #include "map/MapRepository.h"
-#include "midi/MidiRepository.h"
+#include "repositories/MidiRepository.h"
 #include "midi/MidiPlayer.h"
 
-#include "animation/AnimationRepository.h"
+#include "repositories/AnimationRepository.h"
+#include "AnimationFrameTable.h"
 #include "animation/AnimationPlayer.h"
 #include "animation/ModelAnimator.h"
 #include "animation/AnimationPresentationCatalog.h"
-#include "model/Model.h"
+#include "Model.h"
 
 #include "explorer/CacheExplorerState.h"
 #include "explorer/tree/CacheTreeBuilder.h"
@@ -31,25 +32,25 @@
 #include "explorer/tree/CacheTreePanel.h"
 #include "viewport/ViewportPanel.h"
 
-#include "model/ModelRepository.h"
-#include "texture/TextureRepository.h"
-#include "sprite/SpriteRepository.h"
-#include "image/ImageRepository.h"
-#include "font/FontRepository.h"
-#include "definition/DefinitionArchive.h"
-#include "floor/FloorRepository.h"
-#include "identity_kit/IdentityKitRepository.h"
-#include "location/LocationRepository.h"
-#include "npc/NpcRepository.h"
-#include "item/ItemRepository.h"
-#include "sequence/SequenceRepository.h"
-#include "spot_animation/SpotAnimationRepository.h"
-#include "varp/VarpRepository.h"
-#include "varbit/VarbitRepository.h"
-#include "parameter/ParameterRepository.h"
-#include "message/MessageRepository.h"
-#include "message_animation/MessageAnimationRepository.h"
-#include "interface/InterfaceRepository.h"
+#include "repositories/ModelRepository.h"
+#include "repositories/TextureRepository.h"
+#include "repositories/SpriteRepository.h"
+#include "repositories/ImageRepository.h"
+#include "repositories/FontRepository.h"
+#include "archive/Archive.h"
+#include "repositories/FloorRepository.h"
+#include "repositories/IdentityKitRepository.h"
+#include "repositories/LocationRepository.h"
+#include "repositories/NpcRepository.h"
+#include "repositories/ItemRepository.h"
+#include "repositories/SequenceRepository.h"
+#include "repositories/SpotAnimationRepository.h"
+#include "repositories/VarpRepository.h"
+#include "repositories/VarbitRepository.h"
+#include "repositories/ParameterRepository.h"
+#include "repositories/MessageRepository.h"
+#include "repositories/MessageAnimationRepository.h"
+#include "repositories/WidgetRepository.h"
 
 #include "render/GraphicsResources.h"
 
@@ -151,6 +152,7 @@ private:
     eld::audio::MidiPlayer midiPlayer_;
 
     eld::animation::AnimationRepository animationRepository_;
+    eld::animation::AnimationFrameTable animationFrameTable_;
 
     eld::render::AnimationPlayer animationPlayer_;
     eld::render::ModelAnimator modelAnimator_;
@@ -172,7 +174,7 @@ private:
 
     struct NpcActionEffectState {
         eld::animation::presentation::AnimationEffectBinding binding;
-        eld::definition::SpotAnimationDefinition definition;
+        eld::spot_animation::SpotAnimation definition;
         eld::model::Model sourceMesh;
 
         std::unique_ptr<eld::render::AnimationPlayer>
@@ -249,20 +251,20 @@ private:
     eld::sprite::SpriteRepository mediaSpriteRepository_;
     eld::image::ImageRepository titleImageRepository_;
     eld::font::FontRepository titleFontRepository_;
-    eld::definition::DefinitionArchive definitionArchive_;
-    eld::definition::FloorRepository floorRepository_;
-    eld::definition::IdentityKitRepository identityKitRepository_;
-    eld::definition::LocationRepository locationRepository_;
-    eld::definition::NpcRepository npcRepository_;
-    eld::definition::ItemRepository itemRepository_;
-    eld::definition::SequenceRepository sequenceRepository_;
-    eld::definition::SpotAnimationRepository spotAnimationRepository_;
-    eld::definition::VarpRepository varpRepository_;
-    eld::definition::VarbitRepository varbitRepository_;
-    eld::definition::ParameterRepository parameterRepository_;
-    eld::definition::MessageRepository messageRepository_;
-    eld::definition::MessageAnimationRepository messageAnimationRepository_;
-    eld::interface::InterfaceRepository interfaceRepository_;
+    eld::archive::Archive definitionArchive_;
+    eld::floor::FloorRepository floorRepository_;
+    eld::identity_kit::IdentityKitRepository identityKitRepository_;
+    eld::location::LocationRepository locationRepository_;
+    eld::npc::NpcRepository npcRepository_;
+    eld::item::ItemRepository itemRepository_;
+    eld::sequence::SequenceRepository sequenceRepository_;
+    eld::spot_animation::SpotAnimationRepository spotAnimationRepository_;
+    eld::varp::VarpRepository varpRepository_;
+    eld::varbit::VarbitRepository varbitRepository_;
+    eld::parameter::ParameterRepository parameterRepository_;
+    eld::message::MessageRepository messageRepository_;
+    eld::message_animation::MessageAnimationRepository messageAnimationRepository_;
+    eld::interface::WidgetRepository widgetRepository_;
 
     eld::render::GraphicsResources graphicsResources_;
 

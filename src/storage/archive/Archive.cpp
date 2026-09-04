@@ -6,6 +6,8 @@
 #include <utility>
 
 #include "ArchiveHashes.h"
+#include "ArchiveParser.h"
+#include "cache/Store.h"
 
 namespace eld::archive {
 
@@ -110,6 +112,31 @@ bool Archive::contains(
 
 std::size_t Archive::count() const {
     return files_.size();
+}
+
+
+Archive load(
+    const eld::cache::Store& store,
+    std::uint16_t archiveId
+) {
+    const eld::cache::File file =
+        store.get(archiveId);
+
+    ArchiveParser parser;
+
+    std::optional<Archive> archive =
+        parser.parse(
+            file.getBytes()
+        );
+
+    if (!archive.has_value()) {
+        throw std::runtime_error(
+            "Failed to parse archive " +
+            std::to_string(archiveId)
+        );
+    }
+
+    return std::move(*archive);
 }
 
 }

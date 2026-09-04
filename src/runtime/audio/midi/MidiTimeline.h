@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace eld::midi {
-struct MidiFile;
+struct Midi;
 }
 
 namespace eld::audio {
@@ -22,7 +22,7 @@ struct MidiTimeline {
 };
 
 MidiTimeline readMidiTimeline(
-    const eld::midi::MidiFile& midi
+    const eld::midi::Midi& midi
 );
 
 }

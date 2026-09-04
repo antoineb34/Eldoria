@@ -21,7 +21,7 @@ class GraphicsResources;
 }
 
 namespace eld::interface {
-class InterfaceRepository;
+class WidgetRepository;
 }
 
 namespace eld::sprite {
@@ -55,7 +55,7 @@ public:
         SDL_Renderer* renderer,
         CacheExplorerState& state,
         eld::render::GraphicsResources& resources,
-        const eld::interface::InterfaceRepository& interfaces,
+        const eld::interface::WidgetRepository& interfaces,
         eld::sprite::SpriteRepository& interfaceSprites
     );
 

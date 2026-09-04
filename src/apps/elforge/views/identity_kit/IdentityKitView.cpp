@@ -11,7 +11,7 @@ namespace {
 
 void applyRecolors(
     eld::model::Model& mesh,
-    const eld::definition::IdentityKitDefinition& definition
+    const eld::identity_kit::IdentityKit& definition
 ) {
     for (eld::model::Face& face : mesh.faces) {
         for (
@@ -90,7 +90,7 @@ void appendMesh(
 
 std::optional<eld::model::Model>
 IdentityKitView::build(
-    const eld::definition::IdentityKitDefinition& definition,
+    const eld::identity_kit::IdentityKit& definition,
     const eld::model::ModelRepository& repository
 ) const {
     std::vector<std::uint16_t> modelIds =

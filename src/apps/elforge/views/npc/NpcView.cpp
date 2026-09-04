@@ -9,7 +9,7 @@ namespace {
 
 void prepareMesh(
     eld::model::Model& mesh,
-    const eld::definition::NpcDefinition& definition
+    const eld::npc::Npc& definition
 ) {
     for (eld::model::Vertex& vertex : mesh.vertices) {
         vertex.x =
@@ -30,7 +30,7 @@ void prepareMesh(
 
     for (eld::model::Face& face : mesh.faces) {
         for (
-            const eld::definition::NpcRecolor& recolor :
+            const eld::npc::NpcRecolor& recolor :
             definition.recolors
         ) {
             if (face.color == recolor.source) {
@@ -98,7 +98,7 @@ void appendMesh(
 
 std::optional<eld::model::Model>
 NpcView::build(
-    const eld::definition::NpcDefinition& definition,
+    const eld::npc::Npc& definition,
     const eld::model::ModelRepository& repository
 ) const {
     eld::model::Model combined;

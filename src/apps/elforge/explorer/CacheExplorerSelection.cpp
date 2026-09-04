@@ -78,12 +78,13 @@ void CacheExplorer::handleSelectionChanged() {
             try {
                 const AnimationInspector relations(
                     animationRepository_,
-                    sequenceRepository_,
+                    animationFrameTable_,
+        sequenceRepository_,
                     npcRepository_,
                     locationRepository_,
                     spotAnimationRepository_,
                     itemRepository_,
-                    interfaceRepository_,
+                    widgetRepository_,
                     animationPresentationCatalog_
                 );
 
@@ -125,7 +126,7 @@ void CacheExplorer::handleSelectionChanged() {
 
                 if (midiPlayer_.isAvailable()) {
                     if (midiPlayer_.load(
-                            state_.activeMidi->data.bytes
+                            state_.activeMidi->bytes
                         )) {
                         state_.midiView.playbackStatus =
                             "Ready to play";
@@ -295,23 +296,23 @@ void CacheExplorer::handleSelectionChanged() {
         case CacheTreeNodeType::DefinitionGroup:
             break;
 
-        case CacheTreeNodeType::InterfaceWidget: {
+        case CacheTreeNodeType::Widget: {
             if (state_.selection.definitionId >= 0) {
                 const auto* definition =
-                    interfaceRepository_.find(
+                    widgetRepository_.find(
                         static_cast<std::uint16_t>(
                             state_.selection.definitionId
                         )
                     );
 
-                if (definition != nullptr) {
+                if (definition) {
                     state_.activeInterface =
                         *definition;
 
                     state_.activeInterfaceDump =
                         InterfaceInspector::inspect(
                             *definition,
-                            interfaceRepository_
+                            widgetRepository_
                         );
 
                     if (
@@ -346,16 +347,16 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::MessageDefinition: {
+        case CacheTreeNodeType::Message: {
             if (state_.selection.definitionId >= 0) {
-                const auto* definition =
+                const auto definition =
                     messageRepository_.find(
                         static_cast<std::uint16_t>(
                             state_.selection.definitionId
                         )
                     );
 
-                if (definition != nullptr) {
+                if (definition.has_value()) {
                     state_.activeMessage = *definition;
                 }
             }
@@ -363,16 +364,16 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::MessageAnimationDefinition: {
+        case CacheTreeNodeType::MessageAnimation: {
             if (state_.selection.definitionId >= 0) {
-                const auto* definition =
+                const auto definition =
                     messageAnimationRepository_.find(
                         static_cast<std::uint16_t>(
                             state_.selection.definitionId
                         )
                     );
 
-                if (definition != nullptr) {
+                if (definition.has_value()) {
                     state_.activeMessageAnimation =
                         *definition;
                 }
@@ -381,16 +382,16 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::ParameterDefinition: {
+        case CacheTreeNodeType::Parameter: {
             if (state_.selection.definitionId >= 0) {
-                const auto* definition =
+                const auto definition =
                     parameterRepository_.find(
                         static_cast<std::uint16_t>(
                             state_.selection.definitionId
                         )
                     );
 
-                if (definition != nullptr) {
+                if (definition) {
                     state_.activeParameter =
                         *definition;
                 }
@@ -399,16 +400,16 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::VarpDefinition: {
+        case CacheTreeNodeType::Varp: {
             if (state_.selection.definitionId >= 0) {
-                const auto* definition =
+                const auto definition =
                     varpRepository_.find(
                         static_cast<std::uint16_t>(
                             state_.selection.definitionId
                         )
                     );
 
-                if (definition != nullptr) {
+                if (definition) {
                     state_.activeVarp = *definition;
                 }
             }
@@ -416,16 +417,16 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::VarbitDefinition: {
+        case CacheTreeNodeType::Varbit: {
             if (state_.selection.definitionId >= 0) {
-                const auto* definition =
+                const auto definition =
                     varbitRepository_.find(
                         static_cast<std::uint16_t>(
                             state_.selection.definitionId
                         )
                     );
 
-                if (definition != nullptr) {
+                if (definition) {
                     state_.activeVarbit = *definition;
                 }
             }
@@ -433,7 +434,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::SpotAnimationDefinition: {
+        case CacheTreeNodeType::SpotAnimation: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -442,14 +443,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::SpotAnimationDefinition* definition =
+            const auto definition =
                 spotAnimationRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (definition != nullptr) {
+            if (definition) {
                 state_.activeSpotAnimation =
                     *definition;
 
@@ -488,7 +489,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::SequenceDefinition: {
+        case CacheTreeNodeType::Sequence: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -497,14 +498,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::SequenceDefinition* definition =
+            const auto definition =
                 sequenceRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (definition != nullptr) {
+            if (definition) {
                 state_.activeSequence =
                     *definition;
             }
@@ -512,7 +513,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::ItemDefinition: {
+        case CacheTreeNodeType::Item: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -521,14 +522,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::ItemDefinition* definition =
+            const auto definition =
                 itemRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (definition != nullptr) {
+            if (definition.has_value()) {
                 state_.activeItem = *definition;
                 showItemInventoryView();
             }
@@ -536,7 +537,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::NpcDefinition: {
+        case CacheTreeNodeType::Npc: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -545,14 +546,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::NpcDefinition* definition =
+            const auto definition =
                 npcRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (definition != nullptr) {
+            if (definition) {
                 state_.activeNpc =
                     *definition;
 
@@ -594,7 +595,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::LocationDefinition: {
+        case CacheTreeNodeType::Location: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -603,14 +604,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::LocationDefinition* definition =
+            const auto definition =
                 locationRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (definition != nullptr) {
+            if (definition.has_value()) {
                 state_.activeLocation =
                     *definition;
 
@@ -649,7 +650,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::IdentityKitDefinition: {
+        case CacheTreeNodeType::IdentityKit: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -658,14 +659,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::IdentityKitDefinition* definition =
+            const auto definition =
                 identityKitRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (definition != nullptr) {
+            if (definition.has_value()) {
                 state_.activeIdentityKit =
                     *definition;
 
@@ -691,7 +692,7 @@ void CacheExplorer::handleSelectionChanged() {
             break;
         }
 
-        case CacheTreeNodeType::FloorDefinition: {
+        case CacheTreeNodeType::Floor: {
             if (
                 state_.selection.definitionId < 0 ||
                 state_.selection.definitionId >
@@ -700,14 +701,14 @@ void CacheExplorer::handleSelectionChanged() {
                 break;
             }
 
-            const eld::definition::FloorDefinition* floor =
+            const auto floor =
                 floorRepository_.find(
                     static_cast<std::uint16_t>(
                         state_.selection.definitionId
                     )
                 );
 
-            if (floor != nullptr) {
+            if (floor.has_value()) {
                 state_.activeFloor =
                     *floor;
 

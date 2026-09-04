@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "SceneLocationBuilder.h"
-#include "location/LocationRepository.h"
-#include "model/Model.h"
-#include "model/ModelRepository.h"
+#include "repositories/LocationRepository.h"
+#include "Model.h"
+#include "repositories/ModelRepository.h"
 
 namespace eld::render::map {
 
@@ -81,7 +81,7 @@ public:
 
     SceneLocationModelBuildResult build(
         const std::vector<SceneLocationPlacement>& placements,
-        const eld::definition::LocationRepository& locations,
+        const eld::location::LocationRepository& locations,
         const eld::model::ModelRepository& models
     ) const;
 
@@ -90,7 +90,7 @@ public:
     // render/map and can be tested independently.
     static eld::model::Model transformModel(
         eld::model::Model mesh,
-        const eld::definition::LocationDefinition& definition,
+        const eld::location::Location& definition,
         int modelRotation
     );
 };

@@ -6,8 +6,8 @@
 #include <string>
 
 #include "AnimationPresentation.h"
-#include "item/ItemDefinition.h"
-#include "npc/NpcDefinition.h"
+#include "Item.h"
+#include "Npc.h"
 
 namespace eld::animation::presentation {
 
@@ -24,11 +24,11 @@ public:
     );
 
     NpcAnimationProfile resolveNpc(
-        const eld::definition::NpcDefinition& definition
+        const eld::npc::Npc& definition
     ) const;
 
     ItemAnimationProfile resolveItem(
-        const eld::definition::ItemDefinition& definition
+        const eld::item::Item& definition
     ) const;
 
 private:

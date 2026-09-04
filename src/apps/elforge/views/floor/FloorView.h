@@ -1,14 +1,14 @@
 #pragma once
 
-#include "floor/FloorDefinition.h"
-#include "image/Image.h"
+#include "Floor.h"
+#include "Image.h"
 
 namespace eld::elforge {
 
 class FloorView {
 public:
     eld::image::Image build(
-        const eld::definition::FloorDefinition& floor
+        const eld::floor::Floor& floor
     ) const;
 };
 

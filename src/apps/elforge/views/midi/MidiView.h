@@ -1,7 +1,7 @@
 #pragma once
 
 namespace eld::midi {
-struct MidiFile;
+struct Midi;
 }
 
 namespace eld::elforge {
@@ -11,7 +11,7 @@ struct MidiViewState;
 class MidiView {
 public:
     void update(
-        const eld::midi::MidiFile* midi,
+        const eld::midi::Midi* midi,
         MidiViewState& state
     ) const;
 };

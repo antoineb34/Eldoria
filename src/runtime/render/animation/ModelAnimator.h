@@ -3,8 +3,8 @@
 #include <cstddef>
 #include <span>
 
-#include "animation/Animation.h"
-#include "model/Model.h"
+#include "Animation.h"
+#include "Model.h"
 
 namespace eld::render {
 

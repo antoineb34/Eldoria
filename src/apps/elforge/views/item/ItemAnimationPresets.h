@@ -6,8 +6,8 @@
 
 #include "animation/AnimationPresentation.h"
 
-namespace eld::definition {
-struct ItemDefinition;
+namespace eld::item {
+struct Item;
 }
 
 namespace eld::elforge {
@@ -17,11 +17,11 @@ public:
     static std::vector<
         eld::animation::presentation::AnimationBinding
     > actions(
-        const eld::definition::ItemDefinition& definition
+        const eld::item::Item& definition
     );
 
     static std::optional<std::uint16_t> defendSequence(
-        const eld::definition::ItemDefinition& definition
+        const eld::item::Item& definition
     );
 };
 

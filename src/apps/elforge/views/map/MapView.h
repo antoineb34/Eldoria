@@ -3,11 +3,11 @@
 #include <cstdint>
 
 #include "views/map/MapViewState.h"
-#include "floor/FloorRepository.h"
-#include "location/LocationRepository.h"
+#include "repositories/FloorRepository.h"
+#include "repositories/LocationRepository.h"
 #include "render/GraphicsResources.h"
 #include "map/MapRepository.h"
-#include "model/ModelRepository.h"
+#include "repositories/ModelRepository.h"
 
 namespace eld::elforge {
 
@@ -15,8 +15,8 @@ class MapView {
 public:
     MapView(
         const eld::map::MapRepository& loader,
-        const eld::definition::FloorRepository& floors,
-        const eld::definition::LocationRepository& locations,
+        const eld::floor::FloorRepository& floors,
+        const eld::location::LocationRepository& locations,
         eld::model::ModelRepository& models,
         eld::render::GraphicsResources& graphics
     );
@@ -27,8 +27,8 @@ public:
 
 private:
     const eld::map::MapRepository& loader_;
-    const eld::definition::FloorRepository& floors_;
-    const eld::definition::LocationRepository& locations_;
+    const eld::floor::FloorRepository& floors_;
+    const eld::location::LocationRepository& locations_;
     eld::model::ModelRepository& models_;
     eld::render::GraphicsResources& graphics_;
 };

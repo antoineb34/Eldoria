@@ -396,7 +396,7 @@ SceneTerrainRenderBuildResult
 SceneMapRenderModelBuilder::buildTerrainPlane(
     std::size_t scenePlane,
     const TerrainTileSampler& sample,
-    const eld::definition::FloorRepository& floors,
+    const eld::floor::FloorRepository& floors,
     eld::render::GraphicsResources& resources
 ) const {
     if (scenePlane >= eld::map::PlaneCount) {

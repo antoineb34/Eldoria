@@ -296,7 +296,7 @@ void AnimationPresentationCatalog::load(
 }
 
 NpcAnimationProfile AnimationPresentationCatalog::resolveNpc(
-    const eld::definition::NpcDefinition& definition
+    const eld::npc::Npc& definition
 ) const {
     NpcAnimationProfile profile;
     profile.npcId = definition.id;
@@ -347,7 +347,7 @@ NpcAnimationProfile AnimationPresentationCatalog::resolveNpc(
 }
 
 ItemAnimationProfile AnimationPresentationCatalog::resolveItem(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) const {
     ItemAnimationProfile profile;
     profile.itemId = definition.id;

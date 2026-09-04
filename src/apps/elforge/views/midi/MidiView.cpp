@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "midi/MidiFile.h"
+#include "Midi.h"
 #include "midi/MidiTimeline.h"
 
 #include "views/midi/MidiViewState.h"
@@ -98,7 +98,7 @@ std::vector<float> buildActivity(
 }
 
 void MidiView::update(
-    const eld::midi::MidiFile* midi,
+    const eld::midi::Midi* midi,
     MidiViewState& state
 ) const {
     if (midi == nullptr) {

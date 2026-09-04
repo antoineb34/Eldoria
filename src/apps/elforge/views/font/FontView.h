@@ -1,7 +1,7 @@
 #pragma once
 
-#include "font/Font.h"
-#include "image/Image.h"
+#include "Font.h"
+#include "Image.h"
 
 namespace eld::elforge {
 

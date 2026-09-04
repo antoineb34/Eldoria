@@ -11,8 +11,8 @@ namespace {
 
 void appendInterfaceDump(
     std::ostringstream& stream,
-    const eld::interface::InterfaceWidget& widget,
-    const eld::interface::InterfaceRepository& repository,
+    const eld::interface::Widget& widget,
+    const eld::interface::WidgetRepository& repository,
     int depth,
     int x,
     int y
@@ -97,7 +97,7 @@ void appendInterfaceDump(
             << "  inventorySprites=" << widget.inventorySprites.size()
             << "\n";
 
-        for (const eld::interface::InterfaceSpriteSlot& slot : widget.inventorySprites) {
+        for (const eld::interface::WidgetSpriteSlot& slot : widget.inventorySprites) {
             stream
                 << indent
                 << "    slot=" << static_cast<int>(slot.slot)
@@ -106,8 +106,8 @@ void appendInterfaceDump(
         }
     }
 
-    for (const eld::interface::InterfaceChild& child : widget.children) {
-        const eld::interface::InterfaceWidget* childWidget =
+    for (const eld::interface::WidgetChild& child : widget.children) {
+        const eld::interface::Widget* childWidget =
             repository.find(child.id);
 
         if (childWidget == nullptr) {
@@ -134,8 +134,8 @@ void appendInterfaceDump(
 }
 
 std::string InterfaceInspector::inspect(
-    const eld::interface::InterfaceWidget& root,
-    const eld::interface::InterfaceRepository& repository
+    const eld::interface::Widget& root,
+    const eld::interface::WidgetRepository& repository
 ) {
     std::ostringstream stream;
 

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "model/Model.h"
+#include "Model.h"
 
 namespace eld::render {
 

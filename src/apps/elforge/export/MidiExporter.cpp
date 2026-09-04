@@ -6,7 +6,7 @@
 namespace eld::elforge {
 
 std::filesystem::path defaultMidiExportPath(
-    const eld::midi::MidiFile& file
+    const eld::midi::Midi& file
 ) {
     return
         std::filesystem::path("exports") /
@@ -15,7 +15,7 @@ std::filesystem::path defaultMidiExportPath(
 }
 
 bool exportMidi(
-    const eld::midi::MidiFile& file,
+    const eld::midi::Midi& file,
     const std::filesystem::path& path,
     std::string& error
 ) {
@@ -50,13 +50,13 @@ bool exportMidi(
         return false;
     }
 
-    if (!file.data.bytes.empty()) {
+    if (!file.bytes.empty()) {
         stream.write(
             reinterpret_cast<const char*>(
-                file.data.bytes.data()
+                file.bytes.data()
             ),
             static_cast<std::streamsize>(
-                file.data.bytes.size()
+                file.bytes.size()
             )
         );
     }

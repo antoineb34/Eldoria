@@ -2,10 +2,10 @@
 
 #include <optional>
 
-#include "identity_kit/IdentityKitRepository.h"
-#include "item/ItemDefinition.h"
-#include "model/Model.h"
-#include "model/ModelRepository.h"
+#include "repositories/IdentityKitRepository.h"
+#include "Item.h"
+#include "Model.h"
+#include "repositories/ModelRepository.h"
 
 namespace eld::elforge {
 
@@ -17,19 +17,19 @@ enum class ItemViewGender {
 class ItemView {
 public:
     std::optional<eld::model::Model> build(
-        const eld::definition::ItemDefinition& definition,
+        const eld::item::Item& definition,
         const eld::model::ModelRepository& repository
     ) const;
 
     bool hasEquippedModel(
-        const eld::definition::ItemDefinition& definition,
+        const eld::item::Item& definition,
         ItemViewGender gender
     ) const;
 
     std::optional<eld::model::Model> buildEquipped(
-        const eld::definition::ItemDefinition& definition,
+        const eld::item::Item& definition,
         ItemViewGender gender,
-        const eld::definition::IdentityKitRepository& identityKits,
+        const eld::identity_kit::IdentityKitRepository& identityKits,
         const eld::model::ModelRepository& repository
     ) const;
 };

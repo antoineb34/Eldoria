@@ -5,34 +5,37 @@
 namespace eld::render {
 
 AnimationPlayer::AnimationPlayer(
-    const eld::animation::AnimationRepository& animations
+    const eld::animation::AnimationFrameTable& frames
 )
-    : animations_(&animations) {
+    : frames_(&frames) {
 }
 
 void AnimationPlayer::setSequence(
-    const eld::definition::SequenceDefinition& sequence
+    const eld::sequence::Sequence& sequence
 ) {
-    sequence_ = &sequence;
+    sequence_ = sequence;
     frameIndex_ = 0;
     elapsedMilliseconds_ = 0.0;
 }
 
 void AnimationPlayer::clear() {
-    sequence_ = nullptr;
+    sequence_.reset();
     frameIndex_ = 0;
     elapsedMilliseconds_ = 0.0;
 }
 
-const eld::definition::SequenceDefinition*
+const eld::sequence::Sequence*
 AnimationPlayer::sequence() const {
-    return sequence_;
+    return
+        sequence_.has_value()
+            ? &*sequence_
+            : nullptr;
 }
 
-const eld::definition::SequenceFrame*
+const eld::sequence::SequenceFrame*
 AnimationPlayer::currentSequenceFrame() const {
     if (
-        sequence_ == nullptr ||
+        !sequence_.has_value() ||
         sequence_->frames.empty() ||
         frameIndex_ >= sequence_->frames.size()
     ) {
@@ -49,12 +52,12 @@ AnimationPlayer::currentFrame() const {
 
     if (
         frame == nullptr ||
-        animations_ == nullptr
+        frames_ == nullptr
     ) {
         return std::nullopt;
     }
 
-    return animations_->findFrame(
+    return frames_->find(
         frame->primaryFrameId
     );
 }
@@ -65,7 +68,7 @@ std::size_t AnimationPlayer::frameIndex() const {
 
 std::size_t AnimationPlayer::frameCount() const {
     return
-        sequence_ != nullptr
+        sequence_.has_value()
             ? sequence_->frames.size()
             : 0;
 }
@@ -106,7 +109,7 @@ bool AnimationPlayer::update(
 ) {
     if (
         !playing_ ||
-        sequence_ == nullptr ||
+        !sequence_.has_value() ||
         sequence_->frames.empty()
     ) {
         return false;
@@ -143,7 +146,7 @@ bool AnimationPlayer::update(
 
 bool AnimationPlayer::stepForward() {
     if (
-        sequence_ == nullptr ||
+        !sequence_.has_value() ||
         sequence_->frames.empty()
     ) {
         return false;
@@ -156,7 +159,7 @@ bool AnimationPlayer::stepForward() {
 
 bool AnimationPlayer::stepBackward() {
     if (
-        sequence_ == nullptr ||
+        !sequence_.has_value() ||
         sequence_->frames.empty()
     ) {
         return false;
@@ -224,7 +227,7 @@ void AnimationPlayer::restart() {
 
 std::size_t AnimationPlayer::loopStart() const {
     if (
-        sequence_ != nullptr &&
+        sequence_.has_value() &&
         sequence_->frameStep.has_value() &&
         *sequence_->frameStep > 0 &&
         *sequence_->frameStep <= sequence_->frames.size()
@@ -239,7 +242,7 @@ std::size_t AnimationPlayer::loopStart() const {
 
 bool AnimationPlayer::advanceFrame() {
     if (
-        sequence_ == nullptr ||
+        !sequence_.has_value() ||
         sequence_->frames.empty()
     ) {
         return false;

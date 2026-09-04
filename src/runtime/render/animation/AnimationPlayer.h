@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <optional>
 
-#include "animation/AnimationRepository.h"
-#include "sequence/SequenceDefinition.h"
+#include "AnimationFrameTable.h"
+#include "Sequence.h"
 
 namespace eld::render {
 
@@ -14,17 +14,17 @@ public:
     static constexpr std::uint32_t ClientCycleMilliseconds = 20;
 
     explicit AnimationPlayer(
-        const eld::animation::AnimationRepository& animations
+        const eld::animation::AnimationFrameTable& frames
     );
 
     void setSequence(
-        const eld::definition::SequenceDefinition& sequence
+        const eld::sequence::Sequence& sequence
     );
 
     void clear();
 
-    const eld::definition::SequenceDefinition* sequence() const;
-    const eld::definition::SequenceFrame* currentSequenceFrame() const;
+    const eld::sequence::Sequence* sequence() const;
+    const eld::sequence::SequenceFrame* currentSequenceFrame() const;
 
     std::optional<eld::animation::AnimationFrameView>
     currentFrame() const;
@@ -63,8 +63,8 @@ private:
     std::size_t loopStart() const;
     bool advanceFrame();
 
-    const eld::animation::AnimationRepository* animations_ = nullptr;
-    const eld::definition::SequenceDefinition* sequence_ = nullptr;
+    const eld::animation::AnimationFrameTable* frames_ = nullptr;
+    std::optional<eld::sequence::Sequence> sequence_;
 
     std::size_t frameIndex_ = 0;
     double elapsedMilliseconds_ = 0.0;

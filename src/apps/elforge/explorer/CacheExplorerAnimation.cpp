@@ -143,13 +143,13 @@ bool CacheExplorer::activateAnimationPreviewUse(
     viewState.activePreviewUseIndex =
         previewIndex;
 
-    const eld::definition::SequenceDefinition* sequence =
+    const auto sequence =
         sequenceRepository_.find(
             use.sequenceId
         );
 
     if (
-        sequence == nullptr ||
+        !sequence ||
         sequence->frames.empty()
     ) {
         viewState.previewStatus =
@@ -173,12 +173,12 @@ bool CacheExplorer::activateAnimationPreviewUse(
     state_.activeModelHandle.reset();
 
     if (use.source == "NPC") {
-        const eld::definition::NpcDefinition* definition =
+        const auto definition =
             npcRepository_.find(
                 use.sourceId
             );
 
-        if (definition == nullptr) {
+        if (!definition) {
             viewState.previewStatus =
                 "NPC " +
                 std::to_string(use.sourceId) +
@@ -216,12 +216,12 @@ bool CacheExplorer::activateAnimationPreviewUse(
             AnimationTargetKind::Npc;
     }
     else if (use.source == "Location") {
-        const eld::definition::LocationDefinition* definition =
+        const auto definition =
             locationRepository_.find(
                 use.sourceId
             );
 
-        if (definition == nullptr) {
+        if (!definition.has_value()) {
             viewState.previewStatus =
                 "Location " +
                 std::to_string(use.sourceId) +
@@ -268,12 +268,12 @@ bool CacheExplorer::activateAnimationPreviewUse(
             AnimationTargetKind::Location;
     }
     else if (use.source == "SpotAnim") {
-        const eld::definition::SpotAnimationDefinition* definition =
+        const auto definition =
             spotAnimationRepository_.find(
                 use.sourceId
             );
 
-        if (definition == nullptr) {
+        if (!definition) {
             viewState.previewStatus =
                 "Spot animation " +
                 std::to_string(use.sourceId) +
@@ -368,13 +368,13 @@ void CacheExplorer::startAnimationView(
         return;
     }
 
-    const eld::definition::SequenceDefinition* sequence =
+    const auto sequence =
         sequenceRepository_.find(
             *sequenceId
         );
 
     if (
-        sequence == nullptr ||
+        !sequence ||
         sequence->frames.empty()
     ) {
         return;
@@ -401,10 +401,10 @@ void CacheExplorer::rebuildAnimationFrame() {
         return;
     }
 
-    const eld::definition::SequenceDefinition* sequence =
+    const auto sequence =
         animationPlayer_.sequence();
 
-    if (sequence == nullptr) {
+    if (!sequence) {
         return;
     }
 
@@ -888,10 +888,10 @@ void CacheExplorer::appendActionEffects(
         const eld::animation::presentation::AnimationEffectBinding& effectBinding :
         binding.effects
     ) {
-        const eld::definition::SpotAnimationDefinition* definition =
+        const auto definition =
             spotAnimationRepository_.find(effectBinding.spotAnimationId);
 
-        if (definition == nullptr) {
+        if (!definition) {
             continue;
         }
 
@@ -911,16 +911,16 @@ void CacheExplorer::appendActionEffects(
         effect.sourceMesh = std::move(*source);
 
         if (definition->sequenceId.has_value()) {
-            const eld::definition::SequenceDefinition* sequence =
+            const auto sequence =
                 sequenceRepository_.find(*definition->sequenceId);
 
             if (
-                sequence != nullptr &&
+                sequence &&
                 !sequence->frames.empty()
             ) {
                 effect.player =
                     std::make_unique<eld::render::AnimationPlayer>(
-                        animationRepository_
+                        animationFrameTable_
                     );
                 effect.player->setSequence(*sequence);
                 effect.player->setLooping(effectBinding.projectile);
@@ -1543,10 +1543,10 @@ void CacheExplorer::renderManualNpcActionComposer() {
 }
 
 void CacheExplorer::renderAnimationPlayerHud() {
-    const eld::definition::SequenceDefinition* sequence =
+    const auto sequence =
         animationPlayer_.sequence();
 
-    if (sequence == nullptr) {
+    if (!sequence) {
         return;
     }
 
@@ -1778,7 +1778,7 @@ void CacheExplorer::renderAnimationPlayerHud() {
             );
 
         eld::render::AnimationPlayer hoverPlayer(
-            animationRepository_
+            animationFrameTable_
         );
 
         hoverPlayer.setSequence(
@@ -2690,7 +2690,7 @@ void CacheExplorer::selectNextNpcWithProjectile() {
         state_.activeNpc->id;
 
     const auto hasProjectile =
-        [this](const eld::definition::NpcDefinition& npc) {
+        [this](const eld::npc::Npc& npc) {
             const eld::animation::presentation::NpcAnimationProfile profile =
                 animationPresentationCatalog_.resolveNpc(npc);
 
@@ -2708,9 +2708,9 @@ void CacheExplorer::selectNextNpcWithProjectile() {
                         ) {
                             return
                                 effect.projectile &&
-                                spotAnimationRepository_.find(
+                                spotAnimationRepository_.contains(
                                     effect.spotAnimationId
-                                ) != nullptr;
+                                );
                         }
                     );
                 }
@@ -2718,9 +2718,9 @@ void CacheExplorer::selectNextNpcWithProjectile() {
         };
 
     const auto selectNpc =
-        [this](const eld::definition::NpcDefinition& npc) {
+        [this](const eld::npc::Npc& npc) {
             state_.selection.type =
-                CacheTreeNodeType::NpcDefinition;
+                CacheTreeNodeType::Npc;
 
             state_.selection.definitionId =
                 static_cast<int>(npc.id);
@@ -2760,10 +2760,12 @@ void CacheExplorer::selectNextNpcWithProjectile() {
             }
         };
 
-    const auto& npcs =
-        npcRepository_.list();
+    const auto npcIds =
+        npcRepository_.listIds();
 
-    for (const eld::definition::NpcDefinition& npc : npcs) {
+    for (const auto id : npcIds) {
+        const eld::npc::Npc npc =
+            npcRepository_.get(id);
         if (
             npc.id > currentId &&
             hasProjectile(npc)
@@ -2774,7 +2776,9 @@ void CacheExplorer::selectNextNpcWithProjectile() {
     }
 
     // Wrap so the button can be hammered continuously while reviewing NPCs.
-    for (const eld::definition::NpcDefinition& npc : npcs) {
+    for (const auto id : npcIds) {
+        const eld::npc::Npc npc =
+            npcRepository_.get(id);
         if (
             npc.id <= currentId &&
             hasProjectile(npc)

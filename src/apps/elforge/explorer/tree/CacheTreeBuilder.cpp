@@ -1,18 +1,18 @@
 #include "explorer/tree/CacheTreeBuilder.h"
 
-#include "identity_kit/IdentityKitRepository.h"
-#include "location/LocationRepository.h"
-#include "npc/NpcRepository.h"
-#include "item/ItemRepository.h"
-#include "sequence/SequenceRepository.h"
-#include "spot_animation/SpotAnimationRepository.h"
-#include "varp/VarpRepository.h"
-#include "varbit/VarbitRepository.h"
-#include "parameter/ParameterRepository.h"
-#include "message/MessageRepository.h"
-#include "message_animation/MessageAnimationRepository.h"
+#include "repositories/IdentityKitRepository.h"
+#include "repositories/LocationRepository.h"
+#include "repositories/NpcRepository.h"
+#include "repositories/ItemRepository.h"
+#include "repositories/SequenceRepository.h"
+#include "repositories/SpotAnimationRepository.h"
+#include "repositories/VarpRepository.h"
+#include "repositories/VarbitRepository.h"
+#include "repositories/ParameterRepository.h"
+#include "repositories/MessageRepository.h"
+#include "repositories/MessageAnimationRepository.h"
 #include "map/MapRepository.h"
-#include "interface/InterfaceRepository.h"
+#include "repositories/WidgetRepository.h"
 
 #include <array>
 #include <cstdint>
@@ -26,9 +26,8 @@
 #include "archive/ArchiveHashes.h"
 #include "archive/ArchiveParser.h"
 #include "cache/Store.h"
-#include "sprite/SpriteRepository.h"
-#include "definition/DefinitionArchive.h"
-#include "floor/FloorRepository.h"
+#include "repositories/SpriteRepository.h"
+#include "repositories/FloorRepository.h"
 
 namespace eld::elforge {
 
@@ -193,14 +192,14 @@ CacheTreeNode makeInterfaceNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::interface::InterfaceWidget& definition,
-    const eld::interface::InterfaceRepository& repository,
+    const eld::interface::Widget& definition,
+    const eld::interface::WidgetRepository& repository,
     std::unordered_set<std::uint16_t>& visited
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::InterfaceWidget;
+        CacheTreeNodeType::Widget;
 
     node.key =
         "index/" +
@@ -233,7 +232,7 @@ CacheTreeNode makeInterfaceNode(
     }
 
     for (
-        const eld::interface::InterfaceChild& child :
+        const eld::interface::WidgetChild& child :
         definition.children
     ) {
         const auto* childDefinition =
@@ -263,7 +262,7 @@ CacheTreeNode makeInterfaceGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::interface::InterfaceRepository& repository
+    const eld::interface::WidgetRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -709,18 +708,42 @@ CacheTreeNode makeEmptyDefinitionGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (const auto& definition : repository.list()) {
-        node.children.push_back(
-            makeEmptyDefinitionNode(
-                index,
-                archiveId,
-                file.id,
-                childType,
-                keyName,
-                childLabel,
-                definition
-            )
-        );
+    if constexpr (
+        requires {
+            repository.listIds();
+        }
+    ) {
+        for (const auto id : repository.listIds()) {
+            const auto definition =
+                repository.get(id);
+
+            node.children.push_back(
+                makeEmptyDefinitionNode(
+                    index,
+                    archiveId,
+                    file.id,
+                    childType,
+                    keyName,
+                    childLabel,
+                    definition
+                )
+            );
+        }
+    }
+    else {
+        for (const auto& definition : repository.list()) {
+            node.children.push_back(
+                makeEmptyDefinitionNode(
+                    index,
+                    archiveId,
+                    file.id,
+                    childType,
+                    keyName,
+                    childLabel,
+                    definition
+                )
+            );
+        }
     }
 
     return node;
@@ -730,12 +753,12 @@ CacheTreeNode makeParameterNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::ParameterDefinition& definition
+    const eld::parameter::Parameter& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::ParameterDefinition;
+        CacheTreeNodeType::Parameter;
 
     node.key =
         "index/" +
@@ -770,7 +793,7 @@ CacheTreeNode makeParameterGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::ParameterRepository& repository
+    const eld::parameter::ParameterRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -794,10 +817,9 @@ CacheTreeNode makeParameterGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (
-        const eld::definition::ParameterDefinition& definition :
-        repository.list()
-    ) {
+    for (const auto id : repository.listIds()) {
+        const eld::parameter::Parameter definition =
+            repository.get(id);
         node.children.push_back(
             makeParameterNode(
                 index,
@@ -889,7 +911,9 @@ CacheTreeNode makeVariableGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (const auto& definition : repository.list()) {
+    for (const auto id : repository.listIds()) {
+        const auto definition =
+            repository.get(id);
         node.children.push_back(
             makeVariableNode(
                 index,
@@ -910,12 +934,12 @@ CacheTreeNode makeSpotAnimationNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::SpotAnimationDefinition& definition
+    const eld::spot_animation::SpotAnimation& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::SpotAnimationDefinition;
+        CacheTreeNodeType::SpotAnimation;
 
     node.key =
         "index/" +
@@ -943,7 +967,7 @@ CacheTreeNode makeSpotAnimationGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::SpotAnimationRepository& repository
+    const eld::spot_animation::SpotAnimationRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -967,10 +991,9 @@ CacheTreeNode makeSpotAnimationGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (
-        const eld::definition::SpotAnimationDefinition& definition :
-        repository.list()
-    ) {
+    for (const auto id : repository.listIds()) {
+        const eld::spot_animation::SpotAnimation definition =
+            repository.get(id);
         node.children.push_back(
             makeSpotAnimationNode(
                 index,
@@ -988,12 +1011,12 @@ CacheTreeNode makeSequenceNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::SequenceDefinition& definition
+    const eld::sequence::Sequence& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::SequenceDefinition;
+        CacheTreeNodeType::Sequence;
 
     node.key =
         "index/" +
@@ -1024,7 +1047,7 @@ CacheTreeNode makeSequenceGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::SequenceRepository& repository
+    const eld::sequence::SequenceRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -1048,10 +1071,9 @@ CacheTreeNode makeSequenceGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (
-        const eld::definition::SequenceDefinition& definition :
-        repository.list()
-    ) {
+    for (const auto id : repository.listIds()) {
+        const eld::sequence::Sequence definition =
+            repository.get(id);
         node.children.push_back(
             makeSequenceNode(
                 index,
@@ -1069,12 +1091,12 @@ CacheTreeNode makeItemNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::ItemDefinition;
+        CacheTreeNodeType::Item;
 
     node.key =
         "index/" +
@@ -1111,7 +1133,7 @@ CacheTreeNode makeItemGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::ItemRepository& repository
+    const eld::item::ItemRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -1135,10 +1157,9 @@ CacheTreeNode makeItemGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (
-        const eld::definition::ItemDefinition& definition :
-        repository.list()
-    ) {
+    for (const auto id : repository.listIds()) {
+        const eld::item::Item definition =
+            repository.get(id);
         node.children.push_back(
             makeItemNode(
                 index,
@@ -1156,12 +1177,12 @@ CacheTreeNode makeNpcNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::NpcDefinition& definition
+    const eld::npc::Npc& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::NpcDefinition;
+        CacheTreeNodeType::Npc;
 
     node.key =
         "index/" +
@@ -1198,7 +1219,7 @@ CacheTreeNode makeNpcGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::NpcRepository& repository
+    const eld::npc::NpcRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -1222,10 +1243,9 @@ CacheTreeNode makeNpcGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (
-        const eld::definition::NpcDefinition& definition :
-        repository.list()
-    ) {
+    for (const auto id : repository.listIds()) {
+        const eld::npc::Npc definition =
+            repository.get(id);
         node.children.push_back(
             makeNpcNode(
                 index,
@@ -1243,12 +1263,12 @@ CacheTreeNode makeLocationNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::LocationDefinition& definition
+    const eld::location::Location& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::LocationDefinition;
+        CacheTreeNodeType::Location;
 
     node.key =
         "index/" +
@@ -1285,7 +1305,7 @@ CacheTreeNode makeLocationGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::LocationRepository& repository
+    const eld::location::LocationRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -1309,10 +1329,9 @@ CacheTreeNode makeLocationGroupNode(
     node.archiveId = static_cast<int>(archiveId);
     node.fileId = static_cast<int>(file.id);
 
-    for (
-        const eld::definition::LocationDefinition& definition :
-        repository.list()
-    ) {
+    for (const auto id : repository.listIds()) {
+        const eld::location::Location definition =
+            repository.get(id);
         node.children.push_back(
             makeLocationNode(
                 index,
@@ -1330,12 +1349,12 @@ CacheTreeNode makeIdentityKitNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::IdentityKitDefinition& definition
+    const eld::identity_kit::IdentityKit& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::IdentityKitDefinition;
+        CacheTreeNodeType::IdentityKit;
 
     node.key =
         "index/" +
@@ -1370,7 +1389,7 @@ CacheTreeNode makeIdentityKitGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::IdentityKitRepository& repository
+    const eld::identity_kit::IdentityKitRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -1395,9 +1414,11 @@ CacheTreeNode makeIdentityKitGroupNode(
     node.fileId = static_cast<int>(file.id);
 
     for (
-        const eld::definition::IdentityKitDefinition& definition :
-        repository.list()
+        std::uint16_t id :
+        repository.listIds()
     ) {
+        const eld::identity_kit::IdentityKit& definition =
+            repository.get(id);
         node.children.push_back(
             makeIdentityKitNode(
                 index,
@@ -1415,12 +1436,12 @@ CacheTreeNode makeFloorNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     std::uint16_t fileId,
-    const eld::definition::FloorDefinition& definition
+    const eld::floor::Floor& definition
 ) {
     CacheTreeNode node;
 
     node.type =
-        CacheTreeNodeType::FloorDefinition;
+        CacheTreeNodeType::Floor;
 
     node.key =
         "index/" +
@@ -1454,7 +1475,7 @@ CacheTreeNode makeFloorGroupNode(
     eld::cache::IndexId index,
     std::uint16_t archiveId,
     const eld::archive::ArchiveFile& file,
-    const eld::definition::FloorRepository& repository
+    const eld::floor::FloorRepository& repository
 ) {
     CacheTreeNode node;
 
@@ -1479,15 +1500,18 @@ CacheTreeNode makeFloorGroupNode(
     node.fileId = static_cast<int>(file.id);
 
     for (
-        const eld::definition::FloorDefinition& definition :
-        repository.list()
+        std::uint16_t id :
+        repository.listIds()
     ) {
+        const eld::floor::Floor& floor =
+            repository.get(id);
+
         node.children.push_back(
             makeFloorNode(
                 index,
                 archiveId,
                 file.id,
-                definition
+                floor
             )
         );
     }
@@ -1497,6 +1521,7 @@ CacheTreeNode makeFloorGroupNode(
 
 std::optional<CacheTreeNode> makeArchiveNode(
     eld::cache::IndexId index,
+    const eld::cache::Cache& cache,
     const eld::cache::Store& store,
     const eld::cache::FileEntry& entry
 ) {
@@ -1551,140 +1576,117 @@ std::optional<CacheTreeNode> makeArchiveNode(
         entry.fileId == 4
     ) {
         spriteRepository.emplace(
-            store,
+            cache,
             entry.fileId
         );
     }
 
     std::optional<
-        eld::interface::InterfaceRepository
-    > interfaceRepository;
+        eld::interface::WidgetRepository
+    > widgetRepository;
 
     if (entry.fileId == 3) {
-        interfaceRepository.emplace(
-            store,
-            entry.fileId
+        widgetRepository.emplace(
+            cache
         );
     }
 
     std::optional<
-        eld::definition::DefinitionArchive
-    > definitionArchive;
-
-    std::optional<
-        eld::definition::FloorRepository
+        eld::floor::FloorRepository
     > floorRepository;
 
     std::optional<
-        eld::definition::IdentityKitRepository
+        eld::identity_kit::IdentityKitRepository
     > identityKitRepository;
 
     std::optional<
-        eld::definition::LocationRepository
+        eld::location::LocationRepository
     > locationRepository;
 
     std::optional<
-        eld::definition::NpcRepository
+        eld::npc::NpcRepository
     > npcRepository;
 
     std::optional<
-        eld::definition::ItemRepository
+        eld::item::ItemRepository
     > itemRepository;
 
     std::optional<
-        eld::definition::SequenceRepository
+        eld::sequence::SequenceRepository
     > sequenceRepository;
 
     std::optional<
-        eld::definition::SpotAnimationRepository
+        eld::spot_animation::SpotAnimationRepository
     > spotAnimationRepository;
 
     std::optional<
-        eld::definition::VarpRepository
+        eld::varp::VarpRepository
     > varpRepository;
 
     std::optional<
-        eld::definition::VarbitRepository
+        eld::varbit::VarbitRepository
     > varbitRepository;
 
     std::optional<
-        eld::definition::ParameterRepository
+        eld::parameter::ParameterRepository
     > parameterRepository;
 
     std::optional<
-        eld::definition::MessageRepository
+        eld::message::MessageRepository
     > messageRepository;
 
     std::optional<
-        eld::definition::MessageAnimationRepository
+        eld::message_animation::MessageAnimationRepository
     > messageAnimationRepository;
 
     if (entry.fileId == 2) {
-        definitionArchive.emplace(
-            store,
-            entry.fileId
-        );
 
         floorRepository.emplace(
-            definitionArchive->get(
-                "flo"
-            )
+            cache
         );
 
         identityKitRepository.emplace(
-            definitionArchive->get(
-                "idk"
-            )
+            cache
         );
 
         locationRepository.emplace(
-            definitionArchive->get(
-                "loc"
-            )
+            cache
         );
 
         npcRepository.emplace(
-            definitionArchive->get(
-                "npc"
-            )
+            cache
         );
 
         itemRepository.emplace(
-            definitionArchive->get(
-                "obj"
-            )
+            cache
         );
 
         sequenceRepository.emplace(
-            definitionArchive->get(
-                "seq"
-            )
+            cache
         );
 
         spotAnimationRepository.emplace(
-            definitionArchive->get(
-                "spotanim"
-            )
+            cache
         );
 
         varpRepository.emplace(
-            definitionArchive->get("varp")
+            cache
         );
 
         varbitRepository.emplace(
-            definitionArchive->get("varbit")
+            cache
         );
 
         parameterRepository.emplace(
-            definitionArchive->get("param")
+            cache
         );
 
         messageRepository.emplace(
-            definitionArchive->get("mes")
+            cache
         );
 
         messageAnimationRepository.emplace(
-            definitionArchive->get("mesanim")
+            cache
         );
     }
 
@@ -1726,7 +1728,7 @@ std::optional<CacheTreeNode> makeArchiveNode(
         }
 
         if (
-            interfaceRepository.has_value() &&
+            widgetRepository.has_value() &&
             name.has_value() &&
             *name == "data"
         ) {
@@ -1735,7 +1737,7 @@ std::optional<CacheTreeNode> makeArchiveNode(
                     index,
                     entry.fileId,
                     file,
-                    *interfaceRepository
+                    *widgetRepository
                 )
             );
 
@@ -1752,7 +1754,7 @@ std::optional<CacheTreeNode> makeArchiveNode(
                     index,
                     entry.fileId,
                     file,
-                    CacheTreeNodeType::MessageAnimationDefinition,
+                    CacheTreeNodeType::MessageAnimation,
                     "mesanim",
                     "Message Animations",
                     "Message Animation",
@@ -1780,7 +1782,7 @@ std::optional<CacheTreeNode> makeArchiveNode(
                     index,
                     entry.fileId,
                     file,
-                    CacheTreeNodeType::MessageDefinition,
+                    CacheTreeNodeType::Message,
                     "mes",
                     "Messages",
                     "Message",
@@ -1832,7 +1834,7 @@ std::optional<CacheTreeNode> makeArchiveNode(
                     index,
                     entry.fileId,
                     file,
-                    CacheTreeNodeType::VarpDefinition,
+                    CacheTreeNodeType::Varp,
                     "varp",
                     "Varps",
                     "Varp",
@@ -1860,7 +1862,7 @@ std::optional<CacheTreeNode> makeArchiveNode(
                     index,
                     entry.fileId,
                     file,
-                    CacheTreeNodeType::VarbitDefinition,
+                    CacheTreeNodeType::Varbit,
                     "varbit",
                     "Varbits",
                     "Varbit",
@@ -2246,6 +2248,7 @@ void addIndex(
             const std::optional<CacheTreeNode> archive =
                 makeArchiveNode(
                     index.id,
+                    cache,
                     store,
                     entry
                 );

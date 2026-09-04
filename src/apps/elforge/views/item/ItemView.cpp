@@ -60,10 +60,10 @@ void appendMesh(
 
 void applyItemRecolors(
     eld::model::Model& mesh,
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     for (eld::model::Face& face : mesh.faces) {
-        for (const eld::definition::ItemRecolor& recolor : definition.recolors) {
+        for (const eld::item::ItemRecolor& recolor : definition.recolors) {
             if (face.color == recolor.source) {
                 face.color = recolor.destination;
                 break;
@@ -74,7 +74,7 @@ void applyItemRecolors(
 
 void applyIdentityKitRecolors(
     eld::model::Model& mesh,
-    const eld::definition::IdentityKitDefinition& definition
+    const eld::identity_kit::IdentityKit& definition
 ) {
     for (eld::model::Face& face : mesh.faces) {
         for (std::size_t index = 0; index < definition.recolorSources.size(); ++index) {
@@ -133,9 +133,9 @@ using HiddenBobParts = std::array<bool, 7>;
 
 void hideWearPosition(
     HiddenBobParts& hidden,
-    eld::definition::ItemWearPosition position
+    eld::item::ItemWearPosition position
 ) {
-    using eld::definition::ItemWearPosition;
+    using eld::item::ItemWearPosition;
 
     switch (position) {
         case ItemWearPosition::Head:
@@ -165,14 +165,14 @@ void hideWearPosition(
 }
 
 HiddenBobParts hiddenBodyParts(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     HiddenBobParts hidden{};
 
     bool hasExactWearData = false;
 
     for (
-        const std::optional<eld::definition::ItemWearPosition>& position :
+        const std::optional<eld::item::ItemWearPosition>& position :
         {definition.wearPosition, definition.wearPosition2, definition.wearPosition3}
     ) {
         if (!position.has_value()) {
@@ -225,11 +225,16 @@ HiddenBobParts hiddenBodyParts(
     return hidden;
 }
 
-const eld::definition::IdentityKitDefinition* defaultIdentityKit(
+const eld::identity_kit::IdentityKit* defaultIdentityKit(
     std::uint8_t bodyPartId,
-    const eld::definition::IdentityKitRepository& repository
+    const eld::identity_kit::IdentityKitRepository& repository
 ) {
-    for (const eld::definition::IdentityKitDefinition& kit : repository.list()) {
+    for (
+        std::uint16_t id :
+        repository.listIds()
+    ) {
+        const eld::identity_kit::IdentityKit& kit =
+            repository.get(id);
         if (
             kit.selectable &&
             kit.bodyPartId.has_value() &&
@@ -247,7 +252,7 @@ const eld::definition::IdentityKitDefinition* defaultIdentityKit(
 
 std::optional<eld::model::Model>
 ItemView::build(
-    const eld::definition::ItemDefinition& definition,
+    const eld::item::Item& definition,
     const eld::model::ModelRepository& repository
 ) const {
     if (!definition.inventoryModelId.has_value()) {
@@ -278,7 +283,7 @@ ItemView::build(
 }
 
 bool ItemView::hasEquippedModel(
-    const eld::definition::ItemDefinition& definition,
+    const eld::item::Item& definition,
     ItemViewGender gender
 ) const {
     const auto& ids =
@@ -297,9 +302,9 @@ bool ItemView::hasEquippedModel(
 
 std::optional<eld::model::Model>
 ItemView::buildEquipped(
-    const eld::definition::ItemDefinition& definition,
+    const eld::item::Item& definition,
     ItemViewGender gender,
-    const eld::definition::IdentityKitRepository& identityKits,
+    const eld::identity_kit::IdentityKitRepository& identityKits,
     const eld::model::ModelRepository& repository
 ) const {
     if (!hasEquippedModel(definition, gender)) {
@@ -365,7 +370,7 @@ ItemView::buildEquipped(
             continue;
         }
 
-        // Matches ItemDefinition.getEquippedModel(): worn models use their
+        // Matches Item.getEquippedModel(): worn models use their
         // authored size, receive only the gender-specific Y translation and
         // item recolours, and are then merged into the player appearance.
         if (verticalOffset != 0) {

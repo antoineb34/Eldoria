@@ -17,117 +17,89 @@ CacheExplorer::CacheExplorer()
     : cache_("cache"),
       mapRepository_(cache_),
       midiRepository_(
-          cache_.open(
-              eld::cache::IndexId::Midi
-          )
+          cache_
       ),
       animationRepository_(
-          cache_.open(
-              eld::cache::IndexId::Animations
-          )
+          cache_
+      ),
+      animationFrameTable_(
+          animationRepository_
       ),
       animationPlayer_(
-          animationRepository_
+          animationFrameTable_
       ),
       animationPresentationCatalog_(
           "content/animation_bindings.csv"
       ),
       textureRepository_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          )
+          cache_
       ),
       modelRepository_(
-          cache_.open(
-              eld::cache::IndexId::Models
-          )
+          cache_
       ),
       titleSpriteRepository_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          ),
+          cache_,
           1
       ),
       mediaSpriteRepository_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          ),
+          cache_,
           4
       ),
 
       titleImageRepository_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          ),
+          cache_,
           1
       ),
       titleFontRepository_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          ),
+          cache_,
           1
       ),
       definitionArchive_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          ),
-          2
+          eld::archive::load(
+              cache_.open(
+                  eld::cache::IndexId::Config
+              ),
+              2
+          )
       ),
       floorRepository_(
-          definitionArchive_.get(
-              "flo"
-          )
+          cache_
       ),
       identityKitRepository_(
-          definitionArchive_.get(
-              "idk"
-          )
+          cache_
       ),
       locationRepository_(
-          definitionArchive_.get(
-              "loc"
-          )
+          cache_
       ),
       npcRepository_(
-          definitionArchive_.get(
-              "npc"
-          )
+          cache_
       ),
       itemRepository_(
-          definitionArchive_.get(
-              "obj"
-          )
+          cache_
       ),
       sequenceRepository_(
-          definitionArchive_.get(
-              "seq"
-          )
+          cache_
       ),
       spotAnimationRepository_(
-          definitionArchive_.get(
-              "spotanim"
-          )
+          cache_
       ),
       varpRepository_(
-          definitionArchive_.get("varp")
+          cache_
       ),
       varbitRepository_(
-          definitionArchive_.get("varbit")
+          cache_
       ),
       parameterRepository_(
-          definitionArchive_.get("param")
+          cache_
       ),
       messageRepository_(
-          definitionArchive_.get("mes")
+          cache_
       ),
       messageAnimationRepository_(
-          definitionArchive_.get("mesanim")
+          cache_
       ),
-      interfaceRepository_(
-          cache_.open(
-              eld::cache::IndexId::Config
-          ),
-          3
+      widgetRepository_(
+          cache_
       ),
       graphicsResources_(
           modelRepository_,
@@ -280,12 +252,13 @@ void CacheExplorer::update() {
         try {
             const AnimationInspector relations(
                 animationRepository_,
-                sequenceRepository_,
+                animationFrameTable_,
+        sequenceRepository_,
                 npcRepository_,
                 locationRepository_,
                 spotAnimationRepository_,
                 itemRepository_,
-                interfaceRepository_,
+                widgetRepository_,
                 animationPresentationCatalog_
             );
 
@@ -372,7 +345,7 @@ void CacheExplorer::renderViewport(
         renderer,
         state_,
         graphicsResources_,
-        interfaceRepository_,
+        widgetRepository_,
         mediaSpriteRepository_
     );
 }

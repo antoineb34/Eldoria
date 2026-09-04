@@ -6,15 +6,16 @@
 #include <string>
 #include <vector>
 
-#include "animation/Animation.h"
-#include "animation/AnimationRepository.h"
+#include "Animation.h"
+#include "AnimationFrameTable.h"
+#include "repositories/AnimationRepository.h"
 #include "animation/AnimationPresentationCatalog.h"
-#include "item/ItemRepository.h"
-#include "location/LocationRepository.h"
-#include "npc/NpcRepository.h"
-#include "sequence/SequenceRepository.h"
-#include "spot_animation/SpotAnimationRepository.h"
-#include "interface/InterfaceRepository.h"
+#include "repositories/ItemRepository.h"
+#include "repositories/LocationRepository.h"
+#include "repositories/NpcRepository.h"
+#include "repositories/SequenceRepository.h"
+#include "repositories/SpotAnimationRepository.h"
+#include "repositories/WidgetRepository.h"
 
 namespace eld::elforge {
 
@@ -46,12 +47,13 @@ class AnimationInspector {
 public:
     AnimationInspector(
         const eld::animation::AnimationRepository& animations,
-        const eld::definition::SequenceRepository& sequences,
-        const eld::definition::NpcRepository& npcs,
-        const eld::definition::LocationRepository& locations,
-        const eld::definition::SpotAnimationRepository& spotAnimations,
-        const eld::definition::ItemRepository& items,
-        const eld::interface::InterfaceRepository& interfaces,
+        const eld::animation::AnimationFrameTable& frames,
+        const eld::sequence::SequenceRepository& sequences,
+        const eld::npc::NpcRepository& npcs,
+        const eld::location::LocationRepository& locations,
+        const eld::spot_animation::SpotAnimationRepository& spotAnimations,
+        const eld::item::ItemRepository& items,
+        const eld::interface::WidgetRepository& interfaces,
         const eld::animation::presentation::AnimationPresentationCatalog& presentation
     );
 
@@ -63,12 +65,13 @@ public:
 
 private:
     const eld::animation::AnimationRepository* animations_ = nullptr;
-    const eld::definition::SequenceRepository* sequences_ = nullptr;
-    const eld::definition::NpcRepository* npcs_ = nullptr;
-    const eld::definition::LocationRepository* locations_ = nullptr;
-    const eld::definition::SpotAnimationRepository* spotAnimations_ = nullptr;
-    const eld::definition::ItemRepository* items_ = nullptr;
-    const eld::interface::InterfaceRepository* interfaces_ = nullptr;
+    const eld::animation::AnimationFrameTable* frames_ = nullptr;
+    const eld::sequence::SequenceRepository* sequences_ = nullptr;
+    const eld::npc::NpcRepository* npcs_ = nullptr;
+    const eld::location::LocationRepository* locations_ = nullptr;
+    const eld::spot_animation::SpotAnimationRepository* spotAnimations_ = nullptr;
+    const eld::item::ItemRepository* items_ = nullptr;
+    const eld::interface::WidgetRepository* interfaces_ = nullptr;
     const eld::animation::presentation::AnimationPresentationCatalog* presentation_ = nullptr;
 };
 

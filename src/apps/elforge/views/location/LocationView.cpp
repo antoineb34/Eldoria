@@ -11,7 +11,7 @@ namespace {
 
 void prepareMesh(
     eld::model::Model& mesh,
-    const eld::definition::LocationDefinition& definition
+    const eld::location::Location& definition
 ) {
     for (eld::model::Vertex& vertex : mesh.vertices) {
         vertex.x =
@@ -35,7 +35,7 @@ void prepareMesh(
 
     for (eld::model::Face& face : mesh.faces) {
         for (
-            const eld::definition::LocationRecolor& recolor :
+            const eld::location::LocationRecolor& recolor :
             definition.recolors
         ) {
             if (face.color == recolor.source) {
@@ -101,14 +101,14 @@ void appendMesh(
 }
 
 std::vector<std::uint16_t> selectModels(
-    const eld::definition::LocationDefinition& definition
+    const eld::location::Location& definition
 ) {
     std::vector<std::uint16_t> ids;
 
     bool hasTypedModels = false;
 
     for (
-        const eld::definition::LocationModel& model :
+        const eld::location::LocationModel& model :
         definition.models
     ) {
         if (model.type.has_value()) {
@@ -119,7 +119,7 @@ std::vector<std::uint16_t> selectModels(
 
     if (!hasTypedModels) {
         for (
-            const eld::definition::LocationModel& model :
+            const eld::location::LocationModel& model :
             definition.models
         ) {
             ids.push_back(model.id);
@@ -129,7 +129,7 @@ std::vector<std::uint16_t> selectModels(
     }
 
     for (
-        const eld::definition::LocationModel& model :
+        const eld::location::LocationModel& model :
         definition.models
     ) {
         if (
@@ -154,7 +154,7 @@ std::vector<std::uint16_t> selectModels(
 
 std::optional<eld::model::Model>
 LocationView::buildAnimationSource(
-    const eld::definition::LocationDefinition& definition,
+    const eld::location::Location& definition,
     const eld::model::ModelRepository& repository
 ) const {
     eld::model::Model combined;
@@ -187,7 +187,7 @@ LocationView::buildAnimationSource(
 }
 
 void LocationView::prepareAnimatedMesh(
-    const eld::definition::LocationDefinition& definition,
+    const eld::location::Location& definition,
     eld::model::Model& mesh
 ) const {
     prepareMesh(
@@ -198,7 +198,7 @@ void LocationView::prepareAnimatedMesh(
 
 std::optional<eld::model::Model>
 LocationView::build(
-    const eld::definition::LocationDefinition& definition,
+    const eld::location::Location& definition,
     const eld::model::ModelRepository& repository
 ) const {
     std::optional<eld::model::Model> model =

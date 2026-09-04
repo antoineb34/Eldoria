@@ -6,7 +6,7 @@
 #include <functional>
 #include <vector>
 
-#include "location/LocationRepository.h"
+#include "repositories/LocationRepository.h"
 #include "map/MapRegion.h"
 #include "map/MapTile.h"
 
@@ -89,7 +89,7 @@ public:
 
     std::vector<SceneLocationPlacement> build(
         const std::vector<eld::map::MapLocationSpawn>& spawns,
-        const eld::definition::LocationRepository& locations,
+        const eld::location::LocationRepository& locations,
         const SceneLocationTileSampler& sampleTile
     ) const;
 };

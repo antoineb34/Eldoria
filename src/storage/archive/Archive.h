@@ -7,6 +7,11 @@
 
 #include "ArchiveFile.h"
 
+namespace eld::cache {
+class Store;
+
+}
+
 namespace eld::archive {
 
 struct ArchiveHeader {
@@ -75,5 +80,10 @@ private:
 
     std::vector<ArchiveFile> files_;
 };
+
+Archive load(
+    const eld::cache::Store& store,
+    std::uint16_t archiveId
+);
 
 }

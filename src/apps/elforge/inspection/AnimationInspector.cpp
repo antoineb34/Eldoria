@@ -15,11 +15,11 @@ namespace eld::elforge {
 namespace {
 
 std::uint64_t sequenceDurationMilliseconds(
-    const eld::animation::AnimationRepository& animations,
-    const eld::definition::SequenceDefinition& sequence
+    const eld::animation::AnimationFrameTable& frames,
+    const eld::sequence::Sequence& sequence
 ) {
     eld::render::AnimationPlayer player(
-        animations
+        frames
     );
 
     player.setSequence(
@@ -65,13 +65,13 @@ struct SequenceArchiveUsage {
 };
 
 SequenceArchiveUsage sequenceArchiveUsage(
-    const eld::definition::SequenceDefinition& sequence,
+    const eld::sequence::Sequence& sequence,
     const std::unordered_set<std::uint16_t>& animationFrameIds
 ) {
     SequenceArchiveUsage usage;
 
     for (
-        const eld::definition::SequenceFrame& frame :
+        const eld::sequence::SequenceFrame& frame :
         sequence.frames
     ) {
         ++usage.totalReferences;
@@ -101,7 +101,7 @@ SequenceArchiveUsage sequenceArchiveUsage(
 }
 
 std::optional<std::uint16_t> cacheNpcSequenceForAction(
-    const eld::definition::NpcDefinition& npc,
+    const eld::npc::Npc& npc,
     AnimationAction action
 ) {
     switch (action) {
@@ -164,7 +164,7 @@ void addUse(
 void addNpcCacheUse(
     std::vector<AnimationUse>& uses,
     const std::unordered_set<std::uint16_t>& sequenceIds,
-    const eld::definition::NpcDefinition& npc,
+    const eld::npc::Npc& npc,
     const std::optional<std::uint16_t>& sequenceId,
     const char* role
 ) {
@@ -189,7 +189,7 @@ void addNpcCacheUse(
 void addPresentationBindingUses(
     std::vector<AnimationUse>& uses,
     const std::unordered_set<std::uint16_t>& sequenceIds,
-    const eld::definition::SpotAnimationRepository& spots,
+    const eld::spot_animation::SpotAnimationRepository& spots,
     const std::string& source,
     std::uint16_t sourceId,
     const std::string& sourceName,
@@ -223,11 +223,11 @@ void addPresentationBindingUses(
         const eld::animation::presentation::AnimationEffectBinding& effect :
         binding.effects
     ) {
-        const eld::definition::SpotAnimationDefinition* spot =
+        const auto spot =
             spots.find(effect.spotAnimationId);
 
         if (
-            spot == nullptr ||
+            !spot ||
             !sequenceMatches(sequenceIds, spot->sequenceId)
         ) {
             continue;
@@ -256,15 +256,17 @@ void addPresentationBindingUses(
 
 AnimationInspector::AnimationInspector(
     const eld::animation::AnimationRepository& animations,
-    const eld::definition::SequenceRepository& sequences,
-    const eld::definition::NpcRepository& npcs,
-    const eld::definition::LocationRepository& locations,
-    const eld::definition::SpotAnimationRepository& spotAnimations,
-    const eld::definition::ItemRepository& items,
-    const eld::interface::InterfaceRepository& interfaces,
+    const eld::animation::AnimationFrameTable& frames,
+    const eld::sequence::SequenceRepository& sequences,
+    const eld::npc::NpcRepository& npcs,
+    const eld::location::LocationRepository& locations,
+    const eld::spot_animation::SpotAnimationRepository& spotAnimations,
+    const eld::item::ItemRepository& items,
+    const eld::interface::WidgetRepository& interfaces,
     const eld::animation::presentation::AnimationPresentationCatalog& presentation
 )
     : animations_(&animations),
+      frames_(&frames),
       sequences_(&sequences),
       npcs_(&npcs),
       locations_(&locations),
@@ -296,10 +298,9 @@ AnimationInspection AnimationInspector::inspect(
 
     std::unordered_set<std::uint16_t> referencedSequenceIds;
 
-    for (
-        const eld::definition::SequenceDefinition& sequence :
-        sequences_->list()
-    ) {
+    for (const auto id : sequences_->listIds()) {
+        const eld::sequence::Sequence sequence =
+            sequences_->get(id);
         const SequenceArchiveUsage usage =
             sequenceArchiveUsage(
                 sequence,
@@ -319,13 +320,15 @@ AnimationInspection AnimationInspector::inspect(
             .totalFrameReferences = usage.totalReferences,
             .durationMilliseconds =
                 sequenceDurationMilliseconds(
-                    *animations_,
+                    *frames_,
                     sequence
                 )
         });
     }
 
-    for (const eld::definition::NpcDefinition& npc : npcs_->list()) {
+    for (const auto id : npcs_->listIds()) {
+        const eld::npc::Npc npc =
+            npcs_->get(id);
         addNpcCacheUse(
             info.uses,
             referencedSequenceIds,
@@ -383,10 +386,9 @@ AnimationInspection AnimationInspector::inspect(
         }
     }
 
-    for (
-        const eld::definition::LocationDefinition& location :
-        locations_->list()
-    ) {
+    for (const auto id : locations_->listIds()) {
+        const eld::location::Location location =
+            locations_->get(id);
         if (
             !sequenceMatches(
                 referencedSequenceIds,
@@ -410,10 +412,9 @@ AnimationInspection AnimationInspector::inspect(
         );
     }
 
-    for (
-        const eld::definition::SpotAnimationDefinition& spot :
-        spotAnimations_->list()
-    ) {
+    for (const auto id : spotAnimations_->listIds()) {
+        const eld::spot_animation::SpotAnimation spot =
+            spotAnimations_->get(id);
         if (
             !sequenceMatches(
                 referencedSequenceIds,
@@ -438,7 +439,7 @@ AnimationInspection AnimationInspector::inspect(
     }
 
     for (
-        const eld::interface::InterfaceWidget& widget :
+        const eld::interface::Widget& widget :
         interfaces_->list()
     ) {
         if (
@@ -482,7 +483,9 @@ AnimationInspection AnimationInspector::inspect(
         }
     }
 
-    for (const eld::definition::ItemDefinition& item : items_->list()) {
+    for (const auto id : items_->listIds()) {
+        const eld::item::Item item =
+            items_->get(id);
         const eld::animation::presentation::ItemAnimationProfile profile =
             presentation_->resolveItem(item);
 

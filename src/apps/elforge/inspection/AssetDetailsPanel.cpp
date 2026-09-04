@@ -104,43 +104,43 @@ const char* getNodeTypeName(
         case CacheTreeNodeType::DefinitionGroup:
             return "Definition Group";
 
-        case CacheTreeNodeType::FloorDefinition:
+        case CacheTreeNodeType::Floor:
             return "Floor Definition";
 
-        case CacheTreeNodeType::IdentityKitDefinition:
+        case CacheTreeNodeType::IdentityKit:
             return "Identity Kit";
 
-        case CacheTreeNodeType::LocationDefinition:
+        case CacheTreeNodeType::Location:
             return "Location";
 
-        case CacheTreeNodeType::NpcDefinition:
+        case CacheTreeNodeType::Npc:
             return "NPC";
 
-        case CacheTreeNodeType::ItemDefinition:
+        case CacheTreeNodeType::Item:
             return "Item";
 
-        case CacheTreeNodeType::SequenceDefinition:
+        case CacheTreeNodeType::Sequence:
             return "Sequence";
 
-        case CacheTreeNodeType::SpotAnimationDefinition:
+        case CacheTreeNodeType::SpotAnimation:
             return "Spot Animation";
 
-        case CacheTreeNodeType::VarpDefinition:
+        case CacheTreeNodeType::Varp:
             return "Varp";
 
-        case CacheTreeNodeType::VarbitDefinition:
+        case CacheTreeNodeType::Varbit:
             return "Varbit";
 
-        case CacheTreeNodeType::ParameterDefinition:
+        case CacheTreeNodeType::Parameter:
             return "Parameter";
 
-        case CacheTreeNodeType::MessageDefinition:
+        case CacheTreeNodeType::Message:
             return "Message";
 
-        case CacheTreeNodeType::MessageAnimationDefinition:
+        case CacheTreeNodeType::MessageAnimation:
             return "Message Animation";
 
-        case CacheTreeNodeType::InterfaceWidget:
+        case CacheTreeNodeType::Widget:
             return "Interface";
 
         case CacheTreeNodeType::Midi:
@@ -478,7 +478,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeMidi.has_value()) {
-        const eld::midi::MidiFile& midi =
+        const eld::midi::Midi& midi =
             *state.activeMidi;
 
         ImGui::Spacing();
@@ -491,29 +491,19 @@ void AssetDetailsPanel::render(
         );
 
         ImGui::Text(
-            "Source container: %s",
-            midi.data.sourceContainer ==
-                    eld::midi::MidiContainer::RiffMidi
-                ? "RIFF/RMID"
-                : "Standard MIDI"
+            "Tracks: %zu",
+            midi.tracks.size()
         );
 
         ImGui::Text(
-            "Format: %u",
+            "Total ticks: %u",
             static_cast<unsigned int>(
-                midi.data.header.format
-            )
-        );
-
-        ImGui::Text(
-            "Tracks: %u",
-            static_cast<unsigned int>(
-                midi.data.header.trackCount
+                midi.totalTicks
             )
         );
 
         const std::uint16_t division =
-            midi.data.header.division;
+            midi.division;
 
         if ((division & 0x8000u) == 0) {
             ImGui::Text(
@@ -530,7 +520,7 @@ void AssetDetailsPanel::render(
 
         ImGui::Text(
             "Normalized size: %zu bytes",
-            midi.data.bytes.size()
+            midi.bytes.size()
         );
 
         ImGui::TextUnformatted(
@@ -567,21 +557,16 @@ void AssetDetailsPanel::render(
             );
         }
 
-        if (ImGui::CollapsingHeader("Track chunks")) {
+        if (ImGui::CollapsingHeader("Tracks")) {
             for (
                 std::size_t index = 0;
-                index < midi.data.tracks.size();
+                index < midi.tracks.size();
                 ++index
             ) {
-                const eld::midi::MidiTrackInfo& track =
-                    midi.data.tracks[index];
-
                 ImGui::Text(
-                    "Track %zu: chunk @ %zu, data @ %zu, %u bytes",
+                    "Track %zu: %zu events",
                     index,
-                    track.chunkOffset,
-                    track.dataOffset,
-                    static_cast<unsigned int>(track.dataSize)
+                    midi.tracks[index].events.size()
                 );
             }
         }
@@ -1275,7 +1260,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeSpotAnimation.has_value()) {
-        const eld::definition::SpotAnimationDefinition& effect =
+        const eld::spot_animation::SpotAnimation& effect =
             *state.activeSpotAnimation;
 
         ImGui::Spacing();
@@ -1365,7 +1350,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeSequence.has_value()) {
-        const eld::definition::SequenceDefinition& sequence =
+        const eld::sequence::Sequence& sequence =
             *state.activeSequence;
 
         ImGui::Spacing();
@@ -1420,7 +1405,7 @@ void AssetDetailsPanel::render(
             index < sequence.frames.size();
             ++index
         ) {
-            const eld::definition::SequenceFrame& frame =
+            const eld::sequence::SequenceFrame& frame =
                 sequence.frames[index];
 
             if (frame.secondaryFrameId.has_value()) {
@@ -1454,7 +1439,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeItem.has_value()) {
-        const eld::definition::ItemDefinition& item =
+        const eld::item::Item& item =
             *state.activeItem;
 
         ImGui::Spacing();
@@ -1550,7 +1535,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeNpc.has_value()) {
-        const eld::definition::NpcDefinition& npc =
+        const eld::npc::Npc& npc =
             *state.activeNpc;
 
         ImGui::Spacing();
@@ -1638,7 +1623,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeLocation.has_value()) {
-        const eld::definition::LocationDefinition& location =
+        const eld::location::Location& location =
             *state.activeLocation;
 
         ImGui::Spacing();
@@ -1667,7 +1652,7 @@ void AssetDetailsPanel::render(
         );
 
         for (
-            const eld::definition::LocationModel& model :
+            const eld::location::LocationModel& model :
             location.models
         ) {
             if (model.type.has_value()) {
@@ -1740,7 +1725,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeIdentityKit.has_value()) {
-        const eld::definition::IdentityKitDefinition& kit =
+        const eld::identity_kit::IdentityKit& kit =
             *state.activeIdentityKit;
 
         ImGui::Spacing();
@@ -1834,7 +1819,7 @@ void AssetDetailsPanel::render(
     }
 
     if (state.activeFloor.has_value()) {
-        const eld::definition::FloorDefinition& floor =
+        const eld::floor::Floor& floor =
             *state.activeFloor;
 
         ImGui::Spacing();

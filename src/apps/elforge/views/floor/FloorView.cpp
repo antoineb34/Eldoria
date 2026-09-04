@@ -27,7 +27,7 @@ eld::image::RgbaPixel makeColorPixel(
 }
 
 eld::image::Image FloorView::build(
-    const eld::definition::FloorDefinition& floor
+    const eld::floor::Floor& floor
 ) const {
     constexpr std::uint16_t Size = 256;
 

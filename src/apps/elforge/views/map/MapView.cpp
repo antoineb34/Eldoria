@@ -226,8 +226,8 @@ eld::render::Transform classicMapTransform() {
 
 MapView::MapView(
     const eld::map::MapRepository& loader,
-    const eld::definition::FloorRepository& floors,
-    const eld::definition::LocationRepository& locations,
+    const eld::floor::FloorRepository& floors,
+    const eld::location::LocationRepository& locations,
     eld::model::ModelRepository& models,
     eld::render::GraphicsResources& graphics
 )

@@ -31,8 +31,8 @@
 #include "views/interface/InterfaceView.h"
 
 #include "render/GraphicsResources.h"
-#include "interface/InterfaceRepository.h"
-#include "sprite/SpriteRepository.h"
+#include "repositories/WidgetRepository.h"
+#include "repositories/SpriteRepository.h"
 
 #include "render/RenderPipeline.h"
 #include "render/backend/software/SoftwareRenderBackend.h"
@@ -65,7 +65,7 @@ struct SpriteTexture {
 };
 
 PixelSize widgetPixelSize(
-    const eld::interface::InterfaceWidget& widget
+    const eld::interface::Widget& widget
 ) {
     if (widget.type == 2) {
         const int columns =
@@ -3612,7 +3612,7 @@ void renderModelOverlays(
 
 void renderInterfaceText(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceWidget& widget,
+    const eld::interface::Widget& widget,
     int x,
     int y,
     int width
@@ -3694,7 +3694,7 @@ void renderInterfaceText(
 
 void renderInterfaceSprite(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceWidget& widget,
+    const eld::interface::Widget& widget,
     int x,
     int y,
     InterfaceSpriteCache& spriteCache
@@ -3737,13 +3737,13 @@ void renderInterfaceSprite(
 
 void renderInterfaceInventory(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceWidget& widget,
+    const eld::interface::Widget& widget,
     int x,
     int y,
     InterfaceSpriteCache& spriteCache
 ) {
     for (
-        const eld::interface::InterfaceSpriteSlot& slot :
+        const eld::interface::WidgetSpriteSlot& slot :
         widget.inventorySprites
     ) {
         SpriteTexture* texture =
@@ -3903,7 +3903,7 @@ void renderInterfaceInventory(
 
 void renderInterfaceItemList(
     SDL_Renderer* renderer,
-    const eld::interface::InterfaceWidget& widget,
+    const eld::interface::Widget& widget,
     int x,
     int y
 ) {
@@ -6257,7 +6257,7 @@ void ViewportPanel::renderViewport(
     SDL_Renderer* renderer,
     CacheExplorerState& state,
     eld::render::GraphicsResources& resources,
-    const eld::interface::InterfaceRepository& interfaces,
+    const eld::interface::WidgetRepository& interfaces,
     eld::sprite::SpriteRepository& interfaceSprites
 ) {
     viewportRenderer_ =

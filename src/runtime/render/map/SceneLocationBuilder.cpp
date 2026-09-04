@@ -66,7 +66,7 @@ SceneLocationKind kindForShape(std::uint8_t shape) {
 
 std::vector<SceneLocationPlacement> SceneLocationBuilder::build(
     const std::vector<eld::map::MapLocationSpawn>& spawns,
-    const eld::definition::LocationRepository& locations,
+    const eld::location::LocationRepository& locations,
     const SceneLocationTileSampler& sampleTile
 ) const {
     std::vector<SceneLocationPlacement> result;
@@ -88,9 +88,9 @@ std::vector<SceneLocationPlacement> SceneLocationBuilder::build(
             continue;
         }
 
-        const eld::definition::LocationDefinition* definition =
+        const auto definition =
             locations.find(spawn.id);
-        if (definition == nullptr) {
+        if (!definition.has_value()) {
             continue;
         }
 

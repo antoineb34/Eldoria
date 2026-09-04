@@ -12,29 +12,29 @@
 #include "export/AnimationExporter.h"
 #include "views/map/MapViewState.h"
 
-#include "midi/MidiFile.h"
+#include "Midi.h"
 #include "views/animation/AnimationViewState.h"
 #include "views/midi/MidiViewState.h"
 
 #include "render/model/ModelHandle.h"
-#include "model/Model.h"
-#include "texture/Texture.h"
-#include "sprite/Sprite.h"
-#include "image/Image.h"
-#include "font/Font.h"
-#include "floor/FloorDefinition.h"
-#include "identity_kit/IdentityKitDefinition.h"
-#include "location/LocationDefinition.h"
-#include "npc/NpcDefinition.h"
-#include "item/ItemDefinition.h"
-#include "sequence/SequenceDefinition.h"
-#include "spot_animation/SpotAnimationDefinition.h"
-#include "varp/VarpDefinition.h"
-#include "varbit/VarbitDefinition.h"
-#include "parameter/ParameterDefinition.h"
-#include "message/MessageDefinition.h"
-#include "message_animation/MessageAnimationDefinition.h"
-#include "interface/InterfaceWidget.h"
+#include "Model.h"
+#include "Texture.h"
+#include "Sprite.h"
+#include "Image.h"
+#include "Font.h"
+#include "Floor.h"
+#include "IdentityKit.h"
+#include "Location.h"
+#include "Npc.h"
+#include "Item.h"
+#include "Sequence.h"
+#include "SpotAnimation.h"
+#include "Varp.h"
+#include "Varbit.h"
+#include "Parameter.h"
+#include "Message.h"
+#include "MessageAnimation.h"
+#include "Widget.h"
 
 #include "render/camera/Camera.h"
 #include "render/scene/Transform.h"
@@ -96,7 +96,7 @@ struct CacheExplorerState {
     std::string animationExportStatus;
     bool animationExportAllRequested = false;
 
-    std::optional<eld::midi::MidiFile> activeMidi;
+    std::optional<eld::midi::Midi> activeMidi;
     std::string midiExportStatus;
     MidiViewState midiView;
 
@@ -127,41 +127,41 @@ struct CacheExplorerState {
     std::optional<eld::sprite::Sprite> activeSprite;
     std::optional<eld::image::Image> activeImage;
     std::optional<eld::font::Font> activeFont;
-    std::optional<eld::definition::FloorDefinition> activeFloor;
-    std::optional<eld::definition::IdentityKitDefinition>
+    std::optional<eld::floor::Floor> activeFloor;
+    std::optional<eld::identity_kit::IdentityKit>
         activeIdentityKit;
 
-    std::optional<eld::definition::LocationDefinition>
+    std::optional<eld::location::Location>
         activeLocation;
 
-    std::optional<eld::definition::NpcDefinition>
+    std::optional<eld::npc::Npc>
         activeNpc;
 
-    std::optional<eld::definition::ItemDefinition>
+    std::optional<eld::item::Item>
         activeItem;
 
-    std::optional<eld::definition::SequenceDefinition>
+    std::optional<eld::sequence::Sequence>
         activeSequence;
 
-    std::optional<eld::definition::SpotAnimationDefinition>
+    std::optional<eld::spot_animation::SpotAnimation>
         activeSpotAnimation;
 
-    std::optional<eld::definition::VarpDefinition>
+    std::optional<eld::varp::Varp>
         activeVarp;
 
-    std::optional<eld::definition::VarbitDefinition>
+    std::optional<eld::varbit::Varbit>
         activeVarbit;
 
-    std::optional<eld::definition::ParameterDefinition>
+    std::optional<eld::parameter::Parameter>
         activeParameter;
 
-    std::optional<eld::definition::MessageDefinition>
+    std::optional<eld::message::Message>
         activeMessage;
 
-    std::optional<eld::definition::MessageAnimationDefinition>
+    std::optional<eld::message_animation::MessageAnimation>
         activeMessageAnimation;
 
-    std::optional<eld::interface::InterfaceWidget>
+    std::optional<eld::interface::Widget>
         activeInterface;
 
     std::string activeInterfaceDump;

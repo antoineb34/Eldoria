@@ -6,7 +6,7 @@
 #include <optional>
 
 #include "SceneTerrainBuilder.h"
-#include "floor/FloorRepository.h"
+#include "repositories/FloorRepository.h"
 #include "map/MapTile.h"
 
 namespace eld::render::map {
@@ -36,7 +36,7 @@ public:
         int tileX,
         int tileY,
         const TerrainTileSampler& sample,
-        const eld::definition::FloorRepository& floors
+        const eld::floor::FloorRepository& floors
     ) const;
 
     static std::uint32_t paletteRgb(

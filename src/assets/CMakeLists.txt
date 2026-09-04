@@ -1,52 +1,50 @@
 add_library(eldoria_assets STATIC
+    AnimationFrameTable.cpp
     content/animation/AnimationPresentationCatalog.cpp
-    resources/animation/AnimationDecoder.cpp
-    resources/animation/AnimationRepository.cpp
-    content/interface/InterfaceFileParser.cpp
-    content/interface/InterfaceRepository.cpp
+    decoders/AnimationDecoder.cpp
+    repositories/AnimationRepository.cpp
+    InterfaceComposer.cpp
+    decoders/WidgetDecoder.cpp
+    repositories/WidgetRepository.cpp
     content/map/MapFileReader.cpp
     content/map/MapIndexParser.cpp
     content/map/MapRepository.cpp
     content/map/TerrainDecoder.cpp
     content/map/LocationSpawnDecoder.cpp
-    resources/midi/MidiFileParser.cpp
-    resources/midi/MidiDecoder.cpp
-    resources/midi/MidiRepository.cpp
-    resources/model/ModelDecoder.cpp
-    resources/model/ModelRepository.cpp
-    resources/image/ImageDecoder.cpp
-    resources/image/ImageRepository.cpp
-    resources/font/FontFileParser.cpp
-    resources/font/FontDecoder.cpp
-    resources/font/FontRepository.cpp
-    resources/definition/DefinitionTableParser.cpp
-    resources/definition/DefinitionArchive.cpp
-    content/floor/FloorDefinitionParser.cpp
-    content/floor/FloorRepository.cpp
-    content/identity_kit/IdentityKitDefinitionParser.cpp
-    content/identity_kit/IdentityKitRepository.cpp
-    content/location/LocationDefinitionParser.cpp
-    content/location/LocationRepository.cpp
-    content/npc/NpcDefinitionParser.cpp
-    content/npc/NpcRepository.cpp
-    content/item/ItemDefinitionParser.cpp
-    content/item/ItemRepository.cpp
-    resources/sequence/SequenceDefinitionParser.cpp
-    resources/sequence/SequenceRepository.cpp
-    content/spot_animation/SpotAnimationDefinitionParser.cpp
-    content/spot_animation/SpotAnimationRepository.cpp
-    content/varp/VarpDefinitionParser.cpp
-    content/varp/VarpRepository.cpp
-    content/varbit/VarbitDefinitionParser.cpp
-    content/varbit/VarbitRepository.cpp
-    content/parameter/ParameterDefinitionParser.cpp
-    content/parameter/ParameterRepository.cpp
-    content/message/MessageDefinitionParser.cpp
-    content/message/MessageRepository.cpp
-    content/message_animation/MessageAnimationDefinitionParser.cpp
-    content/message_animation/MessageAnimationRepository.cpp
-    resources/texture/TextureRepository.cpp
-    resources/sprite/SpriteRepository.cpp
+    decoders/MidiDecoder.cpp
+    repositories/MidiRepository.cpp
+    decoders/ModelDecoder.cpp
+    repositories/ModelRepository.cpp
+    decoders/ImageDecoder.cpp
+    repositories/ImageRepository.cpp
+    decoders/FontDecoder.cpp
+    repositories/FontRepository.cpp
+    decoders/FloorDecoder.cpp
+    repositories/FloorRepository.cpp
+    decoders/IdentityKitDecoder.cpp
+    repositories/IdentityKitRepository.cpp
+    decoders/LocationDecoder.cpp
+    repositories/LocationRepository.cpp
+    decoders/NpcDecoder.cpp
+    repositories/NpcRepository.cpp
+    decoders/ItemDecoder.cpp
+    repositories/ItemRepository.cpp
+    decoders/SequenceDecoder.cpp
+    repositories/SequenceRepository.cpp
+    decoders/SpotAnimationDecoder.cpp
+    repositories/SpotAnimationRepository.cpp
+    decoders/VarpDecoder.cpp
+    repositories/VarpRepository.cpp
+    decoders/VarbitDecoder.cpp
+    repositories/VarbitRepository.cpp
+    decoders/ParameterDecoder.cpp
+    repositories/ParameterRepository.cpp
+    decoders/MessageDecoder.cpp
+    repositories/MessageRepository.cpp
+    decoders/MessageAnimationDecoder.cpp
+    repositories/MessageAnimationRepository.cpp
+    repositories/TextureRepository.cpp
+    repositories/SpriteRepository.cpp
 )
 
 add_library(Eldoria::Assets ALIAS eldoria_assets)
@@ -69,4 +67,19 @@ target_sources(
     eldoria_assets
     PRIVATE
         ResourceProvider.cpp
+)
+
+
+# Eldoria MIDI dependency
+
+target_include_directories(
+    eldoria_assets
+    PRIVATE
+        ${midifile_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    eldoria_assets
+    PRIVATE
+        midifile
 )

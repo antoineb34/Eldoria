@@ -31,21 +31,21 @@ struct VariantKeyHash {
 };
 
 std::vector<std::uint16_t> modelIdsForType(
-    const eld::definition::LocationDefinition& definition,
+    const eld::location::Location& definition,
     std::uint8_t modelType
 ) {
     const bool typed =
         std::any_of(
             definition.models.begin(),
             definition.models.end(),
-            [](const eld::definition::LocationModel& model) {
+            [](const eld::location::LocationModel& model) {
                 return model.type.has_value();
             }
         );
 
     if (typed) {
         for (
-            const eld::definition::LocationModel& model :
+            const eld::location::LocationModel& model :
             definition.models
         ) {
             if (
@@ -71,7 +71,7 @@ std::vector<std::uint16_t> modelIdsForType(
     ids.reserve(definition.models.size());
 
     for (
-        const eld::definition::LocationModel& model :
+        const eld::location::LocationModel& model :
         definition.models
     ) {
         ids.push_back(model.id);
@@ -155,10 +155,10 @@ void rotateY180Mirrored(eld::model::Model& mesh) {
 
 void recolor(
     eld::model::Model& mesh,
-    const eld::definition::LocationDefinition& definition
+    const eld::location::Location& definition
 ) {
     for (
-        const eld::definition::LocationRecolor& recolor :
+        const eld::location::LocationRecolor& recolor :
         definition.recolors
     ) {
         for (eld::model::Face& face : mesh.faces) {
@@ -171,7 +171,7 @@ void recolor(
 
 void scaleAndTranslate(
     eld::model::Model& mesh,
-    const eld::definition::LocationDefinition& definition
+    const eld::location::Location& definition
 ) {
     constexpr int BaseScale = 128;
 
@@ -213,7 +213,7 @@ SceneLocationModelPart standardPart(
 
 eld::model::Model SceneLocationModelBuilder::transformModel(
     eld::model::Model mesh,
-    const eld::definition::LocationDefinition& definition,
+    const eld::location::Location& definition,
     int modelRotation
 ) {
     // LocType::getModel uses rotation > 3 only as the mirror selector; its
@@ -238,7 +238,7 @@ eld::model::Model SceneLocationModelBuilder::transformModel(
 
 SceneLocationModelBuildResult SceneLocationModelBuilder::build(
     const std::vector<SceneLocationPlacement>& placements,
-    const eld::definition::LocationRepository& locations,
+    const eld::location::LocationRepository& locations,
     const eld::model::ModelRepository& models
 ) const {
     SceneLocationModelBuildResult result;
@@ -250,7 +250,7 @@ SceneLocationModelBuildResult SceneLocationModelBuilder::build(
 
     const auto resolveVariant = [&]
         (
-            const eld::definition::LocationDefinition& definition,
+            const eld::location::Location& definition,
             std::uint8_t modelType,
             int modelRotation
         ) -> std::optional<std::size_t> {
@@ -309,10 +309,10 @@ SceneLocationModelBuildResult SceneLocationModelBuilder::build(
     };
 
     for (const SceneLocationPlacement& placement : placements) {
-        const eld::definition::LocationDefinition* definition =
+        const auto definition =
             locations.find(placement.id);
 
-        if (definition == nullptr) {
+        if (!definition.has_value()) {
             ++result.stats.missingDefinitions;
             continue;
         }

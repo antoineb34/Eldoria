@@ -5,15 +5,15 @@
 #include <map>
 #include <optional>
 
-#include "animation/Animation.h"
-#include "animation/AnimationDecoder.h"
+#include "Animation.h"
+#include "decoders/AnimationDecoder.h"
 #include "archive/Archive.h"
 #include "cache/Cache.h"
 #include "cache/Store.h"
-#include "image/ImageDecoder.h"
-#include "model/ModelDecoder.h"
-#include "model/ModelResource.h"
-#include "texture/Texture.h"
+#include "decoders/ImageDecoder.h"
+#include "decoders/ModelDecoder.h"
+#include "ModelResource.h"
+#include "Texture.h"
 
 namespace eld::asset {
 

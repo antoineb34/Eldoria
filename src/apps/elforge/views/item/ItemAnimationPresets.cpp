@@ -4,7 +4,7 @@
 #include <cctype>
 #include <string>
 
-#include "item/ItemDefinition.h"
+#include "Item.h"
 
 namespace eld::elforge {
 
@@ -24,7 +24,7 @@ std::string lowerAscii(std::string value) {
 }
 
 bool itemHasInventoryAction(
-    const eld::definition::ItemDefinition& definition,
+    const eld::item::Item& definition,
     const std::string& wanted
 ) {
     const std::string wantedLower = lowerAscii(wanted);
@@ -39,8 +39,8 @@ bool itemHasInventoryAction(
 }
 
 bool itemHasWearPosition(
-    const eld::definition::ItemDefinition& definition,
-    eld::definition::ItemWearPosition wanted
+    const eld::item::Item& definition,
+    eld::item::ItemWearPosition wanted
 ) {
     return
         definition.wearPosition == wanted ||
@@ -49,12 +49,12 @@ bool itemHasWearPosition(
 }
 
 bool itemLooksLikeShield(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     if (
         itemHasWearPosition(
             definition,
-            eld::definition::ItemWearPosition::LeftHand
+            eld::item::ItemWearPosition::LeftHand
         )
     ) {
         return true;
@@ -68,7 +68,7 @@ bool itemLooksLikeShield(
 }
 
 bool itemLooksLikeWeapon(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     if (itemLooksLikeShield(definition)) {
         return false;
@@ -77,7 +77,7 @@ bool itemLooksLikeWeapon(
     if (
         itemHasWearPosition(
             definition,
-            eld::definition::ItemWearPosition::RightHand
+            eld::item::ItemWearPosition::RightHand
         )
     ) {
         return true;
@@ -102,7 +102,7 @@ eld::animation::presentation::AnimationBinding makeItemActionBinding(
 
 std::vector<eld::animation::presentation::AnimationBinding>
 genericItemActionBindings(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     using Action =
         eld::animation::presentation::AnimationAction;
@@ -287,7 +287,7 @@ genericItemActionBindings(
 }
 
 std::optional<std::uint16_t> genericItemDefendSequence(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     const std::string name = lowerAscii(definition.name);
 
@@ -350,14 +350,14 @@ std::optional<std::uint16_t> genericItemDefendSequence(
 
 std::vector<eld::animation::presentation::AnimationBinding>
 ItemAnimationPresets::actions(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     return genericItemActionBindings(definition);
 }
 
 std::optional<std::uint16_t>
 ItemAnimationPresets::defendSequence(
-    const eld::definition::ItemDefinition& definition
+    const eld::item::Item& definition
 ) {
     return genericItemDefendSequence(definition);
 }

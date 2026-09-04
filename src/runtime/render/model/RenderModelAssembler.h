@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RenderModel.h"
-#include "model/Model.h"
+#include "Model.h"
 #include "texture/TextureResolver.h"
 
 namespace eld::render {

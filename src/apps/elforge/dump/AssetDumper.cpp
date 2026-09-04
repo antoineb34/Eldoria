@@ -31,19 +31,19 @@ const char* nodeTypeName(
         case CacheTreeNodeType::ArchiveFile: return "Archive File";
         case CacheTreeNodeType::Sprite: return "Sprite";
         case CacheTreeNodeType::DefinitionGroup: return "Definition Group";
-        case CacheTreeNodeType::FloorDefinition: return "Floor Definition";
-        case CacheTreeNodeType::IdentityKitDefinition: return "Identity Kit";
-        case CacheTreeNodeType::LocationDefinition: return "Location";
-        case CacheTreeNodeType::NpcDefinition: return "NPC";
-        case CacheTreeNodeType::ItemDefinition: return "Item";
-        case CacheTreeNodeType::SequenceDefinition: return "Sequence";
-        case CacheTreeNodeType::SpotAnimationDefinition: return "Spot Animation";
-        case CacheTreeNodeType::VarpDefinition: return "Varp";
-        case CacheTreeNodeType::VarbitDefinition: return "Varbit";
-        case CacheTreeNodeType::ParameterDefinition: return "Parameter";
-        case CacheTreeNodeType::MessageDefinition: return "Message";
-        case CacheTreeNodeType::MessageAnimationDefinition: return "Message Animation";
-        case CacheTreeNodeType::InterfaceWidget: return "Interface";
+        case CacheTreeNodeType::Floor: return "Floor Definition";
+        case CacheTreeNodeType::IdentityKit: return "Identity Kit";
+        case CacheTreeNodeType::Location: return "Location";
+        case CacheTreeNodeType::Npc: return "NPC";
+        case CacheTreeNodeType::Item: return "Item";
+        case CacheTreeNodeType::Sequence: return "Sequence";
+        case CacheTreeNodeType::SpotAnimation: return "Spot Animation";
+        case CacheTreeNodeType::Varp: return "Varp";
+        case CacheTreeNodeType::Varbit: return "Varbit";
+        case CacheTreeNodeType::Parameter: return "Parameter";
+        case CacheTreeNodeType::Message: return "Message";
+        case CacheTreeNodeType::MessageAnimation: return "Message Animation";
+        case CacheTreeNodeType::Widget: return "Interface";
         case CacheTreeNodeType::Midi: return "MIDI";
         case CacheTreeNodeType::MapRegion: return "Map Region";
         case CacheTreeNodeType::Font: return "Font";
@@ -425,34 +425,27 @@ bool dumpActiveAsset(
 
             out << "\n[MIDI]\n";
             out << "ID: " << midi.id << "\n";
-            out << "Format: "
-                << midi.data.header.format
-                << "\n";
             out << "Tracks: "
-                << midi.data.header.trackCount
+                << midi.tracks.size()
                 << "\n";
             out << "Division: "
-                << midi.data.header.division
+                << midi.division
+                << "\n";
+            out << "Total ticks: "
+                << midi.totalTicks
                 << "\n";
             out << "Normalized bytes: "
-                << midi.data.bytes.size()
+                << midi.bytes.size()
                 << "\n";
 
             for (
                 std::size_t index = 0;
-                index < midi.data.tracks.size();
+                index < midi.tracks.size();
                 ++index
             ) {
-                const auto& track =
-                    midi.data.tracks[index];
-
                 out << "Track " << index
-                    << ": chunkOffset="
-                    << track.chunkOffset
-                    << " dataOffset="
-                    << track.dataOffset
-                    << " size="
-                    << track.dataSize
+                    << ": events="
+                    << midi.tracks[index].events.size()
                     << "\n";
             }
 
@@ -461,7 +454,7 @@ bool dumpActiveAsset(
             out << "[Raw Bytes]\n";
             writeHexBytes(
                 out,
-                midi.data.bytes
+                midi.bytes
             );
         }
 

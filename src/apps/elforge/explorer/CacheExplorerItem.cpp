@@ -143,7 +143,7 @@ void CacheExplorer::selectNextWearableItem() {
     const ItemView view;
 
     const auto isWearable =
-        [&view](const eld::definition::ItemDefinition& item) {
+        [&view](const eld::item::Item& item) {
             return
                 view.hasEquippedModel(
                     item,
@@ -157,10 +157,10 @@ void CacheExplorer::selectNextWearableItem() {
 
     const auto selectItem =
         [this, previousMode, &view](
-            const eld::definition::ItemDefinition& item
+            const eld::item::Item& item
         ) {
             state_.selection.type =
-                CacheTreeNodeType::ItemDefinition;
+                CacheTreeNodeType::Item;
 
             state_.selection.definitionId =
                 static_cast<int>(item.id);
@@ -245,10 +245,12 @@ void CacheExplorer::selectNextWearableItem() {
             }
         };
 
-    const auto& items =
-        itemRepository_.list();
+    const auto ids =
+        itemRepository_.listIds();
 
-    for (const eld::definition::ItemDefinition& item : items) {
+    for (const auto id : ids) {
+        const eld::item::Item item =
+            itemRepository_.get(id);
         if (
             item.id > currentId &&
             isWearable(item)
@@ -259,7 +261,9 @@ void CacheExplorer::selectNextWearableItem() {
     }
 
     // Wrap so the button can be used continuously while reviewing equipment.
-    for (const eld::definition::ItemDefinition& item : items) {
+    for (const auto id : ids) {
+        const eld::item::Item item =
+            itemRepository_.get(id);
         if (
             item.id <= currentId &&
             isWearable(item)
@@ -275,7 +279,7 @@ void CacheExplorer::renderItemAnimationControls() {
         return;
     }
 
-    const eld::definition::ItemDefinition& item =
+    const eld::item::Item& item =
         *state_.activeItem;
 
     const ItemView view;
@@ -353,11 +357,11 @@ void CacheExplorer::renderItemAnimationControls() {
 
     const auto sequenceAvailable =
         [this](std::uint16_t id) {
-            const eld::definition::SequenceDefinition* sequence =
+            const auto sequence =
                 sequenceRepository_.find(id);
 
             return
-                sequence != nullptr &&
+                sequence &&
                 !sequence->frames.empty();
         };
 

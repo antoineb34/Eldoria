@@ -20,7 +20,7 @@ void rotate90Degrees(
 
 std::optional<eld::model::Model>
 SpotAnimationView::buildAnimationSource(
-    const eld::definition::SpotAnimationDefinition& definition,
+    const eld::spot_animation::SpotAnimation& definition,
     const eld::model::ModelRepository& repository
 ) const {
     if (!definition.modelId.has_value()) {
@@ -41,7 +41,7 @@ SpotAnimationView::buildAnimationSource(
 }
 
 void SpotAnimationView::prepareAnimatedMesh(
-    const eld::definition::SpotAnimationDefinition& definition,
+    const eld::spot_animation::SpotAnimation& definition,
     eld::model::Model& mesh
 ) const {
     for (eld::model::Vertex& vertex : mesh.vertices) {
@@ -96,7 +96,7 @@ void SpotAnimationView::prepareAnimatedMesh(
 
 std::optional<eld::model::Model>
 SpotAnimationView::build(
-    const eld::definition::SpotAnimationDefinition& definition,
+    const eld::spot_animation::SpotAnimation& definition,
     const eld::model::ModelRepository& repository
 ) const {
     std::optional<eld::model::Model> model =

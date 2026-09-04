@@ -35,16 +35,16 @@ std::uint32_t fallbackFloorRgb(
 
 std::uint32_t floorRgb(
     std::uint8_t rawId,
-    const eld::definition::FloorRepository& floors
+    const eld::floor::FloorRepository& floors
 ) {
     if (rawId == 0) {
         return 0;
     }
 
-    const auto* floor = floors.find(
+    const auto floor = floors.find(
         static_cast<std::uint16_t>(rawId - 1u)
     );
-    if (floor == nullptr) {
+    if (!floor.has_value()) {
         return fallbackFloorRgb(rawId);
     }
     if (floor->rgb.has_value()) {
@@ -388,7 +388,7 @@ SceneTileAppearance ClassicTerrainAppearanceBuilder::build(
     int tileX,
     int tileY,
     const TerrainTileSampler& sample,
-    const eld::definition::FloorRepository& floors
+    const eld::floor::FloorRepository& floors
 ) const {
     SceneTileAppearance result;
 
@@ -456,12 +456,12 @@ SceneTileAppearance ClassicTerrainAppearanceBuilder::build(
         return result;
     }
 
-    const auto* overlay = floors.find(
+    const auto overlay = floors.find(
         static_cast<std::uint16_t>(tile->overlayId - 1u)
     );
 
     if (
-        overlay != nullptr &&
+        overlay.has_value() &&
         overlay->rgb.has_value() &&
         *overlay->rgb == 0xFF00FFu
     ) {
@@ -473,7 +473,7 @@ SceneTileAppearance ClassicTerrainAppearanceBuilder::build(
     result.overlayVisible = true;
 
     if (
-        overlay != nullptr &&
+        overlay.has_value() &&
         overlay->textureId.has_value()
     ) {
         result.textureId = overlay->textureId;

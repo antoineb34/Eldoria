@@ -15,6 +15,31 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(EldoriaTargets)
 
+include(FetchContent)
+
+set(
+    BUILD_MIDILIBRARY_ONLY
+    ON
+    CACHE BOOL ""
+    FORCE
+)
+
+FetchContent_Declare(
+    midifile
+    GIT_REPOSITORY
+        https://github.com/craigsapp/midifile.git
+    GIT_TAG
+        98917df5b1bf0d6e8d4c0e5fff86d6b05343e793
+)
+
+set(
+    CMAKE_POLICY_VERSION_MINIMUM
+    3.5
+)
+
+FetchContent_MakeAvailable(midifile)
+
+
 find_package(ZLIB REQUIRED)
 find_package(SDL3 REQUIRED CONFIG)
 find_package(BZip2 REQUIRED)
