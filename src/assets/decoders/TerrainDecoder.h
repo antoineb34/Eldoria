@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
+#include <span>
 
 #include "map/MapTile.h"
 
@@ -10,7 +10,7 @@ namespace eld::map {
 class TerrainDecoder {
 public:
     MapTileArray decode(
-        const std::vector<std::uint8_t>& bytes,
+        std::span<const std::uint8_t> payload,
         std::uint16_t regionId
     ) const;
 

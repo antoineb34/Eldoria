@@ -11,7 +11,7 @@
 #include "repositories/ParameterRepository.h"
 #include "repositories/MessageRepository.h"
 #include "repositories/MessageAnimationRepository.h"
-#include "map/MapRepository.h"
+#include "repositories/MapRepository.h"
 #include "repositories/WidgetRepository.h"
 
 #include <array>

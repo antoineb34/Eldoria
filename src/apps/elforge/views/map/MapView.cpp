@@ -55,7 +55,7 @@ TerrainNeighborhood loadTerrainNeighborhood(
                     (regionX << 8) | regionY
                 );
 
-            if (loader.find(candidateId) == nullptr) {
+            if (loader.findEntry(candidateId) == nullptr) {
                 result.missingRegionIds.push_back(candidateId);
                 continue;
             }
@@ -244,7 +244,7 @@ MapViewState MapView::build(
     using Clock = std::chrono::steady_clock;
 
     const eld::map::MapIndexEntry* indexEntry =
-        loader_.find(regionId);
+        loader_.findEntry(regionId);
 
     if (indexEntry == nullptr) {
         throw std::out_of_range(
@@ -277,7 +277,7 @@ MapViewState MapView::build(
     MapViewState viewState;
     viewState.indexEntry = *indexEntry;
     viewState.centerRegion =
-        loader_.load(regionId);
+        loader_.get(regionId);
 
     viewState.missingNeighborRegionIds =
         neighborhood.missingRegionIds;

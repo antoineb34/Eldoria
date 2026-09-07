@@ -1,4 +1,4 @@
-#include "LocationSpawnDecoder.h"
+#include "decoders/LocationSpawnDecoder.h"
 
 #include <limits>
 #include <stdexcept>
@@ -8,9 +8,9 @@
 namespace eld::map {
 
 std::vector<MapLocationSpawn> LocationSpawnDecoder::decode(
-    const std::vector<std::uint8_t>& bytes
+    std::span<const std::uint8_t> payload
 ) const {
-    eld::binary::ByteReader reader(bytes);
+    eld::binary::ByteReader reader(payload);
     std::vector<MapLocationSpawn> objects;
 
     int objectId = -1;

@@ -13,7 +13,7 @@
 #include <SDL3/SDL.h>
 
 #include "cache/Cache.h"
-#include "map/MapRepository.h"
+#include "repositories/MapRepository.h"
 #include "repositories/MidiRepository.h"
 #include "midi/MidiPlayer.h"
 

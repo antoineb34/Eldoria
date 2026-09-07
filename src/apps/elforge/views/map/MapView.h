@@ -6,7 +6,7 @@
 #include "repositories/FloorRepository.h"
 #include "repositories/LocationRepository.h"
 #include "render/GraphicsResources.h"
-#include "map/MapRepository.h"
+#include "repositories/MapRepository.h"
 #include "repositories/ModelRepository.h"
 
 namespace eld::elforge {

@@ -6,11 +6,10 @@ add_library(eldoria_assets STATIC
     InterfaceComposer.cpp
     decoders/WidgetDecoder.cpp
     repositories/WidgetRepository.cpp
-    content/map/MapFileReader.cpp
-    content/map/MapIndexParser.cpp
-    content/map/MapRepository.cpp
-    content/map/TerrainDecoder.cpp
-    content/map/LocationSpawnDecoder.cpp
+    decoders/MapIndexDecoder.cpp
+    decoders/TerrainDecoder.cpp
+    decoders/LocationSpawnDecoder.cpp
+    repositories/MapRepository.cpp
     decoders/MidiDecoder.cpp
     repositories/MidiRepository.cpp
     decoders/ModelDecoder.cpp

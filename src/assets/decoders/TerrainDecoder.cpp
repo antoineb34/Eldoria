@@ -1,4 +1,4 @@
-#include "TerrainDecoder.h"
+#include "decoders/TerrainDecoder.h"
 
 #include <algorithm>
 #include <cmath>
@@ -134,10 +134,10 @@ int TerrainDecoder::generatedHeight(
 }
 
 MapTileArray TerrainDecoder::decode(
-    const std::vector<std::uint8_t>& bytes,
+    std::span<const std::uint8_t> payload,
     std::uint16_t regionId
 ) const {
-    eld::binary::ByteReader reader(bytes);
+    eld::binary::ByteReader reader(payload);
     MapTileArray tiles{};
 
     const int baseX =
