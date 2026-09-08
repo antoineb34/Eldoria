@@ -1,0 +1,2216 @@
+ELDORIA ASSET COHESION REVIEW
+Branch: feature/asset-manager
+Commit: a70e8c8
+
+GIT STATUS
+ M src/assets/CMakeLists.txt
+ M src/assets/Sprite.h
+ M src/assets/decoders/ImageDecoder.cpp
+ M src/assets/decoders/ImageDecoder.h
+ D src/assets/repositories/ImageRepository.cpp
+ D src/assets/repositories/ImageRepository.h
+ M src/assets/repositories/SpriteRepository.cpp
+ M src/assets/repositories/SpriteRepository.h
+?? asset_cohesion_review.txt
+?? eldoria_headers_review.txt
+?? src/assets/AssetManager.cpp
+?? src/assets/AssetManager.h
+
+
+FULL FILES
+
+================================================================================
+FILE: CMakeLists.txt
+================================================================================
+cmake_minimum_required(VERSION 3.20)
+
+project(Eldoria VERSION 0.1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(EldoriaTargets)
+
+include(FetchContent)
+
+set(
+    BUILD_MIDILIBRARY_ONLY
+    ON
+    CACHE BOOL ""
+    FORCE
+)
+
+FetchContent_Declare(
+    midifile
+    GIT_REPOSITORY
+        https://github.com/craigsapp/midifile.git
+    GIT_TAG
+        98917df5b1bf0d6e8d4c0e5fff86d6b05343e793
+)
+
+set(
+    CMAKE_POLICY_VERSION_MINIMUM
+    3.5
+)
+
+FetchContent_MakeAvailable(midifile)
+
+
+find_package(ZLIB REQUIRED)
+find_package(SDL3 REQUIRED CONFIG)
+find_package(BZip2 REQUIRED)
+
+# Shared modules.
+eldoria_add_module(binary src/binary)
+eldoria_add_module(storage src/storage)
+eldoria_add_module(assets src/assets)
+eldoria_add_module(host src/host)
+eldoria_add_module(runtime src/runtime)
+
+# Eldoria applications.
+eldoria_add_app(elforge src/apps/elforge)
+eldoria_add_app(elclient src/apps/elclient)
+eldoria_add_app(elserver src/apps/elserver)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
+
+================================================================================
+FILE: src/apps/elclient/CMakeLists.txt
+================================================================================
+add_executable(elclient
+    main.cpp
+)
+
+target_include_directories(elclient PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(elclient PRIVATE
+    Eldoria::Host
+    Eldoria::Render
+    Eldoria::Assets
+)
+
+set_target_properties(elclient PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+
+================================================================================
+FILE: src/apps/elforge/CMakeLists.txt
+================================================================================
+add_executable(elforge
+    main.cpp
+
+    app/ElForgeApp.cpp
+    ui/ElForgeTheme.cpp
+    ui/IconButton.cpp
+    ui/Carousel.cpp
+    dump/AssetDumpWriter.cpp
+    dump/AssetDumper.cpp
+    dump/AnimationDumper.cpp
+    export/AnimationExporter.cpp
+    inspection/AnimationInspector.cpp
+    explorer/CacheExplorer.cpp
+    explorer/CacheExplorerAnimation.cpp
+    explorer/CacheExplorerItem.cpp
+    explorer/CacheExplorerSelection.cpp
+    explorer/tree/CacheTreeBuilder.cpp
+    views/animation/AnimationViewPanel.cpp
+    views/floor/FloorView.cpp
+    views/font/FontView.cpp
+    views/identity_kit/IdentityKitView.cpp
+    inspection/InterfaceInspector.cpp
+    views/item/ItemAnimationPresets.cpp
+    views/item/ItemView.cpp
+    views/location/LocationView.cpp
+    views/map/MapViewState.cpp
+    views/map/MapView.cpp
+    views/map/MapViewPanel.cpp
+    views/midi/MidiView.cpp
+    views/midi/MidiViewPanel.cpp
+    export/MidiExporter.cpp
+    views/npc/NpcView.cpp
+    views/spot_animation/SpotAnimationView.cpp
+
+    inspection/AssetDetailsPanel.cpp
+    explorer/tree/CacheTreePanel.cpp
+    viewport/ViewportPanel.cpp
+    viewport/ViewportSurface.cpp
+    views/interface/InterfaceViewPanel.cpp
+    views/map/MapViewSurface.cpp
+    views/model/ModelViewPanel.cpp
+    views/texture/TextureViewPanel.cpp
+    viewport/ViewportWorkspaceRouter.cpp
+)
+
+target_include_directories(elforge PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(elforge PRIVATE
+    Eldoria::Audio
+    Eldoria::Assets
+    Eldoria::Render
+    Eldoria::Host
+    Eldoria::HostImGui
+)
+
+set_target_properties(elforge PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+
+================================================================================
+FILE: src/apps/elserver/CMakeLists.txt
+================================================================================
+add_executable(elserver
+    main.cpp
+
+    app/ElServerApp.cpp
+    app/ServerRunLoop.cpp
+)
+
+target_include_directories(elserver PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(elserver PRIVATE
+    Eldoria::Assets
+    Eldoria::Game
+    Eldoria::Network
+    Eldoria::World
+)
+
+set_target_properties(elserver PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+
+================================================================================
+FILE: src/assets/CMakeLists.txt
+================================================================================
+add_library(eldoria_assets STATIC
+    AssetManager.cpp
+    AnimationFrameTable.cpp
+    content/animation/AnimationPresentationCatalog.cpp
+    decoders/AnimationDecoder.cpp
+    repositories/AnimationRepository.cpp
+    InterfaceComposer.cpp
+    decoders/WidgetDecoder.cpp
+    repositories/WidgetRepository.cpp
+    decoders/MapIndexDecoder.cpp
+    decoders/TerrainDecoder.cpp
+    decoders/LocationSpawnDecoder.cpp
+    repositories/MapRepository.cpp
+    decoders/MidiDecoder.cpp
+    repositories/MidiRepository.cpp
+    decoders/ModelDecoder.cpp
+    repositories/ModelRepository.cpp
+    decoders/ImageDecoder.cpp
+    repositories/ImageRepository.cpp
+    decoders/FontDecoder.cpp
+    repositories/FontRepository.cpp
+    decoders/FloorDecoder.cpp
+    repositories/FloorRepository.cpp
+    decoders/IdentityKitDecoder.cpp
+    repositories/IdentityKitRepository.cpp
+    decoders/LocationDecoder.cpp
+    repositories/LocationRepository.cpp
+    decoders/NpcDecoder.cpp
+    repositories/NpcRepository.cpp
+    decoders/ItemDecoder.cpp
+    repositories/ItemRepository.cpp
+    decoders/SequenceDecoder.cpp
+    repositories/SequenceRepository.cpp
+    decoders/SpotAnimationDecoder.cpp
+    repositories/SpotAnimationRepository.cpp
+    decoders/VarpDecoder.cpp
+    repositories/VarpRepository.cpp
+    decoders/VarbitDecoder.cpp
+    repositories/VarbitRepository.cpp
+    decoders/ParameterDecoder.cpp
+    repositories/ParameterRepository.cpp
+    decoders/MessageDecoder.cpp
+    repositories/MessageRepository.cpp
+    decoders/MessageAnimationDecoder.cpp
+    repositories/MessageAnimationRepository.cpp
+    repositories/TextureRepository.cpp
+    repositories/SpriteRepository.cpp
+)
+
+add_library(Eldoria::Assets ALIAS eldoria_assets)
+
+target_include_directories(eldoria_assets PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources
+    ${CMAKE_CURRENT_SOURCE_DIR}/content
+)
+
+target_link_libraries(eldoria_assets PUBLIC
+    Eldoria::Storage
+)
+
+
+# Public asset-access facade.
+
+
+target_sources(
+    eldoria_assets
+    PRIVATE
+        ResourceProvider.cpp
+)
+
+
+# Eldoria MIDI dependency
+
+target_include_directories(
+    eldoria_assets
+    PRIVATE
+        ${midifile_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    eldoria_assets
+    PRIVATE
+        midifile
+)
+
+
+================================================================================
+FILE: src/assets/Image.h
+================================================================================
+#pragma once
+
+#include <cstdint>
+#include <vector>
+
+namespace eld::image {
+
+struct RgbaPixel {
+    std::uint8_t red = 0;
+    std::uint8_t green = 0;
+    std::uint8_t blue = 0;
+    std::uint8_t alpha = 0;
+};
+
+struct Image {
+    std::uint16_t width = 0;
+    std::uint16_t height = 0;
+
+    std::vector<RgbaPixel> pixels;
+};
+
+}
+
+
+================================================================================
+FILE: src/assets/Sprite.h
+================================================================================
+#pragma once
+
+#include <cstdint>
+#include <vector>
+
+#include "Image.h"
+
+namespace eld::sprite {
+
+struct Sprite {
+    std::uint16_t id = 0;
+    std::vector<eld::image::Image> frames;
+};
+
+}
+
+
+================================================================================
+FILE: src/assets/Texture.h
+================================================================================
+#pragma once
+
+#include <cstdint>
+
+#include "Image.h"
+
+namespace eld::texture {
+
+struct Texture {
+    std::uint16_t id = 0;
+    eld::image::Image image;
+};
+
+}
+
+
+================================================================================
+FILE: src/assets/decoders/ImageDecoder.cpp
+================================================================================
+#include "decoders/ImageDecoder.h"
+
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <span>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "binary/ByteReader.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_STDIO
+#include <stb/stb_image.h>
+
+namespace eld::image {
+
+namespace {
+
+enum class PixelOrder : std::uint8_t {
+    RowMajor,
+    ColumnMajor
+};
+
+struct Color {
+    std::uint8_t red = 0;
+    std::uint8_t green = 0;
+    std::uint8_t blue = 0;
+};
+
+
+std::vector<Color> readPalette(
+    eld::binary::ByteReader& reader
+) {
+    const auto colorCount = reader.readU8();
+
+    if (colorCount == 0) {
+        throw std::runtime_error(
+            "Image palette is empty"
+        );
+    }
+
+    std::vector<Color> palette(colorCount);
+
+    for (
+        std::size_t i = 1;
+        i < colorCount;
+        ++i
+    ) {
+        const auto color = reader.readU24();
+
+        palette[i] = {
+            static_cast<std::uint8_t>(
+                (color >> 16) & 0xFF
+            ),
+            static_cast<std::uint8_t>(
+                (color >> 8) & 0xFF
+            ),
+            static_cast<std::uint8_t>(
+                color & 0xFF
+            )
+        };
+    }
+
+    return palette;
+}
+
+
+PixelOrder readPixelOrder(
+    eld::binary::ByteReader& reader
+) {
+    switch (reader.readU8()) {
+        case 0:
+            return PixelOrder::RowMajor;
+
+        case 1:
+            return PixelOrder::ColumnMajor;
+
+        default:
+            throw std::runtime_error(
+                "Invalid image pixel order"
+            );
+    }
+}
+
+
+void skipFrame(
+    eld::binary::ByteReader& data,
+    eld::binary::ByteReader& index
+) {
+    index.skip(2);
+
+    const auto width = index.readU16();
+    const auto height = index.readU16();
+
+    index.skip(1);
+
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(width) *
+        height;
+
+    if (!data.canRead(pixelCount)) {
+        throw std::runtime_error(
+            "Image frame exceeds data payload"
+        );
+    }
+
+    data.skip(pixelCount);
+}
+
+}
+
+
+Image ImageDecoder::decode(
+    std::span<const std::uint8_t> payload
+) const {
+    if (payload.empty()) {
+        throw std::runtime_error(
+            "Image payload is empty"
+        );
+    }
+
+    if (
+        payload.size() >
+        std::numeric_limits<int>::max()
+    ) {
+        throw std::runtime_error(
+            "Image payload is too large"
+        );
+    }
+
+
+    // Decode
+
+    int width = 0;
+    int height = 0;
+
+    using Pixels =
+        std::unique_ptr<
+            stbi_uc,
+            decltype(&stbi_image_free)
+        >;
+
+    Pixels pixels(
+        stbi_load_from_memory(
+            reinterpret_cast<const stbi_uc*>(
+                payload.data()
+            ),
+            static_cast<int>(
+                payload.size()
+            ),
+            &width,
+            &height,
+            nullptr,
+            STBI_rgb_alpha
+        ),
+        stbi_image_free
+    );
+
+    if (!pixels) {
+        const char* reason =
+            stbi_failure_reason();
+
+        throw std::runtime_error(
+            "Failed to decode image: " +
+            std::string(
+                reason
+                    ? reason
+                    : "unknown error"
+            )
+        );
+    }
+
+    if (
+        width <= 0 ||
+        height <= 0 ||
+        width >
+            std::numeric_limits<std::uint16_t>::max() ||
+        height >
+            std::numeric_limits<std::uint16_t>::max()
+    ) {
+        throw std::runtime_error(
+            "Image dimensions are unsupported"
+        );
+    }
+
+
+    // Image
+
+    Image image;
+
+    image.width =
+        static_cast<std::uint16_t>(width);
+
+    image.height =
+        static_cast<std::uint16_t>(height);
+
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(width) *
+        height;
+
+    image.pixels.resize(pixelCount);
+
+    for (
+        std::size_t i = 0;
+        i < pixelCount;
+        ++i
+    ) {
+        const std::size_t source =
+            i * 4;
+
+        image.pixels[i] = {
+            pixels.get()[source],
+            pixels.get()[source + 1],
+            pixels.get()[source + 2],
+            pixels.get()[source + 3]
+        };
+    }
+
+    return image;
+}
+
+
+Image ImageDecoder::decode(
+    std::span<const std::uint8_t> dataPayload,
+    std::span<const std::uint8_t> indexPayload,
+    std::uint16_t frameId
+) const {
+    eld::binary::ByteReader data(dataPayload);
+
+    const auto indexOffset =
+        data.readU16();
+
+    eld::binary::ByteReader index(indexPayload);
+    index.setPosition(indexOffset);
+
+
+    // Header
+
+    const auto canvasWidth = index.readU16();
+    const auto canvasHeight = index.readU16();
+
+    const std::vector<Color> palette =
+        readPalette(index);
+
+
+    // Frame
+
+    for (
+        std::uint16_t i = 0;
+        i < frameId;
+        ++i
+    ) {
+        skipFrame(data, index);
+    }
+
+    const auto offsetX = index.readU8();
+    const auto offsetY = index.readU8();
+
+    const auto width = index.readU16();
+    const auto height = index.readU16();
+
+    const PixelOrder pixelOrder =
+        readPixelOrder(index);
+
+    if (
+        canvasWidth == 0 ||
+        canvasHeight == 0 ||
+        width == 0 ||
+        height == 0
+    ) {
+        throw std::runtime_error(
+            "Image dimensions must be positive"
+        );
+    }
+
+    if (
+        static_cast<std::size_t>(offsetX) +
+            width >
+            canvasWidth ||
+        static_cast<std::size_t>(offsetY) +
+            height >
+            canvasHeight
+    ) {
+        throw std::runtime_error(
+            "Image exceeds its canvas"
+        );
+    }
+
+    const std::size_t pixelCount =
+        static_cast<std::size_t>(width) *
+        height;
+
+    if (!data.canRead(pixelCount)) {
+        throw std::runtime_error(
+            "Image pixel data exceeds payload"
+        );
+    }
+
+
+    // Image
+
+    Image image;
+
+    image.width = canvasWidth;
+    image.height = canvasHeight;
+
+    image.pixels.resize(
+        static_cast<std::size_t>(canvasWidth) *
+        canvasHeight
+    );
+
+
+    // Pixels
+
+    for (
+        std::size_t i = 0;
+        i < pixelCount;
+        ++i
+    ) {
+        std::size_t x = 0;
+        std::size_t y = 0;
+
+        switch (pixelOrder) {
+            case PixelOrder::RowMajor:
+                x = i % width;
+                y = i / width;
+                break;
+
+            case PixelOrder::ColumnMajor:
+                x = i / height;
+                y = i % height;
+                break;
+        }
+
+        const auto paletteIndex =
+            data.readU8();
+
+        if (paletteIndex >= palette.size()) {
+            throw std::runtime_error(
+                "Invalid image palette index"
+            );
+        }
+
+        if (paletteIndex == 0) {
+            continue;
+        }
+
+        const std::size_t canvasX =
+            offsetX + x;
+
+        const std::size_t canvasY =
+            offsetY + y;
+
+        const std::size_t destination =
+            canvasY * canvasWidth +
+            canvasX;
+
+        const Color& color =
+            palette[paletteIndex];
+
+        image.pixels[destination] = {
+            color.red,
+            color.green,
+            color.blue,
+            255
+        };
+    }
+
+    return image;
+}
+
+
+std::size_t ImageDecoder::frameCount(
+    std::span<const std::uint8_t> dataPayload,
+    std::span<const std::uint8_t> indexPayload
+) const {
+    eld::binary::ByteReader data(dataPayload);
+
+    const auto indexOffset = data.readU16();
+
+    eld::binary::ByteReader index(indexPayload);
+    index.setPosition(indexOffset);
+
+    // Same indexed-image header used by decode().
+    index.readU16();
+    index.readU16();
+    readPalette(index);
+
+    std::size_t count = 0;
+
+    // Each frame occupies seven metadata bytes and
+    // width * height bytes in the data file.
+    while (!data.atEnd()) {
+        if (
+            count >
+            std::numeric_limits<std::uint16_t>::max()
+        ) {
+            throw std::runtime_error(
+                "Too many image frames"
+            );
+        }
+
+        skipFrame(data, index);
+        ++count;
+    }
+
+    return count;
+}
+
+
+std::vector<Image> ImageDecoder::decodeFrames(
+    std::span<const std::uint8_t> data,
+    std::span<const std::uint8_t> index
+) const {
+    const std::size_t total = frameCount(data, index);
+
+    std::vector<Image> frames;
+    frames.reserve(total);
+
+    for (std::size_t i = 0; i < total; ++i) {
+        frames.push_back(
+            decode(
+                data,
+                index,
+                static_cast<std::uint16_t>(i)
+            )
+        );
+    }
+
+    return frames;
+}
+
+}
+
+
+================================================================================
+FILE: src/assets/decoders/ImageDecoder.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <vector>
+
+#include "Image.h"
+
+namespace eld::image {
+
+class ImageDecoder {
+public:
+    Image decode(
+        std::span<const std::uint8_t> payload
+    ) const;
+
+    Image decode(
+        std::span<const std::uint8_t> data,
+        std::span<const std::uint8_t> index,
+        std::uint16_t frameId = 0
+    ) const;
+
+    std::size_t frameCount(
+        std::span<const std::uint8_t> data,
+        std::span<const std::uint8_t> index
+    ) const;
+    std::vector<Image> decodeFrames(
+        std::span<const std::uint8_t> data,
+        std::span<const std::uint8_t> index
+    ) const;
+
+};
+
+}
+
+
+================================================================================
+FILE: src/assets/repositories/SpriteRepository.cpp
+================================================================================
+#include "repositories/SpriteRepository.h"
+
+#include <exception>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "archive/ArchiveHashes.h"
+
+namespace eld::sprite {
+
+SpriteRepository::SpriteRepository(
+    const eld::cache::Cache& cache
+)
+    : archive_(
+          eld::archive::load(
+              cache.open(Index),
+              ArchiveId
+          )
+      ) {
+}
+
+
+Sprite SpriteRepository::get(
+    std::uint16_t id
+) const {
+    const eld::archive::ArchiveFile& data =
+        archive_.get(id);
+
+    const eld::archive::ArchiveFile& index =
+        archive_.get("index.dat");
+
+    try {
+        return Sprite{
+            .id = id,
+            .frames = decoder_.decodeFrames(
+                data.payload,
+                index.payload
+            )
+        };
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode sprite " +
+            std::to_string(id) +
+            ": " +
+            error.what()
+        );
+    }
+}
+
+
+std::optional<Sprite> SpriteRepository::find(
+    std::uint16_t id
+) const {
+    if (!contains(id)) {
+        return std::nullopt;
+    }
+
+    return get(id);
+}
+
+
+std::vector<std::uint16_t>
+SpriteRepository::listIds() const {
+    std::vector<std::uint16_t> ids;
+
+    const auto indexHash =
+        eld::archive::hashName("index.dat");
+
+    for (const eld::archive::ArchiveFile& file :
+         archive_.list()) {
+        if (file.nameHash == indexHash) {
+            continue;
+        }
+
+        ids.push_back(file.id);
+    }
+
+    return ids;
+}
+
+
+bool SpriteRepository::contains(
+    std::uint16_t id
+) const {
+    const eld::archive::ArchiveFile* file =
+        archive_.find(id);
+
+    return file != nullptr &&
+        file->nameHash !=
+            eld::archive::hashName("index.dat");
+}
+
+
+std::size_t SpriteRepository::count() const {
+    return listIds().size();
+}
+
+}
+
+
+================================================================================
+FILE: src/assets/repositories/SpriteRepository.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+#include "Sprite.h"
+#include "archive/Archive.h"
+#include "cache/Cache.h"
+#include "decoders/ImageDecoder.h"
+
+namespace eld::sprite {
+
+class SpriteRepository {
+public:
+    explicit SpriteRepository(
+        const eld::cache::Cache& cache
+    );
+
+    Sprite get(
+        std::uint16_t id
+    ) const;
+
+    std::optional<Sprite> find(
+        std::uint16_t id
+    ) const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    static constexpr auto Index =
+        eld::cache::IndexId::Config;
+
+    static constexpr std::uint16_t ArchiveId = 4;
+
+    eld::archive::Archive archive_;
+    eld::image::ImageDecoder decoder_;
+};
+
+}
+
+
+================================================================================
+FILE: src/assets/repositories/TextureRepository.cpp
+================================================================================
+#include "repositories/TextureRepository.h"
+
+#include <exception>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+
+namespace eld::texture {
+
+TextureRepository::TextureRepository(
+    const eld::cache::Cache& cache
+)
+    : archive_(
+          eld::archive::load(
+              cache.open(Index),
+              ArchiveId
+          )
+      ) {
+}
+
+
+Texture TextureRepository::get(
+    std::uint16_t id
+) const {
+    const eld::archive::ArchiveFile& data =
+        archive_.get(
+            std::to_string(id) + ".dat"
+        );
+
+    const eld::archive::ArchiveFile& index =
+        archive_.get("index.dat");
+
+    try {
+        return Texture{
+            .id = id,
+            .image = decoder_.decode(
+                data.payload,
+                index.payload
+            )
+        };
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode texture " +
+            std::to_string(id) +
+            ": " +
+            error.what()
+        );
+    }
+}
+
+
+std::optional<Texture> TextureRepository::find(
+    std::uint16_t id
+) const {
+    if (!contains(id)) {
+        return std::nullopt;
+    }
+
+    return get(id);
+}
+
+
+std::vector<std::uint16_t>
+TextureRepository::listIds() const {
+    std::vector<std::uint16_t> ids;
+
+    ids.reserve(count());
+
+    for (
+        std::uint32_t candidate = 0;
+        candidate <=
+            std::numeric_limits<std::uint16_t>::max();
+        ++candidate
+    ) {
+        const auto id =
+            static_cast<std::uint16_t>(candidate);
+
+        if (contains(id)) {
+            ids.push_back(id);
+        }
+    }
+
+    return ids;
+}
+
+
+bool TextureRepository::contains(
+    std::uint16_t id
+) const {
+    return archive_.contains(
+        std::to_string(id) + ".dat"
+    );
+}
+
+
+std::size_t TextureRepository::count() const {
+    const std::size_t fileCount =
+        archive_.count();
+
+    return fileCount > 0
+        ? fileCount - 1
+        : 0;
+}
+
+}
+
+
+================================================================================
+FILE: src/assets/repositories/TextureRepository.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+#include "Texture.h"
+#include "archive/Archive.h"
+#include "cache/Cache.h"
+#include "decoders/ImageDecoder.h"
+
+namespace eld::texture {
+
+class TextureRepository {
+public:
+    explicit TextureRepository(
+        const eld::cache::Cache& cache
+    );
+
+    Texture get(
+        std::uint16_t id
+    ) const;
+
+    std::optional<Texture> find(
+        std::uint16_t id
+    ) const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    static constexpr auto Index =
+        eld::cache::IndexId::Config;
+
+    static constexpr std::uint16_t ArchiveId = 6;
+
+    eld::archive::Archive archive_;
+    eld::image::ImageDecoder decoder_;
+};
+
+}
+
+
+================================================================================
+FILE: src/binary/ByteReader.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <string>
+#include <vector>
+
+namespace eld::binary {
+
+class ByteReader {
+public:
+    explicit ByteReader(
+        std::span<const std::uint8_t> data
+    );
+
+    explicit ByteReader(
+        const std::vector<std::uint8_t>& data
+    );
+
+    std::uint8_t readU8();
+    std::uint16_t readU16();
+    std::uint32_t readU24();
+    std::uint32_t readU32();
+
+    std::int8_t readI8();
+    std::int16_t readI16();
+    std::int32_t readI32();
+
+    int readSignedSmart();
+    int readUnsignedSmart();
+
+    std::vector<std::uint8_t> readBytes(
+        std::size_t amount
+    );
+
+    std::span<const std::uint8_t> readSpan(
+        std::size_t amount
+    );
+
+    std::string readTerminatedString(
+        std::uint8_t terminator
+    );
+
+    void skip(
+        std::size_t amount
+    );
+
+    void setPosition(
+        std::size_t position
+    );
+
+    std::size_t position() const;
+    std::size_t remaining() const;
+
+    bool atEnd() const;
+
+    bool canRead(
+        std::size_t amount
+    ) const;
+
+private:
+    std::uint8_t peekU8() const;
+
+    void requireReadable(
+        std::size_t amount
+    ) const;
+
+    void requirePosition(
+        std::size_t position
+    ) const;
+
+private:
+    std::span<const std::uint8_t> data_;
+    std::size_t position_ = 0;
+};
+
+}
+
+
+================================================================================
+FILE: src/binary/CMakeLists.txt
+================================================================================
+add_library(eldoria_binary STATIC
+    ByteReader.cpp
+    ByteWriter.cpp
+    Compression.cpp
+)
+
+add_library(Eldoria::Binary ALIAS eldoria_binary)
+
+target_include_directories(eldoria_binary PUBLIC
+    ${PROJECT_SOURCE_DIR}/src
+)
+
+target_link_libraries(eldoria_binary PUBLIC
+    BZip2::BZip2
+    ZLIB::ZLIB
+)
+
+
+================================================================================
+FILE: src/host/CMakeLists.txt
+================================================================================
+add_library(eldoria_host STATIC
+    sdl/SdlContext.cpp
+    sdl/SdlOpenGLContext.cpp
+)
+
+add_library(Eldoria::Host ALIAS eldoria_host)
+
+target_include_directories(eldoria_host PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_host PUBLIC
+    SDL3::SDL3
+)
+
+add_subdirectory(imgui)
+
+
+================================================================================
+FILE: src/host/imgui/CMakeLists.txt
+================================================================================
+add_library(eldoria_host_imgui STATIC
+    ImGuiTheme.cpp
+
+    ../../../libs/imgui/imgui.cpp
+    ../../../libs/imgui/imgui_draw.cpp
+    ../../../libs/imgui/imgui_tables.cpp
+    ../../../libs/imgui/imgui_widgets.cpp
+
+    ../../../libs/imgui/backends/imgui_impl_sdl3.cpp
+    ../../../libs/imgui/backends/imgui_impl_sdlrenderer3.cpp
+)
+
+add_library(Eldoria::HostImGui ALIAS eldoria_host_imgui)
+
+target_include_directories(eldoria_host_imgui PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/imgui/backends
+)
+
+target_link_libraries(eldoria_host_imgui PUBLIC
+    Eldoria::Host
+    SDL3::SDL3
+)
+
+
+================================================================================
+FILE: src/runtime/CMakeLists.txt
+================================================================================
+add_subdirectory(math)
+add_subdirectory(audio)
+add_subdirectory(world)
+add_subdirectory(game)
+add_subdirectory(network)
+add_subdirectory(render)
+
+
+================================================================================
+FILE: src/runtime/audio/CMakeLists.txt
+================================================================================
+add_library(eldoria_audio STATIC
+    midi/MidiPlayer.cpp
+    midi/MidiTimeline.cpp
+)
+
+add_library(Eldoria::Audio ALIAS eldoria_audio)
+
+target_include_directories(eldoria_audio PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_audio PUBLIC
+    Eldoria::Assets
+)
+
+find_package(PkgConfig QUIET)
+
+if(PkgConfig_FOUND)
+    pkg_check_modules(
+        FLUIDSYNTH
+        QUIET
+        IMPORTED_TARGET
+        fluidsynth
+    )
+endif()
+
+if(TARGET PkgConfig::FLUIDSYNTH)
+    target_link_libraries(eldoria_audio PRIVATE
+        PkgConfig::FLUIDSYNTH
+    )
+
+    target_compile_definitions(eldoria_audio PRIVATE
+        ELDORIA_HAS_FLUIDSYNTH=1
+    )
+else()
+    target_compile_definitions(eldoria_audio PRIVATE
+        ELDORIA_HAS_FLUIDSYNTH=0
+    )
+endif()
+
+
+================================================================================
+FILE: src/runtime/game/CMakeLists.txt
+================================================================================
+add_library(eldoria_game INTERFACE)
+
+add_library(Eldoria::Game ALIAS eldoria_game)
+
+target_include_directories(eldoria_game INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_game INTERFACE
+    Eldoria::Assets
+    Eldoria::World
+)
+
+
+================================================================================
+FILE: src/runtime/math/CMakeLists.txt
+================================================================================
+add_library(eldoria_math INTERFACE)
+
+add_library(Eldoria::Math ALIAS eldoria_math)
+
+target_include_directories(eldoria_math INTERFACE
+    ${PROJECT_SOURCE_DIR}/src/runtime
+)
+
+
+================================================================================
+FILE: src/runtime/network/CMakeLists.txt
+================================================================================
+add_library(eldoria_network INTERFACE)
+
+add_library(Eldoria::Network ALIAS eldoria_network)
+
+target_include_directories(eldoria_network INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_network INTERFACE
+    Eldoria::Assets
+    Eldoria::World
+)
+
+
+================================================================================
+FILE: src/runtime/render/CMakeLists.txt
+================================================================================
+add_library(eldoria_render STATIC
+    animation/AnimationPlayer.cpp
+    animation/ModelSkinGroups.cpp
+    animation/ModelAnimator.cpp
+    model/ModelRegistry.cpp
+    model/ModelResolver.cpp
+    model/RenderModelAssembler.cpp
+    map/ClassicTerrainAppearance.cpp
+    map/SceneLocationBuilder.cpp
+    map/SceneLocationModelBuilder.cpp
+    map/SceneMapRenderModelBuilder.cpp
+    map/SceneTerrainBuilder.cpp
+    texture/TextureConverter.cpp
+    texture/TextureRegistry.cpp
+    texture/TextureResolver.cpp
+    GraphicsResources.cpp
+    RenderPipeline.cpp
+    backend/software/SoftwareMeshProjector.cpp
+    backend/software/SoftwareRenderBackend.cpp
+    backend/software/TextureSampler.cpp
+    backend/software/TriangleRasterizer.cpp
+    backend/opengl/OpenGLApi.cpp
+    backend/opengl/OpenGLRenderBackend.cpp
+    camera/Projection.cpp
+    scene/Transform.cpp
+)
+
+add_library(Eldoria::Render ALIAS eldoria_render)
+
+target_include_directories(eldoria_render PUBLIC
+    ${PROJECT_SOURCE_DIR}/src/runtime
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_render PUBLIC
+    Eldoria::Assets
+    Eldoria::Math
+    SDL3::SDL3
+)
+
+
+================================================================================
+FILE: src/runtime/world/CMakeLists.txt
+================================================================================
+add_library(eldoria_world INTERFACE)
+
+add_library(Eldoria::World ALIAS eldoria_world)
+
+target_include_directories(eldoria_world INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_world INTERFACE
+    Eldoria::Assets
+)
+
+
+================================================================================
+FILE: src/storage/CMakeLists.txt
+================================================================================
+add_library(eldoria_storage STATIC
+    cache/Cache.cpp
+    cache/File.cpp
+    cache/Payload.cpp
+    cache/Reader.cpp
+    cache/Store.cpp
+    cache/Writer.cpp
+    archive/Archive.cpp
+    archive/ArchiveParser.cpp
+)
+
+add_library(Eldoria::Storage ALIAS eldoria_storage)
+
+target_include_directories(eldoria_storage PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_storage PUBLIC
+    Eldoria::Binary
+)
+
+
+================================================================================
+FILE: src/storage/archive/Archive.cpp
+================================================================================
+#include "Archive.h"
+
+#include <cstdint>
+#include <stdexcept>
+#include <string_view>
+#include <utility>
+
+#include "ArchiveHashes.h"
+#include "ArchiveParser.h"
+#include "cache/Store.h"
+
+namespace eld::archive {
+
+Archive::Archive(
+    std::vector<std::uint8_t> payload,
+    ArchiveHeader header,
+    ArchiveSections sections,
+    std::vector<ArchiveFile> files
+)
+    : payload_(std::move(payload)),
+      header_(header),
+      sections_(sections),
+      files_(std::move(files)) {
+}
+
+const std::vector<std::uint8_t>&
+Archive::getPayload() const {
+    return payload_;
+}
+
+const ArchiveHeader& Archive::getHeader() const {
+    return header_;
+}
+
+const ArchiveSections& Archive::getSections() const {
+    return sections_;
+}
+
+const ArchiveFile& Archive::get(
+    std::uint16_t id
+) const {
+    const ArchiveFile* file =
+        find(id);
+
+    if (file == nullptr) {
+        throw std::out_of_range(
+            "Archive file does not exist"
+        );
+    }
+
+    return *file;
+}
+
+const ArchiveFile& Archive::get(
+    std::string_view name
+) const {
+    const ArchiveFile* file =
+        find(name);
+
+    if (file == nullptr) {
+        throw std::out_of_range(
+            "Archive file does not exist"
+        );
+    }
+
+    return *file;
+}
+
+const ArchiveFile* Archive::find(
+    std::uint16_t id
+) const {
+    for (const ArchiveFile& file : files_) {
+        if (file.id == id) {
+            return &file;
+        }
+    }
+
+    return nullptr;
+}
+
+const ArchiveFile* Archive::find(
+    std::string_view name
+) const {
+    const std::uint32_t nameHash =
+        hashName(name);
+
+    for (const ArchiveFile& file : files_) {
+        if (file.nameHash == nameHash) {
+            return &file;
+        }
+    }
+
+    return nullptr;
+}
+
+const std::vector<ArchiveFile>&
+Archive::list() const {
+    return files_;
+}
+
+bool Archive::contains(
+    std::uint16_t id
+) const {
+    return find(id) != nullptr;
+}
+
+bool Archive::contains(
+    std::string_view name
+) const {
+    return find(name) != nullptr;
+}
+
+std::size_t Archive::count() const {
+    return files_.size();
+}
+
+
+Archive load(
+    const eld::cache::Store& store,
+    std::uint16_t archiveId
+) {
+    const eld::cache::File file =
+        store.get(archiveId);
+
+    ArchiveParser parser;
+
+    std::optional<Archive> archive =
+        parser.parse(
+            file.getBytes()
+        );
+
+    if (!archive.has_value()) {
+        throw std::runtime_error(
+            "Failed to parse archive " +
+            std::to_string(archiveId)
+        );
+    }
+
+    return std::move(*archive);
+}
+
+}
+
+
+================================================================================
+FILE: src/storage/archive/Archive.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <string_view>
+#include <vector>
+
+#include "ArchiveFile.h"
+
+namespace eld::cache {
+class Store;
+
+}
+
+namespace eld::archive {
+
+struct ArchiveHeader {
+    std::uint32_t uncompressedSize = 0;
+    std::uint32_t compressedSize = 0;
+
+    bool compressed() const {
+        return compressedSize != uncompressedSize;
+    }
+};
+
+struct ArchiveSections {
+    ArchiveSection fileCount;
+    ArchiveSection fileTable;
+    ArchiveSection fileData;
+};
+
+class Archive {
+public:
+    Archive(
+        std::vector<std::uint8_t> payload,
+        ArchiveHeader header,
+        ArchiveSections sections,
+        std::vector<ArchiveFile> files
+    );
+
+    const std::vector<std::uint8_t>& getPayload() const;
+
+    const ArchiveHeader& getHeader() const;
+
+    const ArchiveSections& getSections() const;
+
+    const ArchiveFile& get(
+        std::uint16_t id
+    ) const;
+
+    const ArchiveFile& get(
+        std::string_view name
+    ) const;
+
+    const ArchiveFile* find(
+        std::uint16_t id
+    ) const;
+
+    const ArchiveFile* find(
+        std::string_view name
+    ) const;
+
+    const std::vector<ArchiveFile>& list() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    bool contains(
+        std::string_view name
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    std::vector<std::uint8_t> payload_;
+
+    ArchiveHeader header_;
+    ArchiveSections sections_;
+
+    std::vector<ArchiveFile> files_;
+};
+
+Archive load(
+    const eld::cache::Store& store,
+    std::uint16_t archiveId
+);
+
+}
+
+
+================================================================================
+FILE: src/storage/archive/ArchiveFile.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+namespace eld::archive {
+
+struct ArchiveSection {
+    std::size_t offset = 0;
+    std::size_t size = 0;
+
+    std::size_t end() const {
+        return offset + size;
+    }
+
+    bool present() const {
+        return size > 0;
+    }
+};
+
+struct ArchiveFile {
+    std::uint16_t id = 0;
+    std::uint32_t nameHash = 0;
+
+    std::uint32_t uncompressedSize = 0;
+    std::uint32_t compressedSize = 0;
+
+    ArchiveSection tableEntry;
+    ArchiveSection data;
+
+    std::vector<std::uint8_t> payload;
+
+    bool compressed() const {
+        return compressedSize != uncompressedSize;
+    }
+};
+
+}
+
+
+================================================================================
+FILE: src/storage/archive/ArchiveHashes.h
+================================================================================
+#pragma once
+
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <string_view>
+
+namespace eld::archive {
+
+constexpr std::uint32_t hashName(
+    std::string_view name
+) {
+    std::uint32_t hash = 0;
+
+    for (char character : name) {
+        if (
+            character >= 'a' &&
+            character <= 'z'
+        ) {
+            character =
+                static_cast<char>(
+                    character - 'a' + 'A'
+                );
+        }
+
+        hash =
+            hash * 61U +
+            static_cast<std::uint8_t>(
+                character
+            ) -
+            32U;
+    }
+
+    return hash;
+}
+
+struct FileName {
+    std::string_view name;
+    std::string_view description;
+};
+
+inline constexpr std::array FileNames{
+    FileName{"index.dat", "shared index"},
+    FileName{"data", "interface definitions"},
+
+    FileName{"invback.dat", "inventory background"},
+    FileName{"chatback.dat", "chat background"},
+    FileName{"mapback.dat", "minimap background"},
+    FileName{"backbase1.dat", "left tab background"},
+    FileName{"backbase2.dat", "right tab background"},
+    FileName{"backhmid1.dat", "middle tab background"},
+    FileName{"sideicons.dat", "side-panel icons"},
+    FileName{"compass.dat", "compass"},
+    FileName{"mapedge.dat", "minimap edge"},
+    FileName{"mapscene.dat", "map-scene sprites"},
+    FileName{"mapfunction.dat", "map-function icons"},
+    FileName{"hitmarks.dat", "hitmark sprites"},
+    FileName{"headicons.dat", "overhead icons"},
+    FileName{"cross.dat", "click-cross sprites"},
+    FileName{"mapdots.dat", "minimap dots"},
+    FileName{"scrollbar.dat", "scrollbar sprites"},
+    FileName{"redstone1.dat", "tab highlight 1"},
+    FileName{"redstone2.dat", "tab highlight 2"},
+    FileName{"redstone3.dat", "tab highlight 3"},
+    FileName{"mod_icons.dat", "moderator icons"},
+
+    FileName{"anim_index", "animation index"},
+    FileName{"anim_crc", "animation checksums"},
+    FileName{"anim_version", "animation versions"},
+
+    FileName{"map_index", "map index"},
+    FileName{"map_crc", "map checksums"},
+    FileName{"map_version", "map versions"},
+
+    FileName{"midi_index", "MIDI index"},
+    FileName{"midi_crc", "MIDI checksums"},
+    FileName{"midi_version", "MIDI versions"},
+
+    FileName{"model_index", "model index"},
+    FileName{"model_crc", "model checksums"},
+    FileName{"model_version", "model versions"},
+
+    FileName{"p11_full.dat", "plain 11pt font"},
+    FileName{"p12_full.dat", "plain 12pt font"},
+    FileName{"b12_full.dat", "bold 12pt font"},
+    FileName{"q8_full.dat", "quill 8pt font"},
+    FileName{"logo.dat", "RS logo sprite"},
+    FileName{"title.dat", "login background JPEG"},
+    FileName{"titlebox.dat", "login box sprite"},
+    FileName{"titlebutton.dat", "login button sprite"},
+    FileName{"runes.dat", "rune icon sprites"},
+
+    FileName{"flo.dat", "floor definitions"},
+    FileName{"flo.idx", "floor index"},
+    FileName{"idk.dat", "identity kit definitions"},
+    FileName{"idk.idx", "identity kit index"},
+    FileName{"loc.dat", "object definitions"},
+    FileName{"loc.idx", "object index"},
+    FileName{"npc.dat", "NPC definitions"},
+    FileName{"npc.idx", "NPC index"},
+    FileName{"obj.dat", "item definitions"},
+    FileName{"obj.idx", "item index"},
+    FileName{"seq.dat", "animation sequence definitions"},
+    FileName{"seq.idx", "animation sequence index"},
+    FileName{"spotanim.dat", "spot animation definitions"},
+    FileName{"spotanim.idx", "spot animation index"},
+    FileName{"varp.dat", "player variable definitions"},
+    FileName{"varp.idx", "player variable index"},
+    FileName{"varbit.dat", "variable bit definitions"},
+    FileName{"varbit.idx", "variable bit index"},
+
+    FileName{"mesanim.dat", "message animation data"},
+    FileName{"mesanim.idx", "message animation index"},
+    FileName{"mes.dat", "message definitions"},
+    FileName{"mes.idx", "message definition index"},
+    FileName{"param.dat", "parameter definitions"},
+    FileName{"param.idx", "parameter definition index"}
+};
+
+constexpr std::optional<std::string_view> findName(
+    std::uint32_t hash
+) {
+    for (const FileName& entry : FileNames) {
+        if (hashName(entry.name) == hash) {
+            return entry.name;
+        }
+    }
+
+    return std::nullopt;
+}
+
+constexpr std::optional<std::string_view> findDescription(
+    std::uint32_t hash
+) {
+    for (const FileName& entry : FileNames) {
+        if (hashName(entry.name) == hash) {
+            return entry.description;
+        }
+    }
+
+    return std::nullopt;
+}
+
+}
+
+
+================================================================================
+FILE: src/storage/cache/Cache.h
+================================================================================
+#pragma once
+
+#include <filesystem>
+#include <vector>
+
+#include "Index.h"
+#include "Store.h"
+
+namespace eld::cache {
+
+class Cache {
+public:
+    explicit Cache(
+        const std::filesystem::path& rootPath
+    );
+
+    Store open(
+        IndexId indexId
+    ) const;
+
+    const std::vector<Index>& list() const;
+
+private:
+    std::filesystem::path dataPath_;
+    std::vector<Index> indexes_;
+};
+
+}
+
+
+================================================================================
+FILE: src/storage/cache/Store.h
+================================================================================
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <optional>
+#include <vector>
+
+#include "File.h"
+#include "Index.h"
+#include "Reader.h"
+#include "Writer.h"
+
+namespace eld::cache {
+
+class Store {
+public:
+    Store(
+        std::filesystem::path dataPath,
+        Index index
+    );
+
+    File get(
+        std::uint16_t fileId
+    ) const;
+
+    std::optional<FileEntry> find(
+        std::uint16_t fileId
+    ) const;
+
+    std::vector<FileEntry> list() const;
+
+    bool contains(
+        std::uint16_t fileId
+    ) const;
+
+    std::size_t count() const;
+
+    std::uint16_t create(
+        FileData data
+    );
+
+    void update(
+        std::uint16_t fileId,
+        FileData data
+    );
+
+private:
+    std::filesystem::path dataPath_;
+    Index index_;
+
+    Reader reader_;
+    Writer writer_;
+};
+
+}
+
+
+================================================================================
+ALL SOURCE REFERENCES
+================================================================================
+
+
+FILE: src/apps/elforge/dump/AssetDumper.cpp
+1024:         if (state.activeTexture.has_value()) {
+1028:                 state.activeTexture->image
+1032:         if (state.activeSprite.has_value()) {
+1039:                 state.activeSprite->image
+1043:         if (state.activeImage.has_value()) {
+1047:                 *state.activeImage
+1077:             !state.activeTexture.has_value() &&
+1078:             !state.activeSprite.has_value() &&
+1079:             !state.activeImage.has_value() &&
+
+FILE: src/apps/elforge/explorer/CacheExplorer.cpp
+40:       titleSpriteRepository_(
+44:       mediaSpriteRepository_(
+349:         mediaSpriteRepository_
+
+FILE: src/apps/elforge/explorer/CacheExplorer.h
+36: #include "repositories/TextureRepository.h"
+37: #include "repositories/SpriteRepository.h"
+38: #include "repositories/ImageRepository.h"
+248:     eld::texture::TextureRepository textureRepository_;
+250:     eld::sprite::SpriteRepository titleSpriteRepository_;
+251:     eld::sprite::SpriteRepository mediaSpriteRepository_;
+252:     eld::image::ImageRepository titleImageRepository_;
+
+FILE: src/apps/elforge/explorer/CacheExplorerSelection.cpp
+42:     state_.activeTexture.reset();
+43:     state_.activeSprite.reset();
+44:     state_.activeImage.reset();
+259:                 state_.activeTexture =
+265:                 state_.activeTexture.reset();
+287:                 state_.activeImage =
+342:                         state_.activeImage.reset();
+716:                     state_.activeTexture =
+723:                     !state_.activeTexture.has_value() &&
+729:                     state_.activeImage =
+744:                 state_.activeImage =
+776:                 state_.activeSprite =
+777:                     titleSpriteRepository_.find(
+788:                 state_.activeSprite =
+789:                     mediaSpriteRepository_.find(
+
+FILE: src/apps/elforge/explorer/CacheExplorerState.h
+125:     std::optional<eld::texture::Texture> activeTexture;
+127:     std::optional<eld::sprite::Sprite> activeSprite;
+128:     std::optional<eld::image::Image> activeImage;
+
+FILE: src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp
+29: #include "repositories/SpriteRepository.h"
+118:     const eld::sprite::SpriteRepository& repository
+555:     const eld::sprite::SpriteRepository& repository
+1571:         eld::sprite::SpriteRepository
+
+FILE: src/apps/elforge/inspection/AssetDetailsPanel.cpp
+1935:     if (state.activeTexture.has_value()) {
+1937:             *state.activeTexture;
+1959:     if (state.activeSprite.has_value()) {
+1961:             *state.activeSprite;
+1991:     if (state.activeImage.has_value()) {
+1993:             *state.activeImage;
+
+FILE: src/apps/elforge/viewport/ViewportPanel.cpp
+35: #include "repositories/SpriteRepository.h"
+435:         eld::sprite::SpriteRepository& repository
+588:     eld::sprite::SpriteRepository& repository_;
+4542:     eld::sprite::SpriteRepository& spriteRepository,
+5443:             if (state.activeTexture.has_value()) {
+5446:                         state.activeTexture->
+5451:                         state.activeTexture->
+5458:             if (state.activeImage.has_value()) {
+5461:                         state.activeImage->
+5466:                         state.activeImage->
+5473:             if (state.activeSprite.has_value()) {
+5476:                         state.activeSprite->
+5481:                         state.activeSprite->
+5548:                   state.activeSprite.has_value()
+5549:                       ? state.activeSprite->
+5554:                   state.activeImage.has_value()
+5555:                       ? state.activeImage->
+5563:                   state.activeSprite.has_value()
+5564:                       ? state.activeSprite->
+5569:                   state.activeImage.has_value()
+5570:                       ? state.activeImage->
+6261:     eld::sprite::SpriteRepository& interfaceSprites
+6379:     if (state.activeImage.has_value()) {
+6383:             *state.activeImage
+6389:     if (state.activeSprite.has_value()) {
+6393:             state.activeSprite->image
+6399:     if (state.activeTexture.has_value()) {
+6403:             state.activeTexture->image,
+
+FILE: src/apps/elforge/viewport/ViewportPanel.h
+28: class SpriteRepository;
+59:         eld::sprite::SpriteRepository& interfaceSprites
+
+FILE: src/apps/elforge/viewport/ViewportWorkspaceRouter.cpp
+26:     if (state.activeTexture.has_value()) {
+61:     if (state.activeSprite.has_value()) {
+65:     if (state.activeImage.has_value()) {
+125:         state.activeTexture.has_value(),
+
+FILE: src/apps/elforge/views/texture/TextureViewPanel.cpp
+149:         !state.activeTexture.has_value()
+
+FILE: src/assets/AssetManager.cpp
+27: eld::image::ImageRepository
+29:     return eld::image::ImageRepository(cache_, archiveId);
+37: eld::sprite::SpriteRepository
+39:     return eld::sprite::SpriteRepository(cache_, archiveId);
+
+FILE: src/assets/AssetManager.h
+10: #include "repositories/ImageRepository.h"
+22: #include "repositories/SpriteRepository.h"
+23: #include "repositories/TextureRepository.h"
+48:     eld::texture::TextureRepository textures;
+54:     eld::image::ImageRepository images(std::uint16_t archiveId) const;
+56:     eld::sprite::SpriteRepository sprites(std::uint16_t archiveId) const;
+
+FILE: src/assets/ResourceProvider.h
+13: #include "decoders/ImageDecoder.h"
+82:     eld::image::ImageDecoder imageDecoder_;
+
+FILE: src/assets/decoders/ImageDecoder.cpp
+1: #include "decoders/ImageDecoder.h"
+116: Image ImageDecoder::decode(
+226: Image ImageDecoder::decode(
+376: std::size_t ImageDecoder::frameCount(
+414: std::vector<Image> ImageDecoder::decodeFrames(
+
+FILE: src/assets/decoders/ImageDecoder.h
+12: class ImageDecoder {
+
+FILE: src/assets/repositories/SpriteRepository.cpp
+1: #include "repositories/SpriteRepository.h"
+12: SpriteRepository::SpriteRepository(
+24: Sprite SpriteRepository::get(
+53: std::optional<Sprite> SpriteRepository::find(
+65: SpriteRepository::listIds() const {
+84: bool SpriteRepository::contains(
+96: std::size_t SpriteRepository::count() const {
+
+FILE: src/assets/repositories/SpriteRepository.h
+11: #include "decoders/ImageDecoder.h"
+15: class SpriteRepository {
+17:     explicit SpriteRepository(
+44:     eld::image::ImageDecoder decoder_;
+
+FILE: src/assets/repositories/TextureRepository.cpp
+1: #include "repositories/TextureRepository.h"
+12: TextureRepository::TextureRepository(
+24: Texture TextureRepository::get(
+55: std::optional<Texture> TextureRepository::find(
+67: TextureRepository::listIds() const {
+90: bool TextureRepository::contains(
+99: std::size_t TextureRepository::count() const {
+
+FILE: src/assets/repositories/TextureRepository.h
+11: #include "decoders/ImageDecoder.h"
+15: class TextureRepository {
+17:     explicit TextureRepository(
+44:     eld::image::ImageDecoder decoder_;
+
+FILE: src/runtime/render/GraphicsResources.cpp
+9:     eld::texture::TextureRepository& textureRepository
+
+FILE: src/runtime/render/GraphicsResources.h
+20:         eld::texture::TextureRepository& textureRepository
+
+FILE: src/runtime/render/backend/opengl/OpenGLApi.cpp
+118:     activeTexture =
+
+FILE: src/runtime/render/backend/opengl/OpenGLApi.h
+200:     ActiveTextureFn activeTexture = nullptr;
+
+FILE: src/runtime/render/backend/opengl/OpenGLRenderBackend.cpp
+596:     gl_.activeTexture(GL_TEXTURE0);
+
+FILE: src/runtime/render/texture/TextureResolver.cpp
+8:     eld::texture::TextureRepository& repository,
+
+FILE: src/runtime/render/texture/TextureResolver.h
+9: #include "repositories/TextureRepository.h"
+16:         eld::texture::TextureRepository& repository,
+25:     eld::texture::TextureRepository& repository_;

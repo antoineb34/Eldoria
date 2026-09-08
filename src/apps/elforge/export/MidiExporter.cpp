@@ -5,68 +5,46 @@
 
 namespace eld::elforge {
 
-std::filesystem::path defaultMidiExportPath(
-    const eld::midi::Midi& file
-) {
-    return
-        std::filesystem::path("exports") /
-        "midi" /
-        ("midi_" + std::to_string(file.id) + ".mid");
+std::filesystem::path defaultMidiExportPath(const eld::midi::MidiData &file) {
+  return std::filesystem::path("exports") / "midi" /
+         ("midi_" + std::to_string(file.id) + ".mid");
 }
 
-bool exportMidi(
-    const eld::midi::Midi& file,
-    const std::filesystem::path& path,
-    std::string& error
-) {
-    error.clear();
+bool exportMidi(const eld::midi::MidiData &file,
+                const std::filesystem::path &path, std::string &error) {
+  error.clear();
 
-    std::error_code filesystemError;
+  std::error_code filesystemError;
 
-    const std::filesystem::path parent =
-        path.parent_path();
+  const std::filesystem::path parent = path.parent_path();
 
-    if (!parent.empty()) {
-        std::filesystem::create_directories(
-            parent,
-            filesystemError
-        );
+  if (!parent.empty()) {
+    std::filesystem::create_directories(parent, filesystemError);
 
-        if (filesystemError) {
-            error =
-                "Failed to create export directory: " +
-                filesystemError.message();
-            return false;
-        }
+    if (filesystemError) {
+      error = "Failed to create export directory: " + filesystemError.message();
+      return false;
     }
+  }
 
-    std::ofstream stream(
-        path,
-        std::ios::binary | std::ios::trunc
-    );
+  std::ofstream stream(path, std::ios::binary | std::ios::trunc);
 
-    if (!stream.is_open()) {
-        error = "Failed to open export file";
-        return false;
-    }
+  if (!stream.is_open()) {
+    error = "Failed to open export file";
+    return false;
+  }
 
-    if (!file.bytes.empty()) {
-        stream.write(
-            reinterpret_cast<const char*>(
-                file.bytes.data()
-            ),
-            static_cast<std::streamsize>(
-                file.bytes.size()
-            )
-        );
-    }
+  if (!file.bytes.empty()) {
+    stream.write(reinterpret_cast<const char *>(file.bytes.data()),
+                 static_cast<std::streamsize>(file.bytes.size()));
+  }
 
-    if (!stream) {
-        error = "Failed while writing MIDI export";
-        return false;
-    }
+  if (!stream) {
+    error = "Failed while writing MIDI export";
+    return false;
+  }
 
-    return true;
+  return true;
 }
 
-}
+} // namespace eld::elforge

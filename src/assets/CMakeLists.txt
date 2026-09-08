@@ -1,49 +1,56 @@
 add_library(eldoria_assets STATIC
-    AnimationFrameTable.cpp
+    AssetManager.cpp
+    animation/AnimationDecoder.cpp
+    animation/AnimationLoader.cpp
+    animation/AnimationFrameTable.cpp
     content/animation/AnimationPresentationCatalog.cpp
-    decoders/AnimationDecoder.cpp
-    repositories/AnimationRepository.cpp
-    InterfaceComposer.cpp
-    decoders/WidgetDecoder.cpp
-    repositories/WidgetRepository.cpp
-    decoders/MapIndexDecoder.cpp
-    decoders/TerrainDecoder.cpp
-    decoders/LocationSpawnDecoder.cpp
-    repositories/MapRepository.cpp
-    decoders/MidiDecoder.cpp
-    repositories/MidiRepository.cpp
-    decoders/ModelDecoder.cpp
-    repositories/ModelRepository.cpp
-    decoders/ImageDecoder.cpp
-    repositories/ImageRepository.cpp
-    decoders/FontDecoder.cpp
-    repositories/FontRepository.cpp
-    decoders/FloorDecoder.cpp
-    repositories/FloorRepository.cpp
-    decoders/IdentityKitDecoder.cpp
-    repositories/IdentityKitRepository.cpp
-    decoders/LocationDecoder.cpp
-    repositories/LocationRepository.cpp
-    decoders/NpcDecoder.cpp
-    repositories/NpcRepository.cpp
-    decoders/ItemDecoder.cpp
-    repositories/ItemRepository.cpp
-    decoders/SequenceDecoder.cpp
-    repositories/SequenceRepository.cpp
-    decoders/SpotAnimationDecoder.cpp
-    repositories/SpotAnimationRepository.cpp
-    decoders/VarpDecoder.cpp
-    repositories/VarpRepository.cpp
-    decoders/VarbitDecoder.cpp
-    repositories/VarbitRepository.cpp
-    decoders/ParameterDecoder.cpp
-    repositories/ParameterRepository.cpp
-    decoders/MessageDecoder.cpp
-    repositories/MessageRepository.cpp
-    decoders/MessageAnimationDecoder.cpp
-    repositories/MessageAnimationRepository.cpp
-    repositories/TextureRepository.cpp
-    repositories/SpriteRepository.cpp
+    interface/WidgetDecoder.cpp
+    interface/WidgetAssembler.cpp
+    interface/WidgetLoader.cpp
+    map/MapIndexDecoder.cpp
+    map/TerrainDecoder.cpp
+    map/LocationSpawnDecoder.cpp
+    map/MapAssembler.cpp
+    map/MapLoader.cpp
+    midi/MidiDecoder.cpp
+    midi/MidiLoader.cpp
+    model/ModelDecoder.cpp
+    model/ModelAssembler.cpp
+    model/ModelLoader.cpp
+    image/ImageDecoder.cpp
+    title/TitleLoader.cpp
+    font/FontDecoder.cpp
+    font/FontLoader.cpp
+    floor/FloorDecoder.cpp
+    floor/FloorLoader.cpp
+    identity_kit/IdentityKitDecoder.cpp
+    identity_kit/IdentityKitLoader.cpp
+    location/LocationDecoder.cpp
+    location/LocationLoader.cpp
+    npc/NpcDecoder.cpp
+    npc/NpcLoader.cpp
+    item/ItemDecoder.cpp
+    item/ItemLoader.cpp
+    sequence/SequenceDecoder.cpp
+    sequence/SequenceAssembler.cpp
+    sequence/SequenceLoader.cpp
+    spot_animation/SpotAnimationDecoder.cpp
+    spot_animation/SpotAnimationAssembler.cpp
+    spot_animation/SpotAnimationLoader.cpp
+    varp/VarpDecoder.cpp
+    varp/VarpLoader.cpp
+    varbit/VarbitDecoder.cpp
+    varbit/VarbitLoader.cpp
+    parameter/ParameterDecoder.cpp
+    parameter/ParameterLoader.cpp
+    message/MessageDecoder.cpp
+    message/MessageLoader.cpp
+    message_animation/MessageAnimationDecoder.cpp
+    message_animation/MessageAnimationLoader.cpp
+    texture/TextureAssembler.cpp
+    texture/TextureLoader.cpp
+    sprite/SpriteAssembler.cpp
+    sprite/SpriteLoader.cpp
 )
 
 add_library(Eldoria::Assets ALIAS eldoria_assets)
@@ -57,17 +64,6 @@ target_include_directories(eldoria_assets PUBLIC
 target_link_libraries(eldoria_assets PUBLIC
     Eldoria::Storage
 )
-
-
-# Public asset-access facade.
-
-
-target_sources(
-    eldoria_assets
-    PRIVATE
-        ResourceProvider.cpp
-)
-
 
 # Eldoria MIDI dependency
 

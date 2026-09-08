@@ -1,0 +1,3 @@
+src/assets/animation/AnimationFrameResource.h
+src/assets/animation/AnimationFrameTable.h
+src/assets/animation/AnimationFrameTable.cpp

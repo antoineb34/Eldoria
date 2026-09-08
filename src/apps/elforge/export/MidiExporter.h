@@ -3,18 +3,13 @@
 #include <filesystem>
 #include <string>
 
-#include "Midi.h"
+#include "midi/MidiData.h"
 
 namespace eld::elforge {
 
-std::filesystem::path defaultMidiExportPath(
-    const eld::midi::Midi& file
-);
+std::filesystem::path defaultMidiExportPath(const eld::midi::MidiData &file);
 
-bool exportMidi(
-    const eld::midi::Midi& file,
-    const std::filesystem::path& path,
-    std::string& error
-);
+bool exportMidi(const eld::midi::MidiData &file,
+                const std::filesystem::path &path, std::string &error);
 
-}
+} // namespace eld::elforge

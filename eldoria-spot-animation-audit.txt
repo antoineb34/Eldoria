@@ -1,0 +1,844 @@
+
+===== src/assets/SpotAnimation.h =====
+#pragma once
+
+#include <array>
+#include <cstdint>
+#include <optional>
+
+namespace eld::spot_animation {
+
+struct SpotAnimation {
+    std::uint16_t id = 0;
+
+    std::optional<std::uint16_t> modelId;
+    std::optional<std::uint16_t> sequenceId;
+
+    std::uint16_t scaleX = 128;
+    std::uint16_t scaleY = 128;
+    std::uint16_t rotation = 0;
+
+    std::uint8_t ambient = 0;
+    std::uint8_t contrast = 0;
+
+    std::array<std::optional<std::uint16_t>, 10>
+        recolorSources;
+
+    std::array<std::optional<std::uint16_t>, 10>
+        recolorDestinations;
+};
+
+}
+
+===== src/assets/decoders/SpotAnimationDecoder.h =====
+#pragma once
+
+#include <cstdint>
+#include <span>
+
+#include "SpotAnimation.h"
+
+namespace eld::spot_animation {
+
+class SpotAnimationDecoder {
+public:
+    SpotAnimation decode(
+        std::span<const std::uint8_t> payload
+    ) const;
+};
+
+}
+
+===== src/assets/decoders/SpotAnimationDecoder.cpp =====
+#include "decoders/SpotAnimationDecoder.h"
+
+#include <cstdint>
+#include <optional>
+#include <span>
+#include <stdexcept>
+
+#include "binary/ByteReader.h"
+
+namespace eld::spot_animation {
+
+namespace {
+
+std::optional<std::uint16_t> readOptionalId(
+    eld::binary::ByteReader& reader
+) {
+    const auto id = reader.readU16();
+
+    return id == 65535
+        ? std::nullopt
+        : std::optional{id};
+}
+
+}
+
+
+SpotAnimation SpotAnimationDecoder::decode(
+    std::span<const std::uint8_t> payload
+) const {
+    eld::binary::ByteReader reader(payload);
+
+    SpotAnimation spotAnimation;
+
+    while (!reader.atEnd()) {
+        const auto opcode = reader.readU8();
+
+        switch (opcode) {
+            case 0:
+                if (!reader.atEnd()) {
+                    throw std::runtime_error(
+                        "Spot animation payload contains trailing data"
+                    );
+                }
+
+                return spotAnimation;
+
+            case 1:
+                spotAnimation.modelId =
+                    readOptionalId(reader);
+                break;
+
+            case 2:
+                spotAnimation.sequenceId =
+                    readOptionalId(reader);
+                break;
+
+            case 4:
+                spotAnimation.scaleX =
+                    reader.readU16();
+                break;
+
+            case 5:
+                spotAnimation.scaleY =
+                    reader.readU16();
+                break;
+
+            case 6:
+                spotAnimation.rotation =
+                    reader.readU16();
+                break;
+
+            case 7:
+                spotAnimation.ambient =
+                    reader.readU8();
+                break;
+
+            case 8:
+                spotAnimation.contrast =
+                    reader.readU8();
+                break;
+
+            default:
+                if (
+                    opcode >= 40 &&
+                    opcode < 50
+                ) {
+                    spotAnimation.recolorSources[
+                        opcode - 40
+                    ] = reader.readU16();
+
+                    break;
+                }
+
+                if (
+                    opcode >= 50 &&
+                    opcode < 60
+                ) {
+                    spotAnimation.recolorDestinations[
+                        opcode - 50
+                    ] = reader.readU16();
+
+                    break;
+                }
+
+                throw std::runtime_error(
+                    "Unknown spot animation opcode"
+                );
+        }
+    }
+
+    throw std::runtime_error(
+        "Spot animation payload is missing terminator"
+    );
+}
+
+}
+
+===== src/assets/repositories/zSpotAnimationRepository.h =====
+MISSING
+
+===== src/assets/repositories/SpotAnimationRepository.cpp =====
+#include "repositories/SpotAnimationRepository.h"
+
+#include <exception>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "binary/ByteReader.h"
+
+namespace eld::spot_animation {
+
+SpotAnimationRepository::SpotAnimationRepository(
+    const eld::cache::Cache& cache
+)
+    : archive_(
+          eld::archive::load(
+              cache.open(Index),
+              ArchiveId
+          )
+      ) {
+}
+
+
+SpotAnimation SpotAnimationRepository::get(
+    std::uint16_t id
+) const {
+    const eld::archive::ArchiveFile& dataFile =
+        archive_.get(DataFile);
+
+    const eld::archive::ArchiveFile& indexFile =
+        archive_.get(IndexFile);
+
+    eld::binary::ByteReader dataReader(
+        dataFile.payload
+    );
+
+    eld::binary::ByteReader indexReader(
+        indexFile.payload
+    );
+
+    const auto dataCount = dataReader.readU16();
+    const auto indexCount = indexReader.readU16();
+
+    if (dataCount != indexCount) {
+        throw std::runtime_error(
+            "spot animation data/index count mismatch"
+        );
+    }
+
+    if (id >= dataCount) {
+        throw std::out_of_range(
+            "spot animation does not exist"
+        );
+    }
+
+    for (
+        std::uint16_t currentId = 0;
+        currentId < id;
+        ++currentId
+    ) {
+        const auto size = indexReader.readU16();
+
+        if (!dataReader.canRead(size)) {
+            throw std::runtime_error(
+                "spot animation asset exceeds data file"
+            );
+        }
+
+        dataReader.readBytes(size);
+    }
+
+    const auto size = indexReader.readU16();
+
+    if (!dataReader.canRead(size)) {
+        throw std::runtime_error(
+            "spot animation asset exceeds data file"
+        );
+    }
+
+    const std::vector<std::uint8_t> data =
+        dataReader.readBytes(size);
+
+    try {
+        SpotAnimation asset =
+            decoder_.decode(data);
+
+        asset.id = id;
+
+        return asset;
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode spot animation " +
+            std::to_string(id) +
+            ": " +
+            error.what()
+        );
+    }
+}
+
+
+std::optional<SpotAnimation> SpotAnimationRepository::find(
+    std::uint16_t id
+) const {
+    if (!contains(id)) {
+        return std::nullopt;
+    }
+
+    return get(id);
+}
+
+
+std::vector<std::uint16_t>
+SpotAnimationRepository::listIds() const {
+    const auto assetCount = count();
+
+    std::vector<std::uint16_t> ids;
+
+    ids.reserve(assetCount);
+
+    for (
+        std::uint16_t id = 0;
+        id < assetCount;
+        ++id
+    ) {
+        ids.push_back(id);
+    }
+
+    return ids;
+}
+
+
+bool SpotAnimationRepository::contains(
+    std::uint16_t id
+) const {
+    return id < count();
+}
+
+
+std::size_t SpotAnimationRepository::count() const {
+    const eld::archive::ArchiveFile& dataFile =
+        archive_.get(DataFile);
+
+    const eld::archive::ArchiveFile& indexFile =
+        archive_.get(IndexFile);
+
+    eld::binary::ByteReader dataReader(
+        dataFile.payload
+    );
+
+    eld::binary::ByteReader indexReader(
+        indexFile.payload
+    );
+
+    const auto dataCount = dataReader.readU16();
+    const auto indexCount = indexReader.readU16();
+
+    if (dataCount != indexCount) {
+        throw std::runtime_error(
+            "spot animation data/index count mismatch"
+        );
+    }
+
+    return dataCount;
+}
+
+}
+
+===== src/assets/model/ModelLoader.h =====
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <vector>
+
+#include "model/ModelData.h"
+#include "model/ModelResource.h"
+#include "model/ModelAssembler.h"
+#include "cache/Cache.h"
+#include "model/ModelDecoder.h"
+#include "texture/TextureLoader.h"
+
+namespace eld::model {
+
+class ModelLoader {
+public:
+    ModelLoader(
+        const eld::cache::Cache& cache,
+        const eld::texture::TextureLoader& textures
+    );
+
+    const ModelData& data(
+        std::uint16_t id
+    ) const;
+
+    std::optional<ModelData> find(
+        std::uint16_t id
+    ) const;
+
+    const ModelResource& resource(
+        std::uint16_t id
+    ) const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    static constexpr auto Index =
+        eld::cache::IndexId::Models;
+
+    ModelData loadData(
+        std::uint16_t id
+    ) const;
+
+    ModelResource assembleResource(
+        std::uint16_t id
+    ) const;
+
+    eld::cache::Store store_;
+
+    const eld::texture::TextureLoader&
+        textures_;
+
+    ModelDecoder decoder_;
+    ModelAssembler assembler_;
+
+    mutable std::map<
+        std::uint16_t,
+        ModelData
+    > dataCache_;
+
+    mutable std::map<
+        std::uint16_t,
+        ModelResource
+    > resourceCache_;
+};
+
+}
+
+===== src/assets/sequence/SequenceLoader.h =====
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <string_view>
+#include <vector>
+
+#include "animation/AnimationFrameTable.h"
+#include "archive/Archive.h"
+#include "cache/Cache.h"
+#include "sequence/SequenceAssembler.h"
+#include "sequence/SequenceData.h"
+#include "sequence/SequenceDecoder.h"
+#include "sequence/SequenceResource.h"
+
+namespace eld::sequence {
+
+class SequenceLoader {
+public:
+    explicit SequenceLoader(
+        const eld::cache::Cache& cache
+    );
+
+    SequenceLoader(
+        const eld::cache::Cache& cache,
+        const eld::animation::AnimationFrameTable& frames
+    );
+
+    const SequenceData& data(
+        std::uint16_t id
+    ) const;
+
+    const SequenceResource& resource(
+        std::uint16_t id
+    ) const;
+
+    std::optional<SequenceResource> find(
+        std::uint16_t id
+    ) const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    static constexpr auto Index =
+        eld::cache::IndexId::Config;
+
+    static constexpr std::uint16_t ArchiveId = 2;
+
+    static constexpr std::string_view DataFile =
+        "seq.dat";
+
+    static constexpr std::string_view IndexFile =
+        "seq.idx";
+
+    SequenceData loadData(
+        std::uint16_t id
+    ) const;
+
+    eld::archive::Archive archive_;
+
+    SequenceDecoder decoder_;
+    SequenceAssembler assembler_;
+
+    mutable std::map<
+        std::uint16_t,
+        SequenceData
+    > dataCache_;
+
+    mutable std::map<
+        std::uint16_t,
+        SequenceResource
+    > resourceCache_;
+};
+
+}
+
+===== src/assets/AssetManager.h =====
+#pragma once
+
+#include <cstdint>
+
+#include "cache/Cache.h"
+#include "animation/AnimationLoader.h"
+#include "animation/AnimationFrameTable.h"
+#include "repositories/FloorRepository.h"
+#include "repositories/FontRepository.h"
+#include "repositories/IdentityKitRepository.h"
+#include "repositories/ItemRepository.h"
+#include "repositories/LocationRepository.h"
+#include "repositories/MapRepository.h"
+#include "repositories/MessageAnimationRepository.h"
+#include "repositories/MessageRepository.h"
+#include "repositories/MidiRepository.h"
+#include "model/ModelLoader.h"
+#include "repositories/NpcRepository.h"
+#include "repositories/ParameterRepository.h"
+#include "sequence/SequenceLoader.h"
+#include "repositories/SpotAnimationRepository.h"
+#include "sprite/SpriteLoader.h"
+#include "texture/TextureLoader.h"
+#include "repositories/VarbitRepository.h"
+#include "repositories/VarpRepository.h"
+#include "repositories/WidgetRepository.h"
+
+namespace eld::asset {
+
+class AssetManager {
+public:
+    explicit AssetManager(const eld::cache::Cache& cache);
+
+    eld::animation::AnimationLoader animations;
+    eld::animation::AnimationFrameTable animationFrames;
+    eld::floor::FloorRepository floors;
+    eld::font::FontRepository fonts;
+    eld::identity_kit::IdentityKitRepository identityKits;
+    eld::item::ItemRepository items;
+    eld::location::LocationRepository locations;
+    eld::map::MapRepository maps;
+    eld::message_animation::MessageAnimationRepository messageAnimations;
+    eld::message::MessageRepository messages;
+    eld::midi::MidiRepository midi;
+    eld::texture::TextureLoader textures;
+    eld::model::ModelLoader models;
+    eld::npc::NpcRepository npcs;
+    eld::parameter::ParameterRepository parameters;
+    eld::sequence::SequenceLoader sequences;
+    eld::spot_animation::SpotAnimationRepository spotAnimations;
+    eld::sprite::SpriteLoader sprites;
+    eld::varbit::VarbitRepository varbits;
+    eld::varp::VarpRepository varps;
+    eld::interface::WidgetRepository widgets;
+
+};
+
+}
+
+===== src/assets/AssetManager.cpp =====
+#include "AssetManager.h"
+
+namespace eld::asset {
+
+
+AssetManager::AssetManager(const eld::cache::Cache& cache)
+    : animations(cache),
+      animationFrames(animations),
+      floors(cache),
+      fonts(cache),
+      identityKits(cache),
+      items(cache),
+      locations(cache),
+      maps(cache),
+      messageAnimations(cache),
+      messages(cache),
+      midi(cache),
+      textures(cache),
+      models(cache, textures),
+      npcs(cache),
+      parameters(cache),
+      sequences(cache, animationFrames),
+      spotAnimations(cache),
+      sprites(cache, eld::sprite::SpriteArchive::Media),
+      varbits(cache),
+      varps(cache),
+      widgets(cache) {
+}
+
+
+}
+
+===== src/assets/CMakeLists.txt =====
+add_library(eldoria_assets STATIC
+    AssetManager.cpp
+    animation/AnimationDecoder.cpp
+    animation/AnimationLoader.cpp
+    animation/AnimationFrameTable.cpp
+    content/animation/AnimationPresentationCatalog.cpp
+    InterfaceComposer.cpp
+    decoders/WidgetDecoder.cpp
+    repositories/WidgetRepository.cpp
+    decoders/MapIndexDecoder.cpp
+    decoders/TerrainDecoder.cpp
+    decoders/LocationSpawnDecoder.cpp
+    repositories/MapRepository.cpp
+    decoders/MidiDecoder.cpp
+    repositories/MidiRepository.cpp
+    model/ModelDecoder.cpp
+    model/ModelAssembler.cpp
+    model/ModelLoader.cpp
+    image/ImageDecoder.cpp
+    title/TitleLoader.cpp
+    decoders/FontDecoder.cpp
+    repositories/FontRepository.cpp
+    decoders/FloorDecoder.cpp
+    repositories/FloorRepository.cpp
+    decoders/IdentityKitDecoder.cpp
+    repositories/IdentityKitRepository.cpp
+    decoders/LocationDecoder.cpp
+    repositories/LocationRepository.cpp
+    decoders/NpcDecoder.cpp
+    repositories/NpcRepository.cpp
+    decoders/ItemDecoder.cpp
+    repositories/ItemRepository.cpp
+    sequence/SequenceDecoder.cpp
+    sequence/SequenceAssembler.cpp
+    sequence/SequenceLoader.cpp
+    decoders/SpotAnimationDecoder.cpp
+    repositories/SpotAnimationRepository.cpp
+    decoders/VarpDecoder.cpp
+    repositories/VarpRepository.cpp
+    decoders/VarbitDecoder.cpp
+    repositories/VarbitRepository.cpp
+    decoders/ParameterDecoder.cpp
+    repositories/ParameterRepository.cpp
+    decoders/MessageDecoder.cpp
+    repositories/MessageRepository.cpp
+    decoders/MessageAnimationDecoder.cpp
+    repositories/MessageAnimationRepository.cpp
+    texture/TextureAssembler.cpp
+    texture/TextureLoader.cpp
+    sprite/SpriteAssembler.cpp
+    sprite/SpriteLoader.cpp
+)
+
+add_library(Eldoria::Assets ALIAS eldoria_assets)
+
+target_include_directories(eldoria_assets PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources
+    ${CMAKE_CURRENT_SOURCE_DIR}/content
+)
+
+target_link_libraries(eldoria_assets PUBLIC
+    Eldoria::Storage
+)
+
+# Eldoria MIDI dependency
+
+target_include_directories(
+    eldoria_assets
+    PRIVATE
+        ${midifile_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    eldoria_assets
+    PRIVATE
+        midifile
+)
+
+===== ALL REFERENCES =====
+src/assets/SpotAnimation.h:9:struct SpotAnimation {
+src/apps/elforge/dump/AnimationDumper.cpp:194:                if (use.viaSpotAnimationId.has_value()) {
+src/apps/elforge/dump/AnimationDumper.cpp:197:                        << *use.viaSpotAnimationId
+src/apps/elforge/dump/AssetDumper.cpp:40:        case CacheTreeNodeType::SpotAnimation: return "Spot Animation";
+src/apps/elforge/dump/AssetDumper.cpp:708:        if (state.activeSpotAnimation.has_value()) {
+src/apps/elforge/dump/AssetDumper.cpp:710:                *state.activeSpotAnimation;
+src/apps/elforge/dump/AssetDumper.cpp:1069:            !state.activeSpotAnimation.has_value() &&
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:16:#include "views/spot_animation/SpotAnimationView.h"
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:52:    state_.activeSpotAnimation.reset();
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:84:                    spotAnimationRepository_,
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:440:        case CacheTreeNodeType::SpotAnimation: {
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:450:                spotAnimationRepository_.find(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:457:                state_.activeSpotAnimation =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:460:                const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:483:                            AnimationTargetKind::SpotAnimation;
+src/assets/CMakeLists.txt:36:    decoders/SpotAnimationDecoder.cpp
+src/assets/CMakeLists.txt:37:    repositories/SpotAnimationRepository.cpp
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:19:#include "views/spot_animation/SpotAnimationView.h"
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:169:    state_.activeSpotAnimation.reset();
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:272:            spotAnimationRepository_.find(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:285:        const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:310:        state_.activeSpotAnimation =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:320:            AnimationTargetKind::SpotAnimation;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:439:        animationTargetKind_ == AnimationTargetKind::SpotAnimation &&
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:440:        state_.activeSpotAnimation.has_value()
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:442:        const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:444:            *state_.activeSpotAnimation,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:836:    const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:885:    const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:892:            spotAnimationRepository_.find(effectBinding.spotAnimationId);
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1370:            manualActionSpotAnimationId_ = -1;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1379:                manualActionSpotAnimationId_ =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1381:                        effect.spotAnimationId
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1413:    ImGui::InputInt("SpotAnim", &manualActionSpotAnimationId_);
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1521:            manualActionSpotAnimationId_ >= 0 &&
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1522:            manualActionSpotAnimationId_ <= 65535
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1525:            effect.spotAnimationId =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:1526:                static_cast<std::uint16_t>(manualActionSpotAnimationId_);
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2707:                                spotAnimationRepository_.contains(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2708:                                    effect.spotAnimationId
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2911:                    static_cast<unsigned int>(effect.spotAnimationId),
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2921:                    static_cast<unsigned int>(effect.spotAnimationId),
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2958:void CacheExplorer::renderSpotAnimationControls() {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2959:    if (!state_.activeSpotAnimation.has_value()) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2965:    if (state_.activeSpotAnimation->sequenceId.has_value()) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2969:                *state_.activeSpotAnimation->sequenceId
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2977:    if (state_.activeSpotAnimation->modelId.has_value()) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:2982:                *state_.activeSpotAnimation->modelId
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:3012:    if (state_.activeSpotAnimation.has_value()) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:3013:        renderSpotAnimationControls();
+src/apps/elforge/export/AnimationExporter.cpp:192:    if (use.viaSpotAnimationId.has_value()) {
+src/apps/elforge/export/AnimationExporter.cpp:193:      output << ", \"viaSpotAnimationId\": " << *use.viaSpotAnimationId;
+src/assets/repositories/SpotAnimationRepository.cpp:1:#include "repositories/SpotAnimationRepository.h"
+src/assets/repositories/SpotAnimationRepository.cpp:12:SpotAnimationRepository::SpotAnimationRepository(
+src/assets/repositories/SpotAnimationRepository.cpp:24:SpotAnimation SpotAnimationRepository::get(
+src/assets/repositories/SpotAnimationRepository.cpp:84:        SpotAnimation asset =
+src/assets/repositories/SpotAnimationRepository.cpp:102:std::optional<SpotAnimation> SpotAnimationRepository::find(
+src/assets/repositories/SpotAnimationRepository.cpp:114:SpotAnimationRepository::listIds() const {
+src/assets/repositories/SpotAnimationRepository.cpp:133:bool SpotAnimationRepository::contains(
+src/assets/repositories/SpotAnimationRepository.cpp:140:std::size_t SpotAnimationRepository::count() const {
+src/apps/elforge/explorer/tree/CacheTreeNode.h:28:        SpotAnimation,
+src/assets/content/animation/AnimationPresentationCatalog.cpp:236:        const std::optional<std::uint16_t> spotAnimationId =
+src/assets/content/animation/AnimationPresentationCatalog.cpp:239:        if (spotAnimationId.has_value()) {
+src/assets/content/animation/AnimationPresentationCatalog.cpp:241:            effect.spotAnimationId = *spotAnimationId;
+src/assets/repositories/SpotAnimationRepository.h:9:#include "SpotAnimation.h"
+src/assets/repositories/SpotAnimationRepository.h:12:#include "decoders/SpotAnimationDecoder.h"
+src/assets/repositories/SpotAnimationRepository.h:16:class SpotAnimationRepository {
+src/assets/repositories/SpotAnimationRepository.h:18:    explicit SpotAnimationRepository(
+src/assets/repositories/SpotAnimationRepository.h:22:    SpotAnimation get(
+src/assets/repositories/SpotAnimationRepository.h:26:    std::optional<SpotAnimation> find(
+src/assets/repositories/SpotAnimationRepository.h:52:    SpotAnimationDecoder decoder_;
+src/assets/content/animation/AnimationPresentation.h:13:    std::uint16_t spotAnimationId = 0;
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:125:        case CacheTreeNodeType::SpotAnimation:
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:1262:    if (state.activeSpotAnimation.has_value()) {
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:1263:        const eld::spot_animation::SpotAnimation& effect =
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:1264:            *state.activeSpotAnimation;
+src/assets/decoders/SpotAnimationDecoder.cpp:1:#include "decoders/SpotAnimationDecoder.h"
+src/assets/decoders/SpotAnimationDecoder.cpp:27:SpotAnimation SpotAnimationDecoder::decode(
+src/assets/decoders/SpotAnimationDecoder.cpp:32:    SpotAnimation spotAnimation;
+src/assets/decoders/SpotAnimationDecoder.cpp:45:                return spotAnimation;
+src/assets/decoders/SpotAnimationDecoder.cpp:48:                spotAnimation.modelId =
+src/assets/decoders/SpotAnimationDecoder.cpp:53:                spotAnimation.sequenceId =
+src/assets/decoders/SpotAnimationDecoder.cpp:58:                spotAnimation.scaleX =
+src/assets/decoders/SpotAnimationDecoder.cpp:63:                spotAnimation.scaleY =
+src/assets/decoders/SpotAnimationDecoder.cpp:68:                spotAnimation.rotation =
+src/assets/decoders/SpotAnimationDecoder.cpp:73:                spotAnimation.ambient =
+src/assets/decoders/SpotAnimationDecoder.cpp:78:                spotAnimation.contrast =
+src/assets/decoders/SpotAnimationDecoder.cpp:87:                    spotAnimation.recolorSources[
+src/assets/decoders/SpotAnimationDecoder.cpp:98:                    spotAnimation.recolorDestinations[
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:8:#include "repositories/SpotAnimationRepository.h"
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:933:CacheTreeNode makeSpotAnimationNode(
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:937:    const eld::spot_animation::SpotAnimation& definition
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:942:        CacheTreeNodeType::SpotAnimation;
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:966:CacheTreeNode makeSpotAnimationGroupNode(
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:970:    const eld::spot_animation::SpotAnimationRepository& repository
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:995:        const eld::spot_animation::SpotAnimation definition =
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:998:            makeSpotAnimationNode(
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:1621:        eld::spot_animation::SpotAnimationRepository
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:1622:    > spotAnimationLoader;
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:1670:        spotAnimationLoader.emplace(
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:1886:            spotAnimationLoader.has_value() &&
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:1891:                    makeSpotAnimationGroupNode(
+src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp:1895:                        *spotAnimationLoader
+src/assets/decoders/SpotAnimationDecoder.h:6:#include "SpotAnimation.h"
+src/assets/decoders/SpotAnimationDecoder.h:10:class SpotAnimationDecoder {
+src/assets/decoders/SpotAnimationDecoder.h:12:    SpotAnimation decode(
+src/apps/elforge/inspection/AnimationInspector.h:16:#include "repositories/SpotAnimationRepository.h"
+src/apps/elforge/inspection/AnimationInspector.h:35:    std::optional<std::uint16_t> viaSpotAnimationId;
+src/apps/elforge/inspection/AnimationInspector.h:52:        const eld::spot_animation::SpotAnimationRepository& spotAnimations,
+src/apps/elforge/inspection/AnimationInspector.h:69:    const eld::spot_animation::SpotAnimationRepository* spotAnimations_ = nullptr;
+src/apps/elforge/explorer/CacheExplorerState.h:31:#include "SpotAnimation.h"
+src/apps/elforge/explorer/CacheExplorerState.h:146:    std::optional<eld::spot_animation::SpotAnimation>
+src/apps/elforge/explorer/CacheExplorerState.h:147:        activeSpotAnimation;
+src/apps/elforge/inspection/AnimationInspector.cpp:151:                    existing.viaSpotAnimationId == use.viaSpotAnimationId &&
+src/apps/elforge/inspection/AnimationInspector.cpp:180:            .viaSpotAnimationId = std::nullopt,
+src/apps/elforge/inspection/AnimationInspector.cpp:189:    const eld::spot_animation::SpotAnimationRepository& spots,
+src/apps/elforge/inspection/AnimationInspector.cpp:213:                .viaSpotAnimationId = std::nullopt,
+src/apps/elforge/inspection/AnimationInspector.cpp:224:            spots.find(effect.spotAnimationId);
+src/apps/elforge/inspection/AnimationInspector.cpp:245:                .viaSpotAnimationId = effect.spotAnimationId,
+src/apps/elforge/inspection/AnimationInspector.cpp:259:    const eld::spot_animation::SpotAnimationRepository& spotAnimations,
+src/apps/elforge/inspection/AnimationInspector.cpp:268:      spotAnimations_(&spotAnimations),
+src/apps/elforge/inspection/AnimationInspector.cpp:372:                *spotAnimations_,
+src/apps/elforge/inspection/AnimationInspector.cpp:402:                .viaSpotAnimationId = std::nullopt,
+src/apps/elforge/inspection/AnimationInspector.cpp:408:    for (const auto id : spotAnimations_->listIds()) {
+src/apps/elforge/inspection/AnimationInspector.cpp:409:        const eld::spot_animation::SpotAnimation spot =
+src/apps/elforge/inspection/AnimationInspector.cpp:410:            spotAnimations_->get(id);
+src/apps/elforge/inspection/AnimationInspector.cpp:428:                .viaSpotAnimationId = std::nullopt,
+src/apps/elforge/inspection/AnimationInspector.cpp:452:                    .viaSpotAnimationId = std::nullopt,
+src/apps/elforge/inspection/AnimationInspector.cpp:472:                    .viaSpotAnimationId = std::nullopt,
+src/apps/elforge/inspection/AnimationInspector.cpp:489:                *spotAnimations_,
+src/apps/elforge/explorer/CacheExplorerItem.cpp:521:                    static_cast<unsigned int>(effect.spotAnimationId),
+src/apps/elforge/explorer/CacheExplorerItem.cpp:531:                    static_cast<unsigned int>(effect.spotAnimationId),
+src/apps/elforge/explorer/CacheExplorer.h:47:#include "repositories/SpotAnimationRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h:104:    void renderSpotAnimationControls();
+src/apps/elforge/explorer/CacheExplorer.h:164:        SpotAnimation
+src/apps/elforge/explorer/CacheExplorer.h:176:        eld::spot_animation::SpotAnimation definition;
+src/apps/elforge/explorer/CacheExplorer.h:231:    int manualActionSpotAnimationId_ = -1;
+src/apps/elforge/explorer/CacheExplorer.h:260:    eld::spot_animation::SpotAnimationRepository spotAnimationRepository_;
+src/assets/AssetManager.h:21:#include "repositories/SpotAnimationRepository.h"
+src/assets/AssetManager.h:50:    eld::spot_animation::SpotAnimationRepository spotAnimations;
+src/assets/AssetManager.cpp:23:      spotAnimations(cache),
+src/apps/elforge/explorer/CacheExplorer.cpp:68:      spotAnimationRepository_(
+src/apps/elforge/explorer/CacheExplorer.cpp:243:                spotAnimationRepository_,
+src/apps/elforge/viewport/ViewportPanel.cpp:5089:        case ViewportViewKind::SpotAnimation:
+src/apps/elforge/viewport/ViewportPanel.cpp:5123:        case ViewportViewKind::SpotAnimation:
+src/apps/elforge/viewport/ViewportPanel.cpp:5315:        case ViewportViewKind::SpotAnimation:
+src/apps/elforge/viewport/ViewportPanel.cpp:5427:        case ViewportViewKind::SpotAnimation:
+src/apps/elforge/viewport/ViewportPanel.cpp:6114:        case ViewportViewKind::SpotAnimation:
+src/apps/elforge/viewport/ViewportPanel.cpp:6210:            case ViewportViewKind::SpotAnimation:
+src/apps/elforge/CMakeLists.txt:33:    views/spot_animation/SpotAnimationView.cpp
+src/apps/elforge/viewport/ViewportWorkspaceRouter.cpp:39:        state.activeSpotAnimation.has_value() &&
+src/apps/elforge/viewport/ViewportWorkspaceRouter.cpp:43:        return ViewportViewKind::SpotAnimation;
+src/apps/elforge/viewport/ViewportWorkspaceRouter.cpp:86:            ViewportViewKind::SpotAnimation
+src/apps/elforge/viewport/ViewportWorkspaceRouter.h:24:    SpotAnimation,
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:5:#include "SpotAnimation.h"
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:11:class SpotAnimationView {
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:14:        const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:19:        const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:24:        const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:1:#include "views/spot_animation/SpotAnimationView.h"
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:22:SpotAnimationView::buildAnimationSource(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:23:    const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:43:void SpotAnimationView::prepareAnimatedMesh(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:44:    const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:98:SpotAnimationView::build(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:99:    const eld::spot_animation::SpotAnimation& definition,

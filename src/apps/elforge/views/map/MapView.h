@@ -2,35 +2,31 @@
 
 #include <cstdint>
 
-#include "views/map/MapViewState.h"
-#include "repositories/FloorRepository.h"
-#include "repositories/LocationRepository.h"
+#include "floor/FloorLoader.h"
+#include "location/LocationLoader.h"
+#include "map/MapLoader.h"
+#include "model/ModelLoader.h"
 #include "render/GraphicsResources.h"
-#include "repositories/MapRepository.h"
-#include "repositories/ModelRepository.h"
+#include "views/map/MapViewState.h"
 
 namespace eld::elforge {
 
 class MapView {
 public:
-    MapView(
-        const eld::map::MapRepository& loader,
-        const eld::floor::FloorRepository& floors,
-        const eld::location::LocationRepository& locations,
-        eld::model::ModelRepository& models,
-        eld::render::GraphicsResources& graphics
-    );
+  MapView(const eld::map::MapLoader &loader,
+          const eld::floor::FloorLoader &floors,
+          const eld::location::LocationLoader &locations,
+          eld::model::ModelLoader &models,
+          eld::render::GraphicsResources &graphics);
 
-    MapViewState build(
-        std::uint16_t regionId
-    ) const;
+  MapViewState build(std::uint16_t regionId) const;
 
 private:
-    const eld::map::MapRepository& loader_;
-    const eld::floor::FloorRepository& floors_;
-    const eld::location::LocationRepository& locations_;
-    eld::model::ModelRepository& models_;
-    eld::render::GraphicsResources& graphics_;
+  const eld::map::MapLoader &loader_;
+  const eld::floor::FloorLoader &floors_;
+  const eld::location::LocationLoader &locations_;
+  eld::model::ModelLoader &models_;
+  eld::render::GraphicsResources &graphics_;
 };
 
-}
+} // namespace eld::elforge

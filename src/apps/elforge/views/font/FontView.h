@@ -1,15 +1,13 @@
 #pragma once
 
-#include "Font.h"
-#include "Image.h"
+#include "font/FontData.h"
+#include "image/ImageData.h"
 
 namespace eld::elforge {
 
 class FontView {
 public:
-    eld::image::Image build(
-        const eld::font::Font& font
-    ) const;
+  eld::image::ImageData build(const eld::font::FontData &font) const;
 };
 
-}
+} // namespace eld::elforge

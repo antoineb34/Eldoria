@@ -1,0 +1,2772 @@
+ M src/apps/elforge/explorer/CacheExplorer.cpp
+ M src/apps/elforge/explorer/CacheExplorerSelection.cpp
+ M src/apps/elforge/explorer/tree/CacheTreeBuilder.cpp
+ M src/apps/elforge/inspection/InterfaceInspector.cpp
+ M src/apps/elforge/views/interface/InterfaceView.h
+ M src/assets/CMakeLists.txt
+ M src/assets/Font.h
+ M src/assets/InterfaceComposer.cpp
+D  src/assets/ResourceProvider.cpp
+D  src/assets/ResourceProvider.h
+ M src/assets/repositories/FontRepository.cpp
+ M src/assets/repositories/FontRepository.h
+ M src/assets/repositories/ImageRepository.cpp
+ M src/assets/repositories/ImageRepository.h
+ M src/assets/repositories/SpriteRepository.h
+ M src/assets/repositories/WidgetRepository.cpp
+ M src/assets/repositories/WidgetRepository.h
+?? asset_cohesion_review.txt
+?? eldoria_headers_review.txt
+?? src/assets/AssetManager.cpp
+?? src/assets/AssetManager.h
+
+===== ASSET TREE =====
+src/assets/AnimationFrameTable.cpp
+src/assets/AnimationFrameTable.h
+src/assets/Animation.h
+src/assets/AssetManager.cpp
+src/assets/AssetManager.h
+src/assets/CMakeLists.txt
+src/assets/content/animation/AnimationAction.h
+src/assets/content/animation/AnimationPresentationCatalog.cpp
+src/assets/content/animation/AnimationPresentationCatalog.h
+src/assets/content/animation/AnimationPresentation.h
+src/assets/content/map/MapIndex.h
+src/assets/content/map/MapRegion.h
+src/assets/content/map/MapTile.h
+src/assets/decoders/AnimationDecoder.cpp
+src/assets/decoders/AnimationDecoder.h
+src/assets/decoders/FloorDecoder.cpp
+src/assets/decoders/FloorDecoder.h
+src/assets/decoders/FontDecoder.cpp
+src/assets/decoders/FontDecoder.h
+src/assets/decoders/IdentityKitDecoder.cpp
+src/assets/decoders/IdentityKitDecoder.h
+src/assets/decoders/ImageDecoder.cpp
+src/assets/decoders/ImageDecoder.h
+src/assets/decoders/ItemDecoder.cpp
+src/assets/decoders/ItemDecoder.h
+src/assets/decoders/LocationDecoder.cpp
+src/assets/decoders/LocationDecoder.h
+src/assets/decoders/LocationSpawnDecoder.cpp
+src/assets/decoders/LocationSpawnDecoder.h
+src/assets/decoders/MapIndexDecoder.cpp
+src/assets/decoders/MapIndexDecoder.h
+src/assets/decoders/MessageAnimationDecoder.cpp
+src/assets/decoders/MessageAnimationDecoder.h
+src/assets/decoders/MessageDecoder.cpp
+src/assets/decoders/MessageDecoder.h
+src/assets/decoders/MidiDecoder.cpp
+src/assets/decoders/MidiDecoder.h
+src/assets/decoders/ModelDecoder.cpp
+src/assets/decoders/ModelDecoder.h
+src/assets/decoders/NpcDecoder.cpp
+src/assets/decoders/NpcDecoder.h
+src/assets/decoders/ParameterDecoder.cpp
+src/assets/decoders/ParameterDecoder.h
+src/assets/decoders/SequenceDecoder.cpp
+src/assets/decoders/SequenceDecoder.h
+src/assets/decoders/SpotAnimationDecoder.cpp
+src/assets/decoders/SpotAnimationDecoder.h
+src/assets/decoders/TerrainDecoder.cpp
+src/assets/decoders/TerrainDecoder.h
+src/assets/decoders/VarbitDecoder.cpp
+src/assets/decoders/VarbitDecoder.h
+src/assets/decoders/VarpDecoder.cpp
+src/assets/decoders/VarpDecoder.h
+src/assets/decoders/WidgetDecoder.cpp
+src/assets/decoders/WidgetDecoder.h
+src/assets/Floor.h
+src/assets/Font.h
+src/assets/IdentityKit.h
+src/assets/Image.h
+src/assets/InterfaceComposer.cpp
+src/assets/InterfaceComposer.h
+src/assets/Item.h
+src/assets/Location.h
+src/assets/MessageAnimation.h
+src/assets/Message.h
+src/assets/Midi.h
+src/assets/Model.h
+src/assets/ModelResource.h
+src/assets/Npc.h
+src/assets/Parameter.h
+src/assets/README.md
+src/assets/repositories/AnimationRepository.cpp
+src/assets/repositories/AnimationRepository.h
+src/assets/repositories/FloorRepository.cpp
+src/assets/repositories/FloorRepository.h
+src/assets/repositories/FontRepository.cpp
+src/assets/repositories/FontRepository.h
+src/assets/repositories/IdentityKitRepository.cpp
+src/assets/repositories/IdentityKitRepository.h
+src/assets/repositories/ImageRepository.cpp
+src/assets/repositories/ImageRepository.h
+src/assets/repositories/ItemRepository.cpp
+src/assets/repositories/ItemRepository.h
+src/assets/repositories/LocationRepository.cpp
+src/assets/repositories/LocationRepository.h
+src/assets/repositories/MapRepository.cpp
+src/assets/repositories/MapRepository.h
+src/assets/repositories/MessageAnimationRepository.cpp
+src/assets/repositories/MessageAnimationRepository.h
+src/assets/repositories/MessageRepository.cpp
+src/assets/repositories/MessageRepository.h
+src/assets/repositories/MidiRepository.cpp
+src/assets/repositories/MidiRepository.h
+src/assets/repositories/ModelRepository.cpp
+src/assets/repositories/ModelRepository.h
+src/assets/repositories/NpcRepository.cpp
+src/assets/repositories/NpcRepository.h
+src/assets/repositories/ParameterRepository.cpp
+src/assets/repositories/ParameterRepository.h
+src/assets/repositories/SequenceRepository.cpp
+src/assets/repositories/SequenceRepository.h
+src/assets/repositories/SpotAnimationRepository.cpp
+src/assets/repositories/SpotAnimationRepository.h
+src/assets/repositories/SpriteRepository.cpp
+src/assets/repositories/SpriteRepository.h
+src/assets/repositories/TextureRepository.cpp
+src/assets/repositories/TextureRepository.h
+src/assets/repositories/VarbitRepository.cpp
+src/assets/repositories/VarbitRepository.h
+src/assets/repositories/VarpRepository.cpp
+src/assets/repositories/VarpRepository.h
+src/assets/repositories/WidgetRepository.cpp
+src/assets/repositories/WidgetRepository.h
+src/assets/Sequence.h
+src/assets/SpotAnimation.h
+src/assets/Sprite.h
+src/assets/Texture.h
+src/assets/Varbit.h
+src/assets/Varp.h
+src/assets/Widget.h
+
+===== src/assets/Model.h =====
+#pragma once
+
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+namespace eld::model {
+
+struct Vertex {
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+
+    std::optional<std::uint8_t> skin;
+};
+
+struct Face {
+    std::uint32_t a = 0;
+    std::uint32_t b = 0;
+    std::uint32_t c = 0;
+
+    std::uint16_t color = 0;
+
+    std::uint8_t priority = 0;
+    std::uint8_t alpha = 0;
+    std::uint8_t renderType = 0;
+
+    std::optional<std::uint8_t> skin;
+
+    std::optional<std::uint16_t> textureId;
+    std::optional<std::uint32_t> textureMappingIndex;
+};
+
+struct TextureMapping {
+    std::uint32_t originVertex = 0;
+    std::uint32_t uVertex = 0;
+    std::uint32_t vVertex = 0;
+};
+
+struct Model {
+    std::uint16_t id = 0;
+
+    std::vector<Vertex> vertices;
+    std::vector<Face> faces;
+    std::vector<TextureMapping> textureMappings;
+};
+
+}
+
+===== src/assets/ModelResource.h =====
+#pragma once
+
+#include <cstdint>
+#include <map>
+
+#include "Model.h"
+#include "Texture.h"
+
+namespace eld::model {
+
+struct ModelResource {
+    Model model;
+
+    std::map<
+        std::uint16_t,
+        eld::texture::Texture
+    > textures;
+};
+
+}
+
+===== src/assets/decoders/ModelDecoder.h =====
+#pragma once
+
+#include <cstdint>
+#include <span>
+
+#include "Model.h"
+
+namespace eld::model {
+
+class ModelDecoder {
+public:
+    Model decode(
+        std::span<const std::uint8_t> payload
+    ) const;
+};
+
+}
+
+===== src/assets/repositories/ModelRepository.h =====
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+#include "Model.h"
+#include "cache/Cache.h"
+#include "decoders/ModelDecoder.h"
+
+namespace eld::model {
+
+class ModelRepository {
+public:
+    explicit ModelRepository(
+        const eld::cache::Cache& cache
+    );
+
+    Model get(
+        std::uint16_t id
+    ) const;
+
+    std::optional<Model> find(
+        std::uint16_t id
+    ) const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    static constexpr auto Index =
+        eld::cache::IndexId::Models;
+
+    eld::cache::Store store_;
+    ModelDecoder decoder_;
+};
+
+}
+
+===== src/assets/repositories/ModelRepository.cpp =====
+#include "repositories/ModelRepository.h"
+
+#include <exception>
+#include <stdexcept>
+#include <string>
+
+namespace eld::model {
+
+ModelRepository::ModelRepository(
+    const eld::cache::Cache& cache
+)
+    : store_(
+          cache.open(Index)
+      ) {
+}
+
+
+Model ModelRepository::get(
+    std::uint16_t id
+) const {
+    const eld::cache::File file =
+        store_.get(id);
+
+    try {
+        Model model =
+            decoder_.decode(
+                file.getBytes()
+            );
+
+        model.id = id;
+
+        return model;
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode model " +
+            std::to_string(id) +
+            ": " +
+            error.what()
+        );
+    }
+}
+
+
+std::optional<Model> ModelRepository::find(
+    std::uint16_t id
+) const {
+    if (!contains(id)) {
+        return std::nullopt;
+    }
+
+    return get(id);
+}
+
+
+std::vector<std::uint16_t>
+ModelRepository::listIds() const {
+    const std::vector<eld::cache::FileEntry> entries =
+        store_.list();
+
+    std::vector<std::uint16_t> ids;
+
+    ids.reserve(
+        entries.size()
+    );
+
+    for (
+        const eld::cache::FileEntry& entry :
+        entries
+    ) {
+        ids.push_back(
+            entry.fileId
+        );
+    }
+
+    return ids;
+}
+
+
+bool ModelRepository::contains(
+    std::uint16_t id
+) const {
+    return store_.contains(id);
+}
+
+
+std::size_t ModelRepository::count() const {
+    return store_.count();
+}
+
+}
+
+===== src/assets/repositories/TextureRepository.h =====
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <vector>
+
+#include "Texture.h"
+#include "archive/Archive.h"
+#include "cache/Cache.h"
+#include "decoders/ImageDecoder.h"
+
+namespace eld::texture {
+
+class TextureRepository {
+public:
+    explicit TextureRepository(
+        const eld::cache::Cache& cache
+    );
+
+    Texture get(
+        std::uint16_t id
+    ) const;
+
+    std::optional<Texture> find(
+        std::uint16_t id
+    ) const;
+
+    std::vector<std::uint16_t> listIds() const;
+
+    bool contains(
+        std::uint16_t id
+    ) const;
+
+    std::size_t count() const;
+
+private:
+    static constexpr auto Index =
+        eld::cache::IndexId::Config;
+
+    static constexpr std::uint16_t ArchiveId = 6;
+
+    eld::archive::Archive archive_;
+    eld::image::ImageDecoder decoder_;
+};
+
+}
+
+===== src/assets/AssetManager.h =====
+#pragma once
+
+#include <cstdint>
+
+#include "cache/Cache.h"
+#include "repositories/AnimationRepository.h"
+#include "repositories/FloorRepository.h"
+#include "repositories/FontRepository.h"
+#include "repositories/IdentityKitRepository.h"
+#include "repositories/ItemRepository.h"
+#include "repositories/LocationRepository.h"
+#include "repositories/MapRepository.h"
+#include "repositories/MessageAnimationRepository.h"
+#include "repositories/MessageRepository.h"
+#include "repositories/MidiRepository.h"
+#include "repositories/ModelRepository.h"
+#include "repositories/NpcRepository.h"
+#include "repositories/ParameterRepository.h"
+#include "repositories/SequenceRepository.h"
+#include "repositories/SpotAnimationRepository.h"
+#include "repositories/SpriteRepository.h"
+#include "repositories/TextureRepository.h"
+#include "repositories/VarbitRepository.h"
+#include "repositories/VarpRepository.h"
+#include "repositories/WidgetRepository.h"
+
+namespace eld::asset {
+
+class AssetManager {
+public:
+    explicit AssetManager(const eld::cache::Cache& cache);
+
+    eld::animation::AnimationRepository animations;
+    eld::floor::FloorRepository floors;
+    eld::font::FontRepository fonts;
+    eld::identity_kit::IdentityKitRepository identityKits;
+    eld::item::ItemRepository items;
+    eld::location::LocationRepository locations;
+    eld::map::MapRepository maps;
+    eld::message_animation::MessageAnimationRepository messageAnimations;
+    eld::message::MessageRepository messages;
+    eld::midi::MidiRepository midi;
+    eld::model::ModelRepository models;
+    eld::npc::NpcRepository npcs;
+    eld::parameter::ParameterRepository parameters;
+    eld::sequence::SequenceRepository sequences;
+    eld::spot_animation::SpotAnimationRepository spotAnimations;
+    eld::sprite::SpriteRepository sprites;
+    eld::texture::TextureRepository textures;
+    eld::varbit::VarbitRepository varbits;
+    eld::varp::VarpRepository varps;
+    eld::interface::WidgetRepository widgets;
+
+};
+
+}
+
+===== src/assets/AssetManager.cpp =====
+#include "AssetManager.h"
+
+namespace eld::asset {
+
+AssetManager::AssetManager(const eld::cache::Cache& cache)
+    : animations(cache),
+      floors(cache),
+      fonts(cache),
+      identityKits(cache),
+      items(cache),
+      locations(cache),
+      maps(cache),
+      messageAnimations(cache),
+      messages(cache),
+      midi(cache),
+      models(cache),
+      npcs(cache),
+      parameters(cache),
+      sequences(cache),
+      spotAnimations(cache),
+      sprites(cache),
+      textures(cache),
+      varbits(cache),
+      varps(cache),
+      widgets(cache),
+      cache_(cache) {
+}
+
+
+}
+
+===== src/assets/CMakeLists.txt =====
+add_library(eldoria_assets STATIC
+    AssetManager.cpp
+    AnimationFrameTable.cpp
+    content/animation/AnimationPresentationCatalog.cpp
+    decoders/AnimationDecoder.cpp
+    repositories/AnimationRepository.cpp
+    InterfaceComposer.cpp
+    decoders/WidgetDecoder.cpp
+    repositories/WidgetRepository.cpp
+    decoders/MapIndexDecoder.cpp
+    decoders/TerrainDecoder.cpp
+    decoders/LocationSpawnDecoder.cpp
+    repositories/MapRepository.cpp
+    decoders/MidiDecoder.cpp
+    repositories/MidiRepository.cpp
+    decoders/ModelDecoder.cpp
+    repositories/ModelRepository.cpp
+    decoders/ImageDecoder.cpp
+    decoders/FontDecoder.cpp
+    repositories/FontRepository.cpp
+    decoders/FloorDecoder.cpp
+    repositories/FloorRepository.cpp
+    decoders/IdentityKitDecoder.cpp
+    repositories/IdentityKitRepository.cpp
+    decoders/LocationDecoder.cpp
+    repositories/LocationRepository.cpp
+    decoders/NpcDecoder.cpp
+    repositories/NpcRepository.cpp
+    decoders/ItemDecoder.cpp
+    repositories/ItemRepository.cpp
+    decoders/SequenceDecoder.cpp
+    repositories/SequenceRepository.cpp
+    decoders/SpotAnimationDecoder.cpp
+    repositories/SpotAnimationRepository.cpp
+    decoders/VarpDecoder.cpp
+    repositories/VarpRepository.cpp
+    decoders/VarbitDecoder.cpp
+    repositories/VarbitRepository.cpp
+    decoders/ParameterDecoder.cpp
+    repositories/ParameterRepository.cpp
+    decoders/MessageDecoder.cpp
+    repositories/MessageRepository.cpp
+    decoders/MessageAnimationDecoder.cpp
+    repositories/MessageAnimationRepository.cpp
+    repositories/TextureRepository.cpp
+    repositories/SpriteRepository.cpp
+)
+
+add_library(Eldoria::Assets ALIAS eldoria_assets)
+
+target_include_directories(eldoria_assets PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources
+    ${CMAKE_CURRENT_SOURCE_DIR}/content
+)
+
+target_link_libraries(eldoria_assets PUBLIC
+    Eldoria::Storage
+)
+
+
+# Public asset-access facade.
+
+
+target_sources(
+    eldoria_assets
+    PRIVATE
+        ResourceProvider.cpp
+)
+
+
+# Eldoria MIDI dependency
+
+target_include_directories(
+    eldoria_assets
+    PRIVATE
+        ${midifile_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    eldoria_assets
+    PRIVATE
+        midifile
+)
+
+===== MODEL CONSUMER FILES =====
+src/apps/elforge/dump/AssetDumper.cpp
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp
+src/apps/elforge/explorer/CacheExplorer.h
+src/apps/elforge/explorer/CacheExplorerItem.cpp
+src/apps/elforge/explorer/CacheExplorerSelection.cpp
+src/apps/elforge/explorer/CacheExplorerState.h
+src/apps/elforge/inspection/AssetDetailsPanel.cpp
+src/apps/elforge/viewport/ViewportPanel.cpp
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp
+src/apps/elforge/views/identity_kit/IdentityKitView.h
+src/apps/elforge/views/item/ItemView.cpp
+src/apps/elforge/views/item/ItemView.h
+src/apps/elforge/views/location/LocationView.cpp
+src/apps/elforge/views/location/LocationView.h
+src/apps/elforge/views/map/MapView.cpp
+src/apps/elforge/views/map/MapView.h
+src/apps/elforge/views/model/ModelViewPanel.cpp
+src/apps/elforge/views/npc/NpcView.cpp
+src/apps/elforge/views/npc/NpcView.h
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp
+src/apps/elforge/views/spot_animation/SpotAnimationView.h
+src/assets/AssetManager.h
+src/assets/CMakeLists.txt
+src/assets/decoders/ModelDecoder.h
+src/assets/ModelResource.h
+src/assets/repositories/ModelRepository.cpp
+src/assets/repositories/ModelRepository.h
+src/runtime/render/animation/ModelAnimator.cpp
+src/runtime/render/animation/ModelAnimator.h
+src/runtime/render/animation/ModelSkinGroups.cpp
+src/runtime/render/animation/ModelSkinGroups.h
+src/runtime/render/GraphicsResources.cpp
+src/runtime/render/GraphicsResources.h
+src/runtime/render/map/SceneLocationModelBuilder.cpp
+src/runtime/render/map/SceneLocationModelBuilder.h
+src/runtime/render/model/ModelResolver.cpp
+src/runtime/render/model/ModelResolver.h
+src/runtime/render/model/RenderModelAssembler.cpp
+src/runtime/render/model/RenderModelAssembler.h
+
+===== MODEL CONSUMER CONTEXT =====
+src/runtime/render/model/RenderModelAssembler.cpp-108-    };
+src/runtime/render/model/RenderModelAssembler.cpp-109-}
+src/runtime/render/model/RenderModelAssembler.cpp-110-
+src/runtime/render/model/RenderModelAssembler.cpp-111-void validateFace(
+src/runtime/render/model/RenderModelAssembler.cpp-112-    const eld::model::Face& face,
+src/runtime/render/model/RenderModelAssembler.cpp:113:    const eld::model::Model& source
+src/runtime/render/model/RenderModelAssembler.cpp-114-) {
+src/runtime/render/model/RenderModelAssembler.cpp-115-    if (
+src/runtime/render/model/RenderModelAssembler.cpp-116-        face.a >= source.vertices.size() ||
+src/runtime/render/model/RenderModelAssembler.cpp-117-        face.b >= source.vertices.size() ||
+src/runtime/render/model/RenderModelAssembler.cpp-118-        face.c >= source.vertices.size()
+--
+src/runtime/render/model/RenderModelAssembler.cpp-123-    }
+src/runtime/render/model/RenderModelAssembler.cpp-124-}
+src/runtime/render/model/RenderModelAssembler.cpp-125-
+src/runtime/render/model/RenderModelAssembler.cpp-126-eld::math::Vec3 calculateFaceNormal(
+src/runtime/render/model/RenderModelAssembler.cpp-127-    const eld::model::Face& face,
+src/runtime/render/model/RenderModelAssembler.cpp:128:    const eld::model::Model& source
+src/runtime/render/model/RenderModelAssembler.cpp-129-) {
+src/runtime/render/model/RenderModelAssembler.cpp-130-    const eld::math::Vec3 a =
+src/runtime/render/model/RenderModelAssembler.cpp-131-        toGraphicsPosition(source.vertices.at(face.a));
+src/runtime/render/model/RenderModelAssembler.cpp-132-
+src/runtime/render/model/RenderModelAssembler.cpp-133-    const eld::math::Vec3 b =
+--
+src/runtime/render/model/RenderModelAssembler.cpp-172-    };
+src/runtime/render/model/RenderModelAssembler.cpp-173-}
+src/runtime/render/model/RenderModelAssembler.cpp-174-
+src/runtime/render/model/RenderModelAssembler.cpp-175-std::array<eld::math::Vec2, 3> calculateFaceUvs(
+src/runtime/render/model/RenderModelAssembler.cpp-176-    const eld::model::Face& face,
+src/runtime/render/model/RenderModelAssembler.cpp:177:    const eld::model::Model& source
+src/runtime/render/model/RenderModelAssembler.cpp-178-) {
+src/runtime/render/model/RenderModelAssembler.cpp-179-    std::array<eld::math::Vec2, 3> result{
+src/runtime/render/model/RenderModelAssembler.cpp-180-        eld::math::Vec2{0.0f, 0.0f},
+src/runtime/render/model/RenderModelAssembler.cpp-181-        eld::math::Vec2{1.0f, 0.0f},
+src/runtime/render/model/RenderModelAssembler.cpp-182-        eld::math::Vec2{0.0f, 1.0f}
+--
+src/runtime/render/model/RenderModelAssembler.cpp-331-)
+src/runtime/render/model/RenderModelAssembler.cpp-332-    : textureResolver_(textureResolver) {
+src/runtime/render/model/RenderModelAssembler.cpp-333-}
+src/runtime/render/model/RenderModelAssembler.cpp-334-
+src/runtime/render/model/RenderModelAssembler.cpp-335-RenderModel RenderModelAssembler::assemble(
+src/runtime/render/model/RenderModelAssembler.cpp:336:    const eld::model::Model& source
+src/runtime/render/model/RenderModelAssembler.cpp-337-) {
+src/runtime/render/model/RenderModelAssembler.cpp-338-    RenderModel model;
+src/runtime/render/model/RenderModelAssembler.cpp-339-    RenderMesh mesh;
+src/runtime/render/model/RenderModelAssembler.cpp-340-
+src/runtime/render/model/RenderModelAssembler.cpp-341-    std::vector<eld::math::Vec3> faceNormals(
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-78-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-79-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-80-    return ids;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-81-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-82-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:83:eld::model::Model combineMeshes(
+src/runtime/render/map/SceneLocationModelBuilder.cpp:84:    const std::vector<eld::model::Model>& meshes
+src/runtime/render/map/SceneLocationModelBuilder.cpp-85-) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp:86:    eld::model::Model result;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-87-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-88-    std::size_t vertexCount = 0;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-89-    std::size_t faceCount = 0;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-90-    std::size_t mappingCount = 0;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-91-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:92:    for (const eld::model::Model& mesh : meshes) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-93-        vertexCount += mesh.vertices.size();
+src/runtime/render/map/SceneLocationModelBuilder.cpp-94-        faceCount += mesh.faces.size();
+src/runtime/render/map/SceneLocationModelBuilder.cpp-95-        mappingCount += mesh.textureMappings.size();
+src/runtime/render/map/SceneLocationModelBuilder.cpp-96-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-97-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-98-    result.vertices.reserve(vertexCount);
+src/runtime/render/map/SceneLocationModelBuilder.cpp-99-    result.faces.reserve(faceCount);
+src/runtime/render/map/SceneLocationModelBuilder.cpp-100-    result.textureMappings.reserve(mappingCount);
+src/runtime/render/map/SceneLocationModelBuilder.cpp-101-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:102:    for (const eld::model::Model& mesh : meshes) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-103-        const std::uint32_t vertexOffset =
+src/runtime/render/map/SceneLocationModelBuilder.cpp-104-            static_cast<std::uint32_t>(result.vertices.size());
+src/runtime/render/map/SceneLocationModelBuilder.cpp-105-        const std::uint32_t mappingOffset =
+src/runtime/render/map/SceneLocationModelBuilder.cpp-106-            static_cast<std::uint32_t>(result.textureMappings.size());
+src/runtime/render/map/SceneLocationModelBuilder.cpp-107-
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-132-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-133-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-134-    return result;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-135-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-136-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:137:void rotateY90(eld::model::Model& mesh) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-138-    for (eld::model::Vertex& vertex : mesh.vertices) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-139-        const float oldX = vertex.x;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-140-        vertex.x = vertex.z;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-141-        vertex.z = -oldX;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-142-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-143-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-144-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:145:void rotateY180Mirrored(eld::model::Model& mesh) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-146-    for (eld::model::Vertex& vertex : mesh.vertices) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-147-        vertex.z = -vertex.z;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-148-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-149-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-150-    // Model::rotateY180() swaps face winding after the Z reflection.
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-152-        std::swap(face.a, face.c);
+src/runtime/render/map/SceneLocationModelBuilder.cpp-153-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-154-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-155-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-156-void recolor(
+src/runtime/render/map/SceneLocationModelBuilder.cpp:157:    eld::model::Model& mesh,
+src/runtime/render/map/SceneLocationModelBuilder.cpp-158-    const eld::location::Location& definition
+src/runtime/render/map/SceneLocationModelBuilder.cpp-159-) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-160-    for (
+src/runtime/render/map/SceneLocationModelBuilder.cpp-161-        const eld::location::LocationRecolor& recolor :
+src/runtime/render/map/SceneLocationModelBuilder.cpp-162-        definition.recolors
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-168-        }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-169-    }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-170-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-171-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-172-void scaleAndTranslate(
+src/runtime/render/map/SceneLocationModelBuilder.cpp:173:    eld::model::Model& mesh,
+src/runtime/render/map/SceneLocationModelBuilder.cpp-174-    const eld::location::Location& definition
+src/runtime/render/map/SceneLocationModelBuilder.cpp-175-) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-176-    constexpr int BaseScale = 128;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-177-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-178-    for (eld::model::Vertex& vertex : mesh.vertices) {
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-209-    };
+src/runtime/render/map/SceneLocationModelBuilder.cpp-210-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-211-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-212-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-213-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:214:eld::model::Model SceneLocationModelBuilder::transformModel(
+src/runtime/render/map/SceneLocationModelBuilder.cpp:215:    eld::model::Model mesh,
+src/runtime/render/map/SceneLocationModelBuilder.cpp-216-    const eld::location::Location& definition,
+src/runtime/render/map/SceneLocationModelBuilder.cpp-217-    int modelRotation
+src/runtime/render/map/SceneLocationModelBuilder.cpp-218-) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-219-    // LocType::getModel uses rotation > 3 only as the mirror selector; its
+src/runtime/render/map/SceneLocationModelBuilder.cpp-220-    // repeated quarter-turn loop effectively keeps rotation modulo four.
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-237-}
+src/runtime/render/map/SceneLocationModelBuilder.cpp-238-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-239-SceneLocationModelBuildResult SceneLocationModelBuilder::build(
+src/runtime/render/map/SceneLocationModelBuilder.cpp-240-    const std::vector<SceneLocationPlacement>& placements,
+src/runtime/render/map/SceneLocationModelBuilder.cpp-241-    const eld::location::LocationRepository& locations,
+src/runtime/render/map/SceneLocationModelBuilder.cpp:242:    const eld::model::ModelRepository& models
+src/runtime/render/map/SceneLocationModelBuilder.cpp-243-) const {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-244-    SceneLocationModelBuildResult result;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-245-    result.instances.reserve(placements.size());
+src/runtime/render/map/SceneLocationModelBuilder.cpp-246-    result.stats.placements = placements.size();
+src/runtime/render/map/SceneLocationModelBuilder.cpp-247-
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-270-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-271-        if (sourceIds.empty()) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-272-            return std::nullopt;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-273-        }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-274-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:275:        std::vector<eld::model::Model> sourceMeshes;
+src/runtime/render/map/SceneLocationModelBuilder.cpp-276-        sourceMeshes.reserve(sourceIds.size());
+src/runtime/render/map/SceneLocationModelBuilder.cpp-277-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-278-        for (const std::uint16_t sourceId : sourceIds) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-279-            if (!models.contains(sourceId)) {
+src/runtime/render/map/SceneLocationModelBuilder.cpp-280-                ++result.stats.missingModelFiles;
+--
+src/runtime/render/map/SceneLocationModelBuilder.cpp-284-            sourceMeshes.push_back(
+src/runtime/render/map/SceneLocationModelBuilder.cpp-285-                models.get(sourceId)
+src/runtime/render/map/SceneLocationModelBuilder.cpp-286-            );
+src/runtime/render/map/SceneLocationModelBuilder.cpp-287-        }
+src/runtime/render/map/SceneLocationModelBuilder.cpp-288-
+src/runtime/render/map/SceneLocationModelBuilder.cpp:289:        eld::model::Model mesh =
+src/runtime/render/map/SceneLocationModelBuilder.cpp-290-            sourceMeshes.size() == 1
+src/runtime/render/map/SceneLocationModelBuilder.cpp-291-                ? std::move(sourceMeshes.front())
+src/runtime/render/map/SceneLocationModelBuilder.cpp-292-                : combineMeshes(sourceMeshes);
+src/runtime/render/map/SceneLocationModelBuilder.cpp-293-
+src/runtime/render/map/SceneLocationModelBuilder.cpp-294-        mesh = transformModel(
+--
+src/runtime/render/model/ModelResolver.h-4-#include <unordered_map>
+src/runtime/render/model/ModelResolver.h-5-
+src/runtime/render/model/ModelResolver.h-6-#include "ModelHandle.h"
+src/runtime/render/model/ModelResolver.h-7-#include "ModelRegistry.h"
+src/runtime/render/model/ModelResolver.h-8-#include "RenderModelAssembler.h"
+src/runtime/render/model/ModelResolver.h:9:#include "repositories/ModelRepository.h"
+src/runtime/render/model/ModelResolver.h-10-#include "texture/TextureResolver.h"
+src/runtime/render/model/ModelResolver.h-11-
+src/runtime/render/model/ModelResolver.h-12-namespace eld::render {
+src/runtime/render/model/ModelResolver.h-13-
+src/runtime/render/model/ModelResolver.h-14-class ModelResolver {
+src/runtime/render/model/ModelResolver.h-15-public:
+src/runtime/render/model/ModelResolver.h-16-    ModelResolver(
+src/runtime/render/model/ModelResolver.h:17:        eld::model::ModelRepository& modelRepository,
+src/runtime/render/model/ModelResolver.h-18-        TextureResolver& textureResolver,
+src/runtime/render/model/ModelResolver.h-19-        ModelRegistry& modelRegistry
+src/runtime/render/model/ModelResolver.h-20-    );
+src/runtime/render/model/ModelResolver.h-21-
+src/runtime/render/model/ModelResolver.h-22-    ModelHandle resolve(
+src/runtime/render/model/ModelResolver.h-23-        std::uint16_t sourceModelId
+src/runtime/render/model/ModelResolver.h-24-    );
+src/runtime/render/model/ModelResolver.h-25-
+src/runtime/render/model/ModelResolver.h-26-    ModelHandle resolve(
+src/runtime/render/model/ModelResolver.h:27:        const eld::model::Model& source
+src/runtime/render/model/ModelResolver.h-28-    );
+src/runtime/render/model/ModelResolver.h-29-
+src/runtime/render/model/ModelResolver.h-30-private:
+src/runtime/render/model/ModelResolver.h:31:    eld::model::ModelRepository& modelRepository_;
+src/runtime/render/model/ModelResolver.h-32-    ModelRegistry& modelRegistry_;
+src/runtime/render/model/ModelResolver.h-33-
+src/runtime/render/model/ModelResolver.h-34-    RenderModelAssembler assembler_;
+src/runtime/render/model/ModelResolver.h-35-
+src/runtime/render/model/ModelResolver.h-36-    std::unordered_map<std::uint16_t, ModelHandle>
+--
+src/apps/elforge/dump/AssetDumper.cpp-220-}
+src/apps/elforge/dump/AssetDumper.cpp-221-
+src/apps/elforge/dump/AssetDumper.cpp-222-
+src/apps/elforge/dump/AssetDumper.cpp-223-void writeModel(
+src/apps/elforge/dump/AssetDumper.cpp-224-    std::ostream& out,
+src/apps/elforge/dump/AssetDumper.cpp:225:    const eld::model::Model& model
+src/apps/elforge/dump/AssetDumper.cpp-226-) {
+src/apps/elforge/dump/AssetDumper.cpp-227-    out << "[Model]\n";
+src/apps/elforge/dump/AssetDumper.cpp-228-    out << "ID: " << model.id << "\n";
+src/apps/elforge/dump/AssetDumper.cpp-229-    out << "Vertices: "
+src/apps/elforge/dump/AssetDumper.cpp-230-        << model.vertices.size()
+--
+src/runtime/render/map/SceneLocationModelBuilder.h-5-#include <cstdint>
+src/runtime/render/map/SceneLocationModelBuilder.h-6-#include <vector>
+src/runtime/render/map/SceneLocationModelBuilder.h-7-
+src/runtime/render/map/SceneLocationModelBuilder.h-8-#include "SceneLocationBuilder.h"
+src/runtime/render/map/SceneLocationModelBuilder.h-9-#include "repositories/LocationRepository.h"
+src/runtime/render/map/SceneLocationModelBuilder.h:10:#include "Model.h"
+src/runtime/render/map/SceneLocationModelBuilder.h:11:#include "repositories/ModelRepository.h"
+src/runtime/render/map/SceneLocationModelBuilder.h-12-
+src/runtime/render/map/SceneLocationModelBuilder.h-13-namespace eld::render::map {
+src/runtime/render/map/SceneLocationModelBuilder.h-14-
+src/runtime/render/map/SceneLocationModelBuilder.h-15-enum class SceneLocationDrawMode : std::uint8_t {
+src/runtime/render/map/SceneLocationModelBuilder.h-16-    Standard,
+--
+src/runtime/render/map/SceneLocationModelBuilder.h-21-
+src/runtime/render/map/SceneLocationModelBuilder.h-22-struct SceneLocationModelVariant {
+src/runtime/render/map/SceneLocationModelBuilder.h-23-    std::uint16_t locationId = 0;
+src/runtime/render/map/SceneLocationModelBuilder.h-24-    std::uint8_t modelType = 0;
+src/runtime/render/map/SceneLocationModelBuilder.h-25-    std::uint8_t modelRotation = 0;
+src/runtime/render/map/SceneLocationModelBuilder.h:26:    eld::model::Model mesh;
+src/runtime/render/map/SceneLocationModelBuilder.h-27-};
+src/runtime/render/map/SceneLocationModelBuilder.h-28-
+src/runtime/render/map/SceneLocationModelBuilder.h-29-struct SceneLocationModelPart {
+src/runtime/render/map/SceneLocationModelBuilder.h-30-    std::size_t variantIndex = 0;
+src/runtime/render/map/SceneLocationModelBuilder.h-31-
+--
+src/runtime/render/map/SceneLocationModelBuilder.h-80-    static constexpr int EighthTurn = 256;
+src/runtime/render/map/SceneLocationModelBuilder.h-81-
+src/runtime/render/map/SceneLocationModelBuilder.h-82-    SceneLocationModelBuildResult build(
+src/runtime/render/map/SceneLocationModelBuilder.h-83-        const std::vector<SceneLocationPlacement>& placements,
+src/runtime/render/map/SceneLocationModelBuilder.h-84-        const eld::location::LocationRepository& locations,
+src/runtime/render/map/SceneLocationModelBuilder.h:85:        const eld::model::ModelRepository& models
+src/runtime/render/map/SceneLocationModelBuilder.h-86-    ) const;
+src/runtime/render/map/SceneLocationModelBuilder.h-87-
+src/runtime/render/map/SceneLocationModelBuilder.h-88-    // Exposed as a small deterministic conversion primitive so the cache
+src/runtime/render/map/SceneLocationModelBuilder.h-89-    // reader stays in data/model while location-specific source transforms stay in
+src/runtime/render/map/SceneLocationModelBuilder.h-90-    // render/map and can be tested independently.
+src/runtime/render/map/SceneLocationModelBuilder.h:91:    static eld::model::Model transformModel(
+src/runtime/render/map/SceneLocationModelBuilder.h:92:        eld::model::Model mesh,
+src/runtime/render/map/SceneLocationModelBuilder.h-93-        const eld::location::Location& definition,
+src/runtime/render/map/SceneLocationModelBuilder.h-94-        int modelRotation
+src/runtime/render/map/SceneLocationModelBuilder.h-95-    );
+src/runtime/render/map/SceneLocationModelBuilder.h-96-};
+src/runtime/render/map/SceneLocationModelBuilder.h-97-
+--
+src/runtime/render/model/ModelResolver.cpp-3-#include <utility>
+src/runtime/render/model/ModelResolver.cpp-4-
+src/runtime/render/model/ModelResolver.cpp-5-namespace eld::render {
+src/runtime/render/model/ModelResolver.cpp-6-
+src/runtime/render/model/ModelResolver.cpp-7-ModelResolver::ModelResolver(
+src/runtime/render/model/ModelResolver.cpp:8:    eld::model::ModelRepository& modelRepository,
+src/runtime/render/model/ModelResolver.cpp-9-    TextureResolver& textureResolver,
+src/runtime/render/model/ModelResolver.cpp-10-    ModelRegistry& modelRegistry
+src/runtime/render/model/ModelResolver.cpp-11-)
+src/runtime/render/model/ModelResolver.cpp-12-    : modelRepository_(modelRepository),
+src/runtime/render/model/ModelResolver.cpp-13-      modelRegistry_(modelRegistry),
+--
+src/runtime/render/model/ModelResolver.cpp-24-
+src/runtime/render/model/ModelResolver.cpp-25-    if (existing != resolvedModels_.end()) {
+src/runtime/render/model/ModelResolver.cpp-26-        return existing->second;
+src/runtime/render/model/ModelResolver.cpp-27-    }
+src/runtime/render/model/ModelResolver.cpp-28-
+src/runtime/render/model/ModelResolver.cpp:29:    const eld::model::Model source =
+src/runtime/render/model/ModelResolver.cpp-30-        modelRepository_.get(
+src/runtime/render/model/ModelResolver.cpp-31-            sourceModelId
+src/runtime/render/model/ModelResolver.cpp-32-        );
+src/runtime/render/model/ModelResolver.cpp-33-
+src/runtime/render/model/ModelResolver.cpp-34-    RenderModel model =
+--
+src/runtime/render/model/ModelResolver.cpp-48-
+src/runtime/render/model/ModelResolver.cpp-49-    return handle;
+src/runtime/render/model/ModelResolver.cpp-50-}
+src/runtime/render/model/ModelResolver.cpp-51-
+src/runtime/render/model/ModelResolver.cpp-52-ModelHandle ModelResolver::resolve(
+src/runtime/render/model/ModelResolver.cpp:53:    const eld::model::Model& source
+src/runtime/render/model/ModelResolver.cpp-54-) {
+src/runtime/render/model/ModelResolver.cpp-55-    RenderModel model =
+src/runtime/render/model/ModelResolver.cpp-56-        assembler_.assemble(
+src/runtime/render/model/ModelResolver.cpp-57-            source
+src/runtime/render/model/ModelResolver.cpp-58-        );
+--
+src/runtime/render/model/RenderModelAssembler.h-1-#pragma once
+src/runtime/render/model/RenderModelAssembler.h-2-
+src/runtime/render/model/RenderModelAssembler.h-3-#include "RenderModel.h"
+src/runtime/render/model/RenderModelAssembler.h:4:#include "Model.h"
+src/runtime/render/model/RenderModelAssembler.h-5-#include "texture/TextureResolver.h"
+src/runtime/render/model/RenderModelAssembler.h-6-
+src/runtime/render/model/RenderModelAssembler.h-7-namespace eld::render {
+src/runtime/render/model/RenderModelAssembler.h-8-
+src/runtime/render/model/RenderModelAssembler.h-9-class RenderModelAssembler {
+--
+src/runtime/render/model/RenderModelAssembler.h-11-    explicit RenderModelAssembler(
+src/runtime/render/model/RenderModelAssembler.h-12-        TextureResolver& textureResolver
+src/runtime/render/model/RenderModelAssembler.h-13-    );
+src/runtime/render/model/RenderModelAssembler.h-14-
+src/runtime/render/model/RenderModelAssembler.h-15-    RenderModel assemble(
+src/runtime/render/model/RenderModelAssembler.h:16:        const eld::model::Model& source
+src/runtime/render/model/RenderModelAssembler.h-17-    );
+src/runtime/render/model/RenderModelAssembler.h-18-
+src/runtime/render/model/RenderModelAssembler.h-19-private:
+src/runtime/render/model/RenderModelAssembler.h-20-    TextureResolver& textureResolver_;
+src/runtime/render/model/RenderModelAssembler.h-21-};
+--
+src/runtime/render/GraphicsResources.h-3-#include <cstdint>
+src/runtime/render/GraphicsResources.h-4-
+src/runtime/render/GraphicsResources.h-5-#include "model/ModelHandle.h"
+src/runtime/render/GraphicsResources.h-6-#include "model/ModelRegistry.h"
+src/runtime/render/GraphicsResources.h-7-#include "model/ModelResolver.h"
+src/runtime/render/GraphicsResources.h:8:#include "Model.h"
+src/runtime/render/GraphicsResources.h-9-#include "texture/GraphicsTexture.h"
+src/runtime/render/GraphicsResources.h-10-#include "texture/TextureHandle.h"
+src/runtime/render/GraphicsResources.h-11-#include "texture/TextureRegistry.h"
+src/runtime/render/GraphicsResources.h-12-#include "texture/TextureResolver.h"
+src/runtime/render/GraphicsResources.h-13-
+src/runtime/render/GraphicsResources.h-14-namespace eld::render {
+src/runtime/render/GraphicsResources.h-15-
+src/runtime/render/GraphicsResources.h-16-class GraphicsResources {
+src/runtime/render/GraphicsResources.h-17-public:
+src/runtime/render/GraphicsResources.h-18-    GraphicsResources(
+src/runtime/render/GraphicsResources.h:19:        eld::model::ModelRepository& modelRepository,
+src/runtime/render/GraphicsResources.h-20-        eld::texture::TextureRepository& textureRepository
+src/runtime/render/GraphicsResources.h-21-    );
+src/runtime/render/GraphicsResources.h-22-
+src/runtime/render/GraphicsResources.h-23-    ModelHandle resolveModel(
+src/runtime/render/GraphicsResources.h-24-        std::uint16_t sourceModelId
+src/runtime/render/GraphicsResources.h-25-    );
+src/runtime/render/GraphicsResources.h-26-
+src/runtime/render/GraphicsResources.h-27-    ModelHandle resolveModel(
+src/runtime/render/GraphicsResources.h:28:        const eld::model::Model& source
+src/runtime/render/GraphicsResources.h-29-    );
+src/runtime/render/GraphicsResources.h-30-
+src/runtime/render/GraphicsResources.h-31-    // Register an already-normalized backend-independent render model.
+src/runtime/render/GraphicsResources.h-32-    // This is used by graphics builders (for example static map batches)
+src/runtime/render/GraphicsResources.h-33-    // that are not sourced from a single cache Model.
+--
+src/runtime/render/GraphicsResources.cpp-3-#include <utility>
+src/runtime/render/GraphicsResources.cpp-4-
+src/runtime/render/GraphicsResources.cpp-5-namespace eld::render {
+src/runtime/render/GraphicsResources.cpp-6-
+src/runtime/render/GraphicsResources.cpp-7-GraphicsResources::GraphicsResources(
+src/runtime/render/GraphicsResources.cpp:8:    eld::model::ModelRepository& modelRepository,
+src/runtime/render/GraphicsResources.cpp-9-    eld::texture::TextureRepository& textureRepository
+src/runtime/render/GraphicsResources.cpp-10-)
+src/runtime/render/GraphicsResources.cpp-11-    : textureResolver_(
+src/runtime/render/GraphicsResources.cpp-12-          textureRepository,
+src/runtime/render/GraphicsResources.cpp-13-          textureRegistry_
+--
+src/runtime/render/GraphicsResources.cpp-26-        sourceModelId
+src/runtime/render/GraphicsResources.cpp-27-    );
+src/runtime/render/GraphicsResources.cpp-28-}
+src/runtime/render/GraphicsResources.cpp-29-
+src/runtime/render/GraphicsResources.cpp-30-ModelHandle GraphicsResources::resolveModel(
+src/runtime/render/GraphicsResources.cpp:31:    const eld::model::Model& source
+src/runtime/render/GraphicsResources.cpp-32-) {
+src/runtime/render/GraphicsResources.cpp-33-    return modelResolver_.resolve(
+src/runtime/render/GraphicsResources.cpp-34-        source
+src/runtime/render/GraphicsResources.cpp-35-    );
+src/runtime/render/GraphicsResources.cpp-36-}
+--
+src/assets/AssetManager.h-11-#include "repositories/LocationRepository.h"
+src/assets/AssetManager.h-12-#include "repositories/MapRepository.h"
+src/assets/AssetManager.h-13-#include "repositories/MessageAnimationRepository.h"
+src/assets/AssetManager.h-14-#include "repositories/MessageRepository.h"
+src/assets/AssetManager.h-15-#include "repositories/MidiRepository.h"
+src/assets/AssetManager.h:16:#include "repositories/ModelRepository.h"
+src/assets/AssetManager.h-17-#include "repositories/NpcRepository.h"
+src/assets/AssetManager.h-18-#include "repositories/ParameterRepository.h"
+src/assets/AssetManager.h-19-#include "repositories/SequenceRepository.h"
+src/assets/AssetManager.h-20-#include "repositories/SpotAnimationRepository.h"
+src/assets/AssetManager.h-21-#include "repositories/SpriteRepository.h"
+--
+src/assets/AssetManager.h-38-    eld::location::LocationRepository locations;
+src/assets/AssetManager.h-39-    eld::map::MapRepository maps;
+src/assets/AssetManager.h-40-    eld::message_animation::MessageAnimationRepository messageAnimations;
+src/assets/AssetManager.h-41-    eld::message::MessageRepository messages;
+src/assets/AssetManager.h-42-    eld::midi::MidiRepository midi;
+src/assets/AssetManager.h:43:    eld::model::ModelRepository models;
+src/assets/AssetManager.h-44-    eld::npc::NpcRepository npcs;
+src/assets/AssetManager.h-45-    eld::parameter::ParameterRepository parameters;
+src/assets/AssetManager.h-46-    eld::sequence::SequenceRepository sequences;
+src/assets/AssetManager.h-47-    eld::spot_animation::SpotAnimationRepository spotAnimations;
+src/assets/AssetManager.h-48-    eld::sprite::SpriteRepository sprites;
+--
+src/runtime/render/animation/ModelSkinGroups.h-3-#include <array>
+src/runtime/render/animation/ModelSkinGroups.h-4-#include <cstddef>
+src/runtime/render/animation/ModelSkinGroups.h-5-#include <cstdint>
+src/runtime/render/animation/ModelSkinGroups.h-6-#include <vector>
+src/runtime/render/animation/ModelSkinGroups.h-7-
+src/runtime/render/animation/ModelSkinGroups.h:8:#include "Model.h"
+src/runtime/render/animation/ModelSkinGroups.h-9-
+src/runtime/render/animation/ModelSkinGroups.h-10-namespace eld::render {
+src/runtime/render/animation/ModelSkinGroups.h-11-
+src/runtime/render/animation/ModelSkinGroups.h-12-class ModelSkinGroups {
+src/runtime/render/animation/ModelSkinGroups.h-13-public:
+src/runtime/render/animation/ModelSkinGroups.h-14-    static ModelSkinGroups build(
+src/runtime/render/animation/ModelSkinGroups.h:15:        const eld::model::Model& mesh
+src/runtime/render/animation/ModelSkinGroups.h-16-    );
+src/runtime/render/animation/ModelSkinGroups.h-17-
+src/runtime/render/animation/ModelSkinGroups.h-18-    const std::vector<std::size_t>& vertices(
+src/runtime/render/animation/ModelSkinGroups.h-19-        std::uint8_t groupId
+src/runtime/render/animation/ModelSkinGroups.h-20-    ) const;
+--
+src/runtime/render/animation/ModelSkinGroups.cpp-1-#include "ModelSkinGroups.h"
+src/runtime/render/animation/ModelSkinGroups.cpp-2-
+src/runtime/render/animation/ModelSkinGroups.cpp-3-namespace eld::render {
+src/runtime/render/animation/ModelSkinGroups.cpp-4-
+src/runtime/render/animation/ModelSkinGroups.cpp-5-ModelSkinGroups ModelSkinGroups::build(
+src/runtime/render/animation/ModelSkinGroups.cpp:6:    const eld::model::Model& mesh
+src/runtime/render/animation/ModelSkinGroups.cpp-7-) {
+src/runtime/render/animation/ModelSkinGroups.cpp-8-    ModelSkinGroups groups;
+src/runtime/render/animation/ModelSkinGroups.cpp-9-
+src/runtime/render/animation/ModelSkinGroups.cpp-10-    for (
+src/runtime/render/animation/ModelSkinGroups.cpp-11-        std::size_t vertexIndex = 0;
+--
+src/runtime/render/animation/ModelAnimator.h-2-
+src/runtime/render/animation/ModelAnimator.h-3-#include <cstddef>
+src/runtime/render/animation/ModelAnimator.h-4-#include <span>
+src/runtime/render/animation/ModelAnimator.h-5-
+src/runtime/render/animation/ModelAnimator.h-6-#include "Animation.h"
+src/runtime/render/animation/ModelAnimator.h:7:#include "Model.h"
+src/runtime/render/animation/ModelAnimator.h-8-
+src/runtime/render/animation/ModelAnimator.h-9-namespace eld::render {
+src/runtime/render/animation/ModelAnimator.h-10-
+src/runtime/render/animation/ModelAnimator.h-11-struct AnimationApplyStats {
+src/runtime/render/animation/ModelAnimator.h-12-    std::size_t implicitPivots = 0;
+--
+src/runtime/render/animation/ModelAnimator.h-20-
+src/runtime/render/animation/ModelAnimator.h-21-    std::size_t ignoredUnknownType4 = 0;
+src/runtime/render/animation/ModelAnimator.h-22-};
+src/runtime/render/animation/ModelAnimator.h-23-
+src/runtime/render/animation/ModelAnimator.h-24-struct AnimatedModelFrame {
+src/runtime/render/animation/ModelAnimator.h:25:    eld::model::Model mesh;
+src/runtime/render/animation/ModelAnimator.h-26-    AnimationApplyStats stats;
+src/runtime/render/animation/ModelAnimator.h-27-};
+src/runtime/render/animation/ModelAnimator.h-28-
+src/runtime/render/animation/ModelAnimator.h-29-class ModelAnimator {
+src/runtime/render/animation/ModelAnimator.h-30-public:
+src/runtime/render/animation/ModelAnimator.h-31-    AnimatedModelFrame apply(
+src/runtime/render/animation/ModelAnimator.h:32:        const eld::model::Model& source,
+src/runtime/render/animation/ModelAnimator.h-33-        const eld::animation::AnimationFrame& frame,
+src/runtime/render/animation/ModelAnimator.h-34-        std::span<const eld::animation::SkeletonSlot> skeleton
+src/runtime/render/animation/ModelAnimator.h-35-    ) const;
+src/runtime/render/animation/ModelAnimator.h-36-
+src/runtime/render/animation/ModelAnimator.h-37-    AnimationApplyStats applyInPlace(
+src/runtime/render/animation/ModelAnimator.h:38:        eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.h-39-        const eld::animation::AnimationFrame& frame,
+src/runtime/render/animation/ModelAnimator.h-40-        std::span<const eld::animation::SkeletonSlot> skeleton
+src/runtime/render/animation/ModelAnimator.h-41-    ) const;
+src/runtime/render/animation/ModelAnimator.h-42-};
+src/runtime/render/animation/ModelAnimator.h-43-
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-213-                static_cast<std::uint16_t>(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-214-                    state_.selection.fileId
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-215-                );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-216-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-217-            try {
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:218:                std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-219-                    modelRepository_.find(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-220-                        modelId
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-221-                    );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-222-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-223-                if (model.has_value()) {
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-458-                state_.activeSpotAnimation =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-459-                    *definition;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-460-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-461-                const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-462-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:463:                std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-464-                    view.build(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-465-                        *definition,
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-466-                        modelRepository_
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-467-                    );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-468-
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-473-                        );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-474-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-475-                    state_.activeModel =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-476-                        std::move(*model);
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-477-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:478:                    std::optional<eld::model::Model> animationSource =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-479-                        view.buildAnimationSource(*definition, modelRepository_);
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-480-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-481-                    if (animationSource.has_value()) {
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-482-                        animationSource_ = *animationSource;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-483-                        animationTargetKind_ =
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-561-                state_.activeNpc =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-562-                    *definition;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-563-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-564-                const NpcView view;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-565-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:566:                std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-567-                    view.build(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-568-                        *definition,
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-569-                        modelRepository_
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-570-                    );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-571-
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-619-                state_.activeLocation =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-620-                    *definition;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-621-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-622-                const LocationView view;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-623-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:624:                std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-625-                    view.build(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-626-                        *definition,
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-627-                        modelRepository_
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-628-                    );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-629-
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-634-                        );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-635-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-636-                    state_.activeModel =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-637-                        std::move(*model);
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-638-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:639:                    std::optional<eld::model::Model> animationSource =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-640-                        view.buildAnimationSource(*definition, modelRepository_);
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-641-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-642-                    if (animationSource.has_value()) {
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-643-                        animationSource_ = *animationSource;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-644-                        animationTargetKind_ =
+--
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-674-                state_.activeIdentityKit =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-675-                    *definition;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-676-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-677-                const IdentityKitView view;
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-678-
+src/apps/elforge/explorer/CacheExplorerSelection.cpp:679:                std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-680-                    view.build(
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-681-                        *definition,
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-682-                        modelRepository_
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-683-                    );
+src/apps/elforge/explorer/CacheExplorerSelection.cpp-684-
+--
+src/apps/elforge/viewport/ViewportPanel.cpp-3043-    };
+src/apps/elforge/viewport/ViewportPanel.cpp-3044-}
+src/apps/elforge/viewport/ViewportPanel.cpp-3045-
+src/apps/elforge/viewport/ViewportPanel.cpp-3046-std::vector<ModelDebugPoint>
+src/apps/elforge/viewport/ViewportPanel.cpp-3047-projectModelVertices(
+src/apps/elforge/viewport/ViewportPanel.cpp:3048:    const eld::model::Model& mesh,
+src/apps/elforge/viewport/ViewportPanel.cpp-3049-    const CacheExplorerState& state
+src/apps/elforge/viewport/ViewportPanel.cpp-3050-) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3051-    const eld::math::Mat4 modelMatrix =
+src/apps/elforge/viewport/ViewportPanel.cpp-3052-        eld::render::buildModelMatrix(
+src/apps/elforge/viewport/ViewportPanel.cpp-3053-            state.modelTransform
+--
+src/apps/elforge/viewport/ViewportPanel.cpp-3089-    return result;
+src/apps/elforge/viewport/ViewportPanel.cpp-3090-}
+src/apps/elforge/viewport/ViewportPanel.cpp-3091-
+src/apps/elforge/viewport/ViewportPanel.cpp-3092-void renderModelWireframe(
+src/apps/elforge/viewport/ViewportPanel.cpp-3093-    SDL_Renderer* renderer,
+src/apps/elforge/viewport/ViewportPanel.cpp:3094:    const eld::model::Model& mesh,
+src/apps/elforge/viewport/ViewportPanel.cpp-3095-    const CacheExplorerState& state
+src/apps/elforge/viewport/ViewportPanel.cpp-3096-) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3097-    const std::vector<ModelDebugPoint> points =
+src/apps/elforge/viewport/ViewportPanel.cpp-3098-        projectModelVertices(
+src/apps/elforge/viewport/ViewportPanel.cpp-3099-            mesh,
+--
+src/apps/elforge/viewport/ViewportPanel.cpp-3179-    );
+src/apps/elforge/viewport/ViewportPanel.cpp-3180-}
+src/apps/elforge/viewport/ViewportPanel.cpp-3181-
+src/apps/elforge/viewport/ViewportPanel.cpp-3182-void renderModelVertices(
+src/apps/elforge/viewport/ViewportPanel.cpp-3183-    SDL_Renderer* renderer,
+src/apps/elforge/viewport/ViewportPanel.cpp:3184:    const eld::model::Model& mesh,
+src/apps/elforge/viewport/ViewportPanel.cpp-3185-    const CacheExplorerState& state
+src/apps/elforge/viewport/ViewportPanel.cpp-3186-) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3187-    const std::vector<ModelDebugPoint> points =
+src/apps/elforge/viewport/ViewportPanel.cpp-3188-        projectModelVertices(
+src/apps/elforge/viewport/ViewportPanel.cpp-3189-            mesh,
+--
+src/apps/elforge/viewport/ViewportPanel.cpp-3220-    }
+src/apps/elforge/viewport/ViewportPanel.cpp-3221-}
+src/apps/elforge/viewport/ViewportPanel.cpp-3222-
+src/apps/elforge/viewport/ViewportPanel.cpp-3223-void renderModelBounds(
+src/apps/elforge/viewport/ViewportPanel.cpp-3224-    SDL_Renderer* renderer,
+src/apps/elforge/viewport/ViewportPanel.cpp:3225:    const eld::model::Model& mesh,
+src/apps/elforge/viewport/ViewportPanel.cpp-3226-    const CacheExplorerState& state
+src/apps/elforge/viewport/ViewportPanel.cpp-3227-) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3228-    if (mesh.vertices.empty()) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3229-        return;
+src/apps/elforge/viewport/ViewportPanel.cpp-3230-    }
+--
+src/apps/elforge/viewport/ViewportPanel.cpp-3419-    }
+src/apps/elforge/viewport/ViewportPanel.cpp-3420-}
+src/apps/elforge/viewport/ViewportPanel.cpp-3421-
+src/apps/elforge/viewport/ViewportPanel.cpp-3422-void renderModelAxes(
+src/apps/elforge/viewport/ViewportPanel.cpp-3423-    SDL_Renderer* renderer,
+src/apps/elforge/viewport/ViewportPanel.cpp:3424:    const eld::model::Model& mesh,
+src/apps/elforge/viewport/ViewportPanel.cpp-3425-    const CacheExplorerState& state
+src/apps/elforge/viewport/ViewportPanel.cpp-3426-) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3427-    if (mesh.vertices.empty()) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3428-        return;
+src/apps/elforge/viewport/ViewportPanel.cpp-3429-    }
+--
+src/apps/elforge/viewport/ViewportPanel.cpp-3571-    }
+src/apps/elforge/viewport/ViewportPanel.cpp-3572-}
+src/apps/elforge/viewport/ViewportPanel.cpp-3573-
+src/apps/elforge/viewport/ViewportPanel.cpp-3574-void renderModelOverlays(
+src/apps/elforge/viewport/ViewportPanel.cpp-3575-    SDL_Renderer* renderer,
+src/apps/elforge/viewport/ViewportPanel.cpp:3576:    const eld::model::Model& mesh,
+src/apps/elforge/viewport/ViewportPanel.cpp-3577-    const CacheExplorerState& state,
+src/apps/elforge/viewport/ViewportPanel.cpp-3578-    const ModelViewOptions& options
+src/apps/elforge/viewport/ViewportPanel.cpp-3579-) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3580-    if (options.showWireframe) {
+src/apps/elforge/viewport/ViewportPanel.cpp-3581-        renderModelWireframe(
+--
+src/runtime/render/animation/ModelAnimator.cpp-22-    return static_cast<int>(value);
+src/runtime/render/animation/ModelAnimator.cpp-23-}
+src/runtime/render/animation/ModelAnimator.cpp-24-
+src/runtime/render/animation/ModelAnimator.cpp-25-template <typename Function>
+src/runtime/render/animation/ModelAnimator.cpp-26-std::size_t forEachVertexInGroups(
+src/runtime/render/animation/ModelAnimator.cpp:27:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-28-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-29-    const std::vector<std::uint8_t>& skinGroups,
+src/runtime/render/animation/ModelAnimator.cpp-30-    Function&& function
+src/runtime/render/animation/ModelAnimator.cpp-31-) {
+src/runtime/render/animation/ModelAnimator.cpp-32-    std::size_t count = 0;
+--
+src/runtime/render/animation/ModelAnimator.cpp-47-
+src/runtime/render/animation/ModelAnimator.cpp-48-    return count;
+src/runtime/render/animation/ModelAnimator.cpp-49-}
+src/runtime/render/animation/ModelAnimator.cpp-50-
+src/runtime/render/animation/ModelAnimator.cpp-51-void applyPivot(
+src/runtime/render/animation/ModelAnimator.cpp:52:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-53-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-54-    const eld::animation::SkeletonSlot& slot,
+src/runtime/render/animation/ModelAnimator.cpp-55-    int x,
+src/runtime/render/animation/ModelAnimator.cpp-56-    int y,
+src/runtime/render/animation/ModelAnimator.cpp-57-    int z,
+--
+src/runtime/render/animation/ModelAnimator.cpp-102-        pivot.z = z;
+src/runtime/render/animation/ModelAnimator.cpp-103-    }
+src/runtime/render/animation/ModelAnimator.cpp-104-}
+src/runtime/render/animation/ModelAnimator.cpp-105-
+src/runtime/render/animation/ModelAnimator.cpp-106-std::size_t applyTranslation(
+src/runtime/render/animation/ModelAnimator.cpp:107:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-108-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-109-    const eld::animation::SkeletonSlot& slot,
+src/runtime/render/animation/ModelAnimator.cpp-110-    int x,
+src/runtime/render/animation/ModelAnimator.cpp-111-    int y,
+src/runtime/render/animation/ModelAnimator.cpp-112-    int z
+--
+src/runtime/render/animation/ModelAnimator.cpp-221-// Classic RS317 transform type 2.
+src/runtime/render/animation/ModelAnimator.cpp-222-//
+src/runtime/render/animation/ModelAnimator.cpp-223-// Each component becomes (value & 0xff) * 8 in the 2048-entry trig table.
+src/runtime/render/animation/ModelAnimator.cpp-224-// Rotation order is exactly Z -> X -> Y around the current pivot.
+src/runtime/render/animation/ModelAnimator.cpp-225-std::size_t applyRotation(
+src/runtime/render/animation/ModelAnimator.cpp:226:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-227-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-228-    const eld::animation::SkeletonSlot& slot,
+src/runtime/render/animation/ModelAnimator.cpp-229-    int x,
+src/runtime/render/animation/ModelAnimator.cpp-230-    int y,
+src/runtime/render/animation/ModelAnimator.cpp-231-    int z,
+--
+src/runtime/render/animation/ModelAnimator.cpp-329-        }
+src/runtime/render/animation/ModelAnimator.cpp-330-    );
+src/runtime/render/animation/ModelAnimator.cpp-331-}
+src/runtime/render/animation/ModelAnimator.cpp-332-
+src/runtime/render/animation/ModelAnimator.cpp-333-std::size_t applyScale(
+src/runtime/render/animation/ModelAnimator.cpp:334:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-335-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-336-    const eld::animation::SkeletonSlot& slot,
+src/runtime/render/animation/ModelAnimator.cpp-337-    int x,
+src/runtime/render/animation/ModelAnimator.cpp-338-    int y,
+src/runtime/render/animation/ModelAnimator.cpp-339-    int z,
+--
+src/runtime/render/animation/ModelAnimator.cpp-387-}
+src/runtime/render/animation/ModelAnimator.cpp-388-
+src/runtime/render/animation/ModelAnimator.cpp-389-// Classic transform type 5. Only X is used. RS alpha uses 0 = opaque,
+src/runtime/render/animation/ModelAnimator.cpp-390-// 255 = transparent, and each animation unit changes alpha by x * 8.
+src/runtime/render/animation/ModelAnimator.cpp-391-std::size_t applyAlpha(
+src/runtime/render/animation/ModelAnimator.cpp:392:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-393-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-394-    const eld::animation::SkeletonSlot& slot,
+src/runtime/render/animation/ModelAnimator.cpp-395-    int x
+src/runtime/render/animation/ModelAnimator.cpp-396-) {
+src/runtime/render/animation/ModelAnimator.cpp-397-    std::size_t count = 0;
+--
+src/runtime/render/animation/ModelAnimator.cpp-425-
+src/runtime/render/animation/ModelAnimator.cpp-426-    return count;
+src/runtime/render/animation/ModelAnimator.cpp-427-}
+src/runtime/render/animation/ModelAnimator.cpp-428-
+src/runtime/render/animation/ModelAnimator.cpp-429-void applyTransform(
+src/runtime/render/animation/ModelAnimator.cpp:430:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-431-    const ModelSkinGroups& groups,
+src/runtime/render/animation/ModelAnimator.cpp-432-    const eld::animation::SkeletonSlot& slot,
+src/runtime/render/animation/ModelAnimator.cpp-433-    int x,
+src/runtime/render/animation/ModelAnimator.cpp-434-    int y,
+src/runtime/render/animation/ModelAnimator.cpp-435-    int z,
+--
+src/runtime/render/animation/ModelAnimator.cpp-512-}
+src/runtime/render/animation/ModelAnimator.cpp-513-
+src/runtime/render/animation/ModelAnimator.cpp-514-}
+src/runtime/render/animation/ModelAnimator.cpp-515-
+src/runtime/render/animation/ModelAnimator.cpp-516-AnimatedModelFrame ModelAnimator::apply(
+src/runtime/render/animation/ModelAnimator.cpp:517:    const eld::model::Model& source,
+src/runtime/render/animation/ModelAnimator.cpp-518-    const eld::animation::AnimationFrame& frame,
+src/runtime/render/animation/ModelAnimator.cpp-519-    std::span<const eld::animation::SkeletonSlot> skeleton
+src/runtime/render/animation/ModelAnimator.cpp-520-) const {
+src/runtime/render/animation/ModelAnimator.cpp-521-    AnimatedModelFrame result;
+src/runtime/render/animation/ModelAnimator.cpp-522-    result.mesh = source;
+--
+src/runtime/render/animation/ModelAnimator.cpp-530-
+src/runtime/render/animation/ModelAnimator.cpp-531-    return result;
+src/runtime/render/animation/ModelAnimator.cpp-532-}
+src/runtime/render/animation/ModelAnimator.cpp-533-
+src/runtime/render/animation/ModelAnimator.cpp-534-AnimationApplyStats ModelAnimator::applyInPlace(
+src/runtime/render/animation/ModelAnimator.cpp:535:    eld::model::Model& mesh,
+src/runtime/render/animation/ModelAnimator.cpp-536-    const eld::animation::AnimationFrame& frame,
+src/runtime/render/animation/ModelAnimator.cpp-537-    std::span<const eld::animation::SkeletonSlot> skeleton
+src/runtime/render/animation/ModelAnimator.cpp-538-) const {
+src/runtime/render/animation/ModelAnimator.cpp-539-    const ModelSkinGroups groups =
+src/runtime/render/animation/ModelAnimator.cpp-540-        ModelSkinGroups::build(mesh);
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-187-            return false;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-188-        }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-189-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-190-        const NpcView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-191-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:192:        std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-193-            view.build(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-194-                *definition,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-195-                modelRepository_
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-196-            );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-197-
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-230-            return false;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-231-        }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-232-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-233-        const LocationView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-234-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:235:        std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-236-            view.build(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-237-                *definition,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-238-                modelRepository_
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-239-            );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-240-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:241:        std::optional<eld::model::Model> animationSource =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-242-            view.buildAnimationSource(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-243-                *definition,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-244-                modelRepository_
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-245-            );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-246-
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-282-            return false;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-283-        }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-284-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-285-        const SpotAnimationView view;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-286-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:287:        std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-288-            view.build(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-289-                *definition,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-290-                modelRepository_
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-291-            );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-292-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:293:        std::optional<eld::model::Model> animationSource =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-294-            view.buildAnimationSource(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-295-                *definition,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-296-                modelRepository_
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-297-            );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-298-
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-420-            *animationSource_,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-421-            resolved->frame,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-422-            resolved->skeleton
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-423-        );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-424-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:425:    eld::model::Model displayMesh =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-426-        animated.mesh;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-427-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-428-    if (
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-429-        animationTargetKind_ == AnimationTargetKind::Location &&
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-430-        state_.activeLocation.has_value()
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-489-void CacheExplorer::ensureActionGrid() {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-490-    if (actionGridHandle_.has_value()) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-491-        return;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-492-    }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-493-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:494:    eld::model::Model grid;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-495-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-496-    constexpr int HalfLines = 10;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-497-    constexpr float Spacing = 50.0f;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-498-    constexpr float HalfThickness = 0.75f;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-499-
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-756-void CacheExplorer::ensureActionTargetMarker() {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-757-    if (actionTargetHandle_.has_value()) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-758-        return;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-759-    }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-760-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:761:    eld::model::Model marker;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-762-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-763-    marker.vertices.resize(5);
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-764-    marker.vertices[0].x = 0.0f;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-765-    marker.vertices[0].y = 32.0f;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-766-    marker.vertices[0].z = 0.0f;
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-814-    }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-815-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-816-    NpcActionEffectState& effect =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-817-        npcActionEffects_.at(effectIndex);
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-818-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:819:    eld::model::Model displayMesh =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-820-        effect.sourceMesh;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-821-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-822-    if (effect.player) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-823-        const auto resolved =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-824-            effect.player->currentFrame();
+--
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-893-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-894-        if (!definition) {
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-895-            continue;
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-896-        }
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-897-
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp:898:        std::optional<eld::model::Model> source =
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-899-            view.buildAnimationSource(
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-900-                *definition,
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-901-                modelRepository_
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-902-            );
+src/apps/elforge/explorer/CacheExplorerAnimation.cpp-903-
+--
+src/apps/elforge/explorer/CacheExplorerItem.cpp-74-    if (!state_.activeItem.has_value()) {
+src/apps/elforge/explorer/CacheExplorerItem.cpp-75-        return;
+src/apps/elforge/explorer/CacheExplorerItem.cpp-76-    }
+src/apps/elforge/explorer/CacheExplorerItem.cpp-77-
+src/apps/elforge/explorer/CacheExplorerItem.cpp-78-    const ItemView view;
+src/apps/elforge/explorer/CacheExplorerItem.cpp:79:    std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerItem.cpp-80-        view.build(*state_.activeItem, modelRepository_);
+src/apps/elforge/explorer/CacheExplorerItem.cpp-81-
+src/apps/elforge/explorer/CacheExplorerItem.cpp-82-    if (!model.has_value()) {
+src/apps/elforge/explorer/CacheExplorerItem.cpp-83-        return;
+src/apps/elforge/explorer/CacheExplorerItem.cpp-84-    }
+--
+src/apps/elforge/explorer/CacheExplorerItem.cpp-97-    if (!state_.activeItem.has_value()) {
+src/apps/elforge/explorer/CacheExplorerItem.cpp-98-        return;
+src/apps/elforge/explorer/CacheExplorerItem.cpp-99-    }
+src/apps/elforge/explorer/CacheExplorerItem.cpp-100-
+src/apps/elforge/explorer/CacheExplorerItem.cpp-101-    const ItemView view;
+src/apps/elforge/explorer/CacheExplorerItem.cpp:102:    std::optional<eld::model::Model> model =
+src/apps/elforge/explorer/CacheExplorerItem.cpp-103-        view.buildEquipped(
+src/apps/elforge/explorer/CacheExplorerItem.cpp-104-            *state_.activeItem,
+src/apps/elforge/explorer/CacheExplorerItem.cpp-105-            gender,
+src/apps/elforge/explorer/CacheExplorerItem.cpp-106-            identityKitRepository_,
+src/apps/elforge/explorer/CacheExplorerItem.cpp-107-            modelRepository_
+--
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-206-    }
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-207-}
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-208-
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-209-std::string buildModelDebugText(
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-210-    const CacheExplorerState& state,
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:211:    const eld::model::Model& model
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-212-) {
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:213:    const eld::model::Model& asset =
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-214-        model;
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-215-
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-216-    std::array<int, 12> priorityCounts {};
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-217-    std::array<int, 4> renderTypeCounts {};
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-218-
+--
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2032-            )
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2033-        );
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2034-    }
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2035-
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2036-    if (state.activeModel) {
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:2037:        const eld::model::Model& model =
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2038-            *state.activeModel;
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2039-
+src/apps/elforge/inspection/AssetDetailsPanel.cpp:2040:        const eld::model::Model& asset =
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2041-            model;
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2042-
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2043-        ImGui::Spacing();
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2044-        ImGui::Separator();
+src/apps/elforge/inspection/AssetDetailsPanel.cpp-2045-        ImGui::TextUnformatted("MODEL");
+--
+src/assets/repositories/ModelRepository.h-3-#include <cstddef>
+src/assets/repositories/ModelRepository.h-4-#include <cstdint>
+src/assets/repositories/ModelRepository.h-5-#include <optional>
+src/assets/repositories/ModelRepository.h-6-#include <vector>
+src/assets/repositories/ModelRepository.h-7-
+src/assets/repositories/ModelRepository.h:8:#include "Model.h"
+src/assets/repositories/ModelRepository.h-9-#include "cache/Cache.h"
+src/assets/repositories/ModelRepository.h-10-#include "decoders/ModelDecoder.h"
+src/assets/repositories/ModelRepository.h-11-
+src/assets/repositories/ModelRepository.h-12-namespace eld::model {
+src/assets/repositories/ModelRepository.h-13-
+src/assets/repositories/ModelRepository.h:14:class ModelRepository {
+src/assets/repositories/ModelRepository.h-15-public:
+src/assets/repositories/ModelRepository.h:16:    explicit ModelRepository(
+src/assets/repositories/ModelRepository.h-17-        const eld::cache::Cache& cache
+src/assets/repositories/ModelRepository.h-18-    );
+src/assets/repositories/ModelRepository.h-19-
+src/assets/repositories/ModelRepository.h-20-    Model get(
+src/assets/repositories/ModelRepository.h-21-        std::uint16_t id
+--
+src/assets/CMakeLists.txt-12-    decoders/LocationSpawnDecoder.cpp
+src/assets/CMakeLists.txt-13-    repositories/MapRepository.cpp
+src/assets/CMakeLists.txt-14-    decoders/MidiDecoder.cpp
+src/assets/CMakeLists.txt-15-    repositories/MidiRepository.cpp
+src/assets/CMakeLists.txt-16-    decoders/ModelDecoder.cpp
+src/assets/CMakeLists.txt:17:    repositories/ModelRepository.cpp
+src/assets/CMakeLists.txt-18-    decoders/ImageDecoder.cpp
+src/assets/CMakeLists.txt-19-    decoders/FontDecoder.cpp
+src/assets/CMakeLists.txt-20-    repositories/FontRepository.cpp
+src/assets/CMakeLists.txt-21-    decoders/FloorDecoder.cpp
+src/assets/CMakeLists.txt-22-    repositories/FloorRepository.cpp
+--
+src/apps/elforge/explorer/CacheExplorer.h-20-#include "repositories/AnimationRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h-21-#include "AnimationFrameTable.h"
+src/apps/elforge/explorer/CacheExplorer.h-22-#include "animation/AnimationPlayer.h"
+src/apps/elforge/explorer/CacheExplorer.h-23-#include "animation/ModelAnimator.h"
+src/apps/elforge/explorer/CacheExplorer.h-24-#include "animation/AnimationPresentationCatalog.h"
+src/apps/elforge/explorer/CacheExplorer.h:25:#include "Model.h"
+src/apps/elforge/explorer/CacheExplorer.h-26-
+src/apps/elforge/explorer/CacheExplorer.h-27-#include "explorer/CacheExplorerState.h"
+src/apps/elforge/explorer/CacheExplorer.h-28-#include "explorer/tree/CacheTreeBuilder.h"
+src/apps/elforge/explorer/CacheExplorer.h-29-#include "views/item/ItemView.h"
+src/apps/elforge/explorer/CacheExplorer.h-30-
+src/apps/elforge/explorer/CacheExplorer.h-31-#include "inspection/AssetDetailsPanel.h"
+src/apps/elforge/explorer/CacheExplorer.h-32-#include "explorer/tree/CacheTreePanel.h"
+src/apps/elforge/explorer/CacheExplorer.h-33-#include "viewport/ViewportPanel.h"
+src/apps/elforge/explorer/CacheExplorer.h-34-
+src/apps/elforge/explorer/CacheExplorer.h:35:#include "repositories/ModelRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h-36-#include "repositories/TextureRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h-37-#include "repositories/SpriteRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h-38-#include "repositories/ImageRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h-39-#include "repositories/FontRepository.h"
+src/apps/elforge/explorer/CacheExplorer.h-40-#include "archive/Archive.h"
+--
+src/apps/elforge/explorer/CacheExplorer.h-173-
+src/apps/elforge/explorer/CacheExplorer.h-174-
+src/apps/elforge/explorer/CacheExplorer.h-175-    struct NpcActionEffectState {
+src/apps/elforge/explorer/CacheExplorer.h-176-        eld::animation::presentation::AnimationEffectBinding binding;
+src/apps/elforge/explorer/CacheExplorer.h-177-        eld::spot_animation::SpotAnimation definition;
+src/apps/elforge/explorer/CacheExplorer.h:178:        eld::model::Model sourceMesh;
+src/apps/elforge/explorer/CacheExplorer.h-179-
+src/apps/elforge/explorer/CacheExplorer.h-180-        std::unique_ptr<eld::render::AnimationPlayer>
+src/apps/elforge/explorer/CacheExplorer.h-181-            player;
+src/apps/elforge/explorer/CacheExplorer.h-182-
+src/apps/elforge/explorer/CacheExplorer.h-183-        std::optional<eld::render::ModelHandle>
+--
+src/apps/elforge/explorer/CacheExplorer.h-232-    int manualActionSpotAnimationId_ = -1;
+src/apps/elforge/explorer/CacheExplorer.h-233-    bool manualActionProjectile_ = true;
+src/apps/elforge/explorer/CacheExplorer.h-234-    int manualActionDelayMilliseconds_ = 0;
+src/apps/elforge/explorer/CacheExplorer.h-235-    int manualActionDurationMilliseconds_ = 700;
+src/apps/elforge/explorer/CacheExplorer.h-236-
+src/apps/elforge/explorer/CacheExplorer.h:237:    std::optional<eld::model::Model>
+src/apps/elforge/explorer/CacheExplorer.h-238-        animationSource_;
+src/apps/elforge/explorer/CacheExplorer.h-239-
+src/apps/elforge/explorer/CacheExplorer.h-240-    std::map<
+src/apps/elforge/explorer/CacheExplorer.h-241-        std::pair<std::uint16_t, std::size_t>,
+src/apps/elforge/explorer/CacheExplorer.h-242-        eld::render::ModelHandle
+--
+src/apps/elforge/explorer/CacheExplorer.h-244-
+src/apps/elforge/explorer/CacheExplorer.h-245-    std::uint64_t lastAnimationUpdateMs_ = 0;
+src/apps/elforge/explorer/CacheExplorer.h-246-
+src/apps/elforge/explorer/CacheExplorer.h-247-
+src/apps/elforge/explorer/CacheExplorer.h-248-    eld::texture::TextureRepository textureRepository_;
+src/apps/elforge/explorer/CacheExplorer.h:249:    eld::model::ModelRepository modelRepository_;
+src/apps/elforge/explorer/CacheExplorer.h-250-    eld::sprite::SpriteRepository titleSpriteRepository_;
+src/apps/elforge/explorer/CacheExplorer.h-251-    eld::sprite::SpriteRepository mediaSpriteRepository_;
+src/apps/elforge/explorer/CacheExplorer.h-252-    eld::image::ImageRepository titleImageRepository_;
+src/apps/elforge/explorer/CacheExplorer.h-253-    eld::font::FontRepository titleFontRepository_;
+src/apps/elforge/explorer/CacheExplorer.h-254-    eld::archive::Archive definitionArchive_;
+--
+src/apps/elforge/explorer/CacheExplorerState.h-15-#include "Midi.h"
+src/apps/elforge/explorer/CacheExplorerState.h-16-#include "views/animation/AnimationViewState.h"
+src/apps/elforge/explorer/CacheExplorerState.h-17-#include "views/midi/MidiViewState.h"
+src/apps/elforge/explorer/CacheExplorerState.h-18-
+src/apps/elforge/explorer/CacheExplorerState.h-19-#include "render/model/ModelHandle.h"
+src/apps/elforge/explorer/CacheExplorerState.h:20:#include "Model.h"
+src/apps/elforge/explorer/CacheExplorerState.h-21-#include "Texture.h"
+src/apps/elforge/explorer/CacheExplorerState.h-22-#include "Sprite.h"
+src/apps/elforge/explorer/CacheExplorerState.h-23-#include "Image.h"
+src/apps/elforge/explorer/CacheExplorerState.h-24-#include "Font.h"
+src/apps/elforge/explorer/CacheExplorerState.h-25-#include "Floor.h"
+--
+src/apps/elforge/explorer/CacheExplorerState.h-112-    bool mapViewportDirty = true;
+src/apps/elforge/explorer/CacheExplorerState.h-113-
+src/apps/elforge/explorer/CacheExplorerState.h-114-    std::optional<MapTileSelection> selectedMapTile;
+src/apps/elforge/explorer/CacheExplorerState.h-115-    std::optional<std::size_t> selectedMapLocIndex;
+src/apps/elforge/explorer/CacheExplorerState.h-116-
+src/apps/elforge/explorer/CacheExplorerState.h:117:    std::optional<eld::model::Model> activeModel;
+src/apps/elforge/explorer/CacheExplorerState.h-118-
+src/apps/elforge/explorer/CacheExplorerState.h-119-    std::optional<eld::render::ModelHandle>
+src/apps/elforge/explorer/CacheExplorerState.h-120-        activeModelHandle;
+src/apps/elforge/explorer/CacheExplorerState.h-121-
+src/apps/elforge/explorer/CacheExplorerState.h-122-    std::vector<PresentationRenderObject>
+--
+src/apps/elforge/views/map/MapView.cpp-226-
+src/apps/elforge/views/map/MapView.cpp-227-MapView::MapView(
+src/apps/elforge/views/map/MapView.cpp-228-    const eld::map::MapRepository& loader,
+src/apps/elforge/views/map/MapView.cpp-229-    const eld::floor::FloorRepository& floors,
+src/apps/elforge/views/map/MapView.cpp-230-    const eld::location::LocationRepository& locations,
+src/apps/elforge/views/map/MapView.cpp:231:    eld::model::ModelRepository& models,
+src/apps/elforge/views/map/MapView.cpp-232-    eld::render::GraphicsResources& graphics
+src/apps/elforge/views/map/MapView.cpp-233-)
+src/apps/elforge/views/map/MapView.cpp-234-    : loader_(loader),
+src/apps/elforge/views/map/MapView.cpp-235-      floors_(floors),
+src/apps/elforge/views/map/MapView.cpp-236-      locations_(locations),
+--
+src/apps/elforge/views/map/MapView.h-5-#include "views/map/MapViewState.h"
+src/apps/elforge/views/map/MapView.h-6-#include "repositories/FloorRepository.h"
+src/apps/elforge/views/map/MapView.h-7-#include "repositories/LocationRepository.h"
+src/apps/elforge/views/map/MapView.h-8-#include "render/GraphicsResources.h"
+src/apps/elforge/views/map/MapView.h-9-#include "repositories/MapRepository.h"
+src/apps/elforge/views/map/MapView.h:10:#include "repositories/ModelRepository.h"
+src/apps/elforge/views/map/MapView.h-11-
+src/apps/elforge/views/map/MapView.h-12-namespace eld::elforge {
+src/apps/elforge/views/map/MapView.h-13-
+src/apps/elforge/views/map/MapView.h-14-class MapView {
+src/apps/elforge/views/map/MapView.h-15-public:
+src/apps/elforge/views/map/MapView.h-16-    MapView(
+src/apps/elforge/views/map/MapView.h-17-        const eld::map::MapRepository& loader,
+src/apps/elforge/views/map/MapView.h-18-        const eld::floor::FloorRepository& floors,
+src/apps/elforge/views/map/MapView.h-19-        const eld::location::LocationRepository& locations,
+src/apps/elforge/views/map/MapView.h:20:        eld::model::ModelRepository& models,
+src/apps/elforge/views/map/MapView.h-21-        eld::render::GraphicsResources& graphics
+src/apps/elforge/views/map/MapView.h-22-    );
+src/apps/elforge/views/map/MapView.h-23-
+src/apps/elforge/views/map/MapView.h-24-    MapViewState build(
+src/apps/elforge/views/map/MapView.h-25-        std::uint16_t regionId
+--
+src/apps/elforge/views/map/MapView.h-27-
+src/apps/elforge/views/map/MapView.h-28-private:
+src/apps/elforge/views/map/MapView.h-29-    const eld::map::MapRepository& loader_;
+src/apps/elforge/views/map/MapView.h-30-    const eld::floor::FloorRepository& floors_;
+src/apps/elforge/views/map/MapView.h-31-    const eld::location::LocationRepository& locations_;
+src/apps/elforge/views/map/MapView.h:32:    eld::model::ModelRepository& models_;
+src/apps/elforge/views/map/MapView.h-33-    eld::render::GraphicsResources& graphics_;
+src/apps/elforge/views/map/MapView.h-34-};
+src/apps/elforge/views/map/MapView.h-35-
+src/apps/elforge/views/map/MapView.h-36-}
+--
+src/apps/elforge/views/identity_kit/IdentityKitView.h-1-#pragma once
+src/apps/elforge/views/identity_kit/IdentityKitView.h-2-
+src/apps/elforge/views/identity_kit/IdentityKitView.h-3-#include <optional>
+src/apps/elforge/views/identity_kit/IdentityKitView.h-4-
+src/apps/elforge/views/identity_kit/IdentityKitView.h-5-#include "IdentityKit.h"
+src/apps/elforge/views/identity_kit/IdentityKitView.h:6:#include "Model.h"
+src/apps/elforge/views/identity_kit/IdentityKitView.h:7:#include "repositories/ModelRepository.h"
+src/apps/elforge/views/identity_kit/IdentityKitView.h-8-
+src/apps/elforge/views/identity_kit/IdentityKitView.h-9-namespace eld::elforge {
+src/apps/elforge/views/identity_kit/IdentityKitView.h-10-
+src/apps/elforge/views/identity_kit/IdentityKitView.h-11-class IdentityKitView {
+src/apps/elforge/views/identity_kit/IdentityKitView.h-12-public:
+src/apps/elforge/views/identity_kit/IdentityKitView.h:13:    std::optional<eld::model::Model> build(
+src/apps/elforge/views/identity_kit/IdentityKitView.h-14-        const eld::identity_kit::IdentityKit& definition,
+src/apps/elforge/views/identity_kit/IdentityKitView.h:15:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/identity_kit/IdentityKitView.h-16-    ) const;
+src/apps/elforge/views/identity_kit/IdentityKitView.h-17-};
+src/apps/elforge/views/identity_kit/IdentityKitView.h-18-
+src/apps/elforge/views/identity_kit/IdentityKitView.h-19-}
+--
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-1-#pragma once
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-2-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-3-#include <optional>
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-4-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-5-#include "SpotAnimation.h"
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:6:#include "Model.h"
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:7:#include "repositories/ModelRepository.h"
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-8-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-9-namespace eld::elforge {
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-10-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-11-class SpotAnimationView {
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-12-public:
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:13:    std::optional<eld::model::Model> build(
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-14-        const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:15:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-16-    ) const;
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-17-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:18:    std::optional<eld::model::Model> buildAnimationSource(
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-19-        const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:20:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-21-    ) const;
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-22-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-23-    void prepareAnimatedMesh(
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-24-        const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.h:25:        eld::model::Model& mesh
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-26-    ) const;
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-27-};
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-28-
+src/apps/elforge/views/spot_animation/SpotAnimationView.h-29-}
+--
+src/apps/elforge/views/location/LocationView.h-1-#pragma once
+src/apps/elforge/views/location/LocationView.h-2-
+src/apps/elforge/views/location/LocationView.h-3-#include <optional>
+src/apps/elforge/views/location/LocationView.h-4-
+src/apps/elforge/views/location/LocationView.h-5-#include "Location.h"
+src/apps/elforge/views/location/LocationView.h:6:#include "Model.h"
+src/apps/elforge/views/location/LocationView.h:7:#include "repositories/ModelRepository.h"
+src/apps/elforge/views/location/LocationView.h-8-
+src/apps/elforge/views/location/LocationView.h-9-namespace eld::elforge {
+src/apps/elforge/views/location/LocationView.h-10-
+src/apps/elforge/views/location/LocationView.h-11-class LocationView {
+src/apps/elforge/views/location/LocationView.h-12-public:
+src/apps/elforge/views/location/LocationView.h:13:    std::optional<eld::model::Model> build(
+src/apps/elforge/views/location/LocationView.h-14-        const eld::location::Location& definition,
+src/apps/elforge/views/location/LocationView.h:15:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/location/LocationView.h-16-    ) const;
+src/apps/elforge/views/location/LocationView.h-17-
+src/apps/elforge/views/location/LocationView.h:18:    std::optional<eld::model::Model> buildAnimationSource(
+src/apps/elforge/views/location/LocationView.h-19-        const eld::location::Location& definition,
+src/apps/elforge/views/location/LocationView.h:20:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/location/LocationView.h-21-    ) const;
+src/apps/elforge/views/location/LocationView.h-22-
+src/apps/elforge/views/location/LocationView.h-23-    void prepareAnimatedMesh(
+src/apps/elforge/views/location/LocationView.h-24-        const eld::location::Location& definition,
+src/apps/elforge/views/location/LocationView.h:25:        eld::model::Model& mesh
+src/apps/elforge/views/location/LocationView.h-26-    ) const;
+src/apps/elforge/views/location/LocationView.h-27-};
+src/apps/elforge/views/location/LocationView.h-28-
+src/apps/elforge/views/location/LocationView.h-29-}
+--
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-8-namespace eld::elforge {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-9-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-10-namespace {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-11-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-12-void applyRecolors(
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:13:    eld::model::Model& mesh,
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-14-    const eld::identity_kit::IdentityKit& definition
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-15-) {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-16-    for (eld::model::Face& face : mesh.faces) {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-17-        for (
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-18-            std::size_t index = 0;
+--
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-32-        }
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-33-    }
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-34-}
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-35-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-36-void appendMesh(
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:37:    eld::model::Model& destination,
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:38:    eld::model::Model source
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-39-) {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-40-    const std::uint32_t vertexOffset =
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-41-        static_cast<std::uint32_t>(
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-42-            destination.vertices.size()
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-43-        );
+--
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-86-    );
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-87-}
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-88-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-89-}
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-90-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:91:std::optional<eld::model::Model>
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-92-IdentityKitView::build(
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-93-    const eld::identity_kit::IdentityKit& definition,
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:94:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-95-) const {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-96-    std::vector<std::uint16_t> modelIds =
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-97-        definition.modelIds;
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-98-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-99-    if (modelIds.empty()) {
+--
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-105-                modelIds.push_back(*modelId);
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-106-            }
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-107-        }
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-108-    }
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-109-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:110:    eld::model::Model combined;
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-111-    combined.id = definition.id;
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-112-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-113-    bool foundModel = false;
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-114-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-115-    for (const std::uint16_t modelId : modelIds) {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp:116:        std::optional<eld::model::Model> model =
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-117-            repository.find(modelId);
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-118-
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-119-        if (!model.has_value()) {
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-120-            continue;
+src/apps/elforge/views/identity_kit/IdentityKitView.cpp-121-        }
+--
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-5-namespace eld::elforge {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-6-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-7-namespace {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-8-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-9-void rotate90Degrees(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:10:    eld::model::Model& mesh
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-11-) {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-12-    for (eld::model::Vertex& vertex : mesh.vertices) {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-13-        const float x = vertex.x;
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-14-        vertex.x = vertex.z;
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-15-        vertex.z = -x;
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-16-    }
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-17-}
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-18-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-19-}
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-20-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:21:std::optional<eld::model::Model>
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-22-SpotAnimationView::buildAnimationSource(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-23-    const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:24:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-25-) const {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-26-    if (!definition.modelId.has_value()) {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-27-        return std::nullopt;
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-28-    }
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-29-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:30:    std::optional<eld::model::Model> model =
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-31-        repository.find(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-32-            *definition.modelId
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-33-        );
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-34-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-35-    if (!model.has_value()) {
+--
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-40-    return model;
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-41-}
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-42-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-43-void SpotAnimationView::prepareAnimatedMesh(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-44-    const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:45:    eld::model::Model& mesh
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-46-) const {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-47-    for (eld::model::Vertex& vertex : mesh.vertices) {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-48-        vertex.x =
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-49-            vertex.x *
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-50-            static_cast<float>(definition.scaleX) /
+--
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-92-        rotate90Degrees(mesh);
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-93-        rotate90Degrees(mesh);
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-94-    }
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-95-}
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-96-
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:97:std::optional<eld::model::Model>
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-98-SpotAnimationView::build(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-99-    const eld::spot_animation::SpotAnimation& definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:100:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-101-) const {
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp:102:    std::optional<eld::model::Model> model =
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-103-        buildAnimationSource(
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-104-            definition,
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-105-            repository
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-106-        );
+src/apps/elforge/views/spot_animation/SpotAnimationView.cpp-107-
+--
+src/apps/elforge/views/location/LocationView.cpp-8-namespace eld::elforge {
+src/apps/elforge/views/location/LocationView.cpp-9-
+src/apps/elforge/views/location/LocationView.cpp-10-namespace {
+src/apps/elforge/views/location/LocationView.cpp-11-
+src/apps/elforge/views/location/LocationView.cpp-12-void prepareMesh(
+src/apps/elforge/views/location/LocationView.cpp:13:    eld::model::Model& mesh,
+src/apps/elforge/views/location/LocationView.cpp-14-    const eld::location::Location& definition
+src/apps/elforge/views/location/LocationView.cpp-15-) {
+src/apps/elforge/views/location/LocationView.cpp-16-    for (eld::model::Vertex& vertex : mesh.vertices) {
+src/apps/elforge/views/location/LocationView.cpp-17-        vertex.x =
+src/apps/elforge/views/location/LocationView.cpp-18-            vertex.x *
+--
+src/apps/elforge/views/location/LocationView.cpp-46-        }
+src/apps/elforge/views/location/LocationView.cpp-47-    }
+src/apps/elforge/views/location/LocationView.cpp-48-}
+src/apps/elforge/views/location/LocationView.cpp-49-
+src/apps/elforge/views/location/LocationView.cpp-50-void appendMesh(
+src/apps/elforge/views/location/LocationView.cpp:51:    eld::model::Model& destination,
+src/apps/elforge/views/location/LocationView.cpp:52:    eld::model::Model source
+src/apps/elforge/views/location/LocationView.cpp-53-) {
+src/apps/elforge/views/location/LocationView.cpp-54-    const std::uint32_t vertexOffset =
+src/apps/elforge/views/location/LocationView.cpp-55-        static_cast<std::uint32_t>(
+src/apps/elforge/views/location/LocationView.cpp-56-            destination.vertices.size()
+src/apps/elforge/views/location/LocationView.cpp-57-        );
+--
+src/apps/elforge/views/location/LocationView.cpp-150-    return ids;
+src/apps/elforge/views/location/LocationView.cpp-151-}
+src/apps/elforge/views/location/LocationView.cpp-152-
+src/apps/elforge/views/location/LocationView.cpp-153-}
+src/apps/elforge/views/location/LocationView.cpp-154-
+src/apps/elforge/views/location/LocationView.cpp:155:std::optional<eld::model::Model>
+src/apps/elforge/views/location/LocationView.cpp-156-LocationView::buildAnimationSource(
+src/apps/elforge/views/location/LocationView.cpp-157-    const eld::location::Location& definition,
+src/apps/elforge/views/location/LocationView.cpp:158:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/location/LocationView.cpp-159-) const {
+src/apps/elforge/views/location/LocationView.cpp:160:    eld::model::Model combined;
+src/apps/elforge/views/location/LocationView.cpp-161-    combined.id = definition.id;
+src/apps/elforge/views/location/LocationView.cpp-162-
+src/apps/elforge/views/location/LocationView.cpp-163-    bool found = false;
+src/apps/elforge/views/location/LocationView.cpp-164-
+src/apps/elforge/views/location/LocationView.cpp-165-    for (
+src/apps/elforge/views/location/LocationView.cpp-166-        const std::uint16_t modelId :
+src/apps/elforge/views/location/LocationView.cpp-167-        selectModels(definition)
+src/apps/elforge/views/location/LocationView.cpp-168-    ) {
+src/apps/elforge/views/location/LocationView.cpp:169:        std::optional<eld::model::Model> model =
+src/apps/elforge/views/location/LocationView.cpp-170-            repository.find(modelId);
+src/apps/elforge/views/location/LocationView.cpp-171-
+src/apps/elforge/views/location/LocationView.cpp-172-        if (!model.has_value()) {
+src/apps/elforge/views/location/LocationView.cpp-173-            continue;
+src/apps/elforge/views/location/LocationView.cpp-174-        }
+--
+src/apps/elforge/views/location/LocationView.cpp-186-        : std::nullopt;
+src/apps/elforge/views/location/LocationView.cpp-187-}
+src/apps/elforge/views/location/LocationView.cpp-188-
+src/apps/elforge/views/location/LocationView.cpp-189-void LocationView::prepareAnimatedMesh(
+src/apps/elforge/views/location/LocationView.cpp-190-    const eld::location::Location& definition,
+src/apps/elforge/views/location/LocationView.cpp:191:    eld::model::Model& mesh
+src/apps/elforge/views/location/LocationView.cpp-192-) const {
+src/apps/elforge/views/location/LocationView.cpp-193-    prepareMesh(
+src/apps/elforge/views/location/LocationView.cpp-194-        mesh,
+src/apps/elforge/views/location/LocationView.cpp-195-        definition
+src/apps/elforge/views/location/LocationView.cpp-196-    );
+src/apps/elforge/views/location/LocationView.cpp-197-}
+src/apps/elforge/views/location/LocationView.cpp-198-
+src/apps/elforge/views/location/LocationView.cpp:199:std::optional<eld::model::Model>
+src/apps/elforge/views/location/LocationView.cpp-200-LocationView::build(
+src/apps/elforge/views/location/LocationView.cpp-201-    const eld::location::Location& definition,
+src/apps/elforge/views/location/LocationView.cpp:202:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/location/LocationView.cpp-203-) const {
+src/apps/elforge/views/location/LocationView.cpp:204:    std::optional<eld::model::Model> model =
+src/apps/elforge/views/location/LocationView.cpp-205-        buildAnimationSource(
+src/apps/elforge/views/location/LocationView.cpp-206-            definition,
+src/apps/elforge/views/location/LocationView.cpp-207-            repository
+src/apps/elforge/views/location/LocationView.cpp-208-        );
+src/apps/elforge/views/location/LocationView.cpp-209-
+--
+src/apps/elforge/views/npc/NpcView.h-1-#pragma once
+src/apps/elforge/views/npc/NpcView.h-2-
+src/apps/elforge/views/npc/NpcView.h-3-#include <optional>
+src/apps/elforge/views/npc/NpcView.h-4-
+src/apps/elforge/views/npc/NpcView.h-5-#include "Npc.h"
+src/apps/elforge/views/npc/NpcView.h:6:#include "Model.h"
+src/apps/elforge/views/npc/NpcView.h:7:#include "repositories/ModelRepository.h"
+src/apps/elforge/views/npc/NpcView.h-8-
+src/apps/elforge/views/npc/NpcView.h-9-namespace eld::elforge {
+src/apps/elforge/views/npc/NpcView.h-10-
+src/apps/elforge/views/npc/NpcView.h-11-class NpcView {
+src/apps/elforge/views/npc/NpcView.h-12-public:
+src/apps/elforge/views/npc/NpcView.h:13:    std::optional<eld::model::Model> build(
+src/apps/elforge/views/npc/NpcView.h-14-        const eld::npc::Npc& definition,
+src/apps/elforge/views/npc/NpcView.h:15:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/npc/NpcView.h-16-    ) const;
+src/apps/elforge/views/npc/NpcView.h-17-};
+src/apps/elforge/views/npc/NpcView.h-18-
+src/apps/elforge/views/npc/NpcView.h-19-}
+--
+src/apps/elforge/views/npc/NpcView.cpp-6-namespace eld::elforge {
+src/apps/elforge/views/npc/NpcView.cpp-7-
+src/apps/elforge/views/npc/NpcView.cpp-8-namespace {
+src/apps/elforge/views/npc/NpcView.cpp-9-
+src/apps/elforge/views/npc/NpcView.cpp-10-void prepareMesh(
+src/apps/elforge/views/npc/NpcView.cpp:11:    eld::model::Model& mesh,
+src/apps/elforge/views/npc/NpcView.cpp-12-    const eld::npc::Npc& definition
+src/apps/elforge/views/npc/NpcView.cpp-13-) {
+src/apps/elforge/views/npc/NpcView.cpp-14-    for (eld::model::Vertex& vertex : mesh.vertices) {
+src/apps/elforge/views/npc/NpcView.cpp-15-        vertex.x =
+src/apps/elforge/views/npc/NpcView.cpp-16-            vertex.x *
+--
+src/apps/elforge/views/npc/NpcView.cpp-40-        }
+src/apps/elforge/views/npc/NpcView.cpp-41-    }
+src/apps/elforge/views/npc/NpcView.cpp-42-}
+src/apps/elforge/views/npc/NpcView.cpp-43-
+src/apps/elforge/views/npc/NpcView.cpp-44-void appendMesh(
+src/apps/elforge/views/npc/NpcView.cpp:45:    eld::model::Model& destination,
+src/apps/elforge/views/npc/NpcView.cpp:46:    eld::model::Model source
+src/apps/elforge/views/npc/NpcView.cpp-47-) {
+src/apps/elforge/views/npc/NpcView.cpp-48-    const std::uint32_t vertexOffset =
+src/apps/elforge/views/npc/NpcView.cpp-49-        static_cast<std::uint32_t>(
+src/apps/elforge/views/npc/NpcView.cpp-50-            destination.vertices.size()
+src/apps/elforge/views/npc/NpcView.cpp-51-        );
+--
+src/apps/elforge/views/npc/NpcView.cpp-94-    );
+src/apps/elforge/views/npc/NpcView.cpp-95-}
+src/apps/elforge/views/npc/NpcView.cpp-96-
+src/apps/elforge/views/npc/NpcView.cpp-97-}
+src/apps/elforge/views/npc/NpcView.cpp-98-
+src/apps/elforge/views/npc/NpcView.cpp:99:std::optional<eld::model::Model>
+src/apps/elforge/views/npc/NpcView.cpp-100-NpcView::build(
+src/apps/elforge/views/npc/NpcView.cpp-101-    const eld::npc::Npc& definition,
+src/apps/elforge/views/npc/NpcView.cpp:102:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/npc/NpcView.cpp-103-) const {
+src/apps/elforge/views/npc/NpcView.cpp:104:    eld::model::Model combined;
+src/apps/elforge/views/npc/NpcView.cpp-105-    combined.id = definition.id;
+src/apps/elforge/views/npc/NpcView.cpp-106-
+src/apps/elforge/views/npc/NpcView.cpp-107-    bool found = false;
+src/apps/elforge/views/npc/NpcView.cpp-108-
+src/apps/elforge/views/npc/NpcView.cpp-109-    for (const std::uint16_t modelId : definition.modelIds) {
+src/apps/elforge/views/npc/NpcView.cpp:110:        std::optional<eld::model::Model> model =
+src/apps/elforge/views/npc/NpcView.cpp-111-            repository.find(modelId);
+src/apps/elforge/views/npc/NpcView.cpp-112-
+src/apps/elforge/views/npc/NpcView.cpp-113-        if (!model.has_value()) {
+src/apps/elforge/views/npc/NpcView.cpp-114-            continue;
+src/apps/elforge/views/npc/NpcView.cpp-115-        }
+--
+src/apps/elforge/views/item/ItemView.h-2-
+src/apps/elforge/views/item/ItemView.h-3-#include <optional>
+src/apps/elforge/views/item/ItemView.h-4-
+src/apps/elforge/views/item/ItemView.h-5-#include "repositories/IdentityKitRepository.h"
+src/apps/elforge/views/item/ItemView.h-6-#include "Item.h"
+src/apps/elforge/views/item/ItemView.h:7:#include "Model.h"
+src/apps/elforge/views/item/ItemView.h:8:#include "repositories/ModelRepository.h"
+src/apps/elforge/views/item/ItemView.h-9-
+src/apps/elforge/views/item/ItemView.h-10-namespace eld::elforge {
+src/apps/elforge/views/item/ItemView.h-11-
+src/apps/elforge/views/item/ItemView.h-12-enum class ItemViewGender {
+src/apps/elforge/views/item/ItemView.h-13-    Male,
+src/apps/elforge/views/item/ItemView.h-14-    Female
+src/apps/elforge/views/item/ItemView.h-15-};
+src/apps/elforge/views/item/ItemView.h-16-
+src/apps/elforge/views/item/ItemView.h-17-class ItemView {
+src/apps/elforge/views/item/ItemView.h-18-public:
+src/apps/elforge/views/item/ItemView.h:19:    std::optional<eld::model::Model> build(
+src/apps/elforge/views/item/ItemView.h-20-        const eld::item::Item& definition,
+src/apps/elforge/views/item/ItemView.h:21:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/item/ItemView.h-22-    ) const;
+src/apps/elforge/views/item/ItemView.h-23-
+src/apps/elforge/views/item/ItemView.h-24-    bool hasEquippedModel(
+src/apps/elforge/views/item/ItemView.h-25-        const eld::item::Item& definition,
+src/apps/elforge/views/item/ItemView.h-26-        ItemViewGender gender
+src/apps/elforge/views/item/ItemView.h-27-    ) const;
+src/apps/elforge/views/item/ItemView.h-28-
+src/apps/elforge/views/item/ItemView.h:29:    std::optional<eld::model::Model> buildEquipped(
+src/apps/elforge/views/item/ItemView.h-30-        const eld::item::Item& definition,
+src/apps/elforge/views/item/ItemView.h-31-        ItemViewGender gender,
+src/apps/elforge/views/item/ItemView.h-32-        const eld::identity_kit::IdentityKitRepository& identityKits,
+src/apps/elforge/views/item/ItemView.h:33:        const eld::model::ModelRepository& repository
+src/apps/elforge/views/item/ItemView.h-34-    ) const;
+src/apps/elforge/views/item/ItemView.h-35-};
+src/apps/elforge/views/item/ItemView.h-36-
+src/apps/elforge/views/item/ItemView.h-37-}
+--
+src/assets/decoders/ModelDecoder.h-1-#pragma once
+src/assets/decoders/ModelDecoder.h-2-
+src/assets/decoders/ModelDecoder.h-3-#include <cstdint>
+src/assets/decoders/ModelDecoder.h-4-#include <span>
+src/assets/decoders/ModelDecoder.h-5-
+src/assets/decoders/ModelDecoder.h:6:#include "Model.h"
+src/assets/decoders/ModelDecoder.h-7-
+src/assets/decoders/ModelDecoder.h-8-namespace eld::model {
+src/assets/decoders/ModelDecoder.h-9-
+src/assets/decoders/ModelDecoder.h-10-class ModelDecoder {
+src/assets/decoders/ModelDecoder.h-11-public:
+--
+src/assets/ModelResource.h-1-#pragma once
+src/assets/ModelResource.h-2-
+src/assets/ModelResource.h-3-#include <cstdint>
+src/assets/ModelResource.h-4-#include <map>
+src/assets/ModelResource.h-5-
+src/assets/ModelResource.h:6:#include "Model.h"
+src/assets/ModelResource.h-7-#include "Texture.h"
+src/assets/ModelResource.h-8-
+src/assets/ModelResource.h-9-namespace eld::model {
+src/assets/ModelResource.h-10-
+src/assets/ModelResource.h:11:struct ModelResource {
+src/assets/ModelResource.h-12-    Model model;
+src/assets/ModelResource.h-13-
+src/assets/ModelResource.h-14-    std::map<
+src/assets/ModelResource.h-15-        std::uint16_t,
+src/assets/ModelResource.h-16-        eld::texture::Texture
+--
+src/apps/elforge/views/model/ModelViewPanel.cpp-846-    if (!state.activeModel.has_value()) {
+src/apps/elforge/views/model/ModelViewPanel.cpp-847-        return;
+src/apps/elforge/views/model/ModelViewPanel.cpp-848-    }
+src/apps/elforge/views/model/ModelViewPanel.cpp-849-
+src/apps/elforge/views/model/ModelViewPanel.cpp-850-
+src/apps/elforge/views/model/ModelViewPanel.cpp:851:    const eld::model::Model& model =
+src/apps/elforge/views/model/ModelViewPanel.cpp-852-        *state.activeModel;
+src/apps/elforge/views/model/ModelViewPanel.cpp-853-
+src/apps/elforge/views/model/ModelViewPanel.cpp-854-
+src/apps/elforge/views/model/ModelViewPanel.cpp-855-    centeredText(
+src/apps/elforge/views/model/ModelViewPanel.cpp-856-        "MODEL",
+--
+src/apps/elforge/views/item/ItemView.cpp-12-namespace eld::elforge {
+src/apps/elforge/views/item/ItemView.cpp-13-
+src/apps/elforge/views/item/ItemView.cpp-14-namespace {
+src/apps/elforge/views/item/ItemView.cpp-15-
+src/apps/elforge/views/item/ItemView.cpp-16-void appendMesh(
+src/apps/elforge/views/item/ItemView.cpp:17:    eld::model::Model& destination,
+src/apps/elforge/views/item/ItemView.cpp:18:    eld::model::Model source
+src/apps/elforge/views/item/ItemView.cpp-19-) {
+src/apps/elforge/views/item/ItemView.cpp-20-    const std::uint32_t vertexOffset =
+src/apps/elforge/views/item/ItemView.cpp-21-        static_cast<std::uint32_t>(destination.vertices.size());
+src/apps/elforge/views/item/ItemView.cpp-22-
+src/apps/elforge/views/item/ItemView.cpp-23-    const std::uint32_t mappingOffset =
+--
+src/apps/elforge/views/item/ItemView.cpp-57-        source.textureMappings.end()
+src/apps/elforge/views/item/ItemView.cpp-58-    );
+src/apps/elforge/views/item/ItemView.cpp-59-}
+src/apps/elforge/views/item/ItemView.cpp-60-
+src/apps/elforge/views/item/ItemView.cpp-61-void applyItemRecolors(
+src/apps/elforge/views/item/ItemView.cpp:62:    eld::model::Model& mesh,
+src/apps/elforge/views/item/ItemView.cpp-63-    const eld::item::Item& definition
+src/apps/elforge/views/item/ItemView.cpp-64-) {
+src/apps/elforge/views/item/ItemView.cpp-65-    for (eld::model::Face& face : mesh.faces) {
+src/apps/elforge/views/item/ItemView.cpp-66-        for (const eld::item::ItemRecolor& recolor : definition.recolors) {
+src/apps/elforge/views/item/ItemView.cpp-67-            if (face.color == recolor.source) {
+--
+src/apps/elforge/views/item/ItemView.cpp-71-        }
+src/apps/elforge/views/item/ItemView.cpp-72-    }
+src/apps/elforge/views/item/ItemView.cpp-73-}
+src/apps/elforge/views/item/ItemView.cpp-74-
+src/apps/elforge/views/item/ItemView.cpp-75-void applyIdentityKitRecolors(
+src/apps/elforge/views/item/ItemView.cpp:76:    eld::model::Model& mesh,
+src/apps/elforge/views/item/ItemView.cpp-77-    const eld::identity_kit::IdentityKit& definition
+src/apps/elforge/views/item/ItemView.cpp-78-) {
+src/apps/elforge/views/item/ItemView.cpp-79-    for (eld::model::Face& face : mesh.faces) {
+src/apps/elforge/views/item/ItemView.cpp-80-        for (std::size_t index = 0; index < definition.recolorSources.size(); ++index) {
+src/apps/elforge/views/item/ItemView.cpp-81-            if (
+--
+src/apps/elforge/views/item/ItemView.cpp-248-    return nullptr;
+src/apps/elforge/views/item/ItemView.cpp-249-}
+src/apps/elforge/views/item/ItemView.cpp-250-
+src/apps/elforge/views/item/ItemView.cpp-251-}
+src/apps/elforge/views/item/ItemView.cpp-252-
+src/apps/elforge/views/item/ItemView.cpp:253:std::optional<eld::model::Model>
+src/apps/elforge/views/item/ItemView.cpp-254-ItemView::build(
+src/apps/elforge/views/item/ItemView.cpp-255-    const eld::item::Item& definition,
+src/apps/elforge/views/item/ItemView.cpp:256:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/item/ItemView.cpp-257-) const {
+src/apps/elforge/views/item/ItemView.cpp-258-    if (!definition.inventoryModelId.has_value()) {
+src/apps/elforge/views/item/ItemView.cpp-259-        return std::nullopt;
+src/apps/elforge/views/item/ItemView.cpp-260-    }
+src/apps/elforge/views/item/ItemView.cpp-261-
+src/apps/elforge/views/item/ItemView.cpp:262:    std::optional<eld::model::Model> model =
+src/apps/elforge/views/item/ItemView.cpp-263-        repository.find(*definition.inventoryModelId);
+src/apps/elforge/views/item/ItemView.cpp-264-
+src/apps/elforge/views/item/ItemView.cpp-265-    if (!model.has_value()) {
+src/apps/elforge/views/item/ItemView.cpp-266-        return std::nullopt;
+src/apps/elforge/views/item/ItemView.cpp-267-    }
+--
+src/apps/elforge/views/item/ItemView.cpp-298-            return id.has_value();
+src/apps/elforge/views/item/ItemView.cpp-299-        }
+src/apps/elforge/views/item/ItemView.cpp-300-    );
+src/apps/elforge/views/item/ItemView.cpp-301-}
+src/apps/elforge/views/item/ItemView.cpp-302-
+src/apps/elforge/views/item/ItemView.cpp:303:std::optional<eld::model::Model>
+src/apps/elforge/views/item/ItemView.cpp-304-ItemView::buildEquipped(
+src/apps/elforge/views/item/ItemView.cpp-305-    const eld::item::Item& definition,
+src/apps/elforge/views/item/ItemView.cpp-306-    ItemViewGender gender,
+src/apps/elforge/views/item/ItemView.cpp-307-    const eld::identity_kit::IdentityKitRepository& identityKits,
+src/apps/elforge/views/item/ItemView.cpp:308:    const eld::model::ModelRepository& repository
+src/apps/elforge/views/item/ItemView.cpp-309-) const {
+src/apps/elforge/views/item/ItemView.cpp-310-    if (!hasEquippedModel(definition, gender)) {
+src/apps/elforge/views/item/ItemView.cpp-311-        return std::nullopt;
+src/apps/elforge/views/item/ItemView.cpp-312-    }
+src/apps/elforge/views/item/ItemView.cpp-313-
+src/apps/elforge/views/item/ItemView.cpp:314:    eld::model::Model combined;
+src/apps/elforge/views/item/ItemView.cpp-315-    combined.id = definition.id;
+src/apps/elforge/views/item/ItemView.cpp-316-
+src/apps/elforge/views/item/ItemView.cpp-317-    const HiddenBobParts hidden = hiddenBodyParts(definition);
+src/apps/elforge/views/item/ItemView.cpp-318-    const std::uint8_t genderOffset =
+src/apps/elforge/views/item/ItemView.cpp-319-        gender == ItemViewGender::Male ? 0 : 7;
+--
+src/apps/elforge/views/item/ItemView.cpp-333-        if (kit == nullptr) {
+src/apps/elforge/views/item/ItemView.cpp-334-            continue;
+src/apps/elforge/views/item/ItemView.cpp-335-        }
+src/apps/elforge/views/item/ItemView.cpp-336-
+src/apps/elforge/views/item/ItemView.cpp-337-        for (const std::uint16_t modelId : kit->modelIds) {
+src/apps/elforge/views/item/ItemView.cpp:338:            std::optional<eld::model::Model> model = repository.find(modelId);
+src/apps/elforge/views/item/ItemView.cpp-339-
+src/apps/elforge/views/item/ItemView.cpp-340-            if (!model.has_value()) {
+src/apps/elforge/views/item/ItemView.cpp-341-                continue;
+src/apps/elforge/views/item/ItemView.cpp-342-            }
+src/apps/elforge/views/item/ItemView.cpp-343-
+--
+src/apps/elforge/views/item/ItemView.cpp-362-    for (const std::optional<std::uint16_t>& modelId : equippedIds) {
+src/apps/elforge/views/item/ItemView.cpp-363-        if (!modelId.has_value()) {
+src/apps/elforge/views/item/ItemView.cpp-364-            continue;
+src/apps/elforge/views/item/ItemView.cpp-365-        }
+src/apps/elforge/views/item/ItemView.cpp-366-
+src/apps/elforge/views/item/ItemView.cpp:367:        std::optional<eld::model::Model> model = repository.find(*modelId);
+src/apps/elforge/views/item/ItemView.cpp-368-
+src/apps/elforge/views/item/ItemView.cpp-369-        if (!model.has_value()) {
+src/apps/elforge/views/item/ItemView.cpp-370-            continue;
+src/apps/elforge/views/item/ItemView.cpp-371-        }
+src/apps/elforge/views/item/ItemView.cpp-372-
+--
+src/assets/repositories/ModelRepository.cpp:1:#include "repositories/ModelRepository.h"
+src/assets/repositories/ModelRepository.cpp-2-
+src/assets/repositories/ModelRepository.cpp-3-#include <exception>
+src/assets/repositories/ModelRepository.cpp-4-#include <stdexcept>
+src/assets/repositories/ModelRepository.cpp-5-#include <string>
+src/assets/repositories/ModelRepository.cpp-6-
+src/assets/repositories/ModelRepository.cpp-7-namespace eld::model {
+src/assets/repositories/ModelRepository.cpp-8-
+src/assets/repositories/ModelRepository.cpp:9:ModelRepository::ModelRepository(
+src/assets/repositories/ModelRepository.cpp-10-    const eld::cache::Cache& cache
+src/assets/repositories/ModelRepository.cpp-11-)
+src/assets/repositories/ModelRepository.cpp-12-    : store_(
+src/assets/repositories/ModelRepository.cpp-13-          cache.open(Index)
+src/assets/repositories/ModelRepository.cpp-14-      ) {
+src/assets/repositories/ModelRepository.cpp-15-}
+src/assets/repositories/ModelRepository.cpp-16-
+src/assets/repositories/ModelRepository.cpp-17-
+src/assets/repositories/ModelRepository.cpp:18:Model ModelRepository::get(
+src/assets/repositories/ModelRepository.cpp-19-    std::uint16_t id
+src/assets/repositories/ModelRepository.cpp-20-) const {
+src/assets/repositories/ModelRepository.cpp-21-    const eld::cache::File file =
+src/assets/repositories/ModelRepository.cpp-22-        store_.get(id);
+src/assets/repositories/ModelRepository.cpp-23-
+--
+src/assets/repositories/ModelRepository.cpp-40-        );
+src/assets/repositories/ModelRepository.cpp-41-    }
+src/assets/repositories/ModelRepository.cpp-42-}
+src/assets/repositories/ModelRepository.cpp-43-
+src/assets/repositories/ModelRepository.cpp-44-
+src/assets/repositories/ModelRepository.cpp:45:std::optional<Model> ModelRepository::find(
+src/assets/repositories/ModelRepository.cpp-46-    std::uint16_t id
+src/assets/repositories/ModelRepository.cpp-47-) const {
+src/assets/repositories/ModelRepository.cpp-48-    if (!contains(id)) {
+src/assets/repositories/ModelRepository.cpp-49-        return std::nullopt;
+src/assets/repositories/ModelRepository.cpp-50-    }
+--
+src/assets/repositories/ModelRepository.cpp-52-    return get(id);
+src/assets/repositories/ModelRepository.cpp-53-}
+src/assets/repositories/ModelRepository.cpp-54-
+src/assets/repositories/ModelRepository.cpp-55-
+src/assets/repositories/ModelRepository.cpp-56-std::vector<std::uint16_t>
+src/assets/repositories/ModelRepository.cpp:57:ModelRepository::listIds() const {
+src/assets/repositories/ModelRepository.cpp-58-    const std::vector<eld::cache::FileEntry> entries =
+src/assets/repositories/ModelRepository.cpp-59-        store_.list();
+src/assets/repositories/ModelRepository.cpp-60-
+src/assets/repositories/ModelRepository.cpp-61-    std::vector<std::uint16_t> ids;
+src/assets/repositories/ModelRepository.cpp-62-
+--
+src/assets/repositories/ModelRepository.cpp-75-
+src/assets/repositories/ModelRepository.cpp-76-    return ids;
+src/assets/repositories/ModelRepository.cpp-77-}
+src/assets/repositories/ModelRepository.cpp-78-
+src/assets/repositories/ModelRepository.cpp-79-
+src/assets/repositories/ModelRepository.cpp:80:bool ModelRepository::contains(
+src/assets/repositories/ModelRepository.cpp-81-    std::uint16_t id
+src/assets/repositories/ModelRepository.cpp-82-) const {
+src/assets/repositories/ModelRepository.cpp-83-    return store_.contains(id);
+src/assets/repositories/ModelRepository.cpp-84-}
+src/assets/repositories/ModelRepository.cpp-85-
+src/assets/repositories/ModelRepository.cpp-86-
+src/assets/repositories/ModelRepository.cpp:87:std::size_t ModelRepository::count() const {
+src/assets/repositories/ModelRepository.cpp-88-    return store_.count();
+src/assets/repositories/ModelRepository.cpp-89-}
+src/assets/repositories/ModelRepository.cpp-90-
+src/assets/repositories/ModelRepository.cpp-91-}
+
+===== RELEVANT DIFF =====
+diff --git a/src/assets/CMakeLists.txt b/src/assets/CMakeLists.txt
+index 7201dad..de3d89e 100644
+--- a/src/assets/CMakeLists.txt
++++ b/src/assets/CMakeLists.txt
+@@ -1,4 +1,5 @@
+ add_library(eldoria_assets STATIC
++    AssetManager.cpp
+     AnimationFrameTable.cpp
+     content/animation/AnimationPresentationCatalog.cpp
+     decoders/AnimationDecoder.cpp
+@@ -15,7 +16,6 @@ add_library(eldoria_assets STATIC
+     decoders/ModelDecoder.cpp
+     repositories/ModelRepository.cpp
+     decoders/ImageDecoder.cpp
+-    repositories/ImageRepository.cpp
+     decoders/FontDecoder.cpp
+     repositories/FontRepository.cpp
+     decoders/FloorDecoder.cpp
+diff --git a/src/assets/Font.h b/src/assets/Font.h
+index 17084e8..5706f8b 100644
+--- a/src/assets/Font.h
++++ b/src/assets/Font.h
+@@ -20,6 +20,7 @@ struct Glyph {
+ };
+ 
+ struct Font {
++    std::uint16_t id = 0;
+     std::string name;
+     std::uint16_t lineHeight = 0;
+     std::vector<Glyph> glyphs;
+diff --git a/src/assets/InterfaceComposer.cpp b/src/assets/InterfaceComposer.cpp
+index 95145ab..96f230f 100644
+--- a/src/assets/InterfaceComposer.cpp
++++ b/src/assets/InterfaceComposer.cpp
+@@ -17,10 +17,10 @@ std::optional<ComposedInterface>
+ InterfaceComposer::compose(
+     std::uint16_t rootId
+ ) const {
+-    const Widget* root =
++    const std::optional<Widget> root =
+         widgets_.find(rootId);
+ 
+-    if (root == nullptr) {
++    if (!root.has_value()) {
+         return std::nullopt;
+     }
+ 
+@@ -67,10 +67,10 @@ InterfaceNode InterfaceComposer::composeNode(
+             continue;
+         }
+ 
+-        const Widget* childWidget =
++        const std::optional<Widget> childWidget =
+             widgets_.find(child.id);
+ 
+-        if (childWidget == nullptr) {
++        if (!childWidget.has_value()) {
+             continue;
+         }
+ 
+diff --git a/src/assets/repositories/FontRepository.cpp b/src/assets/repositories/FontRepository.cpp
+index 1fa462f..2f91b08 100644
+--- a/src/assets/repositories/FontRepository.cpp
++++ b/src/assets/repositories/FontRepository.cpp
+@@ -4,33 +4,39 @@
+ #include <stdexcept>
+ #include <string>
+ 
++#include "archive/ArchiveHashes.h"
++
+ namespace eld::font {
+ 
+ FontRepository::FontRepository(
+-    const eld::cache::Cache& cache,
+-    std::uint16_t archiveId
++    const eld::cache::Cache& cache
+ )
+     : archive_(
+           eld::archive::load(
+               cache.open(Index),
+-              archiveId
++              ArchiveId
+           )
+       ) {
+ }
+ 
+ 
+ Font FontRepository::get(
+-    std::string_view name
++    std::uint16_t id
+ ) const {
+-    const eld::archive::ArchiveFile& indexFile =
+-        archive_.get(
+-            IndexFile
+-        );
+-
+     const eld::archive::ArchiveFile& dataFile =
+-        archive_.get(
+-            name
++        archive_.get(id);
++
++    if (
++        dataFile.nameHash ==
++        eld::archive::hashName(IndexFile)
++    ) {
++        throw std::out_of_range(
++            "Font does not exist"
+         );
++    }
++
++    const eld::archive::ArchiveFile& indexFile =
++        archive_.get(IndexFile);
+ 
+     try {
+         Font font =
+@@ -39,15 +45,24 @@ Font FontRepository::get(
+                 indexFile.payload
+             );
+ 
+-        font.name =
+-            std::string(name);
++        font.id = id;
++
++        const std::optional<std::string_view> name =
++            eld::archive::findName(
++                dataFile.nameHash
++            );
++
++        if (name.has_value()) {
++            font.name =
++                std::string(*name);
++        }
+ 
+         return font;
+     }
+     catch (const std::exception& error) {
+         throw std::runtime_error(
+             "Failed to decode font " +
+-            std::string(name) +
++            std::to_string(id) +
+             ": " +
+             error.what()
+         );
+@@ -56,26 +71,59 @@ Font FontRepository::get(
+ 
+ 
+ std::optional<Font> FontRepository::find(
+-    std::string_view name
++    std::uint16_t id
+ ) const {
+-    if (!contains(name)) {
++    if (!contains(id)) {
+         return std::nullopt;
+     }
+ 
+-    return get(name);
++    return get(id);
++}
++
++
++std::vector<std::uint16_t>
++FontRepository::listIds() const {
++    const std::uint32_t indexHash =
++        eld::archive::hashName(IndexFile);
++
++    std::vector<std::uint16_t> ids;
++
++    ids.reserve(
++        archive_.count()
++    );
++
++    for (
++        const eld::archive::ArchiveFile& file :
++        archive_.list()
++    ) {
++        if (file.nameHash == indexHash) {
++            continue;
++        }
++
++        ids.push_back(
++            file.id
++        );
++    }
++
++    return ids;
+ }
+ 
+ 
+ bool FontRepository::contains(
+-    std::string_view name
++    std::uint16_t id
+ ) const {
++    const eld::archive::ArchiveFile* file =
++        archive_.find(id);
++
+     return
+-        archive_.contains(
+-            IndexFile
+-        ) &&
+-        archive_.contains(
+-            name
+-        );
++        file != nullptr &&
++        file->nameHash !=
++            eld::archive::hashName(IndexFile);
++}
++
++
++std::size_t FontRepository::count() const {
++    return listIds().size();
+ }
+ 
+ }
+diff --git a/src/assets/repositories/FontRepository.h b/src/assets/repositories/FontRepository.h
+index 6334e33..801477d 100644
+--- a/src/assets/repositories/FontRepository.h
++++ b/src/assets/repositories/FontRepository.h
+@@ -1,8 +1,10 @@
+ #pragma once
+ 
++#include <cstddef>
+ #include <cstdint>
+ #include <optional>
+ #include <string_view>
++#include <vector>
+ 
+ #include "Font.h"
+ #include "archive/Archive.h"
+@@ -13,27 +15,33 @@ namespace eld::font {
+ 
+ class FontRepository {
+ public:
+-    FontRepository(
+-        const eld::cache::Cache& cache,
+-        std::uint16_t archiveId
++    explicit FontRepository(
++        const eld::cache::Cache& cache
+     );
+ 
+     Font get(
+-        std::string_view name
++        std::uint16_t id
+     ) const;
+ 
+     std::optional<Font> find(
+-        std::string_view name
++        std::uint16_t id
+     ) const;
+ 
++    std::vector<std::uint16_t> listIds() const;
++
+     bool contains(
+-        std::string_view name
++        std::uint16_t id
+     ) const;
+ 
++    std::size_t count() const;
++
+ private:
+     static constexpr auto Index =
+         eld::cache::IndexId::Config;
+ 
++    static constexpr std::uint16_t ArchiveId =
++        1;
++
+     static constexpr std::string_view IndexFile =
+         "index.dat";
+ 
+diff --git a/src/assets/repositories/ImageRepository.cpp b/src/assets/repositories/ImageRepository.cpp
+index 89593ee..3898a40 100644
+--- a/src/assets/repositories/ImageRepository.cpp
++++ b/src/assets/repositories/ImageRepository.cpp
+@@ -60,4 +60,70 @@ bool ImageRepository::contains(
+     return archive_.contains(fileName);
+ }
+ 
++
++Image ImageRepository::get(
++    std::uint16_t id
++) const {
++    const eld::archive::ArchiveFile& file =
++        archive_.get(id);
++
++    try {
++        return decoder_.decode(
++            file.payload
++        );
++    }
++    catch (const std::exception& error) {
++        throw std::runtime_error(
++            "Failed to decode image " +
++            std::to_string(id) +
++            ": " +
++            error.what()
++        );
++    }
++}
++
++
++std::optional<Image> ImageRepository::find(
++    std::uint16_t id
++) const {
++    if (!contains(id)) {
++        return std::nullopt;
++    }
++
++    return get(id);
++}
++
++
++std::vector<std::uint16_t>
++ImageRepository::listIds() const {
++    std::vector<std::uint16_t> ids;
++
++    ids.reserve(
++        archive_.count()
++    );
++
++    for (
++        const eld::archive::ArchiveFile& file :
++        archive_.list()
++    ) {
++        ids.push_back(
++            file.id
++        );
++    }
++
++    return ids;
++}
++
++
++bool ImageRepository::contains(
++    std::uint16_t id
++) const {
++    return archive_.contains(id);
++}
++
++
++std::size_t ImageRepository::count() const {
++    return archive_.count();
++}
++
+ }
+diff --git a/src/assets/repositories/ImageRepository.h b/src/assets/repositories/ImageRepository.h
+index dfd3b6d..8c15f8c 100644
+--- a/src/assets/repositories/ImageRepository.h
++++ b/src/assets/repositories/ImageRepository.h
+@@ -1,8 +1,10 @@
+ #pragma once
+ 
++#include <cstddef>
+ #include <cstdint>
+ #include <optional>
+ #include <string_view>
++#include <vector>
+ 
+ #include "Image.h"
+ #include "archive/Archive.h"
+@@ -18,18 +20,34 @@ public:
+         std::uint16_t archiveId
+     );
+ 
++    Image get(
++        std::uint16_t id
++    ) const;
++
+     Image get(
+         std::string_view fileName
+     ) const;
+ 
++    std::optional<Image> find(
++        std::uint16_t id
++    ) const;
++
+     std::optional<Image> find(
+         std::string_view fileName
+     ) const;
+ 
++    std::vector<std::uint16_t> listIds() const;
++
++    bool contains(
++        std::uint16_t id
++    ) const;
++
+     bool contains(
+         std::string_view fileName
+     ) const;
+ 
++    std::size_t count() const;
++
+ private:
+     static constexpr auto Index =
+         eld::cache::IndexId::Config;
+diff --git a/src/assets/repositories/SpriteRepository.h b/src/assets/repositories/SpriteRepository.h
+index 6fd513e..4f86522 100644
+--- a/src/assets/repositories/SpriteRepository.h
++++ b/src/assets/repositories/SpriteRepository.h
+@@ -40,6 +40,8 @@ public:
+         std::uint16_t frameId = 0
+     ) const;
+ 
++    std::vector<std::uint16_t> listIds() const;
++
+     bool contains(
+         std::string_view groupName,
+         std::uint16_t frameId = 0
+@@ -66,6 +68,8 @@ public:
+         std::uint16_t fileId
+     ) const;
+ 
++    std::size_t count() const;
++
+ private:
+     static constexpr auto Index =
+         eld::cache::IndexId::Config;
+diff --git a/src/assets/repositories/WidgetRepository.cpp b/src/assets/repositories/WidgetRepository.cpp
+index 485b8f6..fed1a69 100644
+--- a/src/assets/repositories/WidgetRepository.cpp
++++ b/src/assets/repositories/WidgetRepository.cpp
+@@ -27,14 +27,13 @@ WidgetRepository::WidgetRepository(
+ }
+ 
+ 
+-const Widget&
+-WidgetRepository::get(
++Widget WidgetRepository::get(
+     std::uint16_t id
+ ) const {
+-    const Widget* widget =
++    const std::optional<Widget> widget =
+         find(id);
+ 
+-    if (widget == nullptr) {
++    if (!widget.has_value()) {
+         throw std::out_of_range(
+             "Interface widget does not exist"
+         );
+@@ -44,7 +43,7 @@ WidgetRepository::get(
+ }
+ 
+ 
+-const Widget*
++std::optional<Widget>
+ WidgetRepository::find(
+     std::uint16_t id
+ ) const {
+@@ -53,11 +52,11 @@ WidgetRepository::find(
+         widgets_
+     ) {
+         if (widget.id == id) {
+-            return &widget;
++            return widget;
+         }
+     }
+ 
+-    return nullptr;
++    return std::nullopt;
+ }
+ 
+ 
+diff --git a/src/assets/repositories/WidgetRepository.h b/src/assets/repositories/WidgetRepository.h
+index 99e076f..91dd11d 100644
+--- a/src/assets/repositories/WidgetRepository.h
++++ b/src/assets/repositories/WidgetRepository.h
+@@ -2,6 +2,7 @@
+ 
+ #include <cstddef>
+ #include <cstdint>
++#include <optional>
+ #include <string_view>
+ #include <vector>
+ 
+@@ -17,11 +18,11 @@ public:
+         const eld::cache::Cache& cache
+     );
+ 
+-    const Widget& get(
++    Widget get(
+         std::uint16_t id
+     ) const;
+ 
+-    const Widget* find(
++    std::optional<Widget> find(
+         std::uint16_t id
+     ) const;
+ 
