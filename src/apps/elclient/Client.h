@@ -13,6 +13,7 @@
 #include "world/Region.h"
 
 #include "world/World.h"
+#include "world/Pathfinder.h"
 #include "map/WorldStreamer.h"
 #include "host/sdl/SdlOpenGLContext.h"
 
@@ -110,6 +111,9 @@ private:
         modelSystem_;
 
     eld::world::World world_;
+
+    eld::world::Pathfinder
+        pathfinder_;
 
     eld::runtime::map::WorldStreamer
         worldStreamer_;

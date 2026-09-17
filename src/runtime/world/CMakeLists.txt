@@ -1,5 +1,6 @@
 add_library(eldoria_world STATIC
     Terrain.cpp
+    Pathfinder.cpp
     World.cpp
 )
 

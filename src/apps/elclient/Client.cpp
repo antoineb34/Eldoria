@@ -1,5 +1,4 @@
 #include <glad/gl.h>
-#include <queue>
 #include "Client.h"
 #include <exception>
 #include "render/camera/Projection.h"
@@ -3068,37 +3067,20 @@ void Client::walkPlayerTo(
             : player_.tile;
 
 
-    if (
-        source.plane !=
-        destination.plane
-    ) {
-        return;
-    }
-
-
-    if (
-        source.x == destination.x &&
-        source.y == destination.y
-    ) {
-        return;
-    }
-
-
-    const auto* sourceRegion =
-        world_.regionAt(
-            source
-        );
-
-    const auto* destinationRegion =
-        world_.regionAt(
+    const auto result =
+        pathfinder_.findPath(
+            world_,
+            source,
             destination
         );
 
 
-    if (
-        !sourceRegion ||
-        !destinationRegion
-    ) {
+    switch (result.status) {
+    case eld::world::PathStatus::Success:
+        break;
+
+
+    case eld::world::PathStatus::RegionMissing:
         std::cout
             << "path region missing | "
             << source.x
@@ -3111,20 +3093,10 @@ void Client::walkPlayerTo(
             << "\n";
 
         return;
-    }
 
 
-    // --------------------------------------------------------
-    // Recovery checkpoint:
-    //
-    // The known-good pathfinder operated on one 64x64 region.
-    // Don't cross region seams yet.
-    // --------------------------------------------------------
-
-    if (
-        sourceRegion !=
-        destinationRegion
-    ) {
+    case eld::world::PathStatus::
+        CrossRegionUnsupported:
         std::cout
             << "path crosses region seam | "
             << source.x
@@ -3137,469 +3109,9 @@ void Client::walkPlayerTo(
             << "\n";
 
         return;
-    }
 
 
-    const auto& terrain =
-        sourceRegion->terrain;
-
-    const auto origin =
-        terrain.origin();
-
-
-    const int width =
-        static_cast<int>(
-            terrain.width()
-        );
-
-    const int height =
-        static_cast<int>(
-            terrain.height()
-        );
-
-
-    if (
-        width <= 0 ||
-        height <= 0
-    ) {
-        return;
-    }
-
-
-    const int sourceX =
-        source.x -
-        origin.x;
-
-    const int sourceY =
-        source.y -
-        origin.y;
-
-    const int destinationX =
-        destination.x -
-        origin.x;
-
-    const int destinationY =
-        destination.y -
-        origin.y;
-
-
-    const auto inside =
-        [width, height](
-            int x,
-            int y
-        )
-        {
-            return
-                x >= 0 &&
-                y >= 0 &&
-                x < width &&
-                y < height;
-        };
-
-
-    if (
-        !inside(
-            sourceX,
-            sourceY
-        ) ||
-        !inside(
-            destinationX,
-            destinationY
-        )
-    ) {
-        return;
-    }
-
-
-    constexpr int DirectionCount =
-        8;
-
-    constexpr int StartDirection =
-        DirectionCount;
-
-    constexpr int DirectionStateCount =
-        DirectionCount + 1;
-
-
-    // Clockwise ordering.
-    //
-    // Ordering only breaks otherwise-identical ties;
-    // cost remains:
-    //
-    //     steps first
-    //     turns second
-    constexpr int directionX[
-        DirectionCount
-    ] = {
-         0,
-         1,
-         1,
-         1,
-         0,
-        -1,
-        -1,
-        -1
-    };
-
-    constexpr int directionY[
-        DirectionCount
-    ] = {
-         1,
-         1,
-         0,
-        -1,
-        -1,
-        -1,
-         0,
-         1
-    };
-
-
-    const auto tileIndex =
-        [width](
-            int localX,
-            int localY
-        )
-        {
-            return
-                localY *
-                    width +
-                localX;
-        };
-
-
-    const auto stateIndex =
-        [](
-            int tile,
-            int direction
-        )
-        {
-            return
-                tile *
-                    DirectionStateCount +
-                direction;
-        };
-
-
-    const int tileCount =
-        width *
-        height;
-
-    const int stateCount =
-        tileCount *
-        DirectionStateCount;
-
-
-    const int infinity =
-        std::numeric_limits<int>::max();
-
-
-    std::vector<int> bestSteps(
-        static_cast<std::size_t>(
-            stateCount
-        ),
-        infinity
-    );
-
-    std::vector<int> bestTurns(
-        static_cast<std::size_t>(
-            stateCount
-        ),
-        infinity
-    );
-
-    std::vector<int> parent(
-        static_cast<std::size_t>(
-            stateCount
-        ),
-        -1
-    );
-
-
-    struct SearchNode
-    {
-        int tile = 0;
-        int direction =
-            StartDirection;
-
-        int steps = 0;
-        int turns = 0;
-    };
-
-
-    struct CompareSearchNode
-    {
-        bool operator()(
-            const SearchNode& a,
-            const SearchNode& b
-        ) const
-        {
-            if (
-                a.steps !=
-                b.steps
-            ) {
-                return
-                    a.steps >
-                    b.steps;
-            }
-
-
-            if (
-                a.turns !=
-                b.turns
-            ) {
-                return
-                    a.turns >
-                    b.turns;
-            }
-
-
-            return
-                a.direction >
-                b.direction;
-        }
-    };
-
-
-    std::priority_queue<
-        SearchNode,
-        std::vector<SearchNode>,
-        CompareSearchNode
-    > open;
-
-
-    const int sourceTile =
-        tileIndex(
-            sourceX,
-            sourceY
-        );
-
-    const int destinationTile =
-        tileIndex(
-            destinationX,
-            destinationY
-        );
-
-
-    const int sourceState =
-        stateIndex(
-            sourceTile,
-            StartDirection
-        );
-
-
-    bestSteps[
-        sourceState
-    ] = 0;
-
-    bestTurns[
-        sourceState
-    ] = 0;
-
-
-    open.push({
-        sourceTile,
-        StartDirection,
-        0,
-        0
-    });
-
-
-    int finalState =
-        -1;
-
-
-    while (!open.empty()) {
-        const auto current =
-            open.top();
-
-        open.pop();
-
-
-        const int currentState =
-            stateIndex(
-                current.tile,
-                current.direction
-            );
-
-
-        if (
-            current.steps !=
-                bestSteps[
-                    currentState
-                ] ||
-            current.turns !=
-                bestTurns[
-                    currentState
-                ]
-        ) {
-            continue;
-        }
-
-
-        if (
-            current.tile ==
-            destinationTile
-        ) {
-            finalState =
-                currentState;
-
-            break;
-        }
-
-
-        const int currentLocalX =
-            current.tile %
-            width;
-
-        const int currentLocalY =
-            current.tile /
-            width;
-
-
-        const eld::world::TilePosition
-            currentPosition{
-                origin.x +
-                    currentLocalX,
-
-                origin.y +
-                    currentLocalY,
-
-                source.plane
-            };
-
-
-        for (
-            int direction = 0;
-            direction <
-                DirectionCount;
-            ++direction
-        ) {
-            const int nextLocalX =
-                currentLocalX +
-                directionX[
-                    direction
-                ];
-
-            const int nextLocalY =
-                currentLocalY +
-                directionY[
-                    direction
-                ];
-
-
-            if (
-                !inside(
-                    nextLocalX,
-                    nextLocalY
-                )
-            ) {
-                continue;
-            }
-
-
-            const eld::world::TilePosition
-                nextPosition{
-                    origin.x +
-                        nextLocalX,
-
-                    origin.y +
-                        nextLocalY,
-
-                    source.plane
-                };
-
-
-            if (
-                !world_.canMove(
-                    currentPosition,
-                    nextPosition
-                )
-            ) {
-                continue;
-            }
-
-
-            const int nextTile =
-                tileIndex(
-                    nextLocalX,
-                    nextLocalY
-                );
-
-            const int nextState =
-                stateIndex(
-                    nextTile,
-                    direction
-                );
-
-
-            const int nextSteps =
-                current.steps +
-                1;
-
-            int nextTurns =
-                current.turns;
-
-
-            if (
-                current.direction !=
-                    StartDirection &&
-                current.direction !=
-                    direction
-            ) {
-                ++nextTurns;
-            }
-
-
-            const bool better =
-                nextSteps <
-                    bestSteps[
-                        nextState
-                    ] ||
-                (
-                    nextSteps ==
-                        bestSteps[
-                            nextState
-                        ] &&
-                    nextTurns <
-                        bestTurns[
-                            nextState
-                        ]
-                );
-
-
-            if (!better) {
-                continue;
-            }
-
-
-            bestSteps[
-                nextState
-            ] =
-                nextSteps;
-
-            bestTurns[
-                nextState
-            ] =
-                nextTurns;
-
-            parent[
-                nextState
-            ] =
-                currentState;
-
-
-            open.push({
-                nextTile,
-                direction,
-                nextSteps,
-                nextTurns
-            });
-        }
-    }
-
-
-    if (finalState < 0) {
+    case eld::world::PathStatus::NotFound:
         std::cout
             << "path not found | "
             << source.x
@@ -3612,72 +3124,29 @@ void Client::walkPlayerTo(
             << "\n";
 
         return;
-    }
 
 
-    std::vector<
-        eld::world::TilePosition
-    > reversedPath;
+    case eld::world::PathStatus::
+        BrokenParentChain:
+        std::cout
+            << "broken path parent chain\n";
+
+        return;
 
 
-    int state =
-        finalState;
-
-
-    while (
-        state !=
-        sourceState
-    ) {
-        const int tile =
-            state /
-            DirectionStateCount;
-
-        const int localX =
-            tile %
-            width;
-
-        const int localY =
-            tile /
-            width;
-
-
-        reversedPath.push_back({
-            origin.x +
-                localX,
-
-            origin.y +
-                localY,
-
-            source.plane
-        });
-
-
-        state =
-            parent[
-                state
-            ];
-
-
-        if (state < 0) {
-            playerPath_.clear();
-
-            std::cout
-                << "broken path parent chain\n";
-
-            return;
-        }
+    case eld::world::PathStatus::SameTile:
+    case eld::world::PathStatus::PlaneMismatch:
+    case eld::world::PathStatus::InvalidRegion:
+        return;
     }
 
 
     for (
-        auto it =
-            reversedPath.rbegin();
-        it !=
-            reversedPath.rend();
-        ++it
+        const auto& tile :
+        result.tiles
     ) {
         playerPath_.push_back(
-            *it
+            tile
         );
     }
 
@@ -3692,13 +3161,9 @@ void Client::walkPlayerTo(
         << ","
         << destination.y
         << " steps="
-        << bestSteps[
-            finalState
-        ]
+        << result.steps
         << " turns="
-        << bestTurns[
-            finalState
-        ]
+        << result.turns
         << "\n";
 
 
@@ -3706,7 +3171,6 @@ void Client::walkPlayerTo(
         beginNextPlayerStep();
     }
 }
-
 
 void Client::beginNextPlayerStep()
 {
