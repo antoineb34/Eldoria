@@ -6,9 +6,13 @@ namespace eld::client {
 
 enum class FacingDirection {
     North,
+    NorthEast,
     East,
+    SouthEast,
     South,
-    West
+    SouthWest,
+    West,
+    NorthWest
 };
 
 

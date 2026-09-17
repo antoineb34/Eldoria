@@ -1175,6 +1175,15 @@ void Client::updatePlayerMovement(
         << ", plane "
         << player_.tile.plane
         << "\n";
+
+
+    // Continue queued click path after this tile finishes.
+    if (
+        !playerMoving_ &&
+        !playerPath_.empty()
+    ) {
+        beginNextPlayerStep();
+    }
 }
 
 
@@ -1822,6 +1831,11 @@ void Client::updateMouseSelection()
             selectTerrainTile(
                 *pickedTile
             );
+
+            walkPlayerTo(
+                *pickedTile
+            );
+
         }
         else {
             std::cout
@@ -1930,6 +1944,9 @@ void Client::syncPlayerRenderObject()
         );
 
 
+    constexpr float eighthTurn =
+        0.78539816339f;
+
     constexpr float quarterTurn =
         1.57079632679f;
 
@@ -1942,9 +1959,19 @@ void Client::syncPlayerRenderObject()
             halfTurn;
         break;
 
+    case FacingDirection::NorthEast:
+        object.transform.rotation.y =
+            halfTurn - eighthTurn;
+        break;
+
     case FacingDirection::East:
         object.transform.rotation.y =
-            halfTurn - quarterTurn;
+            quarterTurn;
+        break;
+
+    case FacingDirection::SouthEast:
+        object.transform.rotation.y =
+            eighthTurn;
         break;
 
     case FacingDirection::South:
@@ -1952,9 +1979,19 @@ void Client::syncPlayerRenderObject()
             0.0f;
         break;
 
+    case FacingDirection::SouthWest:
+        object.transform.rotation.y =
+            -eighthTurn;
+        break;
+
     case FacingDirection::West:
         object.transform.rotation.y =
             halfTurn + quarterTurn;
+        break;
+
+    case FacingDirection::NorthWest:
+        object.transform.rotation.y =
+            halfTurn + eighthTurn;
         break;
     }
 
@@ -1975,6 +2012,137 @@ void Client::syncPlayerRenderObject()
             ) + player_.local.y
         )
     };
+}
+
+
+void Client::walkPlayerTo(
+    const eld::world::TilePosition& destination
+)
+{
+    playerPath_.clear();
+
+
+    // If the player is already moving, start the new route
+    // from the tile that movement is committed to reaching.
+    auto current =
+        playerMoving_
+            ? playerMoveDestinationTile_
+            : player_.tile;
+
+
+    if (destination.plane != current.plane) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Temporary 8-direction path.
+    //
+    // Change both axes on the same step whenever possible.
+    // This gives the shortest path on an obstacle-free grid.
+    //
+    // Collision/pathfinding comes next.
+    // --------------------------------------------------------
+
+    while (
+        current.x != destination.x ||
+        current.y != destination.y
+    ) {
+        if (destination.x > current.x) {
+            ++current.x;
+        }
+        else if (destination.x < current.x) {
+            --current.x;
+        }
+
+
+        if (destination.y > current.y) {
+            ++current.y;
+        }
+        else if (destination.y < current.y) {
+            --current.y;
+        }
+
+
+        playerPath_.push_back(
+            current
+        );
+    }
+
+
+    std::cout
+        << "queued path | destination="
+        << destination.x
+        << ","
+        << destination.y
+        << " steps="
+        << playerPath_.size()
+        << "\n";
+
+
+    if (!playerMoving_) {
+        beginNextPlayerStep();
+    }
+}
+
+
+void Client::beginNextPlayerStep()
+{
+    if (
+        playerMoving_ ||
+        playerPath_.empty()
+    ) {
+        return;
+    }
+
+
+    const auto next =
+        playerPath_.front();
+
+    playerPath_.pop_front();
+
+
+    const int dx =
+        static_cast<int>(next.x) -
+        static_cast<int>(player_.tile.x);
+
+    const int dy =
+        static_cast<int>(next.y) -
+        static_cast<int>(player_.tile.y);
+
+
+    const bool adjacent =
+        dx >= -1 &&
+        dx <= 1 &&
+        dy >= -1 &&
+        dy <= 1 &&
+        !(
+            dx == 0 &&
+            dy == 0
+        );
+
+
+    if (!adjacent) {
+        std::cout
+            << "invalid queued step | player="
+            << player_.tile.x
+            << ","
+            << player_.tile.y
+            << " next="
+            << next.x
+            << ","
+            << next.y
+            << "\n";
+
+        playerPath_.clear();
+        return;
+    }
+
+
+    movePlayer(
+        dx,
+        dy
+    );
 }
 
 
@@ -2035,7 +2203,35 @@ void Client::movePlayer(
         );
 
 
-    if (dx > 0) {
+    if (
+        dx > 0 &&
+        dy > 0
+    ) {
+        player_.facing =
+            FacingDirection::NorthEast;
+    }
+    else if (
+        dx > 0 &&
+        dy < 0
+    ) {
+        player_.facing =
+            FacingDirection::SouthEast;
+    }
+    else if (
+        dx < 0 &&
+        dy > 0
+    ) {
+        player_.facing =
+            FacingDirection::NorthWest;
+    }
+    else if (
+        dx < 0 &&
+        dy < 0
+    ) {
+        player_.facing =
+            FacingDirection::SouthWest;
+    }
+    else if (dx > 0) {
         player_.facing =
             FacingDirection::East;
     }

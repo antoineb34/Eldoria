@@ -1,5 +1,7 @@
 #pragma once
 
+#include <deque>
+
 #include <cstddef>
 #include <optional>
 #include <vector>
@@ -32,6 +34,12 @@ private:
     void buildWorld();
     void spawnPlayer();
     void movePlayer(int dx, int dy);
+
+    void walkPlayerTo(
+        const eld::world::TilePosition& destination
+    );
+
+    void beginNextPlayerStep();
     void syncPlayerRenderObject();
 
     void syncCameraToPlayer();
@@ -113,6 +121,7 @@ private:
         playerWalkAnimationGroundOffsets_;
 
     bool playerWalking_ = false;
+    std::deque<eld::world::TilePosition> playerPath_;
     bool playerMoving_ = false;
 
     eld::world::TilePosition
