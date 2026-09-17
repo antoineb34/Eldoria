@@ -1,8 +1,6 @@
 #include <glad/gl.h>
 #include <queue>
 #include "Client.h"
-#include "map/RegionProvider.h"
-#include <exception>
 #include <exception>
 #include "render/camera/Projection.h"
 #include "render/animation/ModelAnimator.h"
@@ -23,13 +21,13 @@
 #include <iomanip>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 #include "assets/AssetManager.h"
 
 #include "map/TerrainBuilder.h"
-#include "map/RegionBuilder.h"
 #include "texture/TextureSystem.h"
 
 #include "host/sdl/SdlOpenGLContext.h"
@@ -159,6 +157,10 @@ buildPlayerMarkerModel()
 
 constexpr float PlayerModelScale =
     1.0f / 128.0f;
+
+
+constexpr std::uint16_t InitialRegionId =
+    12850;
 
 
 float playerGroundOffset(
@@ -358,6 +360,11 @@ Client::Client()
           textureSystem_,
           modelManager_
       ),
+      worldStreamer_(
+          world_,
+          assets_.maps,
+          assets_.locations
+      ),
       renderer_(
           modelManager_,
           textureManager_
@@ -368,189 +375,296 @@ Client::Client()
 
 void Client::buildWorld()
 {
-
-
-
-
     scene_.objects.clear();
 
-// ========================================================
-// === SINGLE REGION ===
-// ========================================================
+    // --------------------------------------------------------
+    // Runtime world ownership
+    // --------------------------------------------------------
 
-constexpr std::uint16_t regionId =
-    12850;
-
-
-
-eld::runtime::map::RegionBuilder
-    regionBuilder;
+    world_ =
+        eld::world::World{};
 
 
-region_.emplace(
-    regionBuilder.build(
-        regionId,
-        assets_.maps,
-        assets_.locations
-    )
-);
-
-const auto& worldRegion =
-    *region_;
+    const auto centerCoord =
+        eld::world::World::
+            regionCoordFromId(
+                InitialRegionId
+            );
 
 
-eld::graphics::TerrainBuilder
-    terrainBuilder;
+    const eld::world::TilePosition
+        initialPlayerTile{
+            centerCoord.x *
+                eld::world::World::RegionSize +
+                32,
 
-auto terrainModel =
-    terrainBuilder.build(
-        worldRegion.terrain,
-        0,
-        assets_.floors,
-        textureSystem_
-    );
+            centerCoord.y *
+                eld::world::World::RegionSize +
+                32,
 
-const eld::render::ModelHandle
-    terrainHandle =
-        modelManager_.create(
-            std::move(
-                terrainModel
-            )
+            0
+        };
+
+
+    const auto initialStreaming =
+        worldStreamer_.update(
+            initialPlayerTile
         );
 
-scene_.camera.position = {
-    31.5f,
-    25.0f,
-    85.0f
-};
 
-scene_.camera.rotation = {
-    -0.45f,
-    0.0f,
-    0.0f
-};
-
-scene_.camera.viewportWidth =
-    1000;
-
-scene_.camera.viewportHeight =
-    700;
-
-scene_.objects.push_back({
-    terrainHandle,
-    {},
-    true
-});
+    for (
+        const auto& failure :
+        initialStreaming.failures
+    ) {
+        std::cout
+            << "world load failed | region="
+            << failure.regionId
+            << " | "
+            << failure.message
+            << "\n";
+    }
 
 
-// ========================================================
-// === REGION LOCATIONS ===
-// ========================================================
-
-eld::graphics::LocationBuilder
-    locationBuilder;
-
-
-auto locationBuild =
-    locationBuilder.build(
-        worldRegion,
-        0,
-        assets_.locations,
-        assets_.models,
-        modelSystem_
-    );
-
-
-eld::graphics::LocationBatchBuilder
-    locationBatchBuilder;
-
-auto locationBatchBuild =
-    locationBatchBuilder.build(
-        locationBuild.objects,
-        modelManager_
-    );
-
-
-for (
-    auto& batch :
-    locationBatchBuild.batches
-) {
-    const auto handle =
-        modelManager_.create(
-            std::move(batch)
+    const auto* centerRegion =
+        world_.region(
+            InitialRegionId
         );
 
-    scene_.objects.push_back({
-        handle,
-        {},
-        true
-    });
-}
+
+    if (!centerRegion) {
+        throw std::runtime_error(
+            "Initial region 12850 failed to load"
+        );
+    }
 
 
-scene_.objects.insert(
-    scene_.objects.end(),
-    locationBatchBuild
-        .passthroughObjects.begin(),
-    locationBatchBuild
-        .passthroughObjects.end()
-);
+    sceneOrigin_ =
+        centerRegion
+            ->terrain
+            .origin();
 
 
-spawnPlayer();
+    // --------------------------------------------------------
+    // Camera
+    // --------------------------------------------------------
+
+    scene_.camera.position = {
+        31.5f,
+        25.0f,
+        85.0f
+    };
+
+    scene_.camera.rotation = {
+        -0.45f,
+        0.0f,
+        0.0f
+    };
+
+    scene_.camera.viewportWidth =
+        1000;
+
+    scene_.camera.viewportHeight =
+        700;
 
 
-std::cout
-    << "\n=== LOCATION BUILD ===\n"
-    << "locations         = "
-    << locationBuild.locations
-    << "\n"
-    << "render objects    = "
-    << locationBuild.objects.size()
-    << "\n"
-    << "model variants    = "
-    << locationBuild.modelVariants
-    << "\n"
-    << "camera-dependent  = "
-    << locationBuild.cameraDependent.size()
-    << "\n"
-    << "missing defs      = "
-    << locationBuild.missingDefinitions
-    << "\n"
-    << "missing models    = "
-    << locationBuild.missingModels
-    << "\n\n";
-
-
-std::cout
-    << "=== LOCATION BATCH BUILD ===\n"
-    << "source objects     = "
-    << locationBatchBuild.sourceObjects
-    << "\n"
-    << "batched objects    = "
-    << locationBatchBuild.batchedObjects
-    << "\n"
-    << "passthrough        = "
-    << locationBatchBuild
-        .passthroughObjects.size()
-    << "\n"
-    << "chunk models       = "
-    << locationBatchBuild.batches.size()
-    << "\n"
-    << "batch sections     = "
-    << locationBatchBuild.batchSections
-    << "\n\n";
-
-
-
-
-    // Load the eight surrounding map squares.
+    // --------------------------------------------------------
+    // Graphics builders
     //
-    // Gameplay/picking/pathfinding still use region_ for now.
-    // This checkpoint only proves continuous world rendering.
-    buildNeighborRegions();
-}
+    // These consume Regions owned by World.
+    // They do not own runtime map state.
+    // --------------------------------------------------------
 
+    eld::graphics::TerrainBuilder
+        terrainBuilder;
+
+    eld::graphics::LocationBuilder
+        locationBuilder;
+
+    eld::graphics::LocationBatchBuilder
+        locationBatchBuilder;
+
+
+    std::cout
+        << "\n=== WORLD SCENE BUILD ===\n";
+
+
+    for (
+        const auto id :
+        world_.loadedRegionIds()
+    ) {
+        const auto* region =
+            world_.region(
+                id
+            );
+
+
+        if (!region) {
+            continue;
+        }
+
+
+        const auto& origin =
+            region
+                ->terrain
+                .origin();
+
+
+        const float sceneOffsetX =
+            static_cast<float>(
+                origin.x -
+                sceneOrigin_.x
+            );
+
+        const float sceneOffsetZ =
+            -static_cast<float>(
+                origin.y -
+                sceneOrigin_.y
+            );
+
+
+        // ----------------------------------------------------
+        // Terrain
+        // ----------------------------------------------------
+
+        auto terrainModel =
+            terrainBuilder.build(
+                region->terrain,
+                0,
+                assets_.floors,
+                textureSystem_
+            );
+
+
+        const auto terrainHandle =
+            modelManager_.create(
+                std::move(
+                    terrainModel
+                )
+            );
+
+
+        eld::render::RenderObject
+            terrainObject;
+
+        terrainObject.model =
+            terrainHandle;
+
+        terrainObject.transform.position = {
+            sceneOffsetX,
+            0.0f,
+            sceneOffsetZ
+        };
+
+        terrainObject.visible =
+            true;
+
+
+        scene_.objects.push_back(
+            terrainObject
+        );
+
+
+        // ----------------------------------------------------
+        // Locations
+        // ----------------------------------------------------
+
+        auto locationBuild =
+            locationBuilder.build(
+                *region,
+                0,
+                assets_.locations,
+                assets_.models,
+                modelSystem_
+            );
+
+
+        auto locationBatchBuild =
+            locationBatchBuilder.build(
+                locationBuild.objects,
+                modelManager_
+            );
+
+
+        for (
+            auto& batch :
+            locationBatchBuild.batches
+        ) {
+            const auto handle =
+                modelManager_.create(
+                    std::move(
+                        batch
+                    )
+                );
+
+
+            eld::render::RenderObject
+                object;
+
+            object.model =
+                handle;
+
+            object.transform.position = {
+                sceneOffsetX,
+                0.0f,
+                sceneOffsetZ
+            };
+
+            object.visible =
+                true;
+
+
+            scene_.objects.push_back(
+                object
+            );
+        }
+
+
+        for (
+            auto object :
+            locationBatchBuild
+                .passthroughObjects
+        ) {
+            object.transform.position.x +=
+                sceneOffsetX;
+
+            object.transform.position.z +=
+                sceneOffsetZ;
+
+
+            scene_.objects.push_back(
+                std::move(
+                    object
+                )
+            );
+        }
+
+
+        std::cout
+            << "region "
+            << id
+            << " | origin="
+            << origin.x
+            << ","
+            << origin.y
+            << " | offset="
+            << sceneOffsetX
+            << ","
+            << sceneOffsetZ
+            << " | locations="
+            << region->locations.size()
+            << "\n";
+    }
+
+
+    std::cout
+        << "world regions = "
+        << world_.loadedRegionCount()
+        << "\n"
+        << "=========================\n\n";
+
+
+    spawnPlayer();
+}
 
 void Client::processEvents(
     bool& running
@@ -1282,8 +1396,13 @@ Client::pickTerrainTile(
     float mouseY
 ) const
 {
+    const auto* pickRegion =
+        world_.region(
+            InitialRegionId
+        );
+
     if (
-        !region_.has_value() ||
+        !pickRegion ||
         scene_.camera.viewportWidth == 0 ||
         scene_.camera.viewportHeight == 0
     ) {
@@ -1432,7 +1551,7 @@ Client::pickTerrainTile(
 
 
     const auto& sceneOrigin =
-        region_->terrain.origin();
+        sceneOrigin_;
 
 
     const auto testTerrain =
@@ -1615,7 +1734,7 @@ Client::pickTerrainTile(
 
 
     testTerrain(
-        region_->terrain
+        pickRegion->terrain
     );
 
 
@@ -1629,29 +1748,26 @@ Client::pickTerrainTile(
 }
 
 
-std::optional<std::size_t>
+const eld::world::Location*
 Client::findInteractableLocationAt(
     const eld::world::TilePosition& tile
 ) const
 {
-    if (!region_.has_value()) {
-        return std::nullopt;
+    const auto* owner =
+        world_.regionAt(
+            tile
+        );
+
+
+    if (!owner) {
+        return nullptr;
     }
 
 
-    const auto& locations =
-        region_->locations;
-
-
     for (
-        std::size_t index = 0;
-        index < locations.size();
-        ++index
+        const auto& location :
+        owner->locations
     ) {
-        const auto& location =
-            locations[index];
-
-
         if (
             !location.interactable ||
             location.tile.plane !=
@@ -1682,28 +1798,31 @@ Client::findInteractableLocationAt(
             tile.y >= minY &&
             tile.y < maxY
         ) {
-            return index;
+            return &location;
         }
     }
 
 
-    return std::nullopt;
+    return nullptr;
 }
-
-
 
 void Client::selectTerrainTile(
     const eld::world::TilePosition& tile,
     bool interactable
 )
 {
-    if (!region_.has_value()) {
+    auto* owner =
+        world_.regionAt(
+            tile
+        );
+
+    if (!owner) {
         return;
     }
 
 
     auto& terrain =
-        region_->terrain;
+        owner->terrain;
 
 
     const eld::world::TerrainLayerPosition
@@ -1889,7 +2008,7 @@ void Client::selectTerrainTile(
 
 
     const auto& origin =
-        terrain.origin();
+        sceneOrigin_;
 
 
     object.transform.position = {
@@ -2621,15 +2740,13 @@ void Client::updateMouseSelection()
             );
 
 
-        hoveredLocationIndex_ =
-            std::nullopt;
+        const eld::world::Location*
+            pickedLocation =
+                nullptr;
 
 
-        // Existing object lookup still targets the original
-        // center region for now. Ground movement across all
-        // loaded regions works in this checkpoint.
         if (pickedTile.has_value()) {
-            hoveredLocationIndex_ =
+            pickedLocation =
                 findInteractableLocationAt(
                     *pickedTile
                 );
@@ -2645,8 +2762,8 @@ void Client::updateMouseSelection()
                 true;
 
             clickCrossRed_ =
-                hoveredLocationIndex_
-                    .has_value();
+                pickedLocation !=
+                nullptr;
 
             clickCrossX_ =
                 mouseX;
@@ -2660,26 +2777,17 @@ void Client::updateMouseSelection()
                 );
 
 
-            if (
-                hoveredLocationIndex_
-                    .has_value()
-            ) {
-                const auto& location =
-                    region_->locations[
-                        *hoveredLocationIndex_
-                    ];
-
-
+            if (pickedLocation) {
                 std::cout
                     << "clicked location = "
-                    << location.id
+                    << pickedLocation->id
                     << " | tile="
-                    << location.tile.x
+                    << pickedLocation->tile.x
                     << ","
-                    << location.tile.y
+                    << pickedLocation->tile.y
                     << " | shape="
                     << static_cast<int>(
-                        location.shape
+                        pickedLocation->shape
                     )
                     << "\n";
             }
@@ -2705,7 +2813,6 @@ void Client::updateMouseSelection()
     leftMouseWasDown_ =
         leftMouseDown;
 }
-
 
 void Client::syncCameraToPlayer()
 {
@@ -2795,7 +2902,6 @@ void Client::syncCameraToPlayer()
 void Client::syncPlayerRenderObject()
 {
     if (
-        !region_.has_value() ||
         !playerObjectIndex_.has_value()
     ) {
         return;
@@ -2863,7 +2969,7 @@ void Client::syncPlayerRenderObject()
     // same scene coordinate system even after crossing into
     // another region.
     const auto& sceneOrigin =
-        region_->terrain.origin();
+        sceneOrigin_;
 
 
     auto& object =
@@ -3005,146 +3111,6 @@ void Client::walkPlayerTo(
             << "\n";
 
         return;
-    }
-
-
-    // COLLISION SOURCE PROBE
-    {
-        constexpr int ProbeDirectionCount =
-            8;
-
-        constexpr int probeDx[
-            ProbeDirectionCount
-        ] = {
-             1,
-            -1,
-             0,
-             0,
-             1,
-             1,
-            -1,
-            -1
-        };
-
-        constexpr int probeDy[
-            ProbeDirectionCount
-        ] = {
-             0,
-             0,
-             1,
-            -1,
-             1,
-            -1,
-             1,
-            -1
-        };
-
-
-        std::cout
-            << "=== COLLISION PROBE ===\n"
-            << "source = "
-            << source.x
-            << ","
-            << source.y
-            << ", plane "
-            << source.plane
-            << "\n"
-            << "world region = "
-            << sourceRegion->id
-            << "\n";
-
-
-        if (region_.has_value()) {
-            std::cout
-                << "legacy region = "
-                << region_->id
-                << "\n";
-        }
-        else {
-            std::cout
-                << "legacy region = none\n";
-        }
-
-
-        for (
-            int i = 0;
-            i < ProbeDirectionCount;
-            ++i
-        ) {
-            const eld::world::TilePosition next{
-                source.x +
-                    probeDx[i],
-
-                source.y +
-                    probeDy[i],
-
-                source.plane
-            };
-
-
-            const bool worldMove =
-                world_.canMove(
-                    source,
-                    next
-                );
-
-
-            const bool worldBlocked =
-                sourceRegion
-                    ->collision
-                    .blocked(
-                        next
-                    );
-
-
-            bool legacyMove =
-                false;
-
-            bool legacyBlocked =
-                true;
-
-
-            if (region_.has_value()) {
-                legacyMove =
-                    region_
-                        ->collision
-                        .canMove(
-                            source,
-                            next
-                        );
-
-                legacyBlocked =
-                    region_
-                        ->collision
-                        .blocked(
-                            next
-                        );
-            }
-
-
-            std::cout
-                << "step "
-                << probeDx[i]
-                << ","
-                << probeDy[i]
-                << " -> "
-                << next.x
-                << ","
-                << next.y
-                << " | legacy move="
-                << legacyMove
-                << " blocked="
-                << legacyBlocked
-                << " | world move="
-                << worldMove
-                << " blocked="
-                << worldBlocked
-                << "\n";
-        }
-
-
-        std::cout
-            << "=======================\n";
     }
 
 
@@ -3996,305 +3962,19 @@ bool Client::canMoveWorld(
 
 
 
-void Client::buildNeighborRegions()
-{
-    if (!region_.has_value()) {
-        return;
-    }
-
-
-    loadedRegions_.clear();
-    loadedRegions_.reserve(
-        8
-    );
-
-
-    const auto& centerOrigin =
-        region_->terrain.origin();
-
-
-    const int centerRegionX =
-        static_cast<int>(
-            region_->id >> 8
-        );
-
-    const int centerRegionY =
-        static_cast<int>(
-            region_->id &
-            0xFFu
-        );
-
-
-    eld::runtime::map::RegionBuilder
-        regionBuilder;
-
-    eld::graphics::TerrainBuilder
-        terrainBuilder;
-
-    eld::graphics::LocationBuilder
-        locationBuilder;
-
-    eld::graphics::LocationBatchBuilder
-        locationBatchBuilder;
-
-
-    std::cout
-        << "\n=== NEIGHBOR REGIONS ===\n";
-
-
-    for (
-        int regionOffsetX = -1;
-        regionOffsetX <= 1;
-        ++regionOffsetX
-    ) {
-        for (
-            int regionOffsetY = -1;
-            regionOffsetY <= 1;
-            ++regionOffsetY
-        ) {
-            if (
-                regionOffsetX == 0 &&
-                regionOffsetY == 0
-            ) {
-                continue;
-            }
-
-
-            const int regionX =
-                centerRegionX +
-                regionOffsetX;
-
-            const int regionY =
-                centerRegionY +
-                regionOffsetY;
-
-
-            if (
-                regionX < 0 ||
-                regionX > 255 ||
-                regionY < 0 ||
-                regionY > 255
-            ) {
-                continue;
-            }
-
-
-            const auto regionId =
-                static_cast<std::uint16_t>(
-                    (
-                        regionX <<
-                        8
-                    ) |
-                    regionY
-                );
-
-
-            try {
-                auto neighbor =
-                    regionBuilder.build(
-                        regionId,
-                        assets_.maps,
-                        assets_.locations
-                    );
-
-
-                const auto& origin =
-                    neighbor.terrain.origin();
-
-
-                const float sceneOffsetX =
-                    static_cast<float>(
-                        origin.x -
-                        centerOrigin.x
-                    );
-
-                const float sceneOffsetZ =
-                    -static_cast<float>(
-                        origin.y -
-                        centerOrigin.y
-                    );
-
-
-                // ============================================
-                // Terrain
-                // ============================================
-
-                auto terrainModel =
-                    terrainBuilder.build(
-                        neighbor.terrain,
-                        0,
-                        assets_.floors,
-                        textureSystem_
-                    );
-
-
-                const auto terrainHandle =
-                    modelManager_.create(
-                        std::move(
-                            terrainModel
-                        )
-                    );
-
-
-                eld::render::RenderObject
-                    terrainObject;
-
-                terrainObject.model =
-                    terrainHandle;
-
-                terrainObject.transform.position = {
-                    sceneOffsetX,
-                    0.0f,
-                    sceneOffsetZ
-                };
-
-                terrainObject.visible =
-                    true;
-
-
-                scene_.objects.push_back(
-                    terrainObject
-                );
-
-
-                // ============================================
-                // Locations
-                // ============================================
-
-                auto locationBuild =
-                    locationBuilder.build(
-                        neighbor,
-                        0,
-                        assets_.locations,
-                        assets_.models,
-                        modelSystem_
-                    );
-
-
-                auto locationBatchBuild =
-                    locationBatchBuilder.build(
-                        locationBuild.objects,
-                        modelManager_
-                    );
-
-
-                // Batched models already contain their
-                // region-local transforms baked into the
-                // vertices, so move the whole batch into its
-                // neighboring region position.
-                for (
-                    auto& batch :
-                    locationBatchBuild.batches
-                ) {
-                    const auto handle =
-                        modelManager_.create(
-                            std::move(
-                                batch
-                            )
-                        );
-
-
-                    eld::render::RenderObject
-                        object;
-
-                    object.model =
-                        handle;
-
-                    object.transform.position = {
-                        sceneOffsetX,
-                        0.0f,
-                        sceneOffsetZ
-                    };
-
-                    object.visible =
-                        true;
-
-
-                    scene_.objects.push_back(
-                        object
-                    );
-                }
-
-
-                // Alpha-blended / passthrough objects still
-                // retain their individual local transforms.
-                for (
-                    auto object :
-                    locationBatchBuild
-                        .passthroughObjects
-                ) {
-                    object.transform.position.x +=
-                        sceneOffsetX;
-
-                    object.transform.position.z +=
-                        sceneOffsetZ;
-
-
-                    scene_.objects.push_back(
-                        std::move(
-                            object
-                        )
-                    );
-                }
-
-
-                std::cout
-                    << "region "
-                    << regionId
-                    << " | grid="
-                    << regionX
-                    << ","
-                    << regionY
-                    << " | origin="
-                    << origin.x
-                    << ","
-                    << origin.y
-                    << " | offset="
-                    << sceneOffsetX
-                    << ","
-                    << sceneOffsetZ
-                    << " | locations="
-                    << neighbor.locations.size()
-                    << "\n";
-
-
-                loadedRegions_.push_back(
-                    std::move(
-                        neighbor
-                    )
-                );
-            }
-            catch (
-                const std::exception& error
-            ) {
-                std::cout
-                    << "region "
-                    << regionId
-                    << " skipped: "
-                    << error.what()
-                    << "\n";
-            }
-        }
-    }
-
-
-    std::cout
-        << "neighbor regions loaded = "
-        << loadedRegions_.size()
-        << "\n"
-        << "========================\n\n";
-}
-
-
-
 void Client::spawnPlayer()
 {
-    if (!region_.has_value()) {
+    const auto* spawnRegion =
+        world_.region(
+            InitialRegionId
+        );
+
+    if (!spawnRegion) {
         return;
     }
 
-    auto& terrain =
-        region_->terrain;
+    const auto& terrain =
+        spawnRegion->terrain;
 
 
     // Middle-ish of the loaded 64x64 region.
@@ -4346,7 +4026,7 @@ void Client::spawnPlayer()
 
 
     const auto& origin =
-        terrain.origin();
+        sceneOrigin_;
 
 
     PlayerAppearanceBuilder
@@ -4632,98 +4312,69 @@ int Client::run()
             dt
         );
 
-        // WORLD STREAMING
-        {
-            const auto streaming =
-                world_.updateStreaming(
-                    player_.tile
-                );
+        const auto streaming =
+            worldStreamer_.update(
+                player_.tile
+            );
 
 
-            eld::runtime::map::RegionProvider
-                provider(
-                    assets_.maps,
-                    assets_.locations
-                );
+        for (
+            const auto& failure :
+            streaming.failures
+        ) {
+            std::cout
+                << "world load failed | region="
+                << failure.regionId
+                << " | "
+                << failure.message
+                << "\n";
+        }
 
 
-            // Load first.
-            //
-            // This ensures the new streaming window exists
-            // before old regions are discarded.
+        if (
+            streaming.plan.centerChanged ||
+            !streaming.loaded.empty() ||
+            !streaming.unloaded.empty() ||
+            !streaming.failures.empty()
+        ) {
             for (
                 const auto id :
-                streaming.toLoad
-            ) {
-                try {
-                    world_.insertRegion(
-                        provider.load(
-                            id
-                        )
-                    );
-
-
-                    std::cout
-                        << "world load | region="
-                        << id
-                        << "\n";
-                }
-                catch (
-                    const std::exception& error
-                ) {
-                    std::cout
-                        << "world load failed | region="
-                        << id
-                        << " | "
-                        << error.what()
-                        << "\n";
-                }
-            }
-
-
-            // Runtime-world unload only.
-            //
-            // Rendering is still separate for this checkpoint.
-            for (
-                const auto id :
-                streaming.toUnload
-            ) {
-                if (
-                    world_.unloadRegion(
-                        id
-                    )
-                ) {
-                    std::cout
-                        << "world unload | region="
-                        << id
-                        << "\n";
-                }
-            }
-
-
-            if (
-                streaming.centerChanged ||
-                !streaming.toLoad.empty() ||
-                !streaming.toUnload.empty()
+                streaming.loaded
             ) {
                 std::cout
-                    << "=== WORLD STREAM ===\n"
-                    << "player tile   = "
-                    << player_.tile.x
-                    << ","
-                    << player_.tile.y
-                    << "\n"
-                    << "center region = "
-                    << streaming.center.x
-                    << ","
-                    << streaming.center.y
-                    << "\n"
-                    << "world regions = "
-                    << world_
-                        .loadedRegionCount()
-                    << "\n"
-                    << "====================\n";
+                    << "world load | region="
+                    << id
+                    << "\n";
             }
+
+
+            for (
+                const auto id :
+                streaming.unloaded
+            ) {
+                std::cout
+                    << "world unload | region="
+                    << id
+                    << "\n";
+            }
+
+
+            std::cout
+                << "=== WORLD STREAM ===\n"
+                << "player tile   = "
+                << player_.tile.x
+                << ","
+                << player_.tile.y
+                << "\n"
+                << "center region = "
+                << streaming.plan.center.x
+                << ","
+                << streaming.plan.center.y
+                << "\n"
+                << "world regions = "
+                << world_.loadedRegionCount()
+                << "\n"
+                << "====================\n";
         }
 
 

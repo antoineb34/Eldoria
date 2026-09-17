@@ -13,6 +13,7 @@
 #include "world/Region.h"
 
 #include "world/World.h"
+#include "map/WorldStreamer.h"
 #include "host/sdl/SdlOpenGLContext.h"
 
 #include "model/ModelSystem.h"
@@ -34,7 +35,6 @@ public:
 
 private:
     void buildWorld();
-    void buildNeighborRegions();
 
     const eld::world::Region* regionAt(
         int worldX,
@@ -62,11 +62,11 @@ private:
         float mouseX,
         float mouseY
     ) const;
-
-    std::optional<std::size_t>
+    const eld::world::Location*
     findInteractableLocationAt(
         const eld::world::TilePosition& tile
     ) const;
+
 
     void selectTerrainTile(
         const eld::world::TilePosition& tile,
@@ -111,13 +111,14 @@ private:
 
     eld::world::World world_;
 
-    std::optional<eld::world::Region>
-        region_;
+    eld::runtime::map::WorldStreamer
+        worldStreamer_;
 
-    // Neighboring regions currently loaded around the
-    // gameplay/center region.
-    std::vector<eld::world::Region>
-        loadedRegions_;
+    // Render-space origin for the currently displayed world.
+    //
+    // Runtime Region ownership belongs exclusively to World.
+    eld::world::TerrainOrigin
+        sceneOrigin_{};
 
     Player
         player_;
@@ -168,8 +169,6 @@ private:
     std::optional<eld::render::ModelHandle>
         selectedTileModel_;
 
-    std::optional<std::size_t>
-        hoveredLocationIndex_;
 
     bool selectedTileInteractable_ =
         false;

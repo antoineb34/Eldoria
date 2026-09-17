@@ -1,6 +1,7 @@
 add_library(eldoria_runtime_map STATIC
     RegionBuilder.cpp
     RegionProvider.cpp
+    WorldStreamer.cpp
 )
 
 add_library(
