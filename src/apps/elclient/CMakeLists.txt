@@ -1,5 +1,6 @@
 add_executable(elclient
     main.cpp
+    Client.cpp
 )
 
 target_include_directories(elclient PRIVATE
