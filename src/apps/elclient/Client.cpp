@@ -1,4 +1,6 @@
 #include "Client.h"
+#include "render/animation/ModelAnimator.h"
+#include "PlayerAppearanceBuilder.h"
 
 #include "map/LocationBuilder.h"
 #include "map/LocationBatchBuilder.h"
@@ -13,6 +15,7 @@
 #include <chrono>
 #include <cmath>
 #include <iomanip>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -146,6 +149,190 @@ buildPlayerMarkerModel()
 
     return model;
 }
+
+
+constexpr float PlayerModelScale =
+    1.0f / 128.0f;
+
+
+float playerGroundOffset(
+    const eld::model::ModelData& model
+)
+{
+    if (model.vertices.empty()) {
+        return 0.0f;
+    }
+
+
+    // ModelBuilder converts source coordinates:
+    //
+    //     source Y -> render -Y
+    //
+    // and the player is scaled by 1/128.
+    //
+    // Find the lowest point of the rendered model before
+    // translation, then move the model upward by exactly
+    // enough to put that point at terrain height.
+
+    float lowestRenderedY =
+        -model.vertices.front().y *
+        PlayerModelScale;
+
+
+    for (
+        const auto& vertex :
+        model.vertices
+    ) {
+        const float renderedY =
+            -vertex.y *
+            PlayerModelScale;
+
+        lowestRenderedY =
+            std::min(
+                lowestRenderedY,
+                renderedY
+            );
+    }
+
+
+    return -lowestRenderedY;
+}
+
+
+float playerSupportHeight(
+    const eld::world::Terrain& terrain,
+    const eld::world::TilePosition& tile,
+    const eld::world::TileLocalPosition& local,
+    int sourcePlane
+)
+{
+    // Approximate where the player's feet/body footprint
+    // touches the terrain.
+    //
+    // One tile = 1 world unit.
+    constexpr float radius =
+        0.18f;
+
+
+    const float worldX =
+        static_cast<float>(tile.x) +
+        local.x;
+
+    const float worldY =
+        static_cast<float>(tile.y) +
+        local.y;
+
+
+    constexpr std::array<
+        std::array<float, 2>,
+        5
+    > offsets{{
+        { 0.0f,    0.0f    },
+
+        {-radius, -radius   },
+        { radius, -radius   },
+        { radius,  radius   },
+        {-radius,  radius   }
+    }};
+
+
+    float highest =
+        -std::numeric_limits<float>::infinity();
+
+    bool found =
+        false;
+
+
+    for (
+        const auto& offset :
+        offsets
+    ) {
+        const float sampleX =
+            worldX +
+            offset[0];
+
+        const float sampleY =
+            worldY +
+            offset[1];
+
+
+        const int tileX =
+            static_cast<int>(
+                std::floor(sampleX)
+            );
+
+        const int tileY =
+            static_cast<int>(
+                std::floor(sampleY)
+            );
+
+
+        const eld::world::TerrainLayerPosition
+            position{
+                tileX,
+                tileY,
+                sourcePlane
+            };
+
+
+        if (
+            !terrain.contains(
+                position
+            )
+        ) {
+            continue;
+        }
+
+
+        const eld::world::TileLocalPosition
+            sampleLocal{
+                sampleX -
+                    static_cast<float>(
+                        tileX
+                    ),
+
+                sampleY -
+                    static_cast<float>(
+                        tileY
+                    )
+            };
+
+
+        highest =
+            std::max(
+                highest,
+                terrain.heightAt(
+                    position,
+                    sampleLocal
+                )
+            );
+
+        found =
+            true;
+    }
+
+
+    if (found) {
+        return highest;
+    }
+
+
+    // Fallback; normally unreachable while the player
+    // remains inside the loaded terrain.
+    const eld::world::TerrainLayerPosition
+        center{
+            tile.x,
+            tile.y,
+            sourcePlane
+        };
+
+    return terrain.heightAt(
+        center,
+        local
+    );
+}
+
+
 
 }
 
@@ -363,6 +550,26 @@ void Client::processEvents(
         }
 
         if (
+            event.key.scancode ==
+                SDL_SCANCODE_C
+        ) {
+            cameraLocked_ =
+                !cameraLocked_;
+
+            if (cameraLocked_) {
+
+                syncCameraToPlayer();
+
+                std::cout
+                    << "camera = locked\\n";
+            }
+            else {
+                std::cout
+                    << "camera = free\\n";
+            }
+        }
+
+        if (
             event.type ==
                 SDL_EVENT_KEY_DOWN &&
             event.key.scancode ==
@@ -371,7 +578,37 @@ void Client::processEvents(
         ) {
             renderer_.toggleWireframe();
         }
-    }
+    
+        if (
+            event.type ==
+                SDL_EVENT_KEY_DOWN &&
+            !event.key.repeat
+        ) {
+            switch (
+                event.key.scancode
+            ) {
+            case SDL_SCANCODE_I:
+                movePlayer(0, 1);
+                break;
+
+            case SDL_SCANCODE_K:
+                movePlayer(0, -1);
+                break;
+
+            case SDL_SCANCODE_J:
+                movePlayer(-1, 0);
+                break;
+
+            case SDL_SCANCODE_L:
+                movePlayer(1, 0);
+                break;
+
+            default:
+                break;
+            }
+        }
+
+}
 }
 
 
@@ -383,6 +620,807 @@ void Client::render()
         sdl_.window()
     );
 }
+
+
+
+void Client::buildPlayerIdleAnimation(
+    const eld::model::ModelData& appearance
+)
+{
+    playerAnimation_.clear();
+
+    playerAnimationModels_.clear();
+    playerAnimationGroundOffsets_.clear();
+
+    playerWalkAnimationModels_.clear();
+    playerWalkAnimationGroundOffsets_.clear();
+
+    playerAnimationMillisecondRemainder_ =
+        0.0;
+
+
+    const auto buildSequence =
+        [&](
+            std::uint16_t sequenceId,
+            std::vector<
+                eld::render::ModelHandle
+            >& models,
+            std::vector<float>& groundOffsets,
+            const char* name
+        )
+    {
+        if (
+            !assets_.sequences.contains(
+                sequenceId
+            )
+        ) {
+            std::cout
+                << name
+                << " sequence "
+                << sequenceId
+                << " missing\n";
+
+            return false;
+        }
+
+
+        const auto sequence =
+            assets_.sequences.find(
+                sequenceId
+            );
+
+
+        if (
+            !sequence.has_value() ||
+            sequence->resolvedFrames.empty()
+        ) {
+            std::cout
+                << name
+                << " sequence "
+                << sequenceId
+                << " has no frames\n";
+
+            return false;
+        }
+
+
+        eld::render::ModelAnimator animator;
+
+
+        models.reserve(
+            sequence->resolvedFrames.size()
+        );
+
+        groundOffsets.reserve(
+            sequence->resolvedFrames.size()
+        );
+
+
+        for (
+            const auto& sequenceFrame :
+            sequence->resolvedFrames
+        ) {
+            const auto frame =
+                sequenceFrame.primary.resource();
+
+
+            auto animated =
+                animator.apply(
+                    appearance,
+                    frame.frame,
+                    frame.skeleton
+                );
+
+
+            groundOffsets.push_back(
+                playerGroundOffset(
+                    animated.mesh
+                )
+            );
+
+
+            models.push_back(
+                modelSystem_.create(
+                    animated.mesh
+                )
+            );
+        }
+
+
+        std::cout
+            << name
+            << " sequence      = "
+            << sequenceId
+            << "\n"
+            << name
+            << " frames        = "
+            << models.size()
+            << "\n";
+
+
+        return true;
+    };
+
+
+    constexpr std::uint16_t idleSequenceId =
+        808;
+
+    constexpr std::uint16_t walkSequenceId =
+        819;
+
+
+    const bool idleReady =
+        buildSequence(
+            idleSequenceId,
+            playerAnimationModels_,
+            playerAnimationGroundOffsets_,
+            "idle"
+        );
+
+
+    buildSequence(
+        walkSequenceId,
+        playerWalkAnimationModels_,
+        playerWalkAnimationGroundOffsets_,
+        "walk"
+    );
+
+
+    playerWalking_ = false;
+
+
+    if (idleReady) {
+        playerAnimation_.setSequence(
+            assets_.sequences.resource(
+                idleSequenceId
+            )
+        );
+
+        playerAnimation_.setLooping(
+            true
+        );
+
+        playerAnimation_.restart();
+        playerAnimation_.play();
+    }
+}
+
+
+
+void Client::updatePlayerAnimation(
+    float dt
+)
+{
+    if (!playerObjectIndex_.has_value()) {
+        return;
+    }
+
+
+    const auto& models =
+        playerWalking_
+            ? playerWalkAnimationModels_
+            : playerAnimationModels_;
+
+
+    const auto& groundOffsets =
+        playerWalking_
+            ? playerWalkAnimationGroundOffsets_
+            : playerAnimationGroundOffsets_;
+
+
+    if (models.empty()) {
+        return;
+    }
+
+
+    playerAnimationMillisecondRemainder_ +=
+        static_cast<double>(dt) *
+        1000.0;
+
+
+    const auto milliseconds =
+        static_cast<std::uint64_t>(
+            playerAnimationMillisecondRemainder_
+        );
+
+
+    if (milliseconds == 0) {
+        return;
+    }
+
+
+    playerAnimationMillisecondRemainder_ -=
+        static_cast<double>(
+            milliseconds
+        );
+
+
+    if (
+        !playerAnimation_.update(
+            milliseconds
+        )
+    ) {
+        return;
+    }
+
+
+    const std::size_t frameIndex =
+        playerAnimation_.frameIndex();
+
+
+    if (
+        frameIndex >= models.size() ||
+        frameIndex >= groundOffsets.size()
+    ) {
+        return;
+    }
+
+
+    if (
+        *playerObjectIndex_ >=
+        scene_.objects.size()
+    ) {
+        return;
+    }
+
+
+    scene_.objects[
+        *playerObjectIndex_
+    ].model =
+        models[
+            frameIndex
+        ];
+
+
+    playerGroundOffset_ =
+        groundOffsets[
+            frameIndex
+        ];
+
+
+    syncPlayerRenderObject();
+}
+
+
+void Client::setPlayerWalking(
+    bool walking
+)
+{
+    if (walking == playerWalking_) {
+        return;
+    }
+
+
+    constexpr std::uint16_t idleSequenceId =
+        808;
+
+    constexpr std::uint16_t walkSequenceId =
+        819;
+
+
+    const auto& models =
+        walking
+            ? playerWalkAnimationModels_
+            : playerAnimationModels_;
+
+
+    const auto& groundOffsets =
+        walking
+            ? playerWalkAnimationGroundOffsets_
+            : playerAnimationGroundOffsets_;
+
+
+    if (models.empty()) {
+        return;
+    }
+
+
+    const std::uint16_t sequenceId =
+        walking
+            ? walkSequenceId
+            : idleSequenceId;
+
+
+    if (
+        !assets_.sequences.contains(
+            sequenceId
+        )
+    ) {
+        return;
+    }
+
+
+    playerWalking_ =
+        walking;
+
+
+    playerAnimation_.setSequence(
+        assets_.sequences.resource(
+            sequenceId
+        )
+    );
+
+
+    playerAnimation_.setLooping(
+        true
+    );
+
+    playerAnimation_.restart();
+    playerAnimation_.play();
+
+
+    playerAnimationMillisecondRemainder_ =
+        0.0;
+
+
+    if (
+        playerObjectIndex_.has_value() &&
+        *playerObjectIndex_ <
+            scene_.objects.size()
+    ) {
+        scene_.objects[
+            *playerObjectIndex_
+        ].model =
+            models.front();
+
+
+        playerGroundOffset_ =
+            groundOffsets.front();
+
+
+        syncPlayerRenderObject();
+    }
+}
+
+
+void Client::updatePlayerMovement(
+    float dt
+)
+{
+    if (
+        !playerMoving_ ||
+        !region_.has_value()
+    ) {
+        return;
+    }
+
+
+    constexpr float moveDuration =
+        0.6f;
+
+
+    playerMoveElapsed_ +=
+        dt;
+
+
+    const float progress =
+        std::clamp(
+            playerMoveElapsed_ /
+                moveDuration,
+            0.0f,
+            1.0f
+        );
+
+
+    const float startX =
+        static_cast<float>(
+            playerMoveStartTile_.x
+        ) +
+        0.5f;
+
+    const float startY =
+        static_cast<float>(
+            playerMoveStartTile_.y
+        ) +
+        0.5f;
+
+
+    const float destinationX =
+        static_cast<float>(
+            playerMoveDestinationTile_.x
+        ) +
+        0.5f;
+
+    const float destinationY =
+        static_cast<float>(
+            playerMoveDestinationTile_.y
+        ) +
+        0.5f;
+
+
+    const float previousWorldX =
+        static_cast<float>(
+            player_.tile.x
+        ) +
+        player_.local.x;
+
+    const float previousWorldY =
+        static_cast<float>(
+            player_.tile.y
+        ) +
+        player_.local.y;
+
+
+    const float worldX =
+        std::lerp(
+            startX,
+            destinationX,
+            progress
+        );
+
+    const float worldY =
+        std::lerp(
+            startY,
+            destinationY,
+            progress
+        );
+
+
+    const float playerDeltaX =
+        worldX -
+        previousWorldX;
+
+    const float playerDeltaY =
+        worldY -
+        previousWorldY;
+
+
+    // Keep the current camera offset/angle,
+    // but translate it with the player.
+    //
+    // World Y maps to negative render Z.
+    scene_.camera.position.x +=
+        playerDeltaX;
+
+    scene_.camera.position.z -=
+        playerDeltaY;
+
+
+    const int tileX =
+        static_cast<int>(
+            std::floor(worldX)
+        );
+
+    const int tileY =
+        static_cast<int>(
+            std::floor(worldY)
+        );
+
+
+    const eld::world::TerrainLayerPosition
+        terrainPosition{
+            tileX,
+            tileY,
+            0
+        };
+
+
+    const auto& terrain =
+        region_->terrain;
+
+
+    if (
+        terrain.contains(
+            terrainPosition
+        )
+    ) {
+        const auto& tile =
+            terrain.tile(
+                terrainPosition
+            );
+
+
+        player_.tile = {
+            tileX,
+            tileY,
+            tile.scenePlane
+        };
+
+
+        player_.local = {
+            worldX -
+                static_cast<float>(
+                    tileX
+                ),
+
+            worldY -
+                static_cast<float>(
+                    tileY
+                )
+        };
+
+
+        syncPlayerRenderObject();
+    }
+
+
+    if (progress < 1.0f) {
+        return;
+    }
+
+
+    player_.tile =
+        playerMoveDestinationTile_;
+
+
+    player_.local = {
+        0.5f,
+        0.5f
+    };
+
+
+    playerMoving_ =
+        false;
+
+    playerMoveElapsed_ =
+        0.0f;
+
+
+    syncPlayerRenderObject();
+
+    setPlayerWalking(
+        false
+    );
+
+
+    std::cout
+        << "player tile = "
+        << player_.tile.x
+        << ", "
+        << player_.tile.y
+        << ", plane "
+        << player_.tile.plane
+        << "\n";
+}
+
+
+
+void Client::syncCameraToPlayer()
+{
+    if (
+        !cameraLocked_ ||
+        !playerObjectIndex_.has_value()
+    ) {
+        return;
+    }
+
+    if (
+        *playerObjectIndex_ >=
+        scene_.objects.size()
+    ) {
+        return;
+    }
+
+    const auto& playerPosition =
+        scene_.objects[
+            *playerObjectIndex_
+        ].transform.position;
+
+    scene_.camera.position = {
+        playerPosition.x +
+            cameraFollowOffsetX_,
+
+        playerPosition.y +
+            cameraFollowOffsetY_,
+
+        playerPosition.z +
+            cameraFollowOffsetZ_
+    };
+}
+
+
+void Client::syncPlayerRenderObject()
+{
+    if (
+        !region_.has_value() ||
+        !playerObjectIndex_.has_value()
+    ) {
+        return;
+    }
+
+    if (
+        *playerObjectIndex_ >=
+        scene_.objects.size()
+    ) {
+        return;
+    }
+
+
+    auto& terrain =
+        region_->terrain;
+
+
+    constexpr int sourcePlane =
+        0;
+
+
+    const eld::world::TerrainLayerPosition
+        terrainPosition{
+            player_.tile.x,
+            player_.tile.y,
+            sourcePlane
+        };
+
+
+    if (
+        !terrain.contains(
+            terrainPosition
+        )
+    ) {
+        return;
+    }
+
+
+    const float groundHeight =
+        playerSupportHeight(
+            terrain,
+            player_.tile,
+            player_.local,
+            sourcePlane
+        );
+
+
+    const auto& origin =
+        terrain.origin();
+
+
+    auto& object =
+        scene_.objects.at(
+            *playerObjectIndex_
+        );
+
+
+    constexpr float quarterTurn =
+        1.57079632679f;
+
+    constexpr float halfTurn =
+        3.14159265359f;
+
+    switch (player_.facing) {
+    case FacingDirection::North:
+        object.transform.rotation.y =
+            halfTurn;
+        break;
+
+    case FacingDirection::East:
+        object.transform.rotation.y =
+            halfTurn - quarterTurn;
+        break;
+
+    case FacingDirection::South:
+        object.transform.rotation.y =
+            0.0f;
+        break;
+
+    case FacingDirection::West:
+        object.transform.rotation.y =
+            halfTurn + quarterTurn;
+        break;
+    }
+
+
+    object.transform.position = {
+        static_cast<float>(
+            player_.tile.x -
+            origin.x
+        ) + player_.local.x,
+
+        groundHeight +
+            playerGroundOffset_,
+
+        -(
+            static_cast<float>(
+                player_.tile.y -
+                origin.y
+            ) + player_.local.y
+        )
+    };
+}
+
+
+void Client::movePlayer(
+    int dx,
+    int dy
+)
+{
+    if (
+        !region_.has_value() ||
+        playerMoving_
+    ) {
+        return;
+    }
+
+
+    if (
+        dx == 0 &&
+        dy == 0
+    ) {
+        return;
+    }
+
+
+    const int destinationX =
+        player_.tile.x +
+        dx;
+
+    const int destinationY =
+        player_.tile.y +
+        dy;
+
+
+    const eld::world::TerrainLayerPosition
+        destination{
+            destinationX,
+            destinationY,
+            0
+        };
+
+
+    const auto& terrain =
+        region_->terrain;
+
+
+    if (
+        !terrain.contains(
+            destination
+        )
+    ) {
+        return;
+    }
+
+
+    const auto& destinationTile =
+        terrain.tile(
+            destination
+        );
+
+
+    if (dx > 0) {
+        player_.facing =
+            FacingDirection::East;
+    }
+    else if (dx < 0) {
+        player_.facing =
+            FacingDirection::West;
+    }
+    else if (dy > 0) {
+        player_.facing =
+            FacingDirection::North;
+    }
+    else {
+        player_.facing =
+            FacingDirection::South;
+    }
+
+
+    playerMoveStartTile_ =
+        player_.tile;
+
+
+    playerMoveDestinationTile_ = {
+        destinationX,
+        destinationY,
+        destinationTile.scenePlane
+    };
+
+
+    playerMoveElapsed_ =
+        0.0f;
+
+    playerMoving_ =
+        true;
+
+
+    setPlayerWalking(
+        true
+    );
+
+
+    // Apply the new facing immediately,
+    // before the first movement frame.
+    syncPlayerRenderObject();
+}
+
 
 
 void Client::spawnPlayer()
@@ -435,9 +1473,11 @@ void Client::spawnPlayer()
 
 
     const float groundHeight =
-        terrain.heightAt(
-            terrainPosition,
-            player_.local
+        playerSupportHeight(
+            terrain,
+            player_.tile,
+            player_.local,
+            sourcePlane
         );
 
 
@@ -445,10 +1485,59 @@ void Client::spawnPlayer()
         terrain.origin();
 
 
-    const auto playerModel =
-        modelManager_.create(
-            buildPlayerMarkerModel()
+    PlayerAppearanceBuilder
+        appearanceBuilder;
+
+    const auto appearance =
+        appearanceBuilder.buildDefaultMale(
+            assets_.identityKits,
+            assets_.models
         );
+
+
+    eld::render::ModelHandle
+        playerModel;
+
+
+    bool usingDebugMarker =
+        false;
+
+
+    if (appearance.has_value()) {
+        playerGroundOffset_ =
+            playerGroundOffset(
+                *appearance
+            );
+
+        buildPlayerIdleAnimation(
+            *appearance
+        );
+
+        if (!playerAnimationModels_.empty()) {
+            playerModel =
+                playerAnimationModels_.front();
+
+            playerGroundOffset_ =
+                playerAnimationGroundOffsets_.front();
+        }
+        else {
+            playerModel =
+                modelSystem_.create(
+                    *appearance
+                );
+        }
+    } else {
+        usingDebugMarker =
+            true;
+
+        playerGroundOffset_ =
+            0.0f;
+
+        playerModel =
+            modelManager_.create(
+                buildPlayerMarkerModel()
+            );
+    }
 
 
     eld::render::RenderObject object;
@@ -456,13 +1545,22 @@ void Client::spawnPlayer()
     object.model =
         playerModel;
 
+    if (!usingDebugMarker) {
+        object.transform.scale = {
+            PlayerModelScale,
+            PlayerModelScale,
+            -PlayerModelScale
+        };
+    }
+
     object.transform.position = {
         static_cast<float>(
             player_.tile.x -
             origin.x
         ) + player_.local.x,
 
-        groundHeight,
+        groundHeight +
+            playerGroundOffset_,
 
         -(
             static_cast<float>(
@@ -483,6 +1581,8 @@ void Client::spawnPlayer()
         object
     );
 
+    syncPlayerRenderObject();
+
 
     std::cout
         << "=== PLAYER ===\n"
@@ -500,6 +1600,16 @@ void Client::spawnPlayer()
         << "\n"
         << "ground height     = "
         << groundHeight
+        << "\n"
+        << "ground offset     = "
+        << playerGroundOffset_
+        << "\n"
+        << "appearance        = "
+        << (
+            usingDebugMarker
+                ? "debug marker"
+                : "default male identity kits"
+        )
         << "\n\n";
 }
 
@@ -579,23 +1689,25 @@ int Client::run()
         float localY = 0.0f;
         float localZ = 0.0f;
 
-        if (keys[SDL_SCANCODE_W])
-            localZ -= step;
+        if (!cameraLocked_) {
+            if (keys[SDL_SCANCODE_W])
+                localZ -= step;
 
-        if (keys[SDL_SCANCODE_S])
-            localZ += step;
+            if (keys[SDL_SCANCODE_S])
+                localZ += step;
 
-        if (keys[SDL_SCANCODE_A])
-            localX -= step;
+            if (keys[SDL_SCANCODE_A])
+                localX -= step;
 
-        if (keys[SDL_SCANCODE_D])
-            localX += step;
+            if (keys[SDL_SCANCODE_D])
+                localX += step;
 
-        if (keys[SDL_SCANCODE_Q])
-            localY -= step;
+            if (keys[SDL_SCANCODE_Q])
+                localY -= step;
 
-        if (keys[SDL_SCANCODE_E])
-            localY += step;
+            if (keys[SDL_SCANCODE_E])
+                localY += step;
+        }
 
         const float yaw =
             scene_.camera.rotation.y;
@@ -648,6 +1760,16 @@ int Client::run()
                 -pitchLimit,
                 pitchLimit
             );
+
+        updatePlayerMovement(
+            dt
+        );
+
+        updatePlayerAnimation(
+            dt
+        );
+
+        syncCameraToPlayer();
 
         render();
 
