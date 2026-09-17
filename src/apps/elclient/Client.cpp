@@ -1,7 +1,6 @@
 #include <glad/gl.h>
 #include "Client.h"
 #include <exception>
-#include "render/camera/Projection.h"
 #include "render/animation/ModelAnimator.h"
 #include "PlayerAppearanceBuilder.h"
 
@@ -1171,13 +1170,7 @@ Client::pickTerrainTile(
     float mouseY
 ) const
 {
-    const auto* pickRegion =
-        world_.region(
-            InitialRegionId
-        );
-
     if (
-        !pickRegion ||
         scene_.camera.viewportWidth == 0 ||
         scene_.camera.viewportHeight == 0
     ) {
@@ -1185,22 +1178,14 @@ Client::pickTerrainTile(
     }
 
 
-    const auto viewMatrix =
-        eld::render::buildViewMatrix(
-            scene_.camera
-        );
-
-    const auto projectionMatrix =
-        eld::render::buildProjectionMatrix(
-            scene_.camera
-        );
-
-
-    // This flip is already proven correct for the existing
-    // renderer / SDL coordinate convention.
-    // WINDOW TO VIEWPORT MOUSE SCALE
+    // SDL mouse coordinates are window coordinates.
+    // Renderer viewport dimensions are framebuffer pixels.
+    //
+    // These are normally identical on the current machine but
+    // keeping the conversion makes picking correct on HiDPI.
     int windowWidth = 0;
     int windowHeight = 0;
+
 
     SDL_GetWindowSize(
         sdl_.window(),
@@ -1210,318 +1195,39 @@ Client::pickTerrainTile(
 
 
     if (
-        windowWidth > 0 &&
-        windowHeight > 0
+        windowWidth <= 0 ||
+        windowHeight <= 0
     ) {
-        mouseX *=
-            static_cast<float>(
-                scene_.camera.viewportWidth
-            ) /
-            static_cast<float>(
-                windowWidth
-            );
-
-        mouseY *=
-            static_cast<float>(
-                scene_.camera.viewportHeight
-            ) /
-            static_cast<float>(
-                windowHeight
-            );
+        return std::nullopt;
     }
 
 
-    const float projectedMouseX =
-        mouseX;
-
-    const float projectedMouseY =
-        mouseY;
-
-
-    const auto pointInTriangle =
-        [](
-            float px,
-            float py,
-            const eld::render::ScreenPoint& a,
-            const eld::render::ScreenPoint& b,
-            const eld::render::ScreenPoint& c
-        )
-        {
-            const auto edge =
-                [](
-                    float px,
-                    float py,
-                    const eld::render::ScreenPoint& p0,
-                    const eld::render::ScreenPoint& p1
-                )
-                {
-                    return
-                        (
-                            px - p1.x
-                        ) *
-                            (
-                                p0.y - p1.y
-                            ) -
-                        (
-                            p0.x - p1.x
-                        ) *
-                            (
-                                py - p1.y
-                            );
-                };
+    mouseX *=
+        static_cast<float>(
+            scene_.camera.viewportWidth
+        ) /
+        static_cast<float>(
+            windowWidth
+        );
 
 
-            const float d1 =
-                edge(
-                    px,
-                    py,
-                    a,
-                    b
-                );
-
-            const float d2 =
-                edge(
-                    px,
-                    py,
-                    b,
-                    c
-                );
-
-            const float d3 =
-                edge(
-                    px,
-                    py,
-                    c,
-                    a
-                );
+    mouseY *=
+        static_cast<float>(
+            scene_.camera.viewportHeight
+        ) /
+        static_cast<float>(
+            windowHeight
+        );
 
 
-            const bool hasNegative =
-                d1 < 0.0f ||
-                d2 < 0.0f ||
-                d3 < 0.0f;
-
-            const bool hasPositive =
-                d1 > 0.0f ||
-                d2 > 0.0f ||
-                d3 > 0.0f;
-
-
-            return !(
-                hasNegative &&
-                hasPositive
-            );
-        };
-
-
-    float bestDepth =
-        std::numeric_limits<
-            float
-        >::infinity();
-
-
-    std::optional<
-        eld::world::TilePosition
-    > result;
-
-
-    const auto& sceneOrigin =
-        sceneOrigin_;
-
-
-    const auto testTerrain =
-        [&](
-            const eld::world::Terrain& terrain
-        )
-        {
-            for (
-                std::size_t localY = 0;
-                localY <
-                    terrain.height();
-                ++localY
-            ) {
-                for (
-                    std::size_t localX = 0;
-                    localX <
-                        terrain.width();
-                    ++localX
-                ) {
-                    const auto position =
-                        terrain.layerPosition(
-                            0,
-                            localX,
-                            localY
-                        );
-
-
-                    const auto heights =
-                        terrain.cornerHeights(
-                            position
-                        );
-
-
-                    // Convert absolute world tile position into
-                    // the same scene coordinates used when the
-                    // neighbouring chunks were rendered.
-                    const float x0 =
-                        static_cast<float>(
-                            position.x -
-                            sceneOrigin.x
-                        );
-
-                    const float x1 =
-                        x0 +
-                        1.0f;
-
-
-                    const float z0 =
-                        -static_cast<float>(
-                            position.y -
-                            sceneOrigin.y
-                        );
-
-                    const float z1 =
-                        z0 -
-                        1.0f;
-
-
-                    const auto southwest =
-                        eld::render::projectPoint(
-                            {
-                                x0,
-                                heights.southwest,
-                                z0
-                            },
-                            viewMatrix,
-                            projectionMatrix,
-                            scene_.camera
-                        );
-
-                    const auto southeast =
-                        eld::render::projectPoint(
-                            {
-                                x1,
-                                heights.southeast,
-                                z0
-                            },
-                            viewMatrix,
-                            projectionMatrix,
-                            scene_.camera
-                        );
-
-                    const auto northeast =
-                        eld::render::projectPoint(
-                            {
-                                x1,
-                                heights.northeast,
-                                z1
-                            },
-                            viewMatrix,
-                            projectionMatrix,
-                            scene_.camera
-                        );
-
-                    const auto northwest =
-                        eld::render::projectPoint(
-                            {
-                                x0,
-                                heights.northwest,
-                                z1
-                            },
-                            viewMatrix,
-                            projectionMatrix,
-                            scene_.camera
-                        );
-
-
-                    const auto consider =
-                        [&](
-                            const eld::render::ScreenPoint& a,
-                            const eld::render::ScreenPoint& b,
-                            const eld::render::ScreenPoint& c
-                        )
-                        {
-                            if (
-                                !pointInTriangle(
-                                    projectedMouseX,
-                                    projectedMouseY,
-                                    a,
-                                    b,
-                                    c
-                                )
-                            ) {
-                                return;
-                            }
-
-
-                            const float depth =
-                                std::abs(
-                                    (
-                                        a.depth +
-                                        b.depth +
-                                        c.depth
-                                    ) /
-                                    3.0f
-                                );
-
-
-                            if (
-                                depth >=
-                                bestDepth
-                            ) {
-                                return;
-                            }
-
-
-                            bestDepth =
-                                depth;
-
-
-                            const auto& tile =
-                                terrain.tile(
-                                    position
-                                );
-
-
-                            result =
-                                eld::world::TilePosition{
-                                    position.x,
-                                    position.y,
-                                    tile.scenePlane
-                                };
-                        };
-
-
-                    consider(
-                        southwest,
-                        southeast,
-                        northeast
-                    );
-
-                    consider(
-                        southwest,
-                        northeast,
-                        northwest
-                    );
-                }
-            }
-        };
-
-
-    testTerrain(
-        pickRegion->terrain
+    return terrainPicker_.pick(
+        world_,
+        scene_.camera,
+        sceneOrigin_,
+        mouseX,
+        mouseY
     );
-
-
-    // TEMP PICKER: CENTER REGION ONLY
-    //
-    // Neighbor terrain picking is disabled while we
-    // isolate the incorrect click destination.
-
-
-    return result;
 }
-
 
 const eld::world::Location*
 Client::findInteractableLocationAt(

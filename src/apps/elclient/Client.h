@@ -16,6 +16,7 @@
 #include "world/World.h"
 #include "world/Pathfinder.h"
 #include "map/WorldStreamer.h"
+#include "map/TerrainPicker.h"
 #include "host/sdl/SdlOpenGLContext.h"
 
 #include "model/ModelSystem.h"
@@ -110,6 +111,9 @@ private:
 
     eld::world::Pathfinder
         pathfinder_;
+
+    eld::graphics::TerrainPicker
+        terrainPicker_;
 
     eld::runtime::map::WorldStreamer
         worldStreamer_;
