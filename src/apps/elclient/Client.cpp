@@ -32,37 +32,35 @@
 
 namespace eld::client {
 
+Client::Client()
+    : sdl_(
+          "Eldoria",
+          1000,
+          700
+      ),
+      textureSystem_(
+          assets_.textures,
+          textureManager_
+      ),
+      modelSystem_(
+          assets_.models,
+          textureSystem_,
+          modelManager_
+      ),
+      renderer_(
+          modelManager_,
+          textureManager_
+      )
+{
+}
+
+
 int Client::run()
 {
-    eld::host::SdlOpenGLContext sdl(
-        "Eldoria",
-        1000,
-        700
-    );
 
-    if (!sdl.valid()) {
+    if (!sdl_.valid()) {
         return 1;
     }
-
-    eld::asset::AssetManager assets;
-
-    eld::render::TextureManager
-        textureManager;
-
-    eld::render::ModelManager
-        modelManager;
-
-    eld::graphics::TextureSystem textureSystem(
-        assets.textures,
-        textureManager
-    );
-
-
-    eld::graphics::ModelSystem modelSystem(
-        assets.models,
-        textureSystem,
-        modelManager
-    );
 
     // ========================================================
     // === SINGLE REGION ===
@@ -80,8 +78,8 @@ int Client::run()
     const auto worldRegion =
         regionBuilder.build(
             regionId,
-            assets.maps,
-            assets.locations
+            assets_.maps,
+            assets_.locations
         );
 
 
@@ -92,39 +90,39 @@ eld::graphics::TerrainBuilder
         terrainBuilder.build(
             worldRegion.terrain,
             0,
-            assets.floors,
-            textureSystem
+            assets_.floors,
+            textureSystem_
         );
 
     const eld::render::ModelHandle
         terrainHandle =
-            modelManager.create(
+            modelManager_.create(
                 std::move(
                     terrainModel
                 )
             );
 
-    eld::render::RenderScene scene;
+    eld::render::RenderScene scene_;
 
-    scene.camera.position = {
+    scene_.camera.position = {
         31.5f,
         25.0f,
         85.0f
     };
 
-    scene.camera.rotation = {
+    scene_.camera.rotation = {
         -0.45f,
         0.0f,
         0.0f
     };
 
-    scene.camera.viewportWidth =
+    scene_.camera.viewportWidth =
         1000;
 
-    scene.camera.viewportHeight =
+    scene_.camera.viewportHeight =
         700;
 
-    scene.objects.push_back({
+    scene_.objects.push_back({
         terrainHandle,
         {},
         true
@@ -143,9 +141,9 @@ eld::graphics::TerrainBuilder
         locationBuilder.build(
             worldRegion,
             0,
-            assets.locations,
-            assets.models,
-            modelSystem
+            assets_.locations,
+            assets_.models,
+            modelSystem_
         );
 
 
@@ -155,7 +153,7 @@ eld::graphics::TerrainBuilder
     auto locationBatchBuild =
         locationBatchBuilder.build(
             locationBuild.objects,
-            modelManager
+            modelManager_
         );
 
 
@@ -164,11 +162,11 @@ eld::graphics::TerrainBuilder
         locationBatchBuild.batches
     ) {
         const auto handle =
-            modelManager.create(
+            modelManager_.create(
                 std::move(batch)
             );
 
-        scene.objects.push_back({
+        scene_.objects.push_back({
             handle,
             {},
             true
@@ -176,8 +174,8 @@ eld::graphics::TerrainBuilder
     }
 
 
-    scene.objects.insert(
-        scene.objects.end(),
+    scene_.objects.insert(
+        scene_.objects.end(),
         locationBatchBuild
             .passthroughObjects.begin(),
         locationBatchBuild
@@ -228,9 +226,9 @@ eld::graphics::TerrainBuilder
 
 
     eld::render::Renderer3D
-        renderer(
-            modelManager,
-            textureManager
+        renderer_(
+            modelManager_,
+            textureManager_
         );
 
     bool running = true;
@@ -264,7 +262,7 @@ eld::graphics::TerrainBuilder
                     SDL_SCANCODE_F &&
                 !event.key.repeat
             ) {
-                renderer.toggleWireframe();
+                renderer_.toggleWireframe();
             }
         }
 
@@ -286,7 +284,7 @@ eld::graphics::TerrainBuilder
         int height = 0;
 
         SDL_GetWindowSizeInPixels(
-            sdl.window(),
+            sdl_.window(),
             &width,
             &height
         );
@@ -295,12 +293,12 @@ eld::graphics::TerrainBuilder
             width > 0 &&
             height > 0
         ) {
-            scene.camera.viewportWidth =
+            scene_.camera.viewportWidth =
                 static_cast<std::uint32_t>(
                     width
                 );
 
-            scene.camera.viewportHeight =
+            scene_.camera.viewportHeight =
                 static_cast<std::uint32_t>(
                     height
                 );
@@ -337,7 +335,7 @@ eld::graphics::TerrainBuilder
             localY += step;
 
         const float yaw =
-            scene.camera.rotation.y;
+            scene_.camera.rotation.y;
 
         const float cy =
             std::cos(yaw);
@@ -345,15 +343,15 @@ eld::graphics::TerrainBuilder
         const float sy =
             std::sin(yaw);
 
-        scene.camera.position.x +=
+        scene_.camera.position.x +=
             localX * cy -
             localZ * sy;
 
-        scene.camera.position.z +=
+        scene_.camera.position.z +=
             localX * sy +
             localZ * cy;
 
-        scene.camera.position.y +=
+        scene_.camera.position.y +=
             localY;
 
         const float turnSpeed =
@@ -363,35 +361,35 @@ eld::graphics::TerrainBuilder
             turnSpeed * dt;
 
         if (keys[SDL_SCANCODE_LEFT])
-            scene.camera.rotation.y +=
+            scene_.camera.rotation.y +=
                 turn;
 
         if (keys[SDL_SCANCODE_RIGHT])
-            scene.camera.rotation.y -=
+            scene_.camera.rotation.y -=
                 turn;
 
         if (keys[SDL_SCANCODE_UP])
-            scene.camera.rotation.x +=
+            scene_.camera.rotation.x +=
                 turn;
 
         if (keys[SDL_SCANCODE_DOWN])
-            scene.camera.rotation.x -=
+            scene_.camera.rotation.x -=
                 turn;
 
         constexpr float pitchLimit =
             1.55334306f;
 
-        scene.camera.rotation.x =
+        scene_.camera.rotation.x =
             std::clamp(
-                scene.camera.rotation.x,
+                scene_.camera.rotation.x,
                 -pitchLimit,
                 pitchLimit
             );
 
-        renderer.render(scene);
+        renderer_.render(scene_);
 
         SDL_GL_SwapWindow(
-            sdl.window()
+            sdl_.window()
         );
 
         ++fpsFrameCount;
@@ -412,7 +410,7 @@ eld::graphics::TerrainBuilder
                 fpsElapsed;
 
             const auto& stats =
-                renderer.stats();
+                renderer_.stats();
 
             std::ostringstream titleStream;
 
@@ -445,9 +443,9 @@ eld::graphics::TerrainBuilder
                 << "/"
                 << stats.textureUploads
                 << " | terrain draws "
-                << renderer.terrainDrawCalls()
+                << renderer_.terrainDrawCalls()
                 << " | location draws "
-                << renderer.locationDrawCalls();
+                << renderer_.locationDrawCalls();
 
             const std::string title =
                 titleStream.str();
