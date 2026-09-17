@@ -1,6 +1,7 @@
 #include "TerrainBuilder.h"
 
 #include "ClassicTerrainShape.h"
+#include "ClassicTerrainLighting.h"
 
 #include <cmath>
 #include <cstdint>
@@ -196,16 +197,10 @@ namespace eld::graphics::terrain
         }
 
         const bool visible =
-            appearance.underlay.color
+            tile.surface.underlay
                 .has_value() ||
 
-            appearance.underlay.texture
-                .has_value() ||
-
-            appearance.overlay.color
-                .has_value() ||
-
-            appearance.overlay.texture
+            tile.surface.overlay
                 .has_value();
 
         if (!visible)
@@ -251,9 +246,10 @@ namespace eld::graphics::terrain
                     position,
                     classic.local),
 
-                static_cast<float>(
-                    position.y - origin.y) +
-                    classic.local.y};
+                -(
+                    static_cast<float>(
+                        position.y - origin.y) +
+                    classic.local.y)};
 
             if (
                 classic.heightRule !=
@@ -358,6 +354,9 @@ namespace eld::graphics::terrain
             material.doubleSided =
                 true;
 
+            material.unlit =
+                true;
+
             material.sampler.filter =
                 eld::render::TextureFilter::Nearest;
 
@@ -383,8 +382,16 @@ namespace eld::graphics::terrain
         const eld::world::Terrain &terrain,
         const eld::world::TerrainLayerPosition &position,
 
+        const eld::floor::FloorLoader &floors,
+
         const TileAppearance &appearance)
     {
+        const auto lighting =
+            buildClassicTerrainLighting(
+                terrain,
+                position,
+                floors);
+
         const int rotation =
             appearance.shape <= 1
                 ? 0
@@ -401,6 +408,12 @@ namespace eld::graphics::terrain
         vertices.reserve(
             points.size());
 
+        std::vector<int>
+            vertexTypes;
+
+        vertexTypes.reserve(
+            points.size());
+
         for (int rawType : points)
         {
             const int type =
@@ -413,6 +426,9 @@ namespace eld::graphics::terrain
                     terrain,
                     position,
                     type));
+
+            vertexTypes.push_back(
+                type);
         }
 
         const auto &elements =
@@ -453,9 +469,13 @@ namespace eld::graphics::terrain
                     ? appearance.overlay
                     : appearance.underlay;
 
-            if (
-                !surface.color.has_value() &&
-                !surface.texture.has_value())
+            const ClassicSurfaceLighting &
+                surfaceLighting =
+                    layer == 1
+                        ? lighting.overlay
+                        : lighting.underlay;
+
+            if (!surfaceLighting.visible)
             {
                 continue;
             }
@@ -603,6 +623,45 @@ namespace eld::graphics::terrain
             }
 
             // ---------------------------------------------
+            // Classic RuneScape terrain color.
+            //
+            // Terrain lighting is calculated here from the
+            // height map and classic floor HSL rules.
+            //
+            // OpenGL only interpolates this baked vertex
+            // color; it must not apply another directional
+            // light to terrain.
+            // ---------------------------------------------
+
+            const bool textured =
+                surface.texture.has_value();
+
+            va.color =
+                classicTerrainColor(
+                    classicShadeForPoint(
+                        vertexTypes.at(
+                            static_cast<std::size_t>(a)),
+                        surfaceLighting.shades),
+                    textured);
+
+            vb.color =
+                classicTerrainColor(
+                    classicShadeForPoint(
+                        vertexTypes.at(
+                            static_cast<std::size_t>(b)),
+                        surfaceLighting.shades),
+                    textured);
+
+            vc.color =
+                classicTerrainColor(
+                    classicShadeForPoint(
+                        vertexTypes.at(
+                            static_cast<std::size_t>(c)),
+                        surfaceLighting.shades),
+                    textured);
+
+
+            // ---------------------------------------------
             // Normal.
             // ---------------------------------------------
 
@@ -622,18 +681,6 @@ namespace eld::graphics::terrain
             va.normal = normal;
             vb.normal = normal;
             vc.normal = normal;
-
-            if (!surface.texture.has_value())
-            {
-                va.color =
-                    *surface.color;
-
-                vb.color =
-                    *surface.color;
-
-                vc.color =
-                    *surface.color;
-            }
 
             // ---------------------------------------------
             // Append triangle.
@@ -905,6 +952,7 @@ namespace eld::graphics
                         mesh,
                         terrain,
                         position,
+                        floors,
                         *appearance);
                 }
             }

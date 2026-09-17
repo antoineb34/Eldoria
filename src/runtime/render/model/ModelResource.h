@@ -47,6 +47,9 @@ struct RenderMaterial {
         AlphaMode::Opaque;
 
     bool doubleSided = false;
+
+    // Lighting is already baked into vertex colors.
+    bool unlit = false;
 };
 
 struct RenderMeshSection {

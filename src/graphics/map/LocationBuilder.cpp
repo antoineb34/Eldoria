@@ -57,15 +57,16 @@ eld::render::Transform baseTransform(
 
         location.position.y,
 
-        location.position.z -
-            origin.y
+        -(
+            location.position.z -
+            origin.y)
     };
 
 
     transform.scale = {
         ModelScale,
         ModelScale,
-        ModelScale
+        -ModelScale
     };
 
 
@@ -96,7 +97,7 @@ void applyYaw(
     eld::render::Transform& transform,
     float radians
 ) {
-    transform.rotation.y +=
+    transform.rotation.y -=
         radians;
 }
 
@@ -112,7 +113,7 @@ void applySceneOffset(
         ) /
         128.0f;
 
-    transform.position.z +=
+    transform.position.z -=
         static_cast<float>(
             sourceZ
         ) /

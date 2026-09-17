@@ -94,11 +94,11 @@ namespace eld::render::opengl
         #version 330 core
 
         layout(location = 0) in vec3 aPosition;
-        layout(location = 1) in vec3 aColor;
+        layout(location = 1) in vec4 aColor;
         layout(location = 2) in vec3 aNormal;
         layout(location = 3) in vec2 aUV;
 
-        out vec3 vColor;
+        out vec4 vColor;
         out vec3 vNormal;
         out vec2 vUV;
 
@@ -128,7 +128,7 @@ namespace eld::render::opengl
         const char *fragmentSource = R"(
         #version 330 core
 
-        in vec3 vColor;
+        in vec4 vColor;
         in vec3 vNormal;
         in vec2 vUV;
 
@@ -136,46 +136,76 @@ namespace eld::render::opengl
 
         uniform sampler2D uTexture;
         uniform bool uHasTexture;
+        uniform bool uUnlit;
+        uniform int uAlphaMode;
 
         void main() {
-            vec3 lightDirection =
-                normalize(
-                    vec3(
-                        0.5,
-                        1.0,
-                        0.4
-                    )
-                );
-
-            vec3 normal =
-                normalize(vNormal);
-
-            float diffuse =
-                max(
-                    dot(
-                        normal,
-                        lightDirection
-                    ),
-                    0.0
-                );
-
             float brightness =
-                0.60 +
-                diffuse * 0.50f;
+                1.0;
 
-            vec3 surfaceColor =
+            if (!uUnlit)
+            {
+                vec3 lightDirection =
+                    normalize(
+                        vec3(
+                            0.5,
+                            1.0,
+                            0.4
+                        )
+                    );
+
+                vec3 normal =
+                    normalize(vNormal);
+
+                float diffuse =
+                    max(
+                        dot(
+                            normal,
+                            lightDirection
+                        ),
+                        0.0
+                    );
+
+                brightness =
+                    0.60 +
+                    diffuse * 0.50f;
+            }
+
+            vec4 sampled =
                 uHasTexture
                     ? texture(
                           uTexture,
                           vUV
-                      ).rgb
-                    : vColor;
+                      )
+                    : vec4(1.0);
+
+            vec4 surfaceColor =
+                vColor * sampled;
+
+            if (uAlphaMode == 1)
+            {
+                if (surfaceColor.a < 0.5)
+                {
+                    discard;
+                }
+
+                surfaceColor.a = 1.0;
+            }
+            else if (uAlphaMode == 0)
+            {
+                surfaceColor.a = 1.0;
+            }
+
+            if (surfaceColor.a <= 0.0)
+            {
+                discard;
+            }
 
             FragColor =
                 vec4(
-                    surfaceColor *
+                    surfaceColor.rgb *
                         brightness,
-                    1.0
+                    surfaceColor.a
                 );
         }
     )";
@@ -282,10 +312,24 @@ namespace eld::render::opengl
                 program_,
                 "uHasTexture");
 
+        alphaModeLocation_ =
+            glGetUniformLocation(
+                program_,
+                "uAlphaMode");
+
+        unlitLocation_ =
+            glGetUniformLocation(
+                program_,
+                "uUnlit");
+
         if (
             modelLocation_ == -1 ||
             viewLocation_ == -1 ||
-            projectionLocation_ == -1)
+            projectionLocation_ == -1 ||
+            textureLocation_ == -1 ||
+            hasTextureLocation_ == -1 ||
+            alphaModeLocation_ == -1 ||
+            unlitLocation_ == -1)
         {
             throw std::runtime_error(
                 "Could not find renderer "
@@ -297,6 +341,10 @@ namespace eld::render::opengl
 
         glDepthFunc(
             GL_LESS);
+
+        glBlendFunc(
+            GL_SRC_ALPHA,
+            GL_ONE_MINUS_SRC_ALPHA);
     }
 
     SimpleRenderer::~SimpleRenderer()
@@ -420,7 +468,7 @@ namespace eld::render::opengl
 
             vertices.reserve(
                 mesh.vertices.size() *
-                11);
+                12);
 
             for (
                 const RenderVertex &vertex :
@@ -443,6 +491,9 @@ namespace eld::render::opengl
 
                 vertices.push_back(
                     vertex.color.z);
+
+                vertices.push_back(
+                    vertex.color.w);
 
                 vertices.push_back(
                     vertex.normal.x);
@@ -498,7 +549,7 @@ namespace eld::render::opengl
                 GL_STATIC_DRAW);
 
             constexpr GLsizei stride =
-                11 * sizeof(float);
+                12 * sizeof(float);
 
             glVertexAttribPointer(
                 0,
@@ -513,7 +564,7 @@ namespace eld::render::opengl
 
             glVertexAttribPointer(
                 1,
-                3,
+                4,
                 GL_FLOAT,
                 GL_FALSE,
                 stride,
@@ -532,7 +583,7 @@ namespace eld::render::opengl
                 stride,
                 reinterpret_cast<
                     const void *>(
-                    6 * sizeof(float)));
+                    7 * sizeof(float)));
 
             glEnableVertexAttribArray(
                 2);
@@ -545,7 +596,7 @@ namespace eld::render::opengl
                 stride,
                 reinterpret_cast<
                     const void *>(
-                    9 * sizeof(float)));
+                    10 * sizeof(float)));
 
             glEnableVertexAttribArray(
                 3);
@@ -883,6 +934,10 @@ namespace eld::render::opengl
             GL_FALSE,
             &modelMatrix.m[0][0]);
 
+        glUniform1i(
+            unlitLocation_,
+            GL_FALSE);
+
         for (
             std::size_t meshIndex = 0;
             meshIndex <
@@ -911,6 +966,16 @@ namespace eld::render::opengl
                     hasTextureLocation_,
                     GL_FALSE);
 
+                glUniform1i(
+                    alphaModeLocation_,
+                    0);
+
+                glDisable(
+                    GL_BLEND);
+
+                glDepthMask(
+                    GL_TRUE);
+
                 glDrawElements(
                     GL_TRIANGLES,
                     gpuMesh.indexCount,
@@ -937,23 +1002,25 @@ namespace eld::render::opengl
 
                 GLuint texture = 0;
 
+                const RenderMaterial *material =
+                    nullptr;
+
                 if (
                     section.materialIndex <
                     model.materials.size())
                 {
-                    const RenderMaterial &
-                        material =
-                            model.materials.at(
-                                section.materialIndex);
+                    material =
+                        &model.materials.at(
+                            section.materialIndex);
 
                     if (
-                        material.texture.has_value() &&
+                        material->texture.has_value() &&
                         textures_.isValid(
-                            *material.texture))
+                            *material->texture))
                     {
                         texture =
                             ensureTexture(
-                                *material.texture);
+                                *material->texture);
                     }
                 }
 
@@ -964,6 +1031,89 @@ namespace eld::render::opengl
                 glUniform1i(
                     hasTextureLocation_,
                     texture != 0
+                        ? GL_TRUE
+                        : GL_FALSE);
+
+                int alphaMode = 0;
+
+                glDisable(
+                    GL_BLEND);
+
+                glDepthMask(
+                    GL_TRUE);
+
+                if (material != nullptr)
+                {
+                    switch (material->alphaMode)
+                    {
+                    case AlphaMode::Masked:
+                        alphaMode = 1;
+                        break;
+
+                    case AlphaMode::Blended:
+                        alphaMode = 2;
+
+                        glEnable(
+                            GL_BLEND);
+
+                        break;
+
+                    case AlphaMode::Opaque:
+                    default:
+                        alphaMode = 0;
+                        break;
+                    }
+
+                    if (texture != 0)
+                    {
+                        const GLint filter =
+                            material->sampler.filter ==
+                                    TextureFilter::Linear
+                                ? GL_LINEAR
+                                : GL_NEAREST;
+
+                        const GLint wrapU =
+                            material->sampler.addressU ==
+                                    TextureAddressMode::Clamp
+                                ? GL_CLAMP_TO_EDGE
+                                : GL_REPEAT;
+
+                        const GLint wrapV =
+                            material->sampler.addressV ==
+                                    TextureAddressMode::Clamp
+                                ? GL_CLAMP_TO_EDGE
+                                : GL_REPEAT;
+
+                        glTexParameteri(
+                            GL_TEXTURE_2D,
+                            GL_TEXTURE_MIN_FILTER,
+                            filter);
+
+                        glTexParameteri(
+                            GL_TEXTURE_2D,
+                            GL_TEXTURE_MAG_FILTER,
+                            filter);
+
+                        glTexParameteri(
+                            GL_TEXTURE_2D,
+                            GL_TEXTURE_WRAP_S,
+                            wrapU);
+
+                        glTexParameteri(
+                            GL_TEXTURE_2D,
+                            GL_TEXTURE_WRAP_T,
+                            wrapV);
+                    }
+                }
+
+                glUniform1i(
+                    alphaModeLocation_,
+                    alphaMode);
+
+                glUniform1i(
+                    unlitLocation_,
+                    material != nullptr &&
+                            material->unlit
                         ? GL_TRUE
                         : GL_FALSE);
 

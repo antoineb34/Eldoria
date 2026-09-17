@@ -98,6 +98,8 @@ private:
 
     GLint textureLocation_ = -1;
     GLint hasTextureLocation_ = -1;
+    GLint alphaModeLocation_ = -1;
+    GLint unlitLocation_ = -1;
 
     bool wireframe_ = false;
 };
