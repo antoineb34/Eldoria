@@ -223,6 +223,33 @@ std::cout
 }
 
 
+void Client::processEvents(
+    bool& running
+)
+{
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event)) {
+        if (
+            event.type ==
+            SDL_EVENT_QUIT
+        ) {
+            running = false;
+        }
+
+        if (
+            event.type ==
+                SDL_EVENT_KEY_DOWN &&
+            event.key.scancode ==
+                SDL_SCANCODE_F &&
+            !event.key.repeat
+        ) {
+            renderer_.toggleWireframe();
+        }
+    }
+}
+
+
 int Client::run()
 {
 
@@ -246,26 +273,7 @@ int Client::run()
     int fpsFrameCount = 0;
 
     while (running) {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event)) {
-            if (
-                event.type ==
-                SDL_EVENT_QUIT
-            ) {
-                running = false;
-            }
-
-            if (
-                event.type ==
-                    SDL_EVENT_KEY_DOWN &&
-                event.key.scancode ==
-                    SDL_SCANCODE_F &&
-                !event.key.repeat
-            ) {
-                renderer_.toggleWireframe();
-            }
-        }
+        processEvents(running);
 
         const auto now =
             Clock::now();
