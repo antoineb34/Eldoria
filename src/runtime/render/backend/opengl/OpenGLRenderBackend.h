@@ -29,17 +29,23 @@ public:
 
     ~OpenGLRenderBackend() override;
 
-    OpenGLRenderBackend(const OpenGLRenderBackend&) = delete;
-    OpenGLRenderBackend& operator=(const OpenGLRenderBackend&) = delete;
+    OpenGLRenderBackend(
+        const OpenGLRenderBackend&
+    ) = delete;
+
+    OpenGLRenderBackend& operator=(
+        const OpenGLRenderBackend&
+    ) = delete;
 
     void beginFrame(
         const Camera& camera
     ) override;
 
     void draw(
-        eld::render::ModelHandle model,
+        ModelHandle handle,
+        const ModelResource& model,
         const Transform& transform,
-        const eld::render::GraphicsResources& resources
+        const TextureManager& textures
     ) override;
 
     void endFrame() override;
@@ -81,18 +87,18 @@ private:
     GLuint createProgram();
 
     const GpuModel& ensureModel(
-        eld::render::ModelHandle handle,
-        const eld::render::RenderModel& model
+        ModelHandle handle,
+        const ModelResource& model
     );
 
     GLuint ensureTexture(
-        eld::render::TextureHandle handle,
-        const eld::render::GraphicsResources& resources
+        TextureHandle handle,
+        const TextureManager& textures
     );
 
     void configureMaterial(
-        const eld::render::RenderMaterial& material,
-        const eld::render::GraphicsResources& resources
+        const RenderMaterial& material,
+        const TextureManager& textures
     );
 
     void destroyResources();
@@ -118,10 +124,10 @@ private:
     GLint alphaModeLocation_ = -1;
     GLint depthBiasLocation_ = -1;
 
-    std::unordered_map<std::uint32_t, GpuModel>
+    std::unordered_map<std::uint64_t, GpuModel>
         modelCache_;
 
-    std::unordered_map<std::uint32_t, GLuint>
+    std::unordered_map<std::uint64_t, GLuint>
         textureCache_;
 
     std::string rendererName_;

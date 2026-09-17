@@ -13,6 +13,21 @@ namespace eld::elforge {
 
 namespace {
 
+std::optional<eld::model::ModelData> copyModel(
+    const eld::model::ModelLoader& repository,
+    std::uint16_t modelId
+) {
+    const eld::model::ModelData* source =
+        repository.find(modelId);
+
+    if (source == nullptr) {
+        return std::nullopt;
+    }
+
+    return *source;
+}
+
+
 void appendMesh(eld::model::ModelData &destination,
                 eld::model::ModelData source) {
   const std::uint32_t vertexOffset =
@@ -215,7 +230,7 @@ ItemView::build(const eld::item::ItemData &definition,
   }
 
   std::optional<eld::model::ModelData> model =
-      repository.find(*definition.inventoryModelId);
+      copyModel(repository, *definition.inventoryModelId);
 
   if (!model.has_value()) {
     return std::nullopt;
@@ -273,7 +288,7 @@ std::optional<eld::model::ModelData> ItemView::buildEquipped(
     }
 
     for (const std::uint16_t modelId : kit->modelIds) {
-      std::optional<eld::model::ModelData> model = repository.find(modelId);
+      std::optional<eld::model::ModelData> model = copyModel(repository, modelId);
 
       if (!model.has_value()) {
         continue;
@@ -300,7 +315,7 @@ std::optional<eld::model::ModelData> ItemView::buildEquipped(
       continue;
     }
 
-    std::optional<eld::model::ModelData> model = repository.find(*modelId);
+    std::optional<eld::model::ModelData> model = copyModel(repository, *modelId);
 
     if (!model.has_value()) {
       continue;

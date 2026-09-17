@@ -8,55 +8,58 @@
 
 namespace eld::map {
 
-MapIndexData
-MapIndexDecoder::decode(std::span<const std::uint8_t> payload) const {
-  constexpr std::size_t RecordSize = 7;
+MapIndexData MapIndexDecoder::decode(
+    std::span<const std::uint8_t> payload
+) const {
+    constexpr std::size_t RecordSize = 7;
 
-  if (payload.empty()) {
-    throw std::runtime_error("Map index is empty");
-  }
+    if (payload.empty()) {
+        throw std::runtime_error("Map index is empty");
+    }
 
-  if (payload.size() % RecordSize != 0) {
-    throw std::runtime_error("Map index has an invalid size");
-  }
+    if (payload.size() % RecordSize != 0) {
+        throw std::runtime_error("Map index has an invalid size");
+    }
 
-  eld::binary::ByteReader reader(payload);
+    eld::binary::ByteReader reader(payload);
 
-  MapIndexData index;
+    MapIndexData index;
+    index.entries.reserve(payload.size() / RecordSize);
 
-  index.entries.reserve(payload.size() / RecordSize);
+    while (!reader.atEnd()) {
+        MapIndexEntry entry;
 
-  // Entries
+        entry.regionId = reader.readU16();
+        entry.terrainFileId = reader.readU16();
+        entry.locationFileId = reader.readU16();
+        entry.shouldPreload = reader.readU8() != 0;
 
-  while (!reader.atEnd()) {
-    MapIndexEntry entry;
+        index.entries.push_back(entry);
+    }
 
-    entry.regionId = reader.readU16();
-    entry.terrainFileId = reader.readU16();
-    entry.locationFileId = reader.readU16();
-    entry.shouldPreload = reader.readU8() != 0;
+    std::sort(
+        index.entries.begin(),
+        index.entries.end(),
+        [](const MapIndexEntry& a, const MapIndexEntry& b) {
+            return a.regionId < b.regionId;
+        }
+    );
 
-    index.entries.push_back(entry);
-  }
+    const auto duplicate = std::adjacent_find(
+        index.entries.begin(),
+        index.entries.end(),
+        [](const MapIndexEntry& a, const MapIndexEntry& b) {
+            return a.regionId == b.regionId;
+        }
+    );
 
-  // Order
+    if (duplicate != index.entries.end()) {
+        throw std::runtime_error(
+            "Map index contains duplicate regions"
+        );
+    }
 
-  std::sort(index.entries.begin(), index.entries.end(),
-            [](const MapIndexEntry &a, const MapIndexEntry &b) {
-              return a.regionId < b.regionId;
-            });
-
-  const auto duplicate =
-      std::adjacent_find(index.entries.begin(), index.entries.end(),
-                         [](const MapIndexEntry &a, const MapIndexEntry &b) {
-                           return a.regionId == b.regionId;
-                         });
-
-  if (duplicate != index.entries.end()) {
-    throw std::runtime_error("Map index contains duplicate regions");
-  }
-
-  return index;
+    return index;
 }
 
-} // namespace eld::map
+}

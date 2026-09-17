@@ -6,7 +6,7 @@
 namespace eld::render {
 
 struct RenderObject {
-    eld::render::ModelHandle model;
+    ModelHandle model;
     Transform transform;
     bool visible = true;
 };

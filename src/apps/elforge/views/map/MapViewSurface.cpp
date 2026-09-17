@@ -184,7 +184,7 @@ void drawMapSelectionOverlay(
     }
 
     const eld::map::MapTile& tile =
-        viewState.centerRegion.tile(
+        viewState.centerTerrain.tile(
             selection.plane,
             static_cast<std::size_t>(selection.x),
             static_cast<std::size_t>(selection.y)
@@ -405,7 +405,8 @@ bool MapViewSurface::makeMapContextCurrent() {
 bool MapViewSurface::prepare(
     SDL_Renderer* renderer,
     CacheExplorerState& state,
-    eld::render::GraphicsResources& resources
+    eld::render::ModelManager& models,
+    eld::render::TextureManager& textures
 ) {
     if (!state.activeMap.has_value()) {
         return false;
@@ -481,7 +482,8 @@ bool MapViewSurface::prepare(
     try {
         pipeline_.render(
             viewState.scene,
-            resources,
+            models,
+            textures,
             *backend_
         );
 

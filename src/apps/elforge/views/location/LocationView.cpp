@@ -9,6 +9,21 @@ namespace eld::elforge {
 
 namespace {
 
+std::optional<eld::model::ModelData> copyModel(
+    const eld::model::ModelLoader& repository,
+    std::uint16_t modelId
+) {
+    const eld::model::ModelData* source =
+        repository.find(modelId);
+
+    if (source == nullptr) {
+        return std::nullopt;
+    }
+
+    return *source;
+}
+
+
 void prepareMesh(eld::model::ModelData &mesh,
                  const eld::location::LocationData &definition) {
   for (eld::model::Vertex &vertex : mesh.vertices) {
@@ -113,7 +128,7 @@ std::optional<eld::model::ModelData> LocationView::buildAnimationSource(
   bool found = false;
 
   for (const std::uint16_t modelId : selectModels(definition)) {
-    std::optional<eld::model::ModelData> model = repository.find(modelId);
+    std::optional<eld::model::ModelData> model = copyModel(repository, modelId);
 
     if (!model.has_value()) {
       continue;

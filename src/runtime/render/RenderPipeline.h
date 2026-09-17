@@ -1,8 +1,9 @@
 #pragma once
 
 #include "backend/RenderBackend.h"
-#include "render/GraphicsResources.h"
+#include "model/ModelManager.h"
 #include "scene/RenderScene.h"
+#include "texture/TextureManager.h"
 
 namespace eld::render {
 
@@ -10,7 +11,8 @@ class RenderPipeline {
 public:
     void render(
         const RenderScene& scene,
-        const eld::render::GraphicsResources& resources,
+        const ModelManager& models,
+        const TextureManager& textures,
         RenderBackend& backend
     ) const;
 };

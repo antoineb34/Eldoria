@@ -10,12 +10,10 @@ add_library(eldoria_assets STATIC
     map/MapIndexDecoder.cpp
     map/TerrainDecoder.cpp
     map/LocationSpawnDecoder.cpp
-    map/MapAssembler.cpp
     map/MapLoader.cpp
     midi/MidiDecoder.cpp
     midi/MidiLoader.cpp
     model/ModelDecoder.cpp
-    model/ModelAssembler.cpp
     model/ModelLoader.cpp
     image/ImageDecoder.cpp
     title/TitleLoader.cpp
@@ -47,7 +45,6 @@ add_library(eldoria_assets STATIC
     message/MessageLoader.cpp
     message_animation/MessageAnimationDecoder.cpp
     message_animation/MessageAnimationLoader.cpp
-    texture/TextureAssembler.cpp
     texture/TextureLoader.cpp
     sprite/SpriteAssembler.cpp
     sprite/SpriteLoader.cpp

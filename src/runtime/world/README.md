@@ -1,11 +1,36 @@
 # world
 
-Purpose: owns shared spatial reality.
+`world` owns Eldoria's canonical runtime spatial representation.
 
-The world module is responsible for spatial state, positions, regions, tiles, maps as runtime spaces, entity placement, movement representation, collision/pathing concepts, and world-state structures shared by tools, client, server, game, and net.
+It answers:
 
-World is built from clean data structures provided by `data`.
+- what exists
+- where it exists
+- terrain heights
+- tile state
+- locations
+- coordinate relationships
 
-World does not decode cache formats, own gameplay rules, render pixels, define packet language, own app UI, or own server authority.
+It does not know:
 
-Dependency rule: `world` may use data concepts where needed, but should not depend on runnable apps, rendering backends, UI panels, game rules, networking behavior, or platform-specific application code.
+- cache/archive encoding
+- TerrainData or MapLocationData
+- textures
+- models
+- render vertices
+- UVs
+- materials
+- GPU resources
+- application UI
+
+Pipeline:
+
+    Assets
+      ↓
+    runtime/map/RegionBuilder
+      ↓
+    World
+      ↓
+    Graphics
+      ↓
+    Render

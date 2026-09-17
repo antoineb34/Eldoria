@@ -9,6 +9,21 @@ namespace eld::elforge {
 
 namespace {
 
+std::optional<eld::model::ModelData> copyModel(
+    const eld::model::ModelLoader& repository,
+    std::uint16_t modelId
+) {
+    const eld::model::ModelData* source =
+        repository.find(modelId);
+
+    if (source == nullptr) {
+        return std::nullopt;
+    }
+
+    return *source;
+}
+
+
 void applyRecolors(eld::model::ModelData &mesh,
                    const eld::identity_kit::IdentityKitData &definition) {
   for (eld::model::Face &face : mesh.faces) {
@@ -82,7 +97,7 @@ IdentityKitView::build(const eld::identity_kit::IdentityKitData &definition,
   bool foundModel = false;
 
   for (const std::uint16_t modelId : modelIds) {
-    std::optional<eld::model::ModelData> model = repository.find(modelId);
+    std::optional<eld::model::ModelData> model = copyModel(repository, modelId);
 
     if (!model.has_value()) {
       continue;

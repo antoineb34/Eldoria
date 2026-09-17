@@ -472,12 +472,12 @@ bool dumpActiveAsset(
                 << map.indexEntry.regionY()
                 << "\n";
             out << "World base: "
-                << map.centerRegion.worldBaseX()
+                << map.worldBaseX()
                 << ", "
-                << map.centerRegion.worldBaseY()
+                << map.worldBaseY()
                 << "\n";
             out << "Objects: "
-                << map.centerRegion.locations.size()
+                << map.centerLocationCount
                 << "\n";
             out << "Scene locs: "
                 << map.sceneLocs.size()
@@ -506,7 +506,7 @@ bool dumpActiveAsset(
                         ++y
                     ) {
                         const auto& tile =
-                            map.centerRegion.tile(
+                            map.centerTerrain.tile(
                                 plane,
                                 x,
                                 y
@@ -1025,7 +1025,7 @@ bool dumpActiveAsset(
             out << "\n[Texture]\n";
             writePixels(
                 out,
-                state.activeTexture->image
+                *state.activeTexture
             );
         }
 

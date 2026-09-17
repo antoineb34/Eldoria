@@ -229,7 +229,7 @@ bool CacheExplorer::activateAnimationPreviewUse(std::size_t previewIndex) {
   }
 
   state_.activeModelHandle =
-      graphicsResources_.resolveModel(*state_.activeModel);
+      modelSystem_.create(*state_.activeModel);
 
   startAnimationView(use.sequenceId);
 
@@ -313,7 +313,7 @@ void CacheExplorer::rebuildAnimationFrame() {
   }
 
   const eld::render::ModelHandle handle =
-      graphicsResources_.resolveModel(displayMesh);
+      modelSystem_.create(displayMesh);
 
   animationHandles_.emplace(key, handle);
 
@@ -389,7 +389,7 @@ void CacheExplorer::ensureActionGrid() {
     addStrip(offset, -extent, offset, extent, false, color);
   }
 
-  actionGridHandle_ = graphicsResources_.resolveModel(grid);
+  actionGridHandle_ = modelSystem_.create(grid);
 }
 
 bool CacheExplorer::placeActionTargetFromViewport(float mouseX, float mouseY) {
@@ -505,7 +505,7 @@ void CacheExplorer::ensureActionTargetMarker() {
   addFace(1, 4, 3);
   addFace(1, 3, 2);
 
-  actionTargetHandle_ = graphicsResources_.resolveModel(marker);
+  actionTargetHandle_ = modelSystem_.create(marker);
 }
 
 void CacheExplorer::rebuildNpcActionEffect(std::size_t effectIndex) {
@@ -531,7 +531,7 @@ void CacheExplorer::rebuildNpcActionEffect(std::size_t effectIndex) {
   const SpotAnimationView view;
   view.prepareAnimatedMesh(effect.definition, displayMesh);
 
-  effect.modelHandle = graphicsResources_.resolveModel(displayMesh);
+  effect.modelHandle = modelSystem_.create(displayMesh);
 }
 
 void CacheExplorer::faceNpcTowardActionTarget() {

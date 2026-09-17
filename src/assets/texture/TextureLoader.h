@@ -2,68 +2,64 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
-#include <optional>
+#include <unordered_map>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "archive/Archive.h"
 #include "cache/Cache.h"
 #include "image/ImageData.h"
 #include "image/ImageDecoder.h"
-#include "texture/TextureAssembler.h"
-#include "texture/TextureResource.h"
 
-namespace eld::texture {
+namespace eld::texture
+{
 
-class TextureLoader {
-public:
-    explicit TextureLoader(
-        const eld::cache::Cache& cache
-    );
+    class TextureLoader
+    {
+    public:
+        explicit TextureLoader(
+            const eld::cache::Cache &cache);
 
-    const eld::image::ImageData& data(
-        std::uint16_t id
-    ) const;
+        const eld::image::ImageData &get(
+            std::uint16_t id) const;
 
-    const TextureResource& resource(
-        std::uint16_t id
-    ) const;
+        const eld::image::ImageData *find(
+            std::uint16_t id) const;
 
-    std::optional<TextureResource> find(
-        std::uint16_t id
-    ) const;
+        std::vector<std::uint16_t> listIds() const;
 
-    std::vector<std::uint16_t> listIds() const;
+        bool contains(
+            std::uint16_t id) const;
 
-    bool contains(
-        std::uint16_t id
-    ) const;
+        std::size_t count() const;
 
-    std::size_t count() const;
+    private:
+        static constexpr auto CacheIndex =
+            eld::cache::IndexId::Config;
 
-private:
-    static constexpr auto Index =
-        eld::cache::IndexId::Config;
+        static constexpr std::uint16_t
+            TextureArchiveId = 6;
 
-    static constexpr std::uint16_t ArchiveId = 6;
+        static constexpr std::string_view
+            IndexFileName = "index.dat";
 
-    eld::image::ImageData loadData(
-        std::uint16_t id
-    ) const;
+        static constexpr std::string_view
+            TextureFileExtension = ".dat";
 
-    eld::archive::Archive archive_;
-    eld::image::ImageDecoder decoder_;
-    TextureAssembler assembler_;
+        eld::image::ImageData load(
+            std::uint16_t id) const;
 
-    mutable std::map<
-        std::uint16_t,
-        eld::image::ImageData
-    > dataCache_;
+        std::string fileName(
+            std::uint16_t id) const;
 
-    mutable std::map<
-        std::uint16_t,
-        TextureResource
-    > resourceCache_;
-};
+        eld::archive::Archive archive_;
+        eld::image::ImageDecoder decoder_;
+
+        mutable std::unordered_map<
+            std::uint16_t,
+            eld::image::ImageData>
+            textureCache_;
+    };
 
 }

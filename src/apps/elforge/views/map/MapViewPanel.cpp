@@ -319,11 +319,11 @@ void MapViewPanel::render(
         ui::workspace::centeredText(
             "world " +
                 std::to_string(
-                    map.centerRegion.worldBaseX()
+                    map.worldBaseX()
                 ) +
                 ", " +
                 std::to_string(
-                    map.centerRegion.worldBaseY()
+                    map.worldBaseY()
                 ),
             69.0f,
             true

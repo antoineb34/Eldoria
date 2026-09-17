@@ -5,11 +5,10 @@
 namespace eld::render {
 
 struct ModelHandle {
-    std::uint32_t value = 0;
+    std::uint32_t index = 0;
+    std::uint32_t generation = 0;
 
-    bool operator==(
-        const ModelHandle&
-    ) const = default;
+    bool operator==(const ModelHandle&) const = default;
 };
 
 }

@@ -28,30 +28,35 @@
 namespace eld::asset {
 
 class AssetManager {
-public:
-  explicit AssetManager(const eld::cache::Cache &cache);
 
-  eld::animation::AnimationLoader animations;
-  eld::animation::AnimationFrameTable animationFrames;
-  eld::floor::FloorLoader floors;
-  eld::font::FontLoader fonts;
-  eld::identity_kit::IdentityKitLoader identityKits;
-  eld::item::ItemLoader items;
-  eld::location::LocationLoader locations;
-  eld::map::MapLoader maps;
-  eld::message_animation::MessageAnimationLoader messageAnimations;
-  eld::message::MessageLoader messages;
-  eld::midi::MidiLoader midi;
-  eld::texture::TextureLoader textures;
-  eld::model::ModelLoader models;
-  eld::npc::NpcLoader npcs;
-  eld::parameter::ParameterLoader parameters;
-  eld::sequence::SequenceLoader sequences;
-  eld::spot_animation::SpotAnimationLoader spotAnimations;
-  eld::sprite::SpriteLoader sprites;
-  eld::varbit::VarbitLoader varbits;
-  eld::varp::VarpLoader varps;
-  eld::interface::WidgetLoader widgets;
+    private:
+      eld::cache::Cache cache_;
+
+    public:
+      AssetManager();
+
+      eld::animation::AnimationLoader animations;
+      eld::animation::AnimationFrameTable animationFrames;
+      eld::floor::FloorLoader floors;
+      eld::font::FontLoader fonts;
+      eld::identity_kit::IdentityKitLoader identityKits;
+      eld::item::ItemLoader items;
+      eld::location::LocationLoader locations;
+      eld::map::MapLoader maps;
+      eld::message_animation::MessageAnimationLoader messageAnimations;
+      eld::message::MessageLoader messages;
+      eld::midi::MidiLoader midi;
+      eld::texture::TextureLoader textures;
+
+      eld::model::ModelLoader models;
+      eld::npc::NpcLoader npcs;
+      eld::parameter::ParameterLoader parameters;
+      eld::sequence::SequenceLoader sequences;
+      eld::spot_animation::SpotAnimationLoader spotAnimations;
+      eld::sprite::SpriteLoader sprites;
+      eld::varbit::VarbitLoader varbits;
+      eld::varp::VarpLoader varps;
+      eld::interface::WidgetLoader widgets;
 };
 
-} // namespace eld::asset
+}

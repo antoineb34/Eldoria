@@ -4,7 +4,7 @@
 
 #include "camera/Camera.h"
 #include "camera/Projection.h"
-#include "render/model/RenderModel.h"
+#include "render/model/ModelResource.h"
 #include "math/Vec2.h"
 #include "math/Vec4.h"
 #include "scene/Transform.h"

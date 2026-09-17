@@ -32,7 +32,6 @@
 #include "sequence/SequenceResource.h"
 #include "spot_animation/SpotAnimationData.h"
 #include "sprite/SpriteResource.h"
-#include "texture/TextureResource.h"
 #include "varbit/VarbitData.h"
 #include "varp/VarpData.h"
 
@@ -111,7 +110,7 @@ struct CacheExplorerState {
 
   std::vector<PresentationRenderObject> presentationObjects;
 
-  std::optional<eld::texture::TextureResource> activeTexture;
+  std::optional<eld::image::ImageData> activeTexture;
 
   std::optional<eld::sprite::SpriteResource> activeSprite;
   std::optional<eld::image::ImageData> activeImage;

@@ -11,9 +11,8 @@
 #include <vector>
 
 #include "camera/Projection.h"
-#include "render/model/RenderModel.h"
-#include "render/texture/GraphicsTexture.h"
-#include "render/texture/SamplerState.h"
+#include "render/model/ModelResource.h"
+#include "render/texture/TextureSampler.h"
 #include "scene/Transform.h"
 
 namespace eld::render {
@@ -324,15 +323,26 @@ GLuint OpenGLRenderBackend::createProgram() {
 
 const OpenGLRenderBackend::GpuModel&
 OpenGLRenderBackend::ensureModel(
-    eld::render::ModelHandle handle,
-    const eld::render::RenderModel& model
+    ModelHandle handle,
+    const ModelResource& model
 ) {
+    const std::uint64_t key =
+        (
+            static_cast<std::uint64_t>(
+                handle.generation
+            ) << 32u
+        ) |
+        static_cast<std::uint64_t>(
+            handle.index
+        );
+
     const auto existing =
-        modelCache_.find(handle.value);
+        modelCache_.find(key);
 
     if (existing != modelCache_.end()) {
         return existing->second;
     }
+
 
     GpuModel gpuModel;
     gpuModel.meshes.reserve(model.meshes.size());
@@ -460,67 +470,89 @@ OpenGLRenderBackend::ensureModel(
     gl_.bindVertexArray(0);
     gl_.bindBuffer(GL_ARRAY_BUFFER, 0);
 
-    const auto [inserted, created] =
-        modelCache_.emplace(
-            handle.value,
-            std::move(gpuModel)
-        );
-
-    (void)created;
     stats_.uploadedModels++;
 
-    return inserted->second;
+    return modelCache_.emplace(
+        key,
+        std::move(gpuModel)
+    ).first->second;
 }
 
 GLuint OpenGLRenderBackend::ensureTexture(
-    eld::render::TextureHandle handle,
-    const eld::render::GraphicsResources& resources
+    TextureHandle handle,
+    const TextureManager& textures
 ) {
+    const std::uint64_t key =
+        (
+            static_cast<std::uint64_t>(
+                handle.generation
+            ) << 32u
+        ) |
+        static_cast<std::uint64_t>(
+            handle.index
+        );
+
     const auto existing =
-        textureCache_.find(handle.value);
+        textureCache_.find(key);
 
     if (existing != textureCache_.end()) {
         return existing->second;
     }
 
-    const eld::render::GraphicsTexture& texture =
-        resources.getTexture(handle);
-
-    if (
-        texture.format !=
-            eld::render::TextureFormat::Rgba8
-    ) {
-        throw std::runtime_error(
-            "OpenGL backend only supports RGBA8 textures"
-        );
-    }
+    const TextureResource& texture =
+        textures.get(handle);
 
     const std::size_t expectedBytes =
-        static_cast<std::size_t>(texture.width) *
-        static_cast<std::size_t>(texture.height) *
+        static_cast<std::size_t>(
+            texture.width
+        ) *
+        static_cast<std::size_t>(
+            texture.height
+        ) *
         4u;
 
-    if (texture.pixels.size() != expectedBytes) {
+    if (
+        texture.width == 0 ||
+        texture.height == 0 ||
+        texture.rgba.size() != expectedBytes
+    ) {
         throw std::runtime_error(
-            "GraphicsTexture byte count does not match RGBA8 dimensions"
+            "TextureResource RGBA byte count does not "
+            "match texture dimensions"
         );
     }
 
     GLuint gpuTexture = 0;
-    gl_.genTextures(1, &gpuTexture);
-    gl_.bindTexture(GL_TEXTURE_2D, gpuTexture);
-    gl_.pixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    gl_.genTextures(
+        1,
+        &gpuTexture
+    );
+
+    gl_.bindTexture(
+        GL_TEXTURE_2D,
+        gpuTexture
+    );
+
+    gl_.pixelStorei(
+        GL_UNPACK_ALIGNMENT,
+        1
+    );
 
     gl_.texImage2D(
         GL_TEXTURE_2D,
         0,
         GL_RGBA8,
-        static_cast<GLsizei>(texture.width),
-        static_cast<GLsizei>(texture.height),
+        static_cast<GLsizei>(
+            texture.width
+        ),
+        static_cast<GLsizei>(
+            texture.height
+        ),
         0,
         GL_RGBA,
         GL_UNSIGNED_BYTE,
-        texture.pixels.data()
+        texture.rgba.data()
     );
 
     gl_.texParameteri(
@@ -528,16 +560,19 @@ GLuint OpenGLRenderBackend::ensureTexture(
         GL_TEXTURE_MIN_FILTER,
         GL_NEAREST
     );
+
     gl_.texParameteri(
         GL_TEXTURE_2D,
         GL_TEXTURE_MAG_FILTER,
         GL_NEAREST
     );
+
     gl_.texParameteri(
         GL_TEXTURE_2D,
         GL_TEXTURE_WRAP_S,
         GL_REPEAT
     );
+
     gl_.texParameteri(
         GL_TEXTURE_2D,
         GL_TEXTURE_WRAP_T,
@@ -545,17 +580,19 @@ GLuint OpenGLRenderBackend::ensureTexture(
     );
 
     textureCache_.emplace(
-        handle.value,
+        key,
         gpuTexture
     );
+
     stats_.uploadedTextures++;
 
     return gpuTexture;
 }
 
+
 void OpenGLRenderBackend::configureMaterial(
-    const eld::render::RenderMaterial& material,
-    const eld::render::GraphicsResources& resources
+    const RenderMaterial& material,
+    const TextureManager& textures
 ) {
     gl_.uniform4f(
         baseColorLocation_,
@@ -599,7 +636,7 @@ void OpenGLRenderBackend::configureMaterial(
         const GLuint texture =
             ensureTexture(
                 *material.texture,
-                resources
+                textures
             );
 
         gl_.bindTexture(
@@ -676,16 +713,15 @@ void OpenGLRenderBackend::beginFrame(
 }
 
 void OpenGLRenderBackend::draw(
-    eld::render::ModelHandle modelHandle,
+    ModelHandle handle,
+    const ModelResource& model,
     const Transform& transform,
-    const eld::render::GraphicsResources& resources
+    const TextureManager& textures
 ) {
-    const eld::render::RenderModel& model =
-        resources.getModel(modelHandle);
 
     const GpuModel& gpuModel =
         ensureModel(
-            modelHandle,
+            handle,
             model
         );
 
@@ -745,7 +781,7 @@ void OpenGLRenderBackend::draw(
 
             configureMaterial(
                 material,
-                resources
+                textures
             );
 
             gl_.uniform1f(

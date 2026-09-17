@@ -76,7 +76,7 @@ void CacheExplorer::showItemInventoryView() {
 
   resetAnimationView();
 
-  state_.activeModelHandle = graphicsResources_.resolveModel(*model);
+  state_.activeModelHandle = modelSystem_.create(*model);
   state_.activeModel = std::move(*model);
   itemViewMode_ = ItemViewMode::Inventory;
 }
@@ -96,7 +96,7 @@ void CacheExplorer::showItemEquippedView(ItemViewGender gender) {
 
   resetAnimationView();
 
-  state_.activeModelHandle = graphicsResources_.resolveModel(*model);
+  state_.activeModelHandle = modelSystem_.create(*model);
   state_.activeModel = std::move(*model);
 
   animationSource_ = *state_.activeModel;

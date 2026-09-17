@@ -1,6 +1,0 @@
-add_subdirectory(math)
-add_subdirectory(audio)
-add_subdirectory(world)
-add_subdirectory(game)
-add_subdirectory(network)
-add_subdirectory(render)

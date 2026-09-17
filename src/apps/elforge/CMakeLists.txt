@@ -50,6 +50,7 @@ target_include_directories(elforge PRIVATE
 target_link_libraries(elforge PRIVATE
     Eldoria::Audio
     Eldoria::Assets
+    Eldoria::Graphics
     Eldoria::Render
     Eldoria::Host
     Eldoria::HostImGui

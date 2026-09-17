@@ -39,7 +39,7 @@ SpotAnimationResource SpotAnimationAssembler::assemble(
             );
         }
 
-        resource.model = &models_->resource(*resource.data.modelId);
+        resource.model = &models_->get(*resource.data.modelId);
     }
 
     if (resource.data.sequenceId.has_value()) {

@@ -6,6 +6,21 @@ namespace eld::elforge {
 
 namespace {
 
+std::optional<eld::model::ModelData> copyModel(
+    const eld::model::ModelLoader& repository,
+    std::uint16_t modelId
+) {
+    const eld::model::ModelData* source =
+        repository.find(modelId);
+
+    if (source == nullptr) {
+        return std::nullopt;
+    }
+
+    return *source;
+}
+
+
 void rotate90Degrees(
     eld::model::ModelData& mesh
 ) {
@@ -28,7 +43,7 @@ SpotAnimationView::buildAnimationSource(
     }
 
     std::optional<eld::model::ModelData> model =
-        repository.find(
+        copyModel(repository, 
             *definition.modelId
         );
 

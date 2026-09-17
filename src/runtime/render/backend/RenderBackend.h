@@ -1,9 +1,10 @@
 #pragma once
 
 #include "camera/Camera.h"
-#include "render/GraphicsResources.h"
-#include "render/model/ModelHandle.h"
+#include "model/ModelHandle.h"
+#include "model/ModelResource.h"
 #include "scene/Transform.h"
+#include "texture/TextureManager.h"
 
 namespace eld::render {
 
@@ -16,9 +17,10 @@ public:
     ) = 0;
 
     virtual void draw(
-        eld::render::ModelHandle model,
+        ModelHandle handle,
+        const ModelResource& model,
         const Transform& transform,
-        const eld::render::GraphicsResources& resources
+        const TextureManager& textures
     ) = 0;
 
     virtual void endFrame() = 0;

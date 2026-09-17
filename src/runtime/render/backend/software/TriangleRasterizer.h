@@ -2,8 +2,8 @@
 
 #include "Framebuffer.h"
 #include "SoftwareMeshProjector.h"
-#include "render/model/RenderModel.h"
-#include "render/texture/GraphicsTexture.h"
+#include "render/texture/TextureResource.h"
+#include "render/model/ModelResource.h"
 
 namespace eld::render {
 
@@ -15,7 +15,7 @@ public:
         const SoftwareProjectedVertex& b,
         const SoftwareProjectedVertex& c,
         const eld::render::RenderMaterial& material,
-        const eld::render::GraphicsTexture* texture,
+        const eld::render::TextureResource* texture,
         float depthBias = 0.0f
     ) const;
 };

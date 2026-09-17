@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "TextureSampler.h"
+#include "SoftwareTextureSampler.h"
 
 namespace eld::render {
 
@@ -91,7 +91,7 @@ void TriangleRasterizer::drawTriangle(
     const SoftwareProjectedVertex& b,
     const SoftwareProjectedVertex& c,
     const eld::render::RenderMaterial& material,
-    const eld::render::GraphicsTexture* texture,
+    const eld::render::TextureResource* texture,
     float depthBias
 ) const {
     if (!a.valid || !b.valid || !c.valid) {
@@ -202,7 +202,7 @@ void TriangleRasterizer::drawTriangle(
     const float inverseDepthC =
         1.0f / c.screen.depth;
 
-    TextureSampler sampler;
+    SoftwareTextureSampler sampler;
 
     for (int y = minY; y <= maxY; y++) {
         for (int x = minX; x <= maxX; x++) {

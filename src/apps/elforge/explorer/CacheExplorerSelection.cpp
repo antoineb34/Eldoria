@@ -130,7 +130,8 @@ void CacheExplorer::handleSelectionChanged() {
 
     try {
       const MapView view(mapLoader_, floorLoader_, locationLoader_,
-                         modelLoader_, graphicsResources_);
+                         modelLoader_, modelSystem_,
+                         textureSystem_, modelManager_);
 
       state_.activeMap =
           view.build(static_cast<std::uint16_t>(state_.selection.regionId));
@@ -159,13 +160,13 @@ void CacheExplorer::handleSelectionChanged() {
         static_cast<std::uint16_t>(state_.selection.fileId);
 
     try {
-      std::optional<eld::model::ModelData> model = modelLoader_.find(modelId);
+      const eld::model::ModelData* model = modelLoader_.find(modelId);
 
-      if (model.has_value()) {
+      if (model != nullptr) {
         const eld::render::ModelHandle handle =
-            graphicsResources_.resolveModel(modelId);
+            modelSystem_.get(modelId);
 
-        state_.activeModel = std::move(*model);
+        state_.activeModel = *model;
 
         state_.activeModelHandle = handle;
       }
@@ -187,7 +188,11 @@ void CacheExplorer::handleSelectionChanged() {
         static_cast<std::uint16_t>(state_.selection.fileId);
 
     try {
-      state_.activeTexture = textureLoader_.find(textureId);
+      if (const auto* texture = textureLoader_.find(textureId)) {
+        state_.activeTexture = *texture;
+      } else {
+        state_.activeTexture.reset();
+      }
     } catch (const std::exception &) {
       state_.activeTexture.reset();
     }
@@ -229,11 +234,12 @@ void CacheExplorer::handleSelectionChanged() {
 
         if (definition->type == 6 && definition->modelId.has_value()) {
           try {
-            state_.activeModel = modelLoader_.find(*definition->modelId);
+            const eld::model::ModelData* model = modelLoader_.find(*definition->modelId);
 
-            if (state_.activeModel.has_value()) {
+            if (model != nullptr) {
+              state_.activeModel = *model;
               state_.activeModelHandle =
-                  graphicsResources_.resolveModel(*definition->modelId);
+                  modelSystem_.get(*definition->modelId);
             }
           } catch (const std::exception &) {
             state_.activeModel.reset();
@@ -334,7 +340,7 @@ void CacheExplorer::handleSelectionChanged() {
           view.build(*definition, modelLoader_);
 
       if (model.has_value()) {
-        state_.activeModelHandle = graphicsResources_.resolveModel(*model);
+        state_.activeModelHandle = modelSystem_.create(*model);
 
         state_.activeModel = std::move(*model);
 
@@ -407,7 +413,7 @@ void CacheExplorer::handleSelectionChanged() {
           view.build(*definition, modelLoader_);
 
       if (model.has_value()) {
-        state_.activeModelHandle = graphicsResources_.resolveModel(*model);
+        state_.activeModelHandle = modelSystem_.create(*model);
 
         state_.activeModel = std::move(*model);
 
@@ -446,7 +452,7 @@ void CacheExplorer::handleSelectionChanged() {
           view.build(*definition, modelLoader_);
 
       if (model.has_value()) {
-        state_.activeModelHandle = graphicsResources_.resolveModel(*model);
+        state_.activeModelHandle = modelSystem_.create(*model);
 
         state_.activeModel = std::move(*model);
 
@@ -484,7 +490,7 @@ void CacheExplorer::handleSelectionChanged() {
           view.build(*definition, modelLoader_);
 
       if (model.has_value()) {
-        state_.activeModelHandle = graphicsResources_.resolveModel(*model);
+        state_.activeModelHandle = modelSystem_.create(*model);
 
         state_.activeModel = std::move(*model);
       }
@@ -507,7 +513,12 @@ void CacheExplorer::handleSelectionChanged() {
       state_.activeFloor = *floor;
 
       if (floor->textureId.has_value()) {
-        state_.activeTexture = textureLoader_.find(*floor->textureId);
+        if (const auto* texture =
+                textureLoader_.find(*floor->textureId)) {
+          state_.activeTexture = *texture;
+        } else {
+          state_.activeTexture.reset();
+        }
       }
 
       if (!state_.activeTexture.has_value() &&

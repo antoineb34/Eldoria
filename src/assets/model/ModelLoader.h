@@ -2,35 +2,26 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
-#include <optional>
+#include <unordered_map>
 #include <vector>
 
-#include "model/ModelData.h"
-#include "model/ModelResource.h"
-#include "model/ModelAssembler.h"
 #include "cache/Cache.h"
+#include "model/ModelData.h"
 #include "model/ModelDecoder.h"
-#include "texture/TextureLoader.h"
 
 namespace eld::model {
 
 class ModelLoader {
 public:
-    ModelLoader(
-        const eld::cache::Cache& cache,
-        const eld::texture::TextureLoader& textures
+    explicit ModelLoader(
+        const eld::cache::Cache& cache
     );
 
-    const ModelData& data(
+    const ModelData& get(
         std::uint16_t id
     ) const;
 
-    std::optional<ModelData> find(
-        std::uint16_t id
-    ) const;
-
-    const ModelResource& resource(
+    const ModelData* find(
         std::uint16_t id
     ) const;
 
@@ -43,34 +34,20 @@ public:
     std::size_t count() const;
 
 private:
-    static constexpr auto Index =
+    static constexpr auto CacheIndex =
         eld::cache::IndexId::Models;
 
-    ModelData loadData(
-        std::uint16_t id
-    ) const;
-
-    ModelResource assembleResource(
+    ModelData load(
         std::uint16_t id
     ) const;
 
     eld::cache::Store store_;
-
-    const eld::texture::TextureLoader&
-        textures_;
-
     ModelDecoder decoder_;
-    ModelAssembler assembler_;
 
-    mutable std::map<
+    mutable std::unordered_map<
         std::uint16_t,
         ModelData
-    > dataCache_;
-
-    mutable std::map<
-        std::uint16_t,
-        ModelResource
-    > resourceCache_;
+    > modelCache_;
 };
 
 }

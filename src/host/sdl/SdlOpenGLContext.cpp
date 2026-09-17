@@ -15,9 +15,11 @@ SdlOpenGLContext::SdlOpenGLContext(
         std::cerr
             << "SDL_Init failed: "
             << SDL_GetError()
-            << "\n";
+            << '\n';
         return;
     }
+
+    sdlInitialized_ = true;
 
     if (
         !SDL_GL_SetAttribute(
@@ -44,8 +46,9 @@ SdlOpenGLContext::SdlOpenGLContext(
         std::cerr
             << "SDL_GL_SetAttribute failed: "
             << SDL_GetError()
-            << "\n";
-        SDL_Quit();
+            << '\n';
+
+        cleanup();
         return;
     }
 
@@ -53,29 +56,28 @@ SdlOpenGLContext::SdlOpenGLContext(
         title,
         width,
         height,
-        SDL_WINDOW_OPENGL |
-            SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
     );
 
-    if (window_ == nullptr) {
+    if (!window_) {
         std::cerr
             << "SDL_CreateWindow(OpenGL) failed: "
             << SDL_GetError()
-            << "\n";
-        SDL_Quit();
+            << '\n';
+
+        cleanup();
         return;
     }
 
     context_ = SDL_GL_CreateContext(window_);
 
-    if (context_ == nullptr) {
+    if (!context_) {
         std::cerr
             << "SDL_GL_CreateContext failed: "
             << SDL_GetError()
-            << "\n";
-        SDL_DestroyWindow(window_);
-        window_ = nullptr;
-        SDL_Quit();
+            << '\n';
+
+        cleanup();
         return;
     }
 
@@ -83,28 +85,32 @@ SdlOpenGLContext::SdlOpenGLContext(
         std::cerr
             << "SDL_GL_MakeCurrent failed: "
             << SDL_GetError()
-            << "\n";
-        SDL_GL_DestroyContext(context_);
-        context_ = nullptr;
-        SDL_DestroyWindow(window_);
-        window_ = nullptr;
-        SDL_Quit();
+            << '\n';
+
+        cleanup();
         return;
     }
 }
 
 SdlOpenGLContext::~SdlOpenGLContext() {
-    if (context_ != nullptr) {
+    cleanup();
+}
+
+void SdlOpenGLContext::cleanup() {
+    if (context_) {
         SDL_GL_DestroyContext(context_);
         context_ = nullptr;
     }
 
-    if (window_ != nullptr) {
+    if (window_) {
         SDL_DestroyWindow(window_);
         window_ = nullptr;
     }
 
-    SDL_Quit();
+    if (sdlInitialized_) {
+        SDL_Quit();
+        sdlInitialized_ = false;
+    }
 }
 
 SDL_Window* SdlOpenGLContext::window() const {

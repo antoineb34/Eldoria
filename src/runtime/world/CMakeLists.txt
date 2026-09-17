@@ -1,11 +1,19 @@
-add_library(eldoria_world INTERFACE)
-
-add_library(Eldoria::World ALIAS eldoria_world)
-
-target_include_directories(eldoria_world INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+add_library(eldoria_world STATIC
+    Terrain.cpp
 )
 
-target_link_libraries(eldoria_world INTERFACE
-    Eldoria::Assets
+add_library(
+    Eldoria::World
+    ALIAS eldoria_world
+)
+
+# Expose runtime/ so consumers can write:
+#
+#   #include "world/Terrain.h"
+#   #include "world/Region.h"
+#
+target_include_directories(
+    eldoria_world
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
 )

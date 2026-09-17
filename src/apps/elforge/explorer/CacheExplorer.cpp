@@ -18,7 +18,7 @@ CacheExplorer::CacheExplorer()
       animationLoader_(cache_), animationFrameTable_(animationLoader_),
       animationPlayer_(),
       animationPresentationCatalog_("content/animation_bindings.csv"),
-      textureLoader_(cache_), modelLoader_(cache_, textureLoader_),
+      textureLoader_(cache_), modelLoader_(cache_),
       titleSpriteLoader_(cache_, eld::sprite::SpriteArchive::Title),
       mediaSpriteLoader_(cache_, eld::sprite::SpriteArchive::Media),
 
@@ -31,7 +31,10 @@ CacheExplorer::CacheExplorer()
       spotAnimationLoader_(cache_), varpLoader_(cache_), varbitLoader_(cache_),
       parameterLoader_(cache_), messageLoader_(cache_),
       messageAnimationLoader_(cache_), widgetLoader_(cache_),
-      graphicsResources_(modelLoader_, textureLoader_) {}
+      textureManager_(),
+      textureSystem_(textureLoader_, textureManager_),
+      modelManager_(),
+      modelSystem_(modelLoader_, textureSystem_, modelManager_) {}
 
 void CacheExplorer::shutdown() {
   midiPlayer_.shutdown();
@@ -170,12 +173,22 @@ void CacheExplorer::update() {
 }
 
 void CacheExplorer::prepareViewport(SDL_Renderer *renderer) {
-  viewportPanel_.prepareViewport(renderer, state_, graphicsResources_);
+  viewportPanel_.prepareViewport(
+      renderer,
+      state_,
+      modelManager_,
+      textureManager_);
 }
 
 void CacheExplorer::renderViewport(SDL_Renderer *renderer) {
-  viewportPanel_.renderViewport(renderer, state_, graphicsResources_,
-                                widgetLoader_, mediaSpriteLoader_);
+  viewportPanel_.renderViewport(
+      renderer,
+      state_,
+      modelSystem_,
+      modelManager_,
+      textureManager_,
+      widgetLoader_,
+      mediaSpriteLoader_);
 }
 
 void CacheExplorer::renderUi() {

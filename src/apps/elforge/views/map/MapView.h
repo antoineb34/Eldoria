@@ -6,7 +6,9 @@
 #include "location/LocationLoader.h"
 #include "map/MapLoader.h"
 #include "model/ModelLoader.h"
-#include "render/GraphicsResources.h"
+#include "model/ModelSystem.h"
+#include "texture/TextureSystem.h"
+#include "render/model/ModelManager.h"
 #include "views/map/MapViewState.h"
 
 namespace eld::elforge {
@@ -17,7 +19,9 @@ public:
           const eld::floor::FloorLoader &floors,
           const eld::location::LocationLoader &locations,
           eld::model::ModelLoader &models,
-          eld::render::GraphicsResources &graphics);
+          eld::graphics::ModelSystem &modelSystem,
+          eld::graphics::TextureSystem &textureSystem,
+          eld::render::ModelManager &modelManager);
 
   MapViewState build(std::uint16_t regionId) const;
 
@@ -26,7 +30,9 @@ private:
   const eld::floor::FloorLoader &floors_;
   const eld::location::LocationLoader &locations_;
   eld::model::ModelLoader &models_;
-  eld::render::GraphicsResources &graphics_;
+  eld::graphics::ModelSystem &modelSystem_;
+  eld::graphics::TextureSystem &textureSystem_;
+  eld::render::ModelManager &modelManager_;
 };
 
 } // namespace eld::elforge

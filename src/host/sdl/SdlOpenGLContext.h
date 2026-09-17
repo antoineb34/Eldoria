@@ -19,6 +19,9 @@ public:
     SdlOpenGLContext(const SdlOpenGLContext&) = delete;
     SdlOpenGLContext& operator=(const SdlOpenGLContext&) = delete;
 
+    SdlOpenGLContext(SdlOpenGLContext&&) = delete;
+    SdlOpenGLContext& operator=(SdlOpenGLContext&&) = delete;
+
     SDL_Window* window() const;
     SDL_GLContext context() const;
 
@@ -26,8 +29,11 @@ public:
     bool setSwapInterval(int interval) const;
 
 private:
+    void cleanup();
+
     SDL_Window* window_ = nullptr;
     SDL_GLContext context_ = nullptr;
+    bool sdlInitialized_ = false;
 };
 
 }

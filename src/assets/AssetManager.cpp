@@ -3,29 +3,31 @@
 namespace eld::asset {
 
 
-AssetManager::AssetManager(const eld::cache::Cache& cache)
-    : animations(cache),
+AssetManager::AssetManager()
+    : cache_("cache"),
+      animations(cache_),
       animationFrames(animations),
-      floors(cache),
-      fonts(cache),
-      identityKits(cache),
-      items(cache),
-      locations(cache),
-      maps(cache),
-      messageAnimations(cache),
-      messages(cache),
-      midi(cache),
-      textures(cache),
-      models(cache, textures),
-      npcs(cache),
-      parameters(cache),
-      sequences(cache, animationFrames),
-      spotAnimations(cache, models, sequences),
-      sprites(cache, eld::sprite::SpriteArchive::Media),
-      varbits(cache),
-      varps(cache),
-      widgets(cache) {
-}
+      floors(cache_),
+      fonts(cache_),
+      identityKits(cache_),
+      items(cache_),
+      locations(cache_),
+      maps(cache_),
+      messageAnimations(cache_),
+      messages(cache_),
+      midi(cache_),
+      textures(cache_),
+      models(cache_),
+      npcs(cache_),
+      parameters(cache_),
+      sequences(cache_, animationFrames),
+      spotAnimations(cache_, models, sequences),
+      sprites(cache_, eld::sprite::SpriteArchive::Media),
+      varbits(cache_),
+      varps(cache_),
+      widgets(cache_)
 
+{
+}
 
 }

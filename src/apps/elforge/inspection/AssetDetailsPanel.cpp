@@ -405,13 +405,13 @@ void AssetDetailsPanel::render(CacheExplorerState &state, float width,
     ImGui::Text("Region coordinates: %d, %d", map.indexEntry.regionX(),
                 map.indexEntry.regionY());
 
-    ImGui::Text("World base: %d, %d", map.centerRegion.worldBaseX(),
-                map.centerRegion.worldBaseY());
+    ImGui::Text("World base: %d, %d", map.worldBaseX(),
+                map.worldBaseY());
 
     ImGui::Text("Preload: %s", map.indexEntry.shouldPreload ? "yes" : "no");
 
     ImGui::Text("Decoded object spawns: %zu",
-                map.centerRegion.locations.size());
+                map.centerLocationCount);
 
     ImGui::Text("Neighborhood terrain: %zu / 9", map.stats.neighborhoodRegions);
 
@@ -444,7 +444,7 @@ void AssetDetailsPanel::render(CacheExplorerState &state, float width,
           selection.x < static_cast<int>(eld::map::RegionSize) &&
           selection.y >= 0 &&
           selection.y < static_cast<int>(eld::map::RegionSize)) {
-        const eld::map::MapTile &tile = map.centerRegion.tile(
+        const eld::map::MapTile &tile = map.centerTerrain.tile(
             selection.plane, static_cast<std::size_t>(selection.x),
             static_cast<std::size_t>(selection.y));
 
@@ -457,8 +457,8 @@ void AssetDetailsPanel::render(CacheExplorerState &state, float width,
         ImGui::Text("Local tile: %d, %d", selection.x, selection.y);
 
         ImGui::Text("World tile: %d, %d",
-                    map.centerRegion.worldBaseX() + selection.x,
-                    map.centerRegion.worldBaseY() + selection.y);
+                    map.worldBaseX() + selection.x,
+                    map.worldBaseY() + selection.y);
 
         ImGui::Text("Height: %d", tile.height);
 
@@ -544,8 +544,8 @@ void AssetDetailsPanel::render(CacheExplorerState &state, float width,
       ImGui::Text("Local tile: %d, %d", loc.tileX, loc.tileZ);
 
       ImGui::Text("World tile: %d, %d",
-                  map.centerRegion.worldBaseX() + loc.tileX,
-                  map.centerRegion.worldBaseY() + loc.tileZ);
+                  map.worldBaseX() + loc.tileX,
+                  map.worldBaseY() + loc.tileZ);
 
       ImGui::Text("Footprint: %d x %d", loc.footprintWidth,
                   loc.footprintLength);
@@ -1176,10 +1176,10 @@ void AssetDetailsPanel::render(CacheExplorerState &state, float width,
     ImGui::Separator();
     ImGui::TextUnformatted("TEXTURE");
 
-    ImGui::Text("Size: %u x %u", static_cast<unsigned int>(texture.image.width),
-                static_cast<unsigned int>(texture.image.height));
+    ImGui::Text("Size: %u x %u", static_cast<unsigned int>(texture.width),
+                static_cast<unsigned int>(texture.height));
 
-    ImGui::Text("Decoded pixels: %zu", texture.image.pixels.size());
+    ImGui::Text("Decoded pixels: %zu", texture.pixels.size());
   }
 
   if (state.activeSprite.has_value()) {

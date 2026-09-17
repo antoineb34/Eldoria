@@ -31,7 +31,9 @@
 #include "views/interface/InterfaceView.h"
 
 #include "interface/WidgetLoader.h"
-#include "render/GraphicsResources.h"
+#include "model/ModelSystem.h"
+#include "render/model/ModelManager.h"
+#include "render/texture/TextureManager.h"
 #include "sprite/SpriteLoader.h"
 
 #include "render/RenderPipeline.h"
@@ -1883,14 +1885,16 @@ float interfaceVerticalFov(float focalLength) {
 void renderInterfaceModel(SDL_Renderer *renderer,
                           const InterfaceViewState &viewState,
                           const InterfaceViewNode &node, int x, int y,
-                          eld::render::GraphicsResources &resources) {
+                          eld::graphics::ModelSystem &modelSystem,
+                          eld::render::ModelManager &models,
+                          eld::render::TextureManager &textures) {
   if (!node.model.has_value()) {
     return;
   }
 
   try {
     const eld::render::ModelHandle handle =
-        resources.resolveModel(node.model->modelId);
+        modelSystem.get(node.model->modelId);
 
     eld::render::RenderObject object;
 
@@ -1930,7 +1934,7 @@ void renderInterfaceModel(SDL_Renderer *renderer,
 
     eld::render::RenderPipeline pipeline;
 
-    pipeline.render(scene, resources, backend);
+    pipeline.render(scene, models, textures, backend);
   } catch (const std::exception &) {
     return;
   }
@@ -1975,7 +1979,9 @@ void renderInterfaceNode(SDL_Renderer *renderer,
                          const InterfaceViewNode &node, int parentX,
                          int parentY, const SDL_Rect &clip,
                          InterfaceSpriteCache &spriteCache,
-                         eld::render::GraphicsResources &resources,
+                         eld::graphics::ModelSystem &modelSystem,
+                          eld::render::ModelManager &models,
+                          eld::render::TextureManager &textures,
                          const InterfaceViewOptions &options) {
   if (node.widget.hidden && !options.showHiddenWidgets) {
     return;
@@ -2031,7 +2037,7 @@ void renderInterfaceNode(SDL_Renderer *renderer,
 
   case 6:
     if (options.showModels) {
-      renderInterfaceModel(renderer, viewState, node, x, y, resources);
+      renderInterfaceModel(renderer, viewState, node, x, y, modelSystem, models, textures);
     }
     break;
 
@@ -2074,7 +2080,7 @@ void renderInterfaceNode(SDL_Renderer *renderer,
     }
 
     renderInterfaceNode(renderer, viewState, child, x, y, childClip,
-                        spriteCache, resources, options);
+                        spriteCache, modelSystem, models, textures, options);
 
     SDL_SetRenderClipRect(renderer, &childClip);
   }
@@ -2154,7 +2160,9 @@ void renderInterfaceView(SDL_Renderer *renderer,
                          const CacheExplorerState &state,
                          const InterfaceViewState &viewState,
                          eld::sprite::SpriteLoader &spriteLoader,
-                         eld::render::GraphicsResources &resources,
+                         eld::graphics::ModelSystem &modelSystem,
+                          eld::render::ModelManager &models,
+                          eld::render::TextureManager &textures,
                          const InterfaceViewOptions &options) {
   const SDL_Rect viewportClip{state.viewportX, state.viewportY,
                               state.viewportWidth, state.viewportHeight};
@@ -2203,7 +2211,7 @@ void renderInterfaceView(SDL_Renderer *renderer,
   InterfaceSpriteCache spriteCache(renderer, spriteLoader);
 
   renderInterfaceNode(renderer, viewState, viewState.root, originX, originY,
-                      viewportClip, spriteCache, resources, options);
+                      viewportClip, spriteCache, modelSystem, models, textures, options);
 
   SDL_SetRenderClipRect(renderer, nullptr);
 
@@ -2399,7 +2407,7 @@ void pickMapElement(CacheExplorerState &state, const ImVec2 &mouse) {
 
   for (int x = 0; x < static_cast<int>(eld::map::RegionSize); ++x) {
     for (int y = 0; y < static_cast<int>(eld::map::RegionSize); ++y) {
-      const eld::map::MapTile &tile = viewState.centerRegion.tile(
+      const eld::map::MapTile &tile = viewState.centerTerrain.tile(
           state.mapPlane, static_cast<std::size_t>(x),
           static_cast<std::size_t>(y));
 
@@ -2667,8 +2675,8 @@ std::string workspaceSummary(const CacheExplorerState &state,
 
   case ViewportViewKind::Texture:
     if (state.activeTexture.has_value()) {
-      return std::to_string(state.activeTexture->image.width) + " x " +
-             std::to_string(state.activeTexture->image.height);
+      return std::to_string(state.activeTexture->width) + " x " +
+             std::to_string(state.activeTexture->height);
     }
     break;
 
@@ -3050,14 +3058,16 @@ void ViewportPanel::render(
   ImGui::EndChild();
 }
 
-void ViewportPanel::prepareViewport(SDL_Renderer *renderer,
-                                    CacheExplorerState &state,
-                                    eld::render::GraphicsResources &resources) {
+void ViewportPanel::prepareViewport(
+    SDL_Renderer *renderer,
+    CacheExplorerState &state,
+    eld::render::ModelManager &models,
+    eld::render::TextureManager &textures) {
   if (!state.activeMap.has_value()) {
     return;
   }
 
-  if (!mapViewSurface_.prepare(renderer, state, resources)) {
+  if (!mapViewSurface_.prepare(renderer, state, models, textures)) {
     state.mapViewError = mapViewSurface_.error();
   } else {
     state.mapViewError.clear();
@@ -3065,8 +3075,11 @@ void ViewportPanel::prepareViewport(SDL_Renderer *renderer,
 }
 
 void ViewportPanel::renderViewport(
-    SDL_Renderer *renderer, CacheExplorerState &state,
-    eld::render::GraphicsResources &resources,
+    SDL_Renderer *renderer,
+    CacheExplorerState &state,
+    eld::graphics::ModelSystem &modelSystem,
+    eld::render::ModelManager &models,
+    eld::render::TextureManager &textures,
     const eld::interface::WidgetLoader &interfaces,
     eld::sprite::SpriteLoader &interfaceSprites) {
   viewportRenderer_ = renderer;
@@ -3134,7 +3147,7 @@ void ViewportPanel::renderViewport(
 
     if (viewState.has_value()) {
       renderInterfaceView(renderer, state, *viewState, interfaceSprites,
-                          resources, workspaceRouter_.interfaceOptions());
+                          modelSystem, models, textures, workspaceRouter_.interfaceOptions());
     }
 
     return;
@@ -3153,7 +3166,7 @@ void ViewportPanel::renderViewport(
   }
 
   if (state.activeTexture.has_value()) {
-    renderImage(renderer, state, state.activeTexture->image,
+    renderImage(renderer, state, *state.activeTexture,
                 &workspaceRouter_.textureOptions());
 
     return;
@@ -3208,7 +3221,7 @@ void ViewportPanel::renderViewport(
 
     eld::render::RenderPipeline pipeline;
 
-    pipeline.render(scene, resources, backend);
+    pipeline.render(scene, models, textures, backend);
   } else {
     SDL_SetRenderDrawColor(renderer, background[0], background[1],
                            background[2], background[3]);

@@ -24,9 +24,10 @@ public:
     ) override;
 
     void draw(
-        eld::render::ModelHandle model,
+        ModelHandle handle,
+        const ModelResource& model,
         const Transform& transform,
-        const eld::render::GraphicsResources& resources
+        const TextureManager& textures
     ) override;
 
     void endFrame() override;

@@ -10,6 +10,8 @@ target_link_libraries(elclient PRIVATE
     Eldoria::Host
     Eldoria::Render
     Eldoria::Assets
+    Eldoria::Graphics
+    Eldoria::MapRuntime
 )
 
 set_target_properties(elclient PROPERTIES

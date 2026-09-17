@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "map/MapIndexData.h"
-#include "map/MapRegionResource.h"
+#include "map/TerrainData.h"
 #include "render/map/SceneLocationBuilder.h"
 #include "render/scene/RenderScene.h"
 
@@ -37,7 +37,18 @@ struct MapViewStats {
 
 struct MapViewState {
   eld::map::MapIndexEntry indexEntry;
-  eld::map::MapRegionResource centerRegion;
+  eld::map::TerrainData centerTerrain;
+  std::size_t centerLocationCount = 0;
+
+  int worldBaseX() const {
+    return static_cast<int>(indexEntry.regionId >> 8) *
+           static_cast<int>(eld::map::RegionSize);
+  }
+
+  int worldBaseY() const {
+    return static_cast<int>(indexEntry.regionId & 0xFFu) *
+           static_cast<int>(eld::map::RegionSize);
+  }
 
   std::vector<eld::render::map::SceneLocationPlacement> sceneLocs;
 

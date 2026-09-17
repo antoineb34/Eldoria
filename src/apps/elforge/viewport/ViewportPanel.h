@@ -16,8 +16,13 @@ namespace eld::audio {
 class MidiPlayer;
 }
 
+namespace eld::graphics {
+class ModelSystem;
+}
+
 namespace eld::render {
-class GraphicsResources;
+class ModelManager;
+class TextureManager;
 }
 
 namespace eld::interface {
@@ -40,21 +45,24 @@ public:
               eld::audio::MidiPlayer &midiPlayer,
               const std::function<void()> &renderAnimationControls);
 
-  void prepareViewport(SDL_Renderer *renderer, CacheExplorerState &state,
-                       eld::render::GraphicsResources &resources);
+  void prepareViewport(
+      SDL_Renderer *renderer,
+      CacheExplorerState &state,
+      eld::render::ModelManager &models,
+      eld::render::TextureManager &textures);
 
-  void renderViewport(SDL_Renderer *renderer, CacheExplorerState &state,
-                      eld::render::GraphicsResources &resources,
-                      const eld::interface::WidgetLoader &interfaces,
-                      eld::sprite::SpriteLoader &interfaceSprites);
+  void renderViewport(
+      SDL_Renderer *renderer,
+      CacheExplorerState &state,
+      eld::graphics::ModelSystem &modelSystem,
+      eld::render::ModelManager &models,
+      eld::render::TextureManager &textures,
+      const eld::interface::WidgetLoader &interfaces,
+      eld::sprite::SpriteLoader &interfaceSprites);
 
 private:
-  // Renderer-backed scene image composited by ImGui.
   ViewportSurface viewportSurface_;
 
-  // SDL renderer is stable for the lifetime of ElForge.
-  // Stored after the first render pass so UI layout can resize
-  // the target before ImGui records its texture reference.
   SDL_Renderer *viewportRenderer_ = nullptr;
 
   ViewportWorkspaceRouter workspaceRouter_;

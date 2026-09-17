@@ -83,12 +83,12 @@ void SoftwareRenderBackend::beginFrame(
 }
 
 void SoftwareRenderBackend::draw(
-    eld::render::ModelHandle modelHandle,
+    ModelHandle handle,
+    const ModelResource& model,
     const Transform& transform,
-    const eld::render::GraphicsResources& resources
+    const TextureManager& textures
 ) {
-    const eld::render::RenderModel& model =
-        resources.getModel(modelHandle);
+    (void)handle;
 
     for (
         const eld::render::RenderMesh& mesh :
@@ -122,12 +122,11 @@ void SoftwareRenderBackend::draw(
                     section.materialIndex
                 );
 
-            const eld::render::GraphicsTexture* texture =
-                nullptr;
+            const TextureResource* texture = nullptr;
 
             if (material.texture.has_value()) {
                 texture =
-                    &resources.getTexture(
+                    &textures.get(
                         *material.texture
                     );
             }

@@ -12,96 +12,43 @@ TextureLoader::TextureLoader(
 )
     : archive_(
           eld::archive::load(
-              cache.open(Index),
-              ArchiveId
+              cache.open(CacheIndex),
+              TextureArchiveId
           )
       ) {
 }
 
 
 const eld::image::ImageData&
-TextureLoader::data(
+TextureLoader::get(
     std::uint16_t id
 ) const {
     const auto existing =
-        dataCache_.find(id);
+        textureCache_.find(id);
 
-    if (existing != dataCache_.end()) {
+    if (existing != textureCache_.end()) {
         return existing->second;
     }
 
     const auto inserted =
-        dataCache_.emplace(
+        textureCache_.emplace(
             id,
-            loadData(id)
+            load(id)
         );
 
     return inserted.first->second;
 }
 
 
-eld::image::ImageData
-TextureLoader::loadData(
-    std::uint16_t id
-) const {
-    const eld::archive::ArchiveFile& dataFile =
-        archive_.get(
-            std::to_string(id) + ".dat"
-        );
-
-    const eld::archive::ArchiveFile& indexFile =
-        archive_.get("index.dat");
-
-    try {
-        return decoder_.decode(
-            dataFile.payload,
-            indexFile.payload
-        );
-    }
-    catch (const std::exception& error) {
-        throw std::runtime_error(
-            "Failed to decode texture " +
-            std::to_string(id) +
-            ": " +
-            error.what()
-        );
-    }
-}
-
-
-const TextureResource&
-TextureLoader::resource(
-    std::uint16_t id
-) const {
-    const auto existing =
-        resourceCache_.find(id);
-
-    if (existing != resourceCache_.end()) {
-        return existing->second;
-    }
-
-    const auto inserted =
-        resourceCache_.emplace(
-            id,
-            assembler_.assemble(
-                id,
-                data(id)
-            )
-        );
-
-    return inserted.first->second;
-}
-
-
-std::optional<TextureResource>
+const eld::image::ImageData*
 TextureLoader::find(
     std::uint16_t id
 ) const {
     if (!contains(id)) {
-        return std::nullopt;
+        return nullptr;
     }
 
-    return resource(id);
+    return &get(id);
 }
 
 
@@ -117,7 +64,9 @@ TextureLoader::listIds() const {
         ++candidate
     ) {
         const auto id =
-            static_cast<std::uint16_t>(candidate);
+            static_cast<std::uint16_t>(
+                candidate
+            );
 
         if (contains(id)) {
             ids.push_back(id);
@@ -132,7 +81,7 @@ bool TextureLoader::contains(
     std::uint16_t id
 ) const {
     return archive_.contains(
-        std::to_string(id) + ".dat"
+        fileName(id)
     );
 }
 
@@ -144,6 +93,45 @@ std::size_t TextureLoader::count() const {
     return fileCount == 0
         ? 0
         : fileCount - 1;
+}
+
+
+std::string TextureLoader::fileName(
+    std::uint16_t id
+) const {
+    return std::to_string(id) +
+        std::string(TextureFileExtension);
+}
+
+
+eld::image::ImageData
+TextureLoader::load(
+    std::uint16_t id
+) const {
+    const eld::archive::ArchiveFile& dataFile =
+        archive_.get(
+            fileName(id)
+        );
+
+    const eld::archive::ArchiveFile& indexFile =
+        archive_.get(
+            IndexFileName
+        );
+
+    try {
+        return decoder_.decode(
+            dataFile.payload,
+            indexFile.payload
+        );
+    }
+    catch (const std::exception& error) {
+        throw std::runtime_error(
+            "Failed to decode texture " +
+            std::to_string(id) +
+            ": " +
+            error.what()
+        );
+    }
 }
 
 }

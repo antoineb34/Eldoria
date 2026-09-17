@@ -52,7 +52,11 @@
 #include "varbit/VarbitLoader.h"
 #include "varp/VarpLoader.h"
 
-#include "render/GraphicsResources.h"
+#include "model/ModelSystem.h"
+#include "texture/TextureSystem.h"
+
+#include "render/model/ModelManager.h"
+#include "render/texture/TextureManager.h"
 
 namespace eld::elforge {
 
@@ -220,7 +224,11 @@ private:
   eld::message_animation::MessageAnimationLoader messageAnimationLoader_;
   eld::interface::WidgetLoader widgetLoader_;
 
-  eld::render::GraphicsResources graphicsResources_;
+  eld::render::TextureManager textureManager_;
+  eld::graphics::TextureSystem textureSystem_;
+
+  eld::render::ModelManager modelManager_;
+  eld::graphics::ModelSystem modelSystem_;
 
   CacheExplorerState state_;
   CacheTreeBuilder treeBuilder_;

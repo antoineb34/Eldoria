@@ -238,7 +238,7 @@ SceneLocationModelBuildResult SceneLocationModelBuilder::build(
         return std::nullopt;
       }
 
-      sourceMeshes.push_back(models.data(sourceId));
+      sourceMeshes.push_back(models.get(sourceId));
     }
 
     eld::model::ModelData mesh = sourceMeshes.size() == 1

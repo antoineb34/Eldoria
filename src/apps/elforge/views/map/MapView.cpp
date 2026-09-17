@@ -9,7 +9,7 @@
 
 #include "render/map/SceneLocationBuilder.h"
 #include "render/map/SceneLocationModelBuilder.h"
-#include "render/map/SceneMapRenderModelBuilder.h"
+#include "map/SceneMapRenderModelBuilder.h"
 #include "render/scene/Transform.h"
 
 namespace eld::elforge {
@@ -158,9 +158,11 @@ MapView::MapView(const eld::map::MapLoader &loader,
                  const eld::floor::FloorLoader &floors,
                  const eld::location::LocationLoader &locations,
                  eld::model::ModelLoader &models,
-                 eld::render::GraphicsResources &graphics)
+                 eld::graphics::ModelSystem &modelSystem,
+                 eld::graphics::TextureSystem &textureSystem,
+                 eld::render::ModelManager &modelManager)
     : loader_(loader), floors_(floors), locations_(locations), models_(models),
-      graphics_(graphics) {}
+      modelSystem_(modelSystem), textureSystem_(textureSystem), modelManager_(modelManager) {}
 
 MapViewState MapView::build(std::uint16_t regionId) const {
   using Clock = std::chrono::steady_clock;
@@ -186,7 +188,9 @@ MapViewState MapView::build(std::uint16_t regionId) const {
 
   MapViewState viewState;
   viewState.indexEntry = *indexEntry;
-  viewState.centerRegion = loader_.resource(regionId);
+  viewState.centerTerrain = *centerTerrain;
+  viewState.centerLocationCount =
+      loader_.locations(regionId).size();
 
   viewState.missingNeighborRegionIds = neighborhood.missingRegionIds;
 
@@ -203,7 +207,7 @@ MapViewState MapView::build(std::uint16_t regionId) const {
   eld::render::map::SceneLocationBuilder locBuilder;
 
   const std::vector<eld::render::map::SceneLocationPlacement> sceneLocs =
-      locBuilder.build(viewState.centerRegion.locations, locations_,
+      locBuilder.build(loader_.locations(regionId), locations_,
                        locSampler);
 
   viewState.sceneLocs = sceneLocs;
@@ -219,7 +223,7 @@ MapViewState MapView::build(std::uint16_t regionId) const {
 
   for (const eld::render::map::SceneLocationModelVariant &variant :
        locModels.variants) {
-    variantHandles.push_back(graphics_.resolveModel(variant.mesh));
+    variantHandles.push_back(modelSystem_.create(variant.mesh));
   }
 
   eld::render::map::SceneMapRenderModelBuilder renderModelBuilder;
@@ -230,11 +234,15 @@ MapViewState MapView::build(std::uint16_t regionId) const {
 
   for (std::size_t plane = 0; plane < eld::map::PlaneCount; ++plane) {
     terrainBuilds[plane] = renderModelBuilder.buildTerrainPlane(
-        plane, terrainSampler, floors_, graphics_);
+            plane,
+            terrainSampler,
+            floors_,
+            textureSystem_);
   }
 
   eld::render::map::SceneLocationRenderBuildResult locRender =
-      renderModelBuilder.buildLocs(locModels, variantHandles, graphics_);
+      renderModelBuilder.buildLocs(
+locModels, variantHandles, modelManager_);
 
   viewState.scene.camera.verticalFov = 0.96f;
   viewState.scene.camera.nearPlane = 0.5f;
@@ -244,10 +252,10 @@ MapViewState MapView::build(std::uint16_t regionId) const {
 
   for (std::size_t plane = 0; plane < eld::map::PlaneCount; ++plane) {
     const eld::render::ModelHandle terrainHandle =
-        graphics_.registerModel(std::move(terrainBuilds[plane].model));
+        modelManager_.create(std::move(terrainBuilds[plane].model));
 
     const eld::render::ModelHandle locHandle =
-        graphics_.registerModel(std::move(locRender.staticPlaneModels[plane]));
+        modelManager_.create(std::move(locRender.staticPlaneModels[plane]));
 
     viewState.terrainObjectIndices[plane] = viewState.scene.objects.size();
 
@@ -266,10 +274,10 @@ MapViewState MapView::build(std::uint16_t regionId) const {
   for (eld::render::map::SceneLocationCameraRenderVariant &variant :
        locRender.cameraVariants) {
     const eld::render::ModelHandle insetHandle =
-        graphics_.registerModel(std::move(variant.insetModel));
+        modelManager_.create(std::move(variant.insetModel));
 
     const eld::render::ModelHandle outsetHandle =
-        graphics_.registerModel(std::move(variant.outsetModel));
+        modelManager_.create(std::move(variant.outsetModel));
 
     const std::size_t insetObject = viewState.scene.objects.size();
 
