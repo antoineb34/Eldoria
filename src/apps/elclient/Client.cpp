@@ -27,10 +27,128 @@
 
 #include "Renderer3D.h"
 #include "render/model/ModelManager.h"
+#include "render/model/ModelResource.h"
 #include "render/scene/RenderScene.h"
 #include "render/texture/TextureManager.h"
 
 namespace eld::client {
+
+namespace {
+
+eld::render::ModelResource
+buildPlayerMarkerModel()
+{
+    eld::render::ModelResource model;
+
+    eld::render::RenderMaterial material;
+    material.alphaMode =
+        eld::render::AlphaMode::Opaque;
+    material.doubleSided = true;
+    material.unlit = true;
+
+    model.materials.push_back(
+        material
+    );
+
+
+    eld::render::RenderMesh mesh;
+
+    constexpr float halfWidth =
+        0.22f;
+
+    constexpr float height =
+        1.4f;
+
+    const eld::math::Vec4 color{
+        1.0f,
+        0.15f,
+        0.75f,
+        1.0f
+    };
+
+
+    const auto makeVertex =
+        [&](float x, float y, float z)
+    {
+        eld::render::RenderVertex vertex;
+
+        vertex.position = {
+            x,
+            y,
+            z
+        };
+
+        vertex.normal = {
+            0.0f,
+            1.0f,
+            0.0f
+        };
+
+        vertex.color =
+            color;
+
+        return vertex;
+    };
+
+
+    mesh.vertices = {
+        makeVertex(-halfWidth, 0.0f,   -halfWidth),
+        makeVertex( halfWidth, 0.0f,   -halfWidth),
+        makeVertex( halfWidth, 0.0f,    halfWidth),
+        makeVertex(-halfWidth, 0.0f,    halfWidth),
+
+        makeVertex(-halfWidth, height, -halfWidth),
+        makeVertex( halfWidth, height, -halfWidth),
+        makeVertex( halfWidth, height,  halfWidth),
+        makeVertex(-halfWidth, height,  halfWidth)
+    };
+
+
+    mesh.indices = {
+        0, 2, 1,
+        0, 3, 2,
+
+        4, 5, 6,
+        4, 6, 7,
+
+        3, 6, 2,
+        3, 7, 6,
+
+        0, 1, 5,
+        0, 5, 4,
+
+        0, 4, 7,
+        0, 7, 3,
+
+        1, 2, 6,
+        1, 6, 5
+    };
+
+
+    eld::render::RenderMeshSection section;
+
+    section.firstIndex = 0;
+
+    section.indexCount =
+        static_cast<std::uint32_t>(
+            mesh.indices.size()
+        );
+
+    section.materialIndex = 0;
+
+    mesh.sections.push_back(
+        section
+    );
+
+    model.meshes.push_back(
+        std::move(mesh)
+    );
+
+    return model;
+}
+
+}
+
 
 Client::Client()
     : sdl_(
@@ -72,12 +190,16 @@ eld::runtime::map::RegionBuilder
     regionBuilder;
 
 
-const auto worldRegion =
+region_.emplace(
     regionBuilder.build(
         regionId,
         assets_.maps,
         assets_.locations
-    );
+    )
+);
+
+const auto& worldRegion =
+    *region_;
 
 
 eld::graphics::TerrainBuilder
@@ -178,6 +300,9 @@ scene_.objects.insert(
 );
 
 
+spawnPlayer();
+
+
 std::cout
     << "\n=== LOCATION BUILD ===\n"
     << "locations         = "
@@ -257,6 +382,125 @@ void Client::render()
     SDL_GL_SwapWindow(
         sdl_.window()
     );
+}
+
+
+void Client::spawnPlayer()
+{
+    if (!region_.has_value()) {
+        return;
+    }
+
+    auto& terrain =
+        region_->terrain;
+
+
+    // Middle-ish of the loaded 64x64 region.
+    constexpr std::size_t localX =
+        32;
+
+    constexpr std::size_t localY =
+        32;
+
+    constexpr std::size_t sourcePlane =
+        0;
+
+
+    const auto terrainPosition =
+        terrain.layerPosition(
+            sourcePlane,
+            localX,
+            localY
+        );
+
+
+    const auto& tile =
+        terrain.tile(
+            terrainPosition
+        );
+
+
+    player_.tile = {
+        terrainPosition.x,
+        terrainPosition.y,
+        static_cast<int>(
+            tile.scenePlane
+        )
+    };
+
+    player_.local = {
+        0.5f,
+        0.5f
+    };
+
+
+    const float groundHeight =
+        terrain.heightAt(
+            terrainPosition,
+            player_.local
+        );
+
+
+    const auto& origin =
+        terrain.origin();
+
+
+    const auto playerModel =
+        modelManager_.create(
+            buildPlayerMarkerModel()
+        );
+
+
+    eld::render::RenderObject object;
+
+    object.model =
+        playerModel;
+
+    object.transform.position = {
+        static_cast<float>(
+            player_.tile.x -
+            origin.x
+        ) + player_.local.x,
+
+        groundHeight,
+
+        -(
+            static_cast<float>(
+                player_.tile.y -
+                origin.y
+            ) + player_.local.y
+        )
+    };
+
+    object.visible =
+        true;
+
+
+    playerObjectIndex_ =
+        scene_.objects.size();
+
+    scene_.objects.push_back(
+        object
+    );
+
+
+    std::cout
+        << "=== PLAYER ===\n"
+        << "tile              = "
+        << player_.tile.x
+        << ", "
+        << player_.tile.y
+        << ", plane "
+        << player_.tile.plane
+        << "\n"
+        << "region local      = "
+        << localX
+        << ", "
+        << localY
+        << "\n"
+        << "ground height     = "
+        << groundHeight
+        << "\n\n";
 }
 
 

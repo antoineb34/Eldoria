@@ -1,6 +1,11 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
+
 #include "assets/AssetManager.h"
+#include "Player.h"
+#include "world/Region.h"
 
 #include "host/sdl/SdlOpenGLContext.h"
 
@@ -22,6 +27,7 @@ public:
 
 private:
     void buildWorld();
+    void spawnPlayer();
     void processEvents(bool& running);
     void update(float dt);
     void render();
@@ -46,6 +52,15 @@ private:
 
     eld::graphics::ModelSystem
         modelSystem_;
+
+    std::optional<eld::world::Region>
+        region_;
+
+    Player
+        player_;
+
+    std::optional<std::size_t>
+        playerObjectIndex_;
 
     eld::render::RenderScene
         scene_;
