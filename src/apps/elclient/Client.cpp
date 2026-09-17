@@ -55,6 +55,174 @@ Client::Client()
 }
 
 
+void Client::buildWorld()
+{
+    scene_.objects.clear();
+
+// ========================================================
+// === SINGLE REGION ===
+// ========================================================
+
+constexpr std::uint16_t regionId =
+    12850;
+
+
+
+eld::runtime::map::RegionBuilder
+    regionBuilder;
+
+
+const auto worldRegion =
+    regionBuilder.build(
+        regionId,
+        assets_.maps,
+        assets_.locations
+    );
+
+
+eld::graphics::TerrainBuilder
+    terrainBuilder;
+
+auto terrainModel =
+    terrainBuilder.build(
+        worldRegion.terrain,
+        0,
+        assets_.floors,
+        textureSystem_
+    );
+
+const eld::render::ModelHandle
+    terrainHandle =
+        modelManager_.create(
+            std::move(
+                terrainModel
+            )
+        );
+
+scene_.camera.position = {
+    31.5f,
+    25.0f,
+    85.0f
+};
+
+scene_.camera.rotation = {
+    -0.45f,
+    0.0f,
+    0.0f
+};
+
+scene_.camera.viewportWidth =
+    1000;
+
+scene_.camera.viewportHeight =
+    700;
+
+scene_.objects.push_back({
+    terrainHandle,
+    {},
+    true
+});
+
+
+// ========================================================
+// === REGION LOCATIONS ===
+// ========================================================
+
+eld::graphics::LocationBuilder
+    locationBuilder;
+
+
+auto locationBuild =
+    locationBuilder.build(
+        worldRegion,
+        0,
+        assets_.locations,
+        assets_.models,
+        modelSystem_
+    );
+
+
+eld::graphics::LocationBatchBuilder
+    locationBatchBuilder;
+
+auto locationBatchBuild =
+    locationBatchBuilder.build(
+        locationBuild.objects,
+        modelManager_
+    );
+
+
+for (
+    auto& batch :
+    locationBatchBuild.batches
+) {
+    const auto handle =
+        modelManager_.create(
+            std::move(batch)
+        );
+
+    scene_.objects.push_back({
+        handle,
+        {},
+        true
+    });
+}
+
+
+scene_.objects.insert(
+    scene_.objects.end(),
+    locationBatchBuild
+        .passthroughObjects.begin(),
+    locationBatchBuild
+        .passthroughObjects.end()
+);
+
+
+std::cout
+    << "\n=== LOCATION BUILD ===\n"
+    << "locations         = "
+    << locationBuild.locations
+    << "\n"
+    << "render objects    = "
+    << locationBuild.objects.size()
+    << "\n"
+    << "model variants    = "
+    << locationBuild.modelVariants
+    << "\n"
+    << "camera-dependent  = "
+    << locationBuild.cameraDependent.size()
+    << "\n"
+    << "missing defs      = "
+    << locationBuild.missingDefinitions
+    << "\n"
+    << "missing models    = "
+    << locationBuild.missingModels
+    << "\n\n";
+
+
+std::cout
+    << "=== LOCATION BATCH BUILD ===\n"
+    << "source objects     = "
+    << locationBatchBuild.sourceObjects
+    << "\n"
+    << "batched objects    = "
+    << locationBatchBuild.batchedObjects
+    << "\n"
+    << "passthrough        = "
+    << locationBatchBuild
+        .passthroughObjects.size()
+    << "\n"
+    << "chunk models       = "
+    << locationBatchBuild.batches.size()
+    << "\n"
+    << "batch sections     = "
+    << locationBatchBuild.batchSections
+    << "\n\n";
+
+
+}
+
+
 int Client::run()
 {
 
@@ -62,174 +230,7 @@ int Client::run()
         return 1;
     }
 
-    // ========================================================
-    // === SINGLE REGION ===
-    // ========================================================
-
-    constexpr std::uint16_t regionId =
-        12850;
-
-
-
-    eld::runtime::map::RegionBuilder
-        regionBuilder;
-
-
-    const auto worldRegion =
-        regionBuilder.build(
-            regionId,
-            assets_.maps,
-            assets_.locations
-        );
-
-
-eld::graphics::TerrainBuilder
-        terrainBuilder;
-
-    auto terrainModel =
-        terrainBuilder.build(
-            worldRegion.terrain,
-            0,
-            assets_.floors,
-            textureSystem_
-        );
-
-    const eld::render::ModelHandle
-        terrainHandle =
-            modelManager_.create(
-                std::move(
-                    terrainModel
-                )
-            );
-
-    eld::render::RenderScene scene_;
-
-    scene_.camera.position = {
-        31.5f,
-        25.0f,
-        85.0f
-    };
-
-    scene_.camera.rotation = {
-        -0.45f,
-        0.0f,
-        0.0f
-    };
-
-    scene_.camera.viewportWidth =
-        1000;
-
-    scene_.camera.viewportHeight =
-        700;
-
-    scene_.objects.push_back({
-        terrainHandle,
-        {},
-        true
-    });
-
-
-    // ========================================================
-    // === REGION LOCATIONS ===
-    // ========================================================
-
-    eld::graphics::LocationBuilder
-        locationBuilder;
-
-
-    auto locationBuild =
-        locationBuilder.build(
-            worldRegion,
-            0,
-            assets_.locations,
-            assets_.models,
-            modelSystem_
-        );
-
-
-    eld::graphics::LocationBatchBuilder
-        locationBatchBuilder;
-
-    auto locationBatchBuild =
-        locationBatchBuilder.build(
-            locationBuild.objects,
-            modelManager_
-        );
-
-
-    for (
-        auto& batch :
-        locationBatchBuild.batches
-    ) {
-        const auto handle =
-            modelManager_.create(
-                std::move(batch)
-            );
-
-        scene_.objects.push_back({
-            handle,
-            {},
-            true
-        });
-    }
-
-
-    scene_.objects.insert(
-        scene_.objects.end(),
-        locationBatchBuild
-            .passthroughObjects.begin(),
-        locationBatchBuild
-            .passthroughObjects.end()
-    );
-
-
-    std::cout
-        << "\n=== LOCATION BUILD ===\n"
-        << "locations         = "
-        << locationBuild.locations
-        << "\n"
-        << "render objects    = "
-        << locationBuild.objects.size()
-        << "\n"
-        << "model variants    = "
-        << locationBuild.modelVariants
-        << "\n"
-        << "camera-dependent  = "
-        << locationBuild.cameraDependent.size()
-        << "\n"
-        << "missing defs      = "
-        << locationBuild.missingDefinitions
-        << "\n"
-        << "missing models    = "
-        << locationBuild.missingModels
-        << "\n\n";
-
-
-    std::cout
-        << "=== LOCATION BATCH BUILD ===\n"
-        << "source objects     = "
-        << locationBatchBuild.sourceObjects
-        << "\n"
-        << "batched objects    = "
-        << locationBatchBuild.batchedObjects
-        << "\n"
-        << "passthrough        = "
-        << locationBatchBuild
-            .passthroughObjects.size()
-        << "\n"
-        << "chunk models       = "
-        << locationBatchBuild.batches.size()
-        << "\n"
-        << "batch sections     = "
-        << locationBatchBuild.batchSections
-        << "\n\n";
-
-
-    eld::render::Renderer3D
-        renderer_(
-            modelManager_,
-            textureManager_
-        );
+    buildWorld();
 
     bool running = true;
 

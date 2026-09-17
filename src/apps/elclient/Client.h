@@ -21,6 +21,8 @@ public:
     int run();
 
 private:
+    void buildWorld();
+
     // Order matters:
     // systems below hold references to objects declared above them.
 
