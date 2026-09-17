@@ -468,59 +468,266 @@ namespace eld::world
     }
 
 
-    bool World::canMove(
-        const TilePosition& from,
-        const TilePosition& to
-    ) const
-    {
-        if (
-            from.plane !=
-            to.plane
-        ) {
-            return false;
-        }
-
-
-        const auto* fromRegion =
-            regionAt(
-                from
-            );
-
-        const auto* toRegion =
-            regionAt(
-                to
-            );
-
-
-        if (
-            !fromRegion ||
-            !toRegion
-        ) {
-            return false;
-        }
-
-
-        // For now, World deliberately preserves the old
-        // single-region collision behavior exactly.
-        //
-        // Region seams come later, after this path has been
-        // proven through the World abstraction.
-        if (
-            fromRegion !=
-            toRegion
-        ) {
-            return false;
-        }
-
-
-        return
-            fromRegion
-                ->collision
-                .canMove(
-                    from,
-                    to
-                );
+bool World::canMove(
+    const TilePosition& from,
+    const TilePosition& to
+) const
+{
+    if (
+        from.plane !=
+        to.plane
+    ) {
+        return false;
     }
 
+
+    const int dx =
+        to.x -
+        from.x;
+
+    const int dy =
+        to.y -
+        from.y;
+
+
+    if (
+        dx < -1 ||
+        dx > 1 ||
+        dy < -1 ||
+        dy > 1 ||
+        (
+            dx == 0 &&
+            dy == 0
+        )
+    ) {
+        return false;
+    }
+
+
+    const auto* fromRegion =
+        regionAt(
+            from
+        );
+
+    const auto* toRegion =
+        regionAt(
+            to
+        );
+
+
+    if (
+        !fromRegion ||
+        !toRegion
+    ) {
+        return false;
+    }
+
+
+    if (
+        toRegion
+            ->collision
+            .blocked(
+                to
+            )
+    ) {
+        return false;
+    }
+
+
+    // --------------------------------------------------------
+    // Test one edge in world space.
+    //
+    // Each endpoint checks the collision flag it owns.
+    //
+    // This works both inside one Region and across a Region
+    // seam.
+    // --------------------------------------------------------
+
+    const auto edgeBlocked =
+        [this](
+            const TilePosition& a,
+            const TilePosition& b
+        )
+        {
+            if (
+                a.plane !=
+                b.plane
+            ) {
+                return true;
+            }
+
+
+            const int edgeDx =
+                b.x -
+                a.x;
+
+            const int edgeDy =
+                b.y -
+                a.y;
+
+
+            if (
+                edgeDx < -1 ||
+                edgeDx > 1 ||
+                edgeDy < -1 ||
+                edgeDy > 1 ||
+                (
+                    edgeDx == 0 &&
+                    edgeDy == 0
+                )
+            ) {
+                return true;
+            }
+
+
+            const auto* aRegion =
+                regionAt(
+                    a
+                );
+
+            const auto* bRegion =
+                regionAt(
+                    b
+                );
+
+
+            if (
+                !aRegion ||
+                !bRegion
+            ) {
+                return true;
+            }
+
+
+            return
+                aRegion
+                    ->collision
+                    .blocksOwnEdge(
+                        a,
+                        edgeDx,
+                        edgeDy
+                    ) ||
+                bRegion
+                    ->collision
+                    .blocksOwnEdge(
+                        b,
+                        -edgeDx,
+                        -edgeDy
+                    );
+        };
+
+
+    // --------------------------------------------------------
+    // Cardinal movement
+    // --------------------------------------------------------
+
+    if (
+        dx == 0 ||
+        dy == 0
+    ) {
+        return !edgeBlocked(
+            from,
+            to
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Diagonal movement
+    // --------------------------------------------------------
+
+    // Direct diagonal wall.
+    if (
+        edgeBlocked(
+            from,
+            to
+        )
+    ) {
+        return false;
+    }
+
+
+    const TilePosition horizontal{
+        from.x + dx,
+        from.y,
+        from.plane
+    };
+
+    const TilePosition vertical{
+        from.x,
+        from.y + dy,
+        from.plane
+    };
+
+
+    const auto* horizontalRegion =
+        regionAt(
+            horizontal
+        );
+
+    const auto* verticalRegion =
+        regionAt(
+            vertical
+        );
+
+
+    if (
+        !horizontalRegion ||
+        !verticalRegion
+    ) {
+        return false;
+    }
+
+
+    // Don't cut diagonally through solid tiles.
+    if (
+        horizontalRegion
+            ->collision
+            .blocked(
+                horizontal
+            ) ||
+        verticalRegion
+            ->collision
+            .blocked(
+                vertical
+            )
+    ) {
+        return false;
+    }
+
+
+    // Both cardinal exits from the source must be open.
+    if (
+        edgeBlocked(
+            from,
+            horizontal
+        ) ||
+        edgeBlocked(
+            from,
+            vertical
+        )
+    ) {
+        return false;
+    }
+
+
+    // Both cardinal approaches into the destination must
+    // also be open.
+    if (
+        edgeBlocked(
+            horizontal,
+            to
+        ) ||
+        edgeBlocked(
+            vertical,
+            to
+        )
+    ) {
+        return false;
+    }
+
+
+    return true;
+}
 
 }

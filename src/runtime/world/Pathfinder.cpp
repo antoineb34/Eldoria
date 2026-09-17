@@ -1,5 +1,6 @@
 #include "Pathfinder.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <queue>
@@ -40,20 +41,9 @@ namespace eld::world
         }
 
 
-        const auto* sourceRegion =
-            world.regionAt(
-                source
-            );
-
-        const auto* destinationRegion =
-            world.regionAt(
-                destination
-            );
-
-
         if (
-            !sourceRegion ||
-            !destinationRegion
+            !world.regionAt(source) ||
+            !world.regionAt(destination)
         ) {
             result.status =
                 PathStatus::RegionMissing;
@@ -62,37 +52,121 @@ namespace eld::world
         }
 
 
-        // Current recovery checkpoint:
+        // ----------------------------------------------------
+        // Build a world-space search rectangle containing all
+        // currently loaded Regions.
         //
-        // preserve the known-good single-region search until
-        // cross-region CollisionMap semantics are implemented.
-        if (
-            sourceRegion !=
-            destinationRegion
+        // Missing Regions inside the rectangle remain
+        // unreachable because World::canMove() rejects them.
+        // ----------------------------------------------------
+
+        int minX =
+            std::numeric_limits<int>::max();
+
+        int minY =
+            std::numeric_limits<int>::max();
+
+        int maxX =
+            std::numeric_limits<int>::min();
+
+        int maxY =
+            std::numeric_limits<int>::min();
+
+
+        bool haveBounds =
+            false;
+
+
+        for (
+            const auto id :
+            world.loadedRegionIds()
         ) {
+            const auto* region =
+                world.region(
+                    id
+                );
+
+
+            if (!region) {
+                continue;
+            }
+
+
+            const auto& terrain =
+                region->terrain;
+
+
+            const int terrainWidth =
+                static_cast<int>(
+                    terrain.width()
+                );
+
+            const int terrainHeight =
+                static_cast<int>(
+                    terrain.height()
+                );
+
+
+            if (
+                terrainWidth <= 0 ||
+                terrainHeight <= 0
+            ) {
+                continue;
+            }
+
+
+            const auto origin =
+                terrain.origin();
+
+
+            minX =
+                std::min(
+                    minX,
+                    origin.x
+                );
+
+            minY =
+                std::min(
+                    minY,
+                    origin.y
+                );
+
+
+            maxX =
+                std::max(
+                    maxX,
+                    origin.x +
+                        terrainWidth
+                );
+
+            maxY =
+                std::max(
+                    maxY,
+                    origin.y +
+                        terrainHeight
+                );
+
+
+            haveBounds =
+                true;
+        }
+
+
+        if (!haveBounds) {
             result.status =
-                PathStatus::CrossRegionUnsupported;
+                PathStatus::InvalidRegion;
 
             return result;
         }
 
 
-        const auto& terrain =
-            sourceRegion->terrain;
-
-        const auto origin =
-            terrain.origin();
-
-
         const int width =
-            static_cast<int>(
-                terrain.width()
-            );
+            maxX -
+            minX;
 
         const int height =
-            static_cast<int>(
-                terrain.height()
-            );
+            maxY -
+            minY;
 
 
         if (
@@ -106,45 +180,28 @@ namespace eld::world
         }
 
 
-        const int sourceX =
-            source.x -
-            origin.x;
-
-        const int sourceY =
-            source.y -
-            origin.y;
-
-        const int destinationX =
-            destination.x -
-            origin.x;
-
-        const int destinationY =
-            destination.y -
-            origin.y;
-
-
         const auto inside =
-            [width, height](
+            [=](
                 int x,
                 int y
             )
             {
                 return
-                    x >= 0 &&
-                    y >= 0 &&
-                    x < width &&
-                    y < height;
+                    x >= minX &&
+                    y >= minY &&
+                    x < maxX &&
+                    y < maxY;
             };
 
 
         if (
             !inside(
-                sourceX,
-                sourceY
+                source.x,
+                source.y
             ) ||
             !inside(
-                destinationX,
-                destinationY
+                destination.x,
+                destination.y
             )
         ) {
             result.status =
@@ -161,15 +218,17 @@ namespace eld::world
             DirectionCount;
 
         constexpr int DirectionStateCount =
-            DirectionCount + 1;
+            DirectionCount +
+            1;
 
 
         // Clockwise ordering:
         //
         // N, NE, E, SE, S, SW, W, NW
         //
-        // This order is intentionally preserved because it
-        // breaks otherwise-identical search ties.
+        // Keep this exact order. It participates in
+        // deterministic tie-breaking between otherwise equal
+        // paths.
         constexpr int directionX[
             DirectionCount
         ] = {
@@ -182,6 +241,7 @@ namespace eld::world
             -1,
             -1
         };
+
 
         constexpr int directionY[
             DirectionCount
@@ -198,15 +258,50 @@ namespace eld::world
 
 
         const auto tileIndex =
-            [width](
-                int localX,
-                int localY
+            [=](
+                int worldX,
+                int worldY
             )
             {
+                const int localX =
+                    worldX -
+                    minX;
+
+                const int localY =
+                    worldY -
+                    minY;
+
+
                 return
                     localY *
                         width +
                     localX;
+            };
+
+
+        const auto tilePosition =
+            [=](
+                int tile
+            )
+            {
+                const int localX =
+                    tile %
+                    width;
+
+                const int localY =
+                    tile /
+                    width;
+
+
+                return TilePosition{
+                    minX +
+                        localX,
+
+                    minY +
+                        localY,
+
+                    source.plane
+                };
             };
 
 
@@ -313,14 +408,14 @@ namespace eld::world
 
         const int sourceTile =
             tileIndex(
-                sourceX,
-                sourceY
+                source.x,
+                source.y
             );
 
         const int destinationTile =
             tileIndex(
-                destinationX,
-                destinationY
+                destination.x,
+                destination.y
             );
 
 
@@ -391,25 +486,10 @@ namespace eld::world
             }
 
 
-            const int currentLocalX =
-                current.tile %
-                width;
-
-            const int currentLocalY =
-                current.tile /
-                width;
-
-
-            const TilePosition
-                currentPosition{
-                    origin.x +
-                        currentLocalX,
-
-                    origin.y +
-                        currentLocalY,
-
-                    source.plane
-                };
+            const auto currentPosition =
+                tilePosition(
+                    current.tile
+                );
 
 
             for (
@@ -418,39 +498,29 @@ namespace eld::world
                     DirectionCount;
                 ++direction
             ) {
-                const int nextLocalX =
-                    currentLocalX +
-                    directionX[
-                        direction
-                    ];
+                const TilePosition nextPosition{
+                    currentPosition.x +
+                        directionX[
+                            direction
+                        ],
 
-                const int nextLocalY =
-                    currentLocalY +
-                    directionY[
-                        direction
-                    ];
+                    currentPosition.y +
+                        directionY[
+                            direction
+                        ],
+
+                    source.plane
+                };
 
 
                 if (
                     !inside(
-                        nextLocalX,
-                        nextLocalY
+                        nextPosition.x,
+                        nextPosition.y
                     )
                 ) {
                     continue;
                 }
-
-
-                const TilePosition
-                    nextPosition{
-                        origin.x +
-                            nextLocalX,
-
-                        origin.y +
-                            nextLocalY,
-
-                        source.plane
-                    };
 
 
                 if (
@@ -465,8 +535,8 @@ namespace eld::world
 
                 const int nextTile =
                     tileIndex(
-                        nextLocalX,
-                        nextLocalY
+                        nextPosition.x,
+                        nextPosition.y
                     );
 
                 const int nextState =
@@ -479,6 +549,7 @@ namespace eld::world
                 const int nextSteps =
                     current.steps +
                     1;
+
 
                 int nextTurns =
                     current.turns;
@@ -566,24 +637,12 @@ namespace eld::world
                 state /
                 DirectionStateCount;
 
-            const int localX =
-                tile %
-                width;
 
-            const int localY =
-                tile /
-                width;
-
-
-            reversedPath.push_back({
-                origin.x +
-                    localX,
-
-                origin.y +
-                    localY,
-
-                source.plane
-            });
+            reversedPath.push_back(
+                tilePosition(
+                    tile
+                )
+            );
 
 
             state =

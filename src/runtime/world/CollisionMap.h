@@ -125,6 +125,39 @@ namespace eld::world
         }
 
 
+        bool blocksOwnEdge(
+            const TilePosition& position,
+            int dx,
+            int dy
+        ) const
+        {
+            if (!contains(position)) {
+                return true;
+            }
+
+
+            const auto forward =
+                directionFlag(
+                    dx,
+                    dy
+                );
+
+
+            if (forward == 0) {
+                return true;
+            }
+
+
+            return
+                (
+                    flags_.at(
+                        index(position)
+                    ) &
+                    forward
+                ) != 0;
+        }
+
+
         void blockEdge(
             const TilePosition& position,
             int dx,
