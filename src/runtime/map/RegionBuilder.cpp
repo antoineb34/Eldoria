@@ -533,6 +533,24 @@ buildLocations(
             !definition->hollow;
 
 
+        location.interactable =
+            false;
+
+        if (definition) {
+            for (
+                const auto& action :
+                definition->actions
+            ) {
+                if (!action.empty()) {
+                    location.interactable =
+                        true;
+
+                    break;
+                }
+            }
+        }
+
+
         location.tile = {
             origin.x +
                 static_cast<int>(spawn.x),

@@ -35,6 +35,10 @@ namespace eld::world
         // walking collision.
         bool solid = false;
 
+        // True when the location definition exposes at least
+        // one player action.
+        bool interactable = false;
+
         // Terrain underneath this location:
         //
         // SW, SE, NE, NW

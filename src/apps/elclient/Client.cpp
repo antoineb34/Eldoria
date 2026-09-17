@@ -1,5 +1,9 @@
+#include <glad/gl.h>
 #include <queue>
 #include "Client.h"
+#include "map/RegionProvider.h"
+#include <exception>
+#include <exception>
 #include "render/camera/Projection.h"
 #include "render/animation/ModelAnimator.h"
 #include "PlayerAppearanceBuilder.h"
@@ -364,6 +368,10 @@ Client::Client()
 
 void Client::buildWorld()
 {
+
+
+
+
     scene_.objects.clear();
 
 // ========================================================
@@ -534,6 +542,13 @@ std::cout
     << "\n\n";
 
 
+
+
+    // Load the eight surrounding map squares.
+    //
+    // Gameplay/picking/pathfinding still use region_ for now.
+    // This checkpoint only proves continuous world rendering.
+    buildNeighborRegions();
 }
 
 
@@ -544,6 +559,103 @@ void Client::processEvents(
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
+
+        // ----------------------------------------------------
+        // Camera zoom
+        // ----------------------------------------------------
+
+        if (
+            event.type ==
+            SDL_EVENT_MOUSE_WHEEL
+        ) {
+            float wheel =
+                event.wheel.y;
+
+
+            if (
+                event.wheel.direction ==
+                SDL_MOUSEWHEEL_FLIPPED
+            ) {
+                wheel =
+                    -wheel;
+            }
+
+
+            constexpr float zoomStep =
+                1.5f;
+
+
+            cameraDistance_ =
+                std::clamp(
+                    cameraDistance_ -
+                        wheel *
+                        zoomStep,
+                    cameraMinDistance_,
+                    cameraMaxDistance_
+                );
+        }
+
+
+        // ----------------------------------------------------
+        // Middle-mouse orbit
+        // ----------------------------------------------------
+
+        if (
+            event.type ==
+                SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button ==
+                SDL_BUTTON_MIDDLE
+        ) {
+            cameraDragging_ =
+                true;
+        }
+
+
+        if (
+            event.type ==
+                SDL_EVENT_MOUSE_BUTTON_UP &&
+            event.button.button ==
+                SDL_BUTTON_MIDDLE
+        ) {
+            cameraDragging_ =
+                false;
+        }
+
+
+        if (
+            event.type ==
+                SDL_EVENT_MOUSE_MOTION &&
+            cameraDragging_
+        ) {
+            constexpr float sensitivity =
+                0.005f;
+
+
+            scene_.camera.rotation.y -=
+                event.motion.xrel *
+                sensitivity;
+
+
+            scene_.camera.rotation.x +=
+                event.motion.yrel *
+                sensitivity;
+
+
+            constexpr float minPitch =
+                -1.35f;
+
+            constexpr float maxPitch =
+                -0.15f;
+
+
+            scene_.camera.rotation.x =
+                std::clamp(
+                    scene_.camera.rotation.x,
+                    minPitch,
+                    maxPitch
+                );
+        }
+
 
 
 
@@ -620,6 +732,8 @@ void Client::processEvents(
 void Client::render()
 {
     renderer_.render(scene_);
+
+    drawClickCross();
 
     SDL_GL_SwapWindow(
         sdl_.window()
@@ -982,10 +1096,7 @@ void Client::updatePlayerMovement(
     float dt
 )
 {
-    if (
-        !playerMoving_ ||
-        !region_.has_value()
-    ) {
+    if (!playerMoving_) {
         return;
     }
 
@@ -1033,19 +1144,6 @@ void Client::updatePlayerMovement(
         0.5f;
 
 
-    const float previousWorldX =
-        static_cast<float>(
-            player_.tile.x
-        ) +
-        player_.local.x;
-
-    const float previousWorldY =
-        static_cast<float>(
-            player_.tile.y
-        ) +
-        player_.local.y;
-
-
     const float worldX =
         std::lerp(
             startX,
@@ -1061,81 +1159,74 @@ void Client::updatePlayerMovement(
         );
 
 
-    const float playerDeltaX =
-        worldX -
-        previousWorldX;
-
-    const float playerDeltaY =
-        worldY -
-        previousWorldY;
-
-
-    // Keep the current camera offset/angle,
-    // but translate it with the player.
-    //
-    // World Y maps to negative render Z.
-    scene_.camera.position.x +=
-        playerDeltaX;
-
-    scene_.camera.position.z -=
-        playerDeltaY;
-
-
     const int tileX =
         static_cast<int>(
-            std::floor(worldX)
+            std::floor(
+                worldX
+            )
         );
 
     const int tileY =
         static_cast<int>(
-            std::floor(worldY)
+            std::floor(
+                worldY
+            )
         );
 
 
-    const eld::world::TerrainLayerPosition
-        terrainPosition{
+    const auto* playerRegion =
+        regionAt(
             tileX,
-            tileY,
-            0
-        };
+            tileY
+        );
 
 
-    const auto& terrain =
-        region_->terrain;
+    if (playerRegion) {
+        const eld::world::TerrainLayerPosition
+            terrainPosition{
+                tileX,
+                tileY,
+                0
+            };
 
 
-    if (
-        terrain.contains(
-            terrainPosition
-        )
-    ) {
-        const auto& tile =
-            terrain.tile(
-                terrainPosition
-            );
-
-
-        player_.tile = {
-            tileX,
-            tileY,
-            tile.scenePlane
-        };
-
-
-        player_.local = {
-            worldX -
-                static_cast<float>(
-                    tileX
-                ),
-
-            worldY -
-                static_cast<float>(
-                    tileY
+        if (
+            playerRegion
+                ->terrain
+                .contains(
+                    terrainPosition
                 )
-        };
+        ) {
+            const auto& tile =
+                playerRegion
+                    ->terrain
+                    .tile(
+                        terrainPosition
+                    );
 
 
-        syncPlayerRenderObject();
+            player_.tile = {
+                tileX,
+                tileY,
+                tile.scenePlane
+            };
+
+
+            player_.local = {
+                worldX -
+                    static_cast<float>(
+                        tileX
+                    ),
+
+                worldY -
+                    static_cast<float>(
+                        tileY
+                    )
+            };
+
+
+            syncPlayerRenderObject();
+        }
     }
 
 
@@ -1146,7 +1237,6 @@ void Client::updatePlayerMovement(
 
     player_.tile =
         playerMoveDestinationTile_;
-
 
     player_.local = {
         0.5f,
@@ -1178,11 +1268,7 @@ void Client::updatePlayerMovement(
         << "\n";
 
 
-    // Continue queued click path after this tile finishes.
-    if (
-        !playerMoving_ &&
-        !playerPath_.empty()
-    ) {
+    if (!playerPath_.empty()) {
         beginNextPlayerStep();
     }
 }
@@ -1205,43 +1291,57 @@ Client::pickTerrainTile(
     }
 
 
-    const auto& terrain =
-        region_->terrain;
-
-
-    if (
-        terrain.width() == 0 ||
-        terrain.height() == 0
-    ) {
-        return std::nullopt;
-    }
-
-
-    // Convert SDL mouse coordinates into the screen-space
-    // convention used by projectPoint().
-    const float projectedMouseX =
-        static_cast<float>(
-            scene_.camera.viewportWidth
-        ) -
-        mouseX;
-
-    const float projectedMouseY =
-        static_cast<float>(
-            scene_.camera.viewportHeight
-        ) -
-        mouseY;
-
-
-    const auto view =
+    const auto viewMatrix =
         eld::render::buildViewMatrix(
             scene_.camera
         );
 
-
-    const auto projection =
+    const auto projectionMatrix =
         eld::render::buildProjectionMatrix(
             scene_.camera
         );
+
+
+    // This flip is already proven correct for the existing
+    // renderer / SDL coordinate convention.
+    // WINDOW TO VIEWPORT MOUSE SCALE
+    int windowWidth = 0;
+    int windowHeight = 0;
+
+    SDL_GetWindowSize(
+        sdl_.window(),
+        &windowWidth,
+        &windowHeight
+    );
+
+
+    if (
+        windowWidth > 0 &&
+        windowHeight > 0
+    ) {
+        mouseX *=
+            static_cast<float>(
+                scene_.camera.viewportWidth
+            ) /
+            static_cast<float>(
+                windowWidth
+            );
+
+        mouseY *=
+            static_cast<float>(
+                scene_.camera.viewportHeight
+            ) /
+            static_cast<float>(
+                windowHeight
+            );
+    }
+
+
+    const float projectedMouseX =
+        mouseX;
+
+    const float projectedMouseY =
+        mouseY;
 
 
     const auto pointInTriangle =
@@ -1253,82 +1353,77 @@ Client::pickTerrainTile(
             const eld::render::ScreenPoint& c
         )
         {
-            const float denominator =
-                (
-                    b.y - c.y
-                ) *
-                (
-                    a.x - c.x
-                ) +
-                (
-                    c.x - b.x
-                ) *
-                (
-                    a.y - c.y
+            const auto edge =
+                [](
+                    float px,
+                    float py,
+                    const eld::render::ScreenPoint& p0,
+                    const eld::render::ScreenPoint& p1
+                )
+                {
+                    return
+                        (
+                            px - p1.x
+                        ) *
+                            (
+                                p0.y - p1.y
+                            ) -
+                        (
+                            p0.x - p1.x
+                        ) *
+                            (
+                                py - p1.y
+                            );
+                };
+
+
+            const float d1 =
+                edge(
+                    px,
+                    py,
+                    a,
+                    b
+                );
+
+            const float d2 =
+                edge(
+                    px,
+                    py,
+                    b,
+                    c
+                );
+
+            const float d3 =
+                edge(
+                    px,
+                    py,
+                    c,
+                    a
                 );
 
 
-            if (
-                std::abs(
-                    denominator
-                ) <
-                0.00001f
-            ) {
-                return false;
-            }
+            const bool hasNegative =
+                d1 < 0.0f ||
+                d2 < 0.0f ||
+                d3 < 0.0f;
+
+            const bool hasPositive =
+                d1 > 0.0f ||
+                d2 > 0.0f ||
+                d3 > 0.0f;
 
 
-            const float alpha =
-                (
-                    (
-                        b.y - c.y
-                    ) *
-                    (
-                        px - c.x
-                    ) +
-                    (
-                        c.x - b.x
-                    ) *
-                    (
-                        py - c.y
-                    )
-                ) /
-                denominator;
-
-
-            const float beta =
-                (
-                    (
-                        c.y - a.y
-                    ) *
-                    (
-                        px - c.x
-                    ) +
-                    (
-                        a.x - c.x
-                    ) *
-                    (
-                        py - c.y
-                    )
-                ) /
-                denominator;
-
-
-            const float gamma =
-                1.0f -
-                alpha -
-                beta;
-
-
-            constexpr float epsilon =
-                -0.0001f;
-
-
-            return
-                alpha >= epsilon &&
-                beta >= epsilon &&
-                gamma >= epsilon;
+            return !(
+                hasNegative &&
+                hasPositive
+            );
         };
+
+
+    float bestDepth =
+        std::numeric_limits<
+            float
+        >::infinity();
 
 
     std::optional<
@@ -1336,228 +1431,270 @@ Client::pickTerrainTile(
     > result;
 
 
-    float bestDepth =
-        std::numeric_limits<float>::infinity();
+    const auto& sceneOrigin =
+        region_->terrain.origin();
 
 
-    for (
-        std::size_t localY = 0;
-        localY < terrain.height();
-        ++localY
-    ) {
-        for (
-            std::size_t localX = 0;
-            localX < terrain.width();
-            ++localX
-        ) {
-            const auto position =
-                terrain.layerPosition(
-                    0,
-                    localX,
-                    localY
-                );
+    const auto testTerrain =
+        [&](
+            const eld::world::Terrain& terrain
+        )
+        {
+            for (
+                std::size_t localY = 0;
+                localY <
+                    terrain.height();
+                ++localY
+            ) {
+                for (
+                    std::size_t localX = 0;
+                    localX <
+                        terrain.width();
+                    ++localX
+                ) {
+                    const auto position =
+                        terrain.layerPosition(
+                            0,
+                            localX,
+                            localY
+                        );
 
 
-            const auto heights =
-                terrain.cornerHeights(
-                    position
-                );
-
-
-            const float x0 =
-                static_cast<float>(
-                    localX
-                );
-
-            const float x1 =
-                x0 + 1.0f;
-
-
-            const float z0 =
-                -static_cast<float>(
-                    localY
-                );
-
-            const float z1 =
-                -static_cast<float>(
-                    localY + 1
-                );
-
-
-            const auto sw =
-                eld::render::projectPoint(
-                    {
-                        x0,
-                        heights.southwest,
-                        z0
-                    },
-                    view,
-                    projection,
-                    scene_.camera
-                );
-
-
-            const auto se =
-                eld::render::projectPoint(
-                    {
-                        x1,
-                        heights.southeast,
-                        z0
-                    },
-                    view,
-                    projection,
-                    scene_.camera
-                );
-
-
-            const auto ne =
-                eld::render::projectPoint(
-                    {
-                        x1,
-                        heights.northeast,
-                        z1
-                    },
-                    view,
-                    projection,
-                    scene_.camera
-                );
-
-
-            const auto nw =
-                eld::render::projectPoint(
-                    {
-                        x0,
-                        heights.northwest,
-                        z1
-                    },
-                    view,
-                    projection,
-                    scene_.camera
-                );
-
-
-            const auto consider =
-                [&](
-                    const eld::render::ScreenPoint& a,
-                    const eld::render::ScreenPoint& b,
-                    const eld::render::ScreenPoint& c
-                )
-                {
-                    if (
-                        !std::isfinite(a.x) ||
-                        !std::isfinite(a.y) ||
-                        !std::isfinite(b.x) ||
-                        !std::isfinite(b.y) ||
-                        !std::isfinite(c.x) ||
-                        !std::isfinite(c.y)
-                    ) {
-                        return;
-                    }
-
-
-                    // Visible geometry in Eldoria is in
-                    // negative view-space Z.
-                    //
-                    // Reject triangles behind the camera or
-                    // crossing the near plane before doing the
-                    // screen-space containment test.
-                    if (
-                        a.depth > -scene_.camera.nearPlane ||
-                        b.depth > -scene_.camera.nearPlane ||
-                        c.depth > -scene_.camera.nearPlane
-                    ) {
-                        return;
-                    }
-
-
-                    if (
-                        a.depth < -scene_.camera.farPlane ||
-                        b.depth < -scene_.camera.farPlane ||
-                        c.depth < -scene_.camera.farPlane
-                    ) {
-                        return;
-                    }
-
-
-                    const float triangleDepth =
-                        -(
-                            a.depth +
-                            b.depth +
-                            c.depth
-                        ) /
-                        3.0f;
-
-
-                    if (
-                        !pointInTriangle(
-                            projectedMouseX,
-                            projectedMouseY,
-                            a,
-                            b,
-                            c
-                        )
-                    ) {
-                        return;
-                    }
-
-
-                    if (
-                        triangleDepth >=
-                        bestDepth
-                    ) {
-                        return;
-                    }
-
-
-                    bestDepth =
-                        triangleDepth;
-
-
-                    const auto& tile =
-                        terrain.tile(
+                    const auto heights =
+                        terrain.cornerHeights(
                             position
                         );
 
 
-                    result =
-                        eld::world::TilePosition{
-                            position.x,
-                            position.y,
-                            tile.scenePlane
+                    // Convert absolute world tile position into
+                    // the same scene coordinates used when the
+                    // neighbouring chunks were rendered.
+                    const float x0 =
+                        static_cast<float>(
+                            position.x -
+                            sceneOrigin.x
+                        );
+
+                    const float x1 =
+                        x0 +
+                        1.0f;
+
+
+                    const float z0 =
+                        -static_cast<float>(
+                            position.y -
+                            sceneOrigin.y
+                        );
+
+                    const float z1 =
+                        z0 -
+                        1.0f;
+
+
+                    const auto southwest =
+                        eld::render::projectPoint(
+                            {
+                                x0,
+                                heights.southwest,
+                                z0
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+                    const auto southeast =
+                        eld::render::projectPoint(
+                            {
+                                x1,
+                                heights.southeast,
+                                z0
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+                    const auto northeast =
+                        eld::render::projectPoint(
+                            {
+                                x1,
+                                heights.northeast,
+                                z1
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+                    const auto northwest =
+                        eld::render::projectPoint(
+                            {
+                                x0,
+                                heights.northwest,
+                                z1
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+
+                    const auto consider =
+                        [&](
+                            const eld::render::ScreenPoint& a,
+                            const eld::render::ScreenPoint& b,
+                            const eld::render::ScreenPoint& c
+                        )
+                        {
+                            if (
+                                !pointInTriangle(
+                                    projectedMouseX,
+                                    projectedMouseY,
+                                    a,
+                                    b,
+                                    c
+                                )
+                            ) {
+                                return;
+                            }
+
+
+                            const float depth =
+                                std::abs(
+                                    (
+                                        a.depth +
+                                        b.depth +
+                                        c.depth
+                                    ) /
+                                    3.0f
+                                );
+
+
+                            if (
+                                depth >=
+                                bestDepth
+                            ) {
+                                return;
+                            }
+
+
+                            bestDepth =
+                                depth;
+
+
+                            const auto& tile =
+                                terrain.tile(
+                                    position
+                                );
+
+
+                            result =
+                                eld::world::TilePosition{
+                                    position.x,
+                                    position.y,
+                                    tile.scenePlane
+                                };
                         };
-                };
 
 
-            // Tile quad:
-            //
-            // NW ------ NE
-            // |       / |
-            // |     /   |
-            // |   /     |
-            // SW ------ SE
-            //
-            consider(
-                sw,
-                se,
-                ne
-            );
+                    consider(
+                        southwest,
+                        southeast,
+                        northeast
+                    );
+
+                    consider(
+                        southwest,
+                        northeast,
+                        northwest
+                    );
+                }
+            }
+        };
 
 
-            consider(
-                sw,
-                ne,
-                nw
-            );
-        }
-    }
+    testTerrain(
+        region_->terrain
+    );
+
+
+    // TEMP PICKER: CENTER REGION ONLY
+    //
+    // Neighbor terrain picking is disabled while we
+    // isolate the incorrect click destination.
 
 
     return result;
 }
 
 
-void Client::selectTerrainTile(
+std::optional<std::size_t>
+Client::findInteractableLocationAt(
     const eld::world::TilePosition& tile
+) const
+{
+    if (!region_.has_value()) {
+        return std::nullopt;
+    }
+
+
+    const auto& locations =
+        region_->locations;
+
+
+    for (
+        std::size_t index = 0;
+        index < locations.size();
+        ++index
+    ) {
+        const auto& location =
+            locations[index];
+
+
+        if (
+            !location.interactable ||
+            location.tile.plane !=
+                tile.plane
+        ) {
+            continue;
+        }
+
+
+        const int minX =
+            location.tile.x;
+
+        const int minY =
+            location.tile.y;
+
+        const int maxX =
+            minX +
+            location.footprintWidth;
+
+        const int maxY =
+            minY +
+            location.footprintLength;
+
+
+        if (
+            tile.x >= minX &&
+            tile.x < maxX &&
+            tile.y >= minY &&
+            tile.y < maxY
+        ) {
+            return index;
+        }
+    }
+
+
+    return std::nullopt;
+}
+
+
+
+void Client::selectTerrainTile(
+    const eld::world::TilePosition& tile,
+    bool interactable
 )
 {
     if (!region_.has_value()) {
@@ -1599,12 +1736,22 @@ void Client::selectTerrainTile(
 
     // Debug selection color: deliberately obnoxious so
     // there is zero ambiguity about which tile was picked.
-    material.baseColor = {
-        1.0f,
-        1.0f,
-        0.0f,
-        1.0f
-    };
+    if (interactable) {
+        material.baseColor = {
+            1.0f,
+            0.0f,
+            0.0f,
+            1.0f
+        };
+    }
+    else {
+        material.baseColor = {
+            1.0f,
+            1.0f,
+            0.0f,
+            1.0f
+        };
+    }
 
     material.alphaMode =
         eld::render::AlphaMode::Opaque;
@@ -1645,12 +1792,22 @@ void Client::selectTerrainTile(
                 0.0f
             };
 
-            vertex.color = {
-                1.0f,
-                1.0f,
-                0.0f,
-                1.0f
-            };
+            if (interactable) {
+                vertex.color = {
+                    1.0f,
+                    0.0f,
+                    0.0f,
+                    1.0f
+                };
+            }
+            else {
+                vertex.color = {
+                    1.0f,
+                    1.0f,
+                    0.0f,
+                    1.0f
+                };
+            }
 
             mesh.vertices.push_back(
                 vertex
@@ -1771,17 +1928,664 @@ void Client::selectTerrainTile(
 
     selectedTile_ =
         tile;
-
-
-    std::cout
-        << "clicked tile = "
-        << tile.x
-        << ", "
-        << tile.y
-        << ", plane "
-        << tile.plane
-        << "\n";
 }
+
+
+void Client::drawClickCross()
+{
+    if (!clickCrossActive_) {
+        return;
+    }
+
+
+    const std::uint64_t now =
+        static_cast<std::uint64_t>(
+            SDL_GetTicks()
+        );
+
+    const std::uint64_t elapsed =
+        now >= clickCrossStartMs_
+            ? now - clickCrossStartMs_
+            : 0;
+
+
+    // Classic client:
+    //
+    // four frames,
+    // approximately 100 ms each.
+    if (elapsed >= 400) {
+        clickCrossActive_ = false;
+        return;
+    }
+
+
+    const std::uint16_t animationFrame =
+        static_cast<std::uint16_t>(
+            elapsed / 100
+        );
+
+    const std::uint16_t frameId =
+        static_cast<std::uint16_t>(
+            (clickCrossRed_ ? 4 : 0) +
+            animationFrame
+        );
+
+
+    const auto sprite =
+        assets_.sprites.find(
+            "cross.dat",
+            frameId
+        );
+
+
+    if (!sprite.has_value()) {
+        return;
+    }
+
+
+    const auto& image =
+        sprite->image;
+
+
+    if (
+        image.width == 0 ||
+        image.height == 0 ||
+        image.pixels.empty()
+    ) {
+        return;
+    }
+
+
+    const float viewportWidth =
+        static_cast<float>(
+            scene_.camera.viewportWidth
+        );
+
+    const float viewportHeight =
+        static_cast<float>(
+            scene_.camera.viewportHeight
+        );
+
+
+    if (
+        viewportWidth <= 0.0f ||
+        viewportHeight <= 0.0f
+    ) {
+        return;
+    }
+
+
+    struct CrossGlState
+    {
+        GLuint program = 0;
+
+        GLuint vao = 0;
+        GLuint vbo = 0;
+
+        GLint textureLocation = -1;
+
+        std::array<GLuint, 8>
+            textures{};
+
+        bool failed = false;
+    };
+
+
+    static CrossGlState gl;
+
+
+    // --------------------------------------------------------
+    // Lazy-create tiny screen-space sprite renderer.
+    // --------------------------------------------------------
+
+    if (
+        gl.program == 0 &&
+        !gl.failed
+    ) {
+        const auto compileShader =
+            [](
+                GLenum type,
+                const char* source
+            ) -> GLuint
+        {
+            const GLuint shader =
+                glCreateShader(
+                    type
+                );
+
+            glShaderSource(
+                shader,
+                1,
+                &source,
+                nullptr
+            );
+
+            glCompileShader(
+                shader
+            );
+
+
+            GLint success =
+                GL_FALSE;
+
+            glGetShaderiv(
+                shader,
+                GL_COMPILE_STATUS,
+                &success
+            );
+
+
+            if (success != GL_TRUE) {
+                glDeleteShader(
+                    shader
+                );
+
+                return 0;
+            }
+
+
+            return shader;
+        };
+
+
+        const char* vertexSource =
+            R"(
+                #version 330 core
+
+                layout(location = 0)
+                in vec2 aPosition;
+
+                layout(location = 1)
+                in vec2 aUV;
+
+                out vec2 vUV;
+
+                void main()
+                {
+                    vUV = aUV;
+
+                    gl_Position =
+                        vec4(
+                            aPosition,
+                            0.0,
+                            1.0
+                        );
+                }
+            )";
+
+
+        const char* fragmentSource =
+            R"(
+                #version 330 core
+
+                in vec2 vUV;
+
+                out vec4 FragColor;
+
+                uniform sampler2D uTexture;
+
+                void main()
+                {
+                    vec4 pixel =
+                        texture(
+                            uTexture,
+                            vUV
+                        );
+
+                    if (pixel.a <= 0.0) {
+                        discard;
+                    }
+
+                    FragColor =
+                        pixel;
+                }
+            )";
+
+
+        const GLuint vertexShader =
+            compileShader(
+                GL_VERTEX_SHADER,
+                vertexSource
+            );
+
+        const GLuint fragmentShader =
+            compileShader(
+                GL_FRAGMENT_SHADER,
+                fragmentSource
+            );
+
+
+        if (
+            vertexShader == 0 ||
+            fragmentShader == 0
+        ) {
+            if (vertexShader != 0) {
+                glDeleteShader(
+                    vertexShader
+                );
+            }
+
+            if (fragmentShader != 0) {
+                glDeleteShader(
+                    fragmentShader
+                );
+            }
+
+            gl.failed =
+                true;
+
+            std::cout
+                << "click cross shader failed\n";
+
+            return;
+        }
+
+
+        gl.program =
+            glCreateProgram();
+
+        glAttachShader(
+            gl.program,
+            vertexShader
+        );
+
+        glAttachShader(
+            gl.program,
+            fragmentShader
+        );
+
+        glLinkProgram(
+            gl.program
+        );
+
+
+        glDeleteShader(
+            vertexShader
+        );
+
+        glDeleteShader(
+            fragmentShader
+        );
+
+
+        GLint linked =
+            GL_FALSE;
+
+        glGetProgramiv(
+            gl.program,
+            GL_LINK_STATUS,
+            &linked
+        );
+
+
+        if (linked != GL_TRUE) {
+            glDeleteProgram(
+                gl.program
+            );
+
+            gl.program = 0;
+            gl.failed = true;
+
+            std::cout
+                << "click cross program link failed\n";
+
+            return;
+        }
+
+
+        gl.textureLocation =
+            glGetUniformLocation(
+                gl.program,
+                "uTexture"
+            );
+
+
+        glGenVertexArrays(
+            1,
+            &gl.vao
+        );
+
+        glGenBuffers(
+            1,
+            &gl.vbo
+        );
+
+
+        glBindVertexArray(
+            gl.vao
+        );
+
+        glBindBuffer(
+            GL_ARRAY_BUFFER,
+            gl.vbo
+        );
+
+
+        // 6 vertices * (x, y, u, v)
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            sizeof(float) *
+                6 *
+                4,
+            nullptr,
+            GL_DYNAMIC_DRAW
+        );
+
+
+        constexpr GLsizei stride =
+            4 *
+            sizeof(float);
+
+
+        glVertexAttribPointer(
+            0,
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            stride,
+            nullptr
+        );
+
+        glEnableVertexAttribArray(
+            0
+        );
+
+
+        glVertexAttribPointer(
+            1,
+            2,
+            GL_FLOAT,
+            GL_FALSE,
+            stride,
+            reinterpret_cast<void*>(
+                2 *
+                sizeof(float)
+            )
+        );
+
+        glEnableVertexAttribArray(
+            1
+        );
+
+
+        glBindBuffer(
+            GL_ARRAY_BUFFER,
+            0
+        );
+
+        glBindVertexArray(
+            0
+        );
+    }
+
+
+    if (
+        gl.failed ||
+        gl.program == 0
+    ) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Upload this cache frame the first time it is used.
+    // --------------------------------------------------------
+
+    GLuint& texture =
+        gl.textures[
+            static_cast<std::size_t>(
+                frameId
+            )
+        ];
+
+
+    if (texture == 0) {
+        static_assert(
+            sizeof(
+                eld::image::RgbaPixel
+            ) == 4
+        );
+
+
+        glGenTextures(
+            1,
+            &texture
+        );
+
+        glBindTexture(
+            GL_TEXTURE_2D,
+            texture
+        );
+
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MIN_FILTER,
+            GL_NEAREST
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MAG_FILTER,
+            GL_NEAREST
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_WRAP_S,
+            GL_CLAMP_TO_EDGE
+        );
+
+        glTexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_WRAP_T,
+            GL_CLAMP_TO_EDGE
+        );
+
+
+        glPixelStorei(
+            GL_UNPACK_ALIGNMENT,
+            1
+        );
+
+
+        glTexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA8,
+            static_cast<GLsizei>(
+                image.width
+            ),
+            static_cast<GLsizei>(
+                image.height
+            ),
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            image.pixels.data()
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Cross is centered on the actual click location.
+    // --------------------------------------------------------
+
+    const float halfWidth =
+        static_cast<float>(
+            image.width
+        ) *
+        0.5f;
+
+    const float halfHeight =
+        static_cast<float>(
+            image.height
+        ) *
+        0.5f;
+
+
+    const float left =
+        clickCrossX_ -
+        halfWidth;
+
+    const float right =
+        clickCrossX_ +
+        halfWidth;
+
+    const float top =
+        clickCrossY_ -
+        halfHeight;
+
+    const float bottom =
+        clickCrossY_ +
+        halfHeight;
+
+
+    const float x0 =
+        (
+            left /
+            viewportWidth
+        ) *
+            2.0f -
+        1.0f;
+
+    const float x1 =
+        (
+            right /
+            viewportWidth
+        ) *
+            2.0f -
+        1.0f;
+
+    const float y0 =
+        1.0f -
+        (
+            top /
+            viewportHeight
+        ) *
+            2.0f;
+
+    const float y1 =
+        1.0f -
+        (
+            bottom /
+            viewportHeight
+        ) *
+            2.0f;
+
+
+    // top-left origin for the decoded cache image
+    const float vertices[] = {
+        x0, y0, 0.0f, 0.0f,
+        x0, y1, 0.0f, 1.0f,
+        x1, y1, 1.0f, 1.0f,
+
+        x0, y0, 0.0f, 0.0f,
+        x1, y1, 1.0f, 1.0f,
+        x1, y0, 1.0f, 0.0f
+    };
+
+
+    glDisable(
+        GL_DEPTH_TEST
+    );
+
+    glDepthMask(
+        GL_FALSE
+    );
+
+    glEnable(
+        GL_BLEND
+    );
+
+    glBlendFunc(
+        GL_SRC_ALPHA,
+        GL_ONE_MINUS_SRC_ALPHA
+    );
+
+    glPolygonMode(
+        GL_FRONT_AND_BACK,
+        GL_FILL
+    );
+
+
+    glUseProgram(
+        gl.program
+    );
+
+
+    glActiveTexture(
+        GL_TEXTURE0
+    );
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        texture
+    );
+
+
+    glUniform1i(
+        gl.textureLocation,
+        0
+    );
+
+
+    glBindVertexArray(
+        gl.vao
+    );
+
+    glBindBuffer(
+        GL_ARRAY_BUFFER,
+        gl.vbo
+    );
+
+    glBufferSubData(
+        GL_ARRAY_BUFFER,
+        0,
+        sizeof(vertices),
+        vertices
+    );
+
+
+    glDrawArrays(
+        GL_TRIANGLES,
+        0,
+        6
+    );
+
+
+    glBindBuffer(
+        GL_ARRAY_BUFFER,
+        0
+    );
+
+    glBindVertexArray(
+        0
+    );
+
+    glBindTexture(
+        GL_TEXTURE_2D,
+        0
+    );
+
+    glUseProgram(
+        0
+    );
+
+
+    glDisable(
+        GL_BLEND
+    );
+
+    glDepthMask(
+        GL_TRUE
+    );
+
+    glEnable(
+        GL_DEPTH_TEST
+    );
+}
+
 
 
 void Client::updateMouseSelection()
@@ -1810,17 +2614,6 @@ void Client::updateMouseSelection()
         leftMouseDown &&
         !leftMouseWasDown_
     ) {
-        // SDL_GetMouseState already gives us coordinates
-        // relative to this window. Do not apply another
-        // window -> pixel scaling here.
-        std::cout
-            << "mouse click = "
-            << mouseX
-            << ", "
-            << mouseY
-            << "\n";
-
-
         const auto pickedTile =
             pickTerrainTile(
                 mouseX,
@@ -1828,19 +2621,83 @@ void Client::updateMouseSelection()
             );
 
 
+        hoveredLocationIndex_ =
+            std::nullopt;
+
+
+        // Existing object lookup still targets the original
+        // center region for now. Ground movement across all
+        // loaded regions works in this checkpoint.
         if (pickedTile.has_value()) {
-            selectTerrainTile(
-                *pickedTile
-            );
+            hoveredLocationIndex_ =
+                findInteractableLocationAt(
+                    *pickedTile
+                );
+        }
 
-            walkPlayerTo(
-                *pickedTile
-            );
 
+        if (!pickedTile.has_value()) {
+            std::cout
+                << "clicked target = none\n";
         }
         else {
-            std::cout
-                << "clicked tile = none\n";
+            clickCrossActive_ =
+                true;
+
+            clickCrossRed_ =
+                hoveredLocationIndex_
+                    .has_value();
+
+            clickCrossX_ =
+                mouseX;
+
+            clickCrossY_ =
+                mouseY;
+
+            clickCrossStartMs_ =
+                static_cast<std::uint64_t>(
+                    SDL_GetTicks()
+                );
+
+
+            if (
+                hoveredLocationIndex_
+                    .has_value()
+            ) {
+                const auto& location =
+                    region_->locations[
+                        *hoveredLocationIndex_
+                    ];
+
+
+                std::cout
+                    << "clicked location = "
+                    << location.id
+                    << " | tile="
+                    << location.tile.x
+                    << ","
+                    << location.tile.y
+                    << " | shape="
+                    << static_cast<int>(
+                        location.shape
+                    )
+                    << "\n";
+            }
+            else {
+                std::cout
+                    << "clicked ground = "
+                    << pickedTile->x
+                    << ", "
+                    << pickedTile->y
+                    << ", plane "
+                    << pickedTile->plane
+                    << "\n";
+
+
+                walkPlayerTo(
+                    *pickedTile
+                );
+            }
         }
     }
 
@@ -1859,6 +2716,7 @@ void Client::syncCameraToPlayer()
         return;
     }
 
+
     if (
         *playerObjectIndex_ >=
         scene_.objects.size()
@@ -1866,20 +2724,70 @@ void Client::syncCameraToPlayer()
         return;
     }
 
+
+    if (!cameraOrbitInitialized_) {
+        scene_.camera.rotation.x =
+            -0.55f;
+
+        scene_.camera.rotation.z =
+            0.0f;
+
+        cameraOrbitInitialized_ =
+            true;
+    }
+
+
     const auto& playerPosition =
         scene_.objects[
             *playerObjectIndex_
         ].transform.position;
 
-    scene_.camera.position = {
-        playerPosition.x +
-            cameraFollowOffsetX_,
 
+    const float yaw =
+        scene_.camera.rotation.y;
+
+    const float pitch =
+        scene_.camera.rotation.x;
+
+
+    const float sinYaw =
+        std::sin(yaw);
+
+    const float cosYaw =
+        std::cos(yaw);
+
+    const float sinPitch =
+        std::sin(pitch);
+
+    const float cosPitch =
+        std::cos(pitch);
+
+
+    const float targetX =
+        playerPosition.x;
+
+    const float targetY =
         playerPosition.y +
-            cameraFollowOffsetY_,
+        cameraTargetHeight_;
 
-        playerPosition.z +
-            cameraFollowOffsetZ_
+    const float targetZ =
+        playerPosition.z;
+
+
+    scene_.camera.position = {
+        targetX +
+            sinYaw *
+            cosPitch *
+            cameraDistance_,
+
+        targetY -
+            sinPitch *
+            cameraDistance_,
+
+        targetZ +
+            cosYaw *
+            cosPitch *
+            cameraDistance_
     };
 }
 
@@ -1893,6 +2801,7 @@ void Client::syncPlayerRenderObject()
         return;
     }
 
+
     if (
         *playerObjectIndex_ >=
         scene_.objects.size()
@@ -1901,8 +2810,20 @@ void Client::syncPlayerRenderObject()
     }
 
 
-    auto& terrain =
-        region_->terrain;
+    const auto* playerRegion =
+        regionAt(
+            player_.tile.x,
+            player_.tile.y
+        );
+
+
+    if (!playerRegion) {
+        return;
+    }
+
+
+    const auto& terrain =
+        playerRegion->terrain;
 
 
     constexpr int sourcePlane =
@@ -1935,8 +2856,14 @@ void Client::syncPlayerRenderObject()
         );
 
 
-    const auto& origin =
-        terrain.origin();
+    // IMPORTANT:
+    //
+    // All nine rendered regions were positioned relative to
+    // the original center map square. Keep the player in that
+    // same scene coordinate system even after crossing into
+    // another region.
+    const auto& sceneOrigin =
+        region_->terrain.origin();
 
 
     auto& object =
@@ -1954,6 +2881,7 @@ void Client::syncPlayerRenderObject()
     constexpr float halfTurn =
         3.14159265359f;
 
+
     switch (player_.facing) {
     case FacingDirection::North:
         object.transform.rotation.y =
@@ -1962,7 +2890,8 @@ void Client::syncPlayerRenderObject()
 
     case FacingDirection::NorthEast:
         object.transform.rotation.y =
-            halfTurn - eighthTurn;
+            halfTurn -
+            eighthTurn;
         break;
 
     case FacingDirection::East:
@@ -1987,12 +2916,14 @@ void Client::syncPlayerRenderObject()
 
     case FacingDirection::West:
         object.transform.rotation.y =
-            halfTurn + quarterTurn;
+            halfTurn +
+            quarterTurn;
         break;
 
     case FacingDirection::NorthWest:
         object.transform.rotation.y =
-            halfTurn + eighthTurn;
+            halfTurn +
+            eighthTurn;
         break;
     }
 
@@ -2000,8 +2931,9 @@ void Client::syncPlayerRenderObject()
     object.transform.position = {
         static_cast<float>(
             player_.tile.x -
-            origin.x
-        ) + player_.local.x,
+            sceneOrigin.x
+        ) +
+            player_.local.x,
 
         groundHeight +
             playerGroundOffset_,
@@ -2009,8 +2941,9 @@ void Client::syncPlayerRenderObject()
         -(
             static_cast<float>(
                 player_.tile.y -
-                origin.y
-            ) + player_.local.y
+                sceneOrigin.y
+            ) +
+            player_.local.y
         )
     };
 }
@@ -2023,18 +2956,16 @@ void Client::walkPlayerTo(
     playerPath_.clear();
 
 
-    if (!region_.has_value()) {
-        return;
-    }
-
-
     const auto source =
         playerMoving_
             ? playerMoveDestinationTile_
             : player_.tile;
 
 
-    if (source.plane != destination.plane) {
+    if (
+        source.plane !=
+        destination.plane
+    ) {
         return;
     }
 
@@ -2047,8 +2978,204 @@ void Client::walkPlayerTo(
     }
 
 
+    const auto* sourceRegion =
+        world_.regionAt(
+            source
+        );
+
+    const auto* destinationRegion =
+        world_.regionAt(
+            destination
+        );
+
+
+    if (
+        !sourceRegion ||
+        !destinationRegion
+    ) {
+        std::cout
+            << "path region missing | "
+            << source.x
+            << ","
+            << source.y
+            << " -> "
+            << destination.x
+            << ","
+            << destination.y
+            << "\n";
+
+        return;
+    }
+
+
+    // COLLISION SOURCE PROBE
+    {
+        constexpr int ProbeDirectionCount =
+            8;
+
+        constexpr int probeDx[
+            ProbeDirectionCount
+        ] = {
+             1,
+            -1,
+             0,
+             0,
+             1,
+             1,
+            -1,
+            -1
+        };
+
+        constexpr int probeDy[
+            ProbeDirectionCount
+        ] = {
+             0,
+             0,
+             1,
+            -1,
+             1,
+            -1,
+             1,
+            -1
+        };
+
+
+        std::cout
+            << "=== COLLISION PROBE ===\n"
+            << "source = "
+            << source.x
+            << ","
+            << source.y
+            << ", plane "
+            << source.plane
+            << "\n"
+            << "world region = "
+            << sourceRegion->id
+            << "\n";
+
+
+        if (region_.has_value()) {
+            std::cout
+                << "legacy region = "
+                << region_->id
+                << "\n";
+        }
+        else {
+            std::cout
+                << "legacy region = none\n";
+        }
+
+
+        for (
+            int i = 0;
+            i < ProbeDirectionCount;
+            ++i
+        ) {
+            const eld::world::TilePosition next{
+                source.x +
+                    probeDx[i],
+
+                source.y +
+                    probeDy[i],
+
+                source.plane
+            };
+
+
+            const bool worldMove =
+                world_.canMove(
+                    source,
+                    next
+                );
+
+
+            const bool worldBlocked =
+                sourceRegion
+                    ->collision
+                    .blocked(
+                        next
+                    );
+
+
+            bool legacyMove =
+                false;
+
+            bool legacyBlocked =
+                true;
+
+
+            if (region_.has_value()) {
+                legacyMove =
+                    region_
+                        ->collision
+                        .canMove(
+                            source,
+                            next
+                        );
+
+                legacyBlocked =
+                    region_
+                        ->collision
+                        .blocked(
+                            next
+                        );
+            }
+
+
+            std::cout
+                << "step "
+                << probeDx[i]
+                << ","
+                << probeDy[i]
+                << " -> "
+                << next.x
+                << ","
+                << next.y
+                << " | legacy move="
+                << legacyMove
+                << " blocked="
+                << legacyBlocked
+                << " | world move="
+                << worldMove
+                << " blocked="
+                << worldBlocked
+                << "\n";
+        }
+
+
+        std::cout
+            << "=======================\n";
+    }
+
+
+    // --------------------------------------------------------
+    // Recovery checkpoint:
+    //
+    // The known-good pathfinder operated on one 64x64 region.
+    // Don't cross region seams yet.
+    // --------------------------------------------------------
+
+    if (
+        sourceRegion !=
+        destinationRegion
+    ) {
+        std::cout
+            << "path crosses region seam | "
+            << source.x
+            << ","
+            << source.y
+            << " -> "
+            << destination.x
+            << ","
+            << destination.y
+            << "\n";
+
+        return;
+    }
+
+
     const auto& terrain =
-        region_->terrain;
+        sourceRegion->terrain;
 
     const auto origin =
         terrain.origin();
@@ -2063,6 +3190,14 @@ void Client::walkPlayerTo(
         static_cast<int>(
             terrain.height()
         );
+
+
+    if (
+        width <= 0 ||
+        height <= 0
+    ) {
+        return;
+    }
 
 
     const int sourceX =
@@ -2110,56 +3245,6 @@ void Client::walkPlayerTo(
     }
 
 
-    const auto tileIndex =
-        [width](
-            int x,
-            int y
-        )
-        {
-            return
-                y * width +
-                x;
-        };
-
-
-    const int sourceTile =
-        tileIndex(
-            sourceX,
-            sourceY
-        );
-
-    const int destinationTile =
-        tileIndex(
-            destinationX,
-            destinationY
-        );
-
-
-    // --------------------------------------------------------
-    // Search state
-    //
-    // We keep the direction used to ENTER a tile.
-    //
-    // This lets the pathfinder distinguish:
-    //
-    //     same tile, continuing straight
-    //
-    // from:
-    //
-    //     same tile, arriving from another direction
-    //
-    // Primary cost:
-    //     number of walking steps
-    //
-    // Secondary cost:
-    //     number of direction changes
-    //
-    // Therefore:
-    //
-    //     shortest route wins first
-    //     smoothest shortest route wins second
-    // --------------------------------------------------------
-
     constexpr int DirectionCount =
         8;
 
@@ -2170,19 +3255,51 @@ void Client::walkPlayerTo(
         DirectionCount + 1;
 
 
-    constexpr int directions[
+    // Clockwise ordering.
+    //
+    // Ordering only breaks otherwise-identical ties;
+    // cost remains:
+    //
+    //     steps first
+    //     turns second
+    constexpr int directionX[
         DirectionCount
-    ][2] = {
-        { 1,  1},
-        { 1, -1},
-        {-1, -1},
-        {-1,  1},
-
-        { 1,  0},
-        {-1,  0},
-        { 0,  1},
-        { 0, -1}
+    ] = {
+         0,
+         1,
+         1,
+         1,
+         0,
+        -1,
+        -1,
+        -1
     };
+
+    constexpr int directionY[
+        DirectionCount
+    ] = {
+         1,
+         1,
+         0,
+        -1,
+        -1,
+        -1,
+         0,
+         1
+    };
+
+
+    const auto tileIndex =
+        [width](
+            int localX,
+            int localY
+        )
+        {
+            return
+                localY *
+                    width +
+                localX;
+        };
 
 
     const auto stateIndex =
@@ -2198,63 +3315,31 @@ void Client::walkPlayerTo(
         };
 
 
-    struct SearchNode
-    {
-        int tile = 0;
-        int direction = 0;
-
-        int steps = 0;
-        int turns = 0;
-    };
-
-
-    struct SearchNodeGreater
-    {
-        bool operator()(
-            const SearchNode& a,
-            const SearchNode& b
-        ) const
-        {
-            // Fewer steps always wins.
-            if (a.steps != b.steps) {
-                return
-                    a.steps >
-                    b.steps;
-            }
-
-            // Among equally short paths,
-            // fewer turns wins.
-            if (a.turns != b.turns) {
-                return
-                    a.turns >
-                    b.turns;
-            }
-
-            return
-                a.direction >
-                b.direction;
-        }
-    };
-
+    const int tileCount =
+        width *
+        height;
 
     const int stateCount =
-        width *
-        height *
+        tileCount *
         DirectionStateCount;
+
+
+    const int infinity =
+        std::numeric_limits<int>::max();
 
 
     std::vector<int> bestSteps(
         static_cast<std::size_t>(
             stateCount
         ),
-        -1
+        infinity
     );
 
     std::vector<int> bestTurns(
         static_cast<std::size_t>(
             stateCount
         ),
-        -1
+        infinity
     );
 
     std::vector<int> parent(
@@ -2265,11 +3350,69 @@ void Client::walkPlayerTo(
     );
 
 
+    struct SearchNode
+    {
+        int tile = 0;
+        int direction =
+            StartDirection;
+
+        int steps = 0;
+        int turns = 0;
+    };
+
+
+    struct CompareSearchNode
+    {
+        bool operator()(
+            const SearchNode& a,
+            const SearchNode& b
+        ) const
+        {
+            if (
+                a.steps !=
+                b.steps
+            ) {
+                return
+                    a.steps >
+                    b.steps;
+            }
+
+
+            if (
+                a.turns !=
+                b.turns
+            ) {
+                return
+                    a.turns >
+                    b.turns;
+            }
+
+
+            return
+                a.direction >
+                b.direction;
+        }
+    };
+
+
     std::priority_queue<
         SearchNode,
         std::vector<SearchNode>,
-        SearchNodeGreater
+        CompareSearchNode
     > open;
+
+
+    const int sourceTile =
+        tileIndex(
+            sourceX,
+            sourceY
+        );
+
+    const int destinationTile =
+        tileIndex(
+            destinationX,
+            destinationY
+        );
 
 
     const int sourceState =
@@ -2280,15 +3423,11 @@ void Client::walkPlayerTo(
 
 
     bestSteps[
-        static_cast<std::size_t>(
-            sourceState
-        )
+        sourceState
     ] = 0;
 
     bestTurns[
-        static_cast<std::size_t>(
-            sourceState
-        )
+        sourceState
     ] = 0;
 
 
@@ -2300,12 +3439,12 @@ void Client::walkPlayerTo(
     });
 
 
-    int destinationState =
+    int finalState =
         -1;
 
 
     while (!open.empty()) {
-        const SearchNode current =
+        const auto current =
             open.top();
 
         open.pop();
@@ -2319,16 +3458,14 @@ void Client::walkPlayerTo(
 
 
         if (
-            bestSteps[
-                static_cast<std::size_t>(
+            current.steps !=
+                bestSteps[
                     currentState
-                )
-            ] != current.steps ||
-            bestTurns[
-                static_cast<std::size_t>(
+                ] ||
+            current.turns !=
+                bestTurns[
                     currentState
-                )
-            ] != current.turns
+                ]
         ) {
             continue;
         }
@@ -2338,18 +3475,18 @@ void Client::walkPlayerTo(
             current.tile ==
             destinationTile
         ) {
-            destinationState =
+            finalState =
                 currentState;
 
             break;
         }
 
 
-        const int currentX =
+        const int currentLocalX =
             current.tile %
             width;
 
-        const int currentY =
+        const int currentLocalY =
             current.tile /
             width;
 
@@ -2357,10 +3494,10 @@ void Client::walkPlayerTo(
         const eld::world::TilePosition
             currentPosition{
                 origin.x +
-                    currentX,
+                    currentLocalX,
 
                 origin.y +
-                    currentY,
+                    currentLocalY,
 
                 source.plane
             };
@@ -2368,27 +3505,27 @@ void Client::walkPlayerTo(
 
         for (
             int direction = 0;
-            direction < DirectionCount;
+            direction <
+                DirectionCount;
             ++direction
         ) {
-            const int dx =
-                directions[direction][0];
+            const int nextLocalX =
+                currentLocalX +
+                directionX[
+                    direction
+                ];
 
-            const int dy =
-                directions[direction][1];
-
-
-            const int nextX =
-                currentX + dx;
-
-            const int nextY =
-                currentY + dy;
+            const int nextLocalY =
+                currentLocalY +
+                directionY[
+                    direction
+                ];
 
 
             if (
                 !inside(
-                    nextX,
-                    nextY
+                    nextLocalX,
+                    nextLocalY
                 )
             ) {
                 continue;
@@ -2398,17 +3535,17 @@ void Client::walkPlayerTo(
             const eld::world::TilePosition
                 nextPosition{
                     origin.x +
-                        nextX,
+                        nextLocalX,
 
                     origin.y +
-                        nextY,
+                        nextLocalY,
 
                     source.plane
                 };
 
 
             if (
-                !region_->collision.canMove(
+                !world_.canMove(
                     currentPosition,
                     nextPosition
                 )
@@ -2419,8 +3556,8 @@ void Client::walkPlayerTo(
 
             const int nextTile =
                 tileIndex(
-                    nextX,
-                    nextY
+                    nextLocalX,
+                    nextLocalY
                 );
 
             const int nextState =
@@ -2431,8 +3568,8 @@ void Client::walkPlayerTo(
 
 
             const int nextSteps =
-                current.steps + 1;
-
+                current.steps +
+                1;
 
             int nextTurns =
                 current.turns;
@@ -2448,21 +3585,20 @@ void Client::walkPlayerTo(
             }
 
 
-            const auto slot =
-                static_cast<std::size_t>(
-                    nextState
-                );
-
-
             const bool better =
-                bestSteps[slot] == -1 ||
                 nextSteps <
-                    bestSteps[slot] ||
+                    bestSteps[
+                        nextState
+                    ] ||
                 (
                     nextSteps ==
-                        bestSteps[slot] &&
+                        bestSteps[
+                            nextState
+                        ] &&
                     nextTurns <
-                        bestTurns[slot]
+                        bestTurns[
+                            nextState
+                        ]
                 );
 
 
@@ -2471,13 +3607,19 @@ void Client::walkPlayerTo(
             }
 
 
-            bestSteps[slot] =
+            bestSteps[
+                nextState
+            ] =
                 nextSteps;
 
-            bestTurns[slot] =
+            bestTurns[
+                nextState
+            ] =
                 nextTurns;
 
-            parent[slot] =
+            parent[
+                nextState
+            ] =
                 currentState;
 
 
@@ -2491,7 +3633,7 @@ void Client::walkPlayerTo(
     }
 
 
-    if (destinationState < 0) {
+    if (finalState < 0) {
         std::cout
             << "path not found | "
             << source.x
@@ -2507,34 +3649,29 @@ void Client::walkPlayerTo(
     }
 
 
-    // --------------------------------------------------------
-    // Reconstruct destination -> source.
-    // --------------------------------------------------------
-
     std::vector<
         eld::world::TilePosition
     > reversedPath;
 
 
-    int currentState =
-        destinationState;
+    int state =
+        finalState;
 
 
     while (
-        currentState !=
+        state !=
         sourceState
     ) {
-        const int currentTile =
-            currentState /
+        const int tile =
+            state /
             DirectionStateCount;
 
-
         const int localX =
-            currentTile %
+            tile %
             width;
 
         const int localY =
-            currentTile /
+            tile /
             width;
 
 
@@ -2549,15 +3686,13 @@ void Client::walkPlayerTo(
         });
 
 
-        currentState =
+        state =
             parent[
-                static_cast<std::size_t>(
-                    currentState
-                )
+                state
             ];
 
 
-        if (currentState < 0) {
+        if (state < 0) {
             playerPath_.clear();
 
             std::cout
@@ -2571,10 +3706,8 @@ void Client::walkPlayerTo(
     for (
         auto it =
             reversedPath.rbegin();
-
         it !=
             reversedPath.rend();
-
         ++it
     ) {
         playerPath_.push_back(
@@ -2593,12 +3726,12 @@ void Client::walkPlayerTo(
         << ","
         << destination.y
         << " steps="
-        << playerPath_.size()
+        << bestSteps[
+            finalState
+        ]
         << " turns="
         << bestTurns[
-            static_cast<std::size_t>(
-                destinationState
-            )
+            finalState
         ]
         << "\n";
 
@@ -2674,17 +3807,20 @@ void Client::movePlayer(
     int dy
 )
 {
-    if (
-        !region_.has_value() ||
-        playerMoving_
-    ) {
+    if (playerMoving_) {
         return;
     }
 
 
     if (
-        dx == 0 &&
-        dy == 0
+        dx < -1 ||
+        dx > 1 ||
+        dy < -1 ||
+        dy > 1 ||
+        (
+            dx == 0 &&
+            dy == 0
+        )
     ) {
         return;
     }
@@ -2699,20 +3835,48 @@ void Client::movePlayer(
         dy;
 
 
+    const auto* destinationRegion =
+        regionAt(
+            destinationX,
+            destinationY
+        );
+
+
+    if (!destinationRegion) {
+        return;
+    }
+
+
     const eld::world::TerrainLayerPosition
-        destination{
+        terrainPosition{
             destinationX,
             destinationY,
             0
         };
 
 
-    const auto& terrain =
-        region_->terrain;
+    if (
+        !destinationRegion
+            ->terrain
+            .contains(
+                terrainPosition
+            )
+    ) {
+        return;
+    }
+
+
+    const eld::world::TilePosition
+        destination{
+            destinationX,
+            destinationY,
+            player_.tile.plane
+        };
 
 
     if (
-        !terrain.contains(
+        !canMoveWorld(
+            player_.tile,
             destination
         )
     ) {
@@ -2721,9 +3885,11 @@ void Client::movePlayer(
 
 
     const auto& destinationTile =
-        terrain.tile(
-            destination
-        );
+        destinationRegion
+            ->terrain
+            .tile(
+                terrainPosition
+            );
 
 
     if (
@@ -2795,9 +3961,328 @@ void Client::movePlayer(
     );
 
 
-    // Apply the new facing immediately,
-    // before the first movement frame.
     syncPlayerRenderObject();
+}
+
+
+
+const eld::world::Region*
+Client::regionAt(
+    int worldX,
+    int worldY
+) const
+{
+    return
+        world_.regionAt({
+            worldX,
+            worldY,
+            0
+        });
+}
+
+
+
+bool Client::canMoveWorld(
+    const eld::world::TilePosition& from,
+    const eld::world::TilePosition& to
+) const
+{
+    return
+        world_.canMove(
+            from,
+            to
+        );
+}
+
+
+
+void Client::buildNeighborRegions()
+{
+    if (!region_.has_value()) {
+        return;
+    }
+
+
+    loadedRegions_.clear();
+    loadedRegions_.reserve(
+        8
+    );
+
+
+    const auto& centerOrigin =
+        region_->terrain.origin();
+
+
+    const int centerRegionX =
+        static_cast<int>(
+            region_->id >> 8
+        );
+
+    const int centerRegionY =
+        static_cast<int>(
+            region_->id &
+            0xFFu
+        );
+
+
+    eld::runtime::map::RegionBuilder
+        regionBuilder;
+
+    eld::graphics::TerrainBuilder
+        terrainBuilder;
+
+    eld::graphics::LocationBuilder
+        locationBuilder;
+
+    eld::graphics::LocationBatchBuilder
+        locationBatchBuilder;
+
+
+    std::cout
+        << "\n=== NEIGHBOR REGIONS ===\n";
+
+
+    for (
+        int regionOffsetX = -1;
+        regionOffsetX <= 1;
+        ++regionOffsetX
+    ) {
+        for (
+            int regionOffsetY = -1;
+            regionOffsetY <= 1;
+            ++regionOffsetY
+        ) {
+            if (
+                regionOffsetX == 0 &&
+                regionOffsetY == 0
+            ) {
+                continue;
+            }
+
+
+            const int regionX =
+                centerRegionX +
+                regionOffsetX;
+
+            const int regionY =
+                centerRegionY +
+                regionOffsetY;
+
+
+            if (
+                regionX < 0 ||
+                regionX > 255 ||
+                regionY < 0 ||
+                regionY > 255
+            ) {
+                continue;
+            }
+
+
+            const auto regionId =
+                static_cast<std::uint16_t>(
+                    (
+                        regionX <<
+                        8
+                    ) |
+                    regionY
+                );
+
+
+            try {
+                auto neighbor =
+                    regionBuilder.build(
+                        regionId,
+                        assets_.maps,
+                        assets_.locations
+                    );
+
+
+                const auto& origin =
+                    neighbor.terrain.origin();
+
+
+                const float sceneOffsetX =
+                    static_cast<float>(
+                        origin.x -
+                        centerOrigin.x
+                    );
+
+                const float sceneOffsetZ =
+                    -static_cast<float>(
+                        origin.y -
+                        centerOrigin.y
+                    );
+
+
+                // ============================================
+                // Terrain
+                // ============================================
+
+                auto terrainModel =
+                    terrainBuilder.build(
+                        neighbor.terrain,
+                        0,
+                        assets_.floors,
+                        textureSystem_
+                    );
+
+
+                const auto terrainHandle =
+                    modelManager_.create(
+                        std::move(
+                            terrainModel
+                        )
+                    );
+
+
+                eld::render::RenderObject
+                    terrainObject;
+
+                terrainObject.model =
+                    terrainHandle;
+
+                terrainObject.transform.position = {
+                    sceneOffsetX,
+                    0.0f,
+                    sceneOffsetZ
+                };
+
+                terrainObject.visible =
+                    true;
+
+
+                scene_.objects.push_back(
+                    terrainObject
+                );
+
+
+                // ============================================
+                // Locations
+                // ============================================
+
+                auto locationBuild =
+                    locationBuilder.build(
+                        neighbor,
+                        0,
+                        assets_.locations,
+                        assets_.models,
+                        modelSystem_
+                    );
+
+
+                auto locationBatchBuild =
+                    locationBatchBuilder.build(
+                        locationBuild.objects,
+                        modelManager_
+                    );
+
+
+                // Batched models already contain their
+                // region-local transforms baked into the
+                // vertices, so move the whole batch into its
+                // neighboring region position.
+                for (
+                    auto& batch :
+                    locationBatchBuild.batches
+                ) {
+                    const auto handle =
+                        modelManager_.create(
+                            std::move(
+                                batch
+                            )
+                        );
+
+
+                    eld::render::RenderObject
+                        object;
+
+                    object.model =
+                        handle;
+
+                    object.transform.position = {
+                        sceneOffsetX,
+                        0.0f,
+                        sceneOffsetZ
+                    };
+
+                    object.visible =
+                        true;
+
+
+                    scene_.objects.push_back(
+                        object
+                    );
+                }
+
+
+                // Alpha-blended / passthrough objects still
+                // retain their individual local transforms.
+                for (
+                    auto object :
+                    locationBatchBuild
+                        .passthroughObjects
+                ) {
+                    object.transform.position.x +=
+                        sceneOffsetX;
+
+                    object.transform.position.z +=
+                        sceneOffsetZ;
+
+
+                    scene_.objects.push_back(
+                        std::move(
+                            object
+                        )
+                    );
+                }
+
+
+                std::cout
+                    << "region "
+                    << regionId
+                    << " | grid="
+                    << regionX
+                    << ","
+                    << regionY
+                    << " | origin="
+                    << origin.x
+                    << ","
+                    << origin.y
+                    << " | offset="
+                    << sceneOffsetX
+                    << ","
+                    << sceneOffsetZ
+                    << " | locations="
+                    << neighbor.locations.size()
+                    << "\n";
+
+
+                loadedRegions_.push_back(
+                    std::move(
+                        neighbor
+                    )
+                );
+            }
+            catch (
+                const std::exception& error
+            ) {
+                std::cout
+                    << "region "
+                    << regionId
+                    << " skipped: "
+                    << error.what()
+                    << "\n";
+            }
+        }
+    }
+
+
+    std::cout
+        << "neighbor regions loaded = "
+        << loadedRegions_.size()
+        << "\n"
+        << "========================\n\n";
 }
 
 
@@ -3130,19 +4615,117 @@ int Client::run()
             scene_.camera.rotation.x -=
                 turn;
 
-        constexpr float pitchLimit =
-            1.55334306f;
+        constexpr float minCameraPitch =
+            -1.35f;
+
+        constexpr float maxCameraPitch =
+            -0.15f;
 
         scene_.camera.rotation.x =
             std::clamp(
                 scene_.camera.rotation.x,
-                -pitchLimit,
-                pitchLimit
+                minCameraPitch,
+                maxCameraPitch
             );
 
         updatePlayerMovement(
             dt
         );
+
+        // WORLD STREAMING
+        {
+            const auto streaming =
+                world_.updateStreaming(
+                    player_.tile
+                );
+
+
+            eld::runtime::map::RegionProvider
+                provider(
+                    assets_.maps,
+                    assets_.locations
+                );
+
+
+            // Load first.
+            //
+            // This ensures the new streaming window exists
+            // before old regions are discarded.
+            for (
+                const auto id :
+                streaming.toLoad
+            ) {
+                try {
+                    world_.insertRegion(
+                        provider.load(
+                            id
+                        )
+                    );
+
+
+                    std::cout
+                        << "world load | region="
+                        << id
+                        << "\n";
+                }
+                catch (
+                    const std::exception& error
+                ) {
+                    std::cout
+                        << "world load failed | region="
+                        << id
+                        << " | "
+                        << error.what()
+                        << "\n";
+                }
+            }
+
+
+            // Runtime-world unload only.
+            //
+            // Rendering is still separate for this checkpoint.
+            for (
+                const auto id :
+                streaming.toUnload
+            ) {
+                if (
+                    world_.unloadRegion(
+                        id
+                    )
+                ) {
+                    std::cout
+                        << "world unload | region="
+                        << id
+                        << "\n";
+                }
+            }
+
+
+            if (
+                streaming.centerChanged ||
+                !streaming.toLoad.empty() ||
+                !streaming.toUnload.empty()
+            ) {
+                std::cout
+                    << "=== WORLD STREAM ===\n"
+                    << "player tile   = "
+                    << player_.tile.x
+                    << ","
+                    << player_.tile.y
+                    << "\n"
+                    << "center region = "
+                    << streaming.center.x
+                    << ","
+                    << streaming.center.y
+                    << "\n"
+                    << "world regions = "
+                    << world_
+                        .loadedRegionCount()
+                    << "\n"
+                    << "====================\n";
+            }
+        }
+
 
         updatePlayerAnimation(
             dt

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <deque>
 
 #include <cstddef>
@@ -11,6 +12,7 @@
 #include "model/ModelData.h"
 #include "world/Region.h"
 
+#include "world/World.h"
 #include "host/sdl/SdlOpenGLContext.h"
 
 #include "model/ModelSystem.h"
@@ -32,6 +34,17 @@ public:
 
 private:
     void buildWorld();
+    void buildNeighborRegions();
+
+    const eld::world::Region* regionAt(
+        int worldX,
+        int worldY
+    ) const;
+
+    bool canMoveWorld(
+        const eld::world::TilePosition& from,
+        const eld::world::TilePosition& to
+    ) const;
     void spawnPlayer();
     void movePlayer(int dx, int dy);
 
@@ -50,10 +63,17 @@ private:
         float mouseY
     ) const;
 
-    void selectTerrainTile(
+    std::optional<std::size_t>
+    findInteractableLocationAt(
         const eld::world::TilePosition& tile
+    ) const;
+
+    void selectTerrainTile(
+        const eld::world::TilePosition& tile,
+        bool interactable
     );
 
+    void drawClickCross();
     void updateMouseSelection();
 
     void buildPlayerIdleAnimation(
@@ -89,8 +109,15 @@ private:
     eld::graphics::ModelSystem
         modelSystem_;
 
+    eld::world::World world_;
+
     std::optional<eld::world::Region>
         region_;
+
+    // Neighboring regions currently loaded around the
+    // gameplay/center region.
+    std::vector<eld::world::Region>
+        loadedRegions_;
 
     Player
         player_;
@@ -141,13 +168,32 @@ private:
     std::optional<eld::render::ModelHandle>
         selectedTileModel_;
 
+    std::optional<std::size_t>
+        hoveredLocationIndex_;
+
+    bool selectedTileInteractable_ =
+        false;
+
     bool leftMouseWasDown_ = false;
+
+    bool clickCrossActive_ = false;
+    bool clickCrossRed_ = false;
+
+    float clickCrossX_ = 0.0f;
+    float clickCrossY_ = 0.0f;
+
+    std::uint64_t clickCrossStartMs_ = 0;
 
     bool cameraLocked_ = true;
 
-    float cameraFollowOffsetX_ = 0.0f;
-    float cameraFollowOffsetY_ = 7.0f;
-    float cameraFollowOffsetZ_ = 10.0f;
+    float cameraDistance_ = 12.0f;
+    float cameraMinDistance_ = 4.0f;
+    float cameraMaxDistance_ = 30.0f;
+
+    float cameraTargetHeight_ = 1.0f;
+
+    bool cameraDragging_ = false;
+    bool cameraOrbitInitialized_ = false;
 
     eld::render::RenderScene
         scene_;

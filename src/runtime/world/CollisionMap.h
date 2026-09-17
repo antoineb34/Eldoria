@@ -107,6 +107,24 @@ namespace eld::world
         }
 
 
+        bool blocksEdge(
+            const TilePosition& position,
+            int dx,
+            int dy
+        ) const
+        {
+            if (!contains(position)) {
+                return true;
+            }
+
+            return edgeBlocked(
+                position,
+                dx,
+                dy
+            );
+        }
+
+
         void blockEdge(
             const TilePosition& position,
             int dx,
