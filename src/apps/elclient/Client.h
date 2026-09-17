@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "assets/AssetManager.h"
+#include "CameraController.h"
 #include "Player.h"
 #include "PlayerController.h"
 #include "model/ModelData.h"
@@ -175,16 +176,8 @@ private:
 
     std::uint64_t clickCrossStartMs_ = 0;
 
-    bool cameraLocked_ = true;
-
-    float cameraDistance_ = 12.0f;
-    float cameraMinDistance_ = 4.0f;
-    float cameraMaxDistance_ = 30.0f;
-
-    float cameraTargetHeight_ = 1.0f;
-
-    bool cameraDragging_ = false;
-    bool cameraOrbitInitialized_ = false;
+    CameraController
+        cameraController_;
 
     eld::render::RenderScene
         scene_;

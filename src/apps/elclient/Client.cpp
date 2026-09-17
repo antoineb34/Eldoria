@@ -448,27 +448,9 @@ void Client::buildWorld()
             .origin();
 
 
-    // --------------------------------------------------------
-    // Camera
-    // --------------------------------------------------------
-
-    scene_.camera.position = {
-        31.5f,
-        25.0f,
-        85.0f
-    };
-
-    scene_.camera.rotation = {
-        -0.45f,
-        0.0f,
-        0.0f
-    };
-
-    scene_.camera.viewportWidth =
-        1000;
-
-    scene_.camera.viewportHeight =
-        700;
+    cameraController_.reset(
+        scene_.camera
+    );
 
 
     // --------------------------------------------------------
@@ -676,144 +658,57 @@ void Client::processEvents(
 {
     SDL_Event event;
 
-    while (SDL_PollEvent(&event)) {
 
-        // ----------------------------------------------------
-        // Camera zoom
-        // ----------------------------------------------------
+    while (
+        SDL_PollEvent(
+            &event
+        )
+    ) {
+        const auto cameraEvent =
+            cameraController_.handleEvent(
+                event,
+                scene_.camera
+            );
+
 
         if (
-            event.type ==
-            SDL_EVENT_MOUSE_WHEEL
+            cameraEvent.lockChanged
         ) {
-            float wheel =
-                event.wheel.y;
-
-
             if (
-                event.wheel.direction ==
-                SDL_MOUSEWHEEL_FLIPPED
+                cameraController_.locked()
             ) {
-                wheel =
-                    -wheel;
+                syncCameraToPlayer();
+
+                std::cout
+                    << "camera = locked\n";
             }
-
-
-            constexpr float zoomStep =
-                1.5f;
-
-
-            cameraDistance_ =
-                std::clamp(
-                    cameraDistance_ -
-                        wheel *
-                        zoomStep,
-                    cameraMinDistance_,
-                    cameraMaxDistance_
-                );
+            else {
+                std::cout
+                    << "camera = free\n";
+            }
         }
-
-
-        // ----------------------------------------------------
-        // Middle-mouse orbit
-        // ----------------------------------------------------
-
-        if (
-            event.type ==
-                SDL_EVENT_MOUSE_BUTTON_DOWN &&
-            event.button.button ==
-                SDL_BUTTON_MIDDLE
-        ) {
-            cameraDragging_ =
-                true;
-        }
-
-
-        if (
-            event.type ==
-                SDL_EVENT_MOUSE_BUTTON_UP &&
-            event.button.button ==
-                SDL_BUTTON_MIDDLE
-        ) {
-            cameraDragging_ =
-                false;
-        }
-
-
-        if (
-            event.type ==
-                SDL_EVENT_MOUSE_MOTION &&
-            cameraDragging_
-        ) {
-            constexpr float sensitivity =
-                0.005f;
-
-
-            scene_.camera.rotation.y -=
-                event.motion.xrel *
-                sensitivity;
-
-
-            scene_.camera.rotation.x +=
-                event.motion.yrel *
-                sensitivity;
-
-
-            constexpr float minPitch =
-                -1.35f;
-
-            constexpr float maxPitch =
-                -0.15f;
-
-
-            scene_.camera.rotation.x =
-                std::clamp(
-                    scene_.camera.rotation.x,
-                    minPitch,
-                    maxPitch
-                );
-        }
-
-
 
 
         if (
             event.type ==
             SDL_EVENT_QUIT
         ) {
-            running = false;
+            running =
+                false;
         }
 
-        if (
-            event.key.scancode ==
-                SDL_SCANCODE_C
-        ) {
-            cameraLocked_ =
-                !cameraLocked_;
-
-            if (cameraLocked_) {
-
-                syncCameraToPlayer();
-
-                std::cout
-                    << "camera = locked\\n";
-            }
-            else {
-                std::cout
-                    << "camera = free\\n";
-            }
-        }
 
         if (
             event.type ==
                 SDL_EVENT_KEY_DOWN &&
+            !event.key.repeat &&
             event.key.scancode ==
-                SDL_SCANCODE_F &&
-            !event.key.repeat
+                SDL_SCANCODE_F
         ) {
             renderer_.toggleWireframe();
         }
-    
+
+
         if (
             event.type ==
                 SDL_EVENT_KEY_DOWN &&
@@ -823,29 +718,39 @@ void Client::processEvents(
                 event.key.scancode
             ) {
             case SDL_SCANCODE_I:
-                movePlayer(0, 1);
+                movePlayer(
+                    0,
+                    1
+                );
                 break;
 
             case SDL_SCANCODE_K:
-                movePlayer(0, -1);
+                movePlayer(
+                    0,
+                    -1
+                );
                 break;
 
             case SDL_SCANCODE_J:
-                movePlayer(-1, 0);
+                movePlayer(
+                    -1,
+                    0
+                );
                 break;
 
             case SDL_SCANCODE_L:
-                movePlayer(1, 0);
+                movePlayer(
+                    1,
+                    0
+                );
                 break;
 
             default:
                 break;
             }
         }
-
+    }
 }
-}
-
 
 void Client::render()
 {
@@ -2687,7 +2592,6 @@ void Client::updateMouseSelection()
 void Client::syncCameraToPlayer()
 {
     if (
-        !cameraLocked_ ||
         !playerObjectIndex_.has_value()
     ) {
         return;
@@ -2702,72 +2606,13 @@ void Client::syncCameraToPlayer()
     }
 
 
-    if (!cameraOrbitInitialized_) {
-        scene_.camera.rotation.x =
-            -0.55f;
-
-        scene_.camera.rotation.z =
-            0.0f;
-
-        cameraOrbitInitialized_ =
-            true;
-    }
-
-
-    const auto& playerPosition =
+    cameraController_.follow(
+        scene_.camera,
         scene_.objects[
             *playerObjectIndex_
-        ].transform.position;
-
-
-    const float yaw =
-        scene_.camera.rotation.y;
-
-    const float pitch =
-        scene_.camera.rotation.x;
-
-
-    const float sinYaw =
-        std::sin(yaw);
-
-    const float cosYaw =
-        std::cos(yaw);
-
-    const float sinPitch =
-        std::sin(pitch);
-
-    const float cosPitch =
-        std::cos(pitch);
-
-
-    const float targetX =
-        playerPosition.x;
-
-    const float targetY =
-        playerPosition.y +
-        cameraTargetHeight_;
-
-    const float targetZ =
-        playerPosition.z;
-
-
-    scene_.camera.position = {
-        targetX +
-            sinYaw *
-            cosPitch *
-            cameraDistance_,
-
-        targetY -
-            sinPitch *
-            cameraDistance_,
-
-        targetZ +
-            cosYaw *
-            cosPitch *
-            cameraDistance_
-    };
+        ].transform.position
+    );
 }
-
 
 void Client::syncPlayerRenderObject()
 {
@@ -3309,113 +3154,33 @@ int Client::run()
         int width = 0;
         int height = 0;
 
+
         SDL_GetWindowSizeInPixels(
             sdl_.window(),
             &width,
             &height
         );
 
-        if (
-            width > 0 &&
-            height > 0
-        ) {
-            scene_.camera.viewportWidth =
-                static_cast<std::uint32_t>(
-                    width
-                );
 
-            scene_.camera.viewportHeight =
-                static_cast<std::uint32_t>(
-                    height
-                );
-        }
+        cameraController_.setViewport(
+            scene_.camera,
+            width,
+            height
+        );
+
 
         const bool* keys =
             SDL_GetKeyboardState(
                 nullptr
             );
 
-        const float speed = 20.0f;
-        const float step = speed * dt;
 
-        float localX = 0.0f;
-        float localY = 0.0f;
-        float localZ = 0.0f;
+        cameraController_.update(
+            scene_.camera,
+            dt,
+            keys
+        );
 
-        if (!cameraLocked_) {
-            if (keys[SDL_SCANCODE_W])
-                localZ -= step;
-
-            if (keys[SDL_SCANCODE_S])
-                localZ += step;
-
-            if (keys[SDL_SCANCODE_A])
-                localX -= step;
-
-            if (keys[SDL_SCANCODE_D])
-                localX += step;
-
-            if (keys[SDL_SCANCODE_Q])
-                localY -= step;
-
-            if (keys[SDL_SCANCODE_E])
-                localY += step;
-        }
-
-        const float yaw =
-            scene_.camera.rotation.y;
-
-        const float cy =
-            std::cos(yaw);
-
-        const float sy =
-            std::sin(yaw);
-
-        scene_.camera.position.x +=
-            localX * cy -
-            localZ * sy;
-
-        scene_.camera.position.z +=
-            localX * sy +
-            localZ * cy;
-
-        scene_.camera.position.y +=
-            localY;
-
-        const float turnSpeed =
-            1.5f;
-
-        const float turn =
-            turnSpeed * dt;
-
-        if (keys[SDL_SCANCODE_LEFT])
-            scene_.camera.rotation.y +=
-                turn;
-
-        if (keys[SDL_SCANCODE_RIGHT])
-            scene_.camera.rotation.y -=
-                turn;
-
-        if (keys[SDL_SCANCODE_UP])
-            scene_.camera.rotation.x +=
-                turn;
-
-        if (keys[SDL_SCANCODE_DOWN])
-            scene_.camera.rotation.x -=
-                turn;
-
-        constexpr float minCameraPitch =
-            -1.35f;
-
-        constexpr float maxCameraPitch =
-            -0.15f;
-
-        scene_.camera.rotation.x =
-            std::clamp(
-                scene_.camera.rotation.x,
-                minCameraPitch,
-                maxCameraPitch
-            );
 
         updatePlayerMovement(
             dt

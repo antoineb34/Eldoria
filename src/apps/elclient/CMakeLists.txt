@@ -1,5 +1,6 @@
 add_executable(elclient
     main.cpp
+    CameraController.cpp
     Client.cpp
     PlayerAppearanceBuilder.cpp
     PlayerController.cpp
