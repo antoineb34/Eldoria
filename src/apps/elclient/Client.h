@@ -24,6 +24,7 @@ private:
     void buildWorld();
     void processEvents(bool& running);
     void update(float dt);
+    void render();
 
     // Order matters:
     // systems below hold references to objects declared above them.

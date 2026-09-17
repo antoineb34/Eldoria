@@ -250,6 +250,16 @@ void Client::processEvents(
 }
 
 
+void Client::render()
+{
+    renderer_.render(scene_);
+
+    SDL_GL_SwapWindow(
+        sdl_.window()
+    );
+}
+
+
 int Client::run()
 {
 
@@ -395,11 +405,7 @@ int Client::run()
                 pitchLimit
             );
 
-        renderer_.render(scene_);
-
-        SDL_GL_SwapWindow(
-            sdl_.window()
-        );
+        render();
 
         ++fpsFrameCount;
 
