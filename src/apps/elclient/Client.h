@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <deque>
 
 #include <cstddef>
 #include <optional>
@@ -9,6 +8,7 @@
 
 #include "assets/AssetManager.h"
 #include "Player.h"
+#include "PlayerController.h"
 #include "model/ModelData.h"
 #include "world/Region.h"
 
@@ -42,10 +42,6 @@ private:
         int worldY
     ) const;
 
-    bool canMoveWorld(
-        const eld::world::TilePosition& from,
-        const eld::world::TilePosition& to
-    ) const;
     void spawnPlayer();
     void movePlayer(int dx, int dy);
 
@@ -53,7 +49,6 @@ private:
         const eld::world::TilePosition& destination
     );
 
-    void beginNextPlayerStep();
     void syncPlayerRenderObject();
 
     void syncCameraToPlayer();
@@ -127,6 +122,9 @@ private:
     Player
         player_;
 
+    PlayerController
+        playerController_;
+
     std::optional<std::size_t>
         playerObjectIndex_;
 
@@ -153,16 +151,6 @@ private:
         playerWalkAnimationGroundOffsets_;
 
     bool playerWalking_ = false;
-    std::deque<eld::world::TilePosition> playerPath_;
-    bool playerMoving_ = false;
-
-    eld::world::TilePosition
-        playerMoveStartTile_{};
-
-    eld::world::TilePosition
-        playerMoveDestinationTile_{};
-
-    float playerMoveElapsed_ = 0.0f;
 
     std::optional<eld::world::TilePosition>
         selectedTile_;

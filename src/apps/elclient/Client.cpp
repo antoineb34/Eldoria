@@ -364,6 +364,11 @@ Client::Client()
           assets_.maps,
           assets_.locations
       ),
+      playerController_(
+          player_,
+          world_,
+          pathfinder_
+      ),
       renderer_(
           modelManager_,
           textureManager_
@@ -1209,162 +1214,25 @@ void Client::updatePlayerMovement(
     float dt
 )
 {
-    if (!playerMoving_) {
+    const auto movement =
+        playerController_.update(
+            dt
+        );
+
+
+    if (
+        movement.positionChanged
+    ) {
+        syncPlayerRenderObject();
+    }
+
+
+    if (
+        !movement.stepCompleted
+    ) {
         return;
     }
 
-
-    constexpr float moveDuration =
-        0.6f;
-
-
-    playerMoveElapsed_ +=
-        dt;
-
-
-    const float progress =
-        std::clamp(
-            playerMoveElapsed_ /
-                moveDuration,
-            0.0f,
-            1.0f
-        );
-
-
-    const float startX =
-        static_cast<float>(
-            playerMoveStartTile_.x
-        ) +
-        0.5f;
-
-    const float startY =
-        static_cast<float>(
-            playerMoveStartTile_.y
-        ) +
-        0.5f;
-
-
-    const float destinationX =
-        static_cast<float>(
-            playerMoveDestinationTile_.x
-        ) +
-        0.5f;
-
-    const float destinationY =
-        static_cast<float>(
-            playerMoveDestinationTile_.y
-        ) +
-        0.5f;
-
-
-    const float worldX =
-        std::lerp(
-            startX,
-            destinationX,
-            progress
-        );
-
-    const float worldY =
-        std::lerp(
-            startY,
-            destinationY,
-            progress
-        );
-
-
-    const int tileX =
-        static_cast<int>(
-            std::floor(
-                worldX
-            )
-        );
-
-    const int tileY =
-        static_cast<int>(
-            std::floor(
-                worldY
-            )
-        );
-
-
-    const auto* playerRegion =
-        regionAt(
-            tileX,
-            tileY
-        );
-
-
-    if (playerRegion) {
-        const eld::world::TerrainLayerPosition
-            terrainPosition{
-                tileX,
-                tileY,
-                0
-            };
-
-
-        if (
-            playerRegion
-                ->terrain
-                .contains(
-                    terrainPosition
-                )
-        ) {
-            const auto& tile =
-                playerRegion
-                    ->terrain
-                    .tile(
-                        terrainPosition
-                    );
-
-
-            player_.tile = {
-                tileX,
-                tileY,
-                tile.scenePlane
-            };
-
-
-            player_.local = {
-                worldX -
-                    static_cast<float>(
-                        tileX
-                    ),
-
-                worldY -
-                    static_cast<float>(
-                        tileY
-                    )
-            };
-
-
-            syncPlayerRenderObject();
-        }
-    }
-
-
-    if (progress < 1.0f) {
-        return;
-    }
-
-
-    player_.tile =
-        playerMoveDestinationTile_;
-
-    player_.local = {
-        0.5f,
-        0.5f
-    };
-
-
-    playerMoving_ =
-        false;
-
-    playerMoveElapsed_ =
-        0.0f;
-
-
-    syncPlayerRenderObject();
 
     setPlayerWalking(
         false
@@ -1381,13 +1249,16 @@ void Client::updatePlayerMovement(
         << "\n";
 
 
-    if (!playerPath_.empty()) {
-        beginNextPlayerStep();
+    if (
+        playerController_.continuePath()
+    ) {
+        setPlayerWalking(
+            true
+        );
+
+        syncPlayerRenderObject();
     }
 }
-
-
-
 
 std::optional<eld::world::TilePosition>
 Client::pickTerrainTile(
@@ -3058,21 +2929,17 @@ void Client::walkPlayerTo(
     const eld::world::TilePosition& destination
 )
 {
-    playerPath_.clear();
-
-
-    const auto source =
-        playerMoving_
-            ? playerMoveDestinationTile_
-            : player_.tile;
-
-
-    const auto result =
-        pathfinder_.findPath(
-            world_,
-            source,
+    const auto walk =
+        playerController_.walkTo(
             destination
         );
+
+
+    const auto& source =
+        walk.source;
+
+    const auto& result =
+        walk.path;
 
 
     switch (result.status) {
@@ -3141,16 +3008,6 @@ void Client::walkPlayerTo(
     }
 
 
-    for (
-        const auto& tile :
-        result.tiles
-    ) {
-        playerPath_.push_back(
-            tile
-        );
-    }
-
-
     std::cout
         << "path | "
         << source.x
@@ -3167,234 +3024,36 @@ void Client::walkPlayerTo(
         << "\n";
 
 
-    if (!playerMoving_) {
-        beginNextPlayerStep();
-    }
-}
-
-void Client::beginNextPlayerStep()
-{
-    if (
-        playerMoving_ ||
-        playerPath_.empty()
-    ) {
-        return;
-    }
-
-
-    const auto next =
-        playerPath_.front();
-
-    playerPath_.pop_front();
-
-
-    const int dx =
-        static_cast<int>(next.x) -
-        static_cast<int>(player_.tile.x);
-
-    const int dy =
-        static_cast<int>(next.y) -
-        static_cast<int>(player_.tile.y);
-
-
-    const bool adjacent =
-        dx >= -1 &&
-        dx <= 1 &&
-        dy >= -1 &&
-        dy <= 1 &&
-        !(
-            dx == 0 &&
-            dy == 0
+    if (playerController_.moving()) {
+        setPlayerWalking(
+            true
         );
 
-
-    if (!adjacent) {
-        std::cout
-            << "invalid queued step | player="
-            << player_.tile.x
-            << ","
-            << player_.tile.y
-            << " next="
-            << next.x
-            << ","
-            << next.y
-            << "\n";
-
-        playerPath_.clear();
-        return;
+        syncPlayerRenderObject();
     }
-
-
-    movePlayer(
-        dx,
-        dy
-    );
 }
-
 
 void Client::movePlayer(
     int dx,
     int dy
 )
 {
-    if (playerMoving_) {
-        return;
-    }
-
-
     if (
-        dx < -1 ||
-        dx > 1 ||
-        dy < -1 ||
-        dy > 1 ||
-        (
-            dx == 0 &&
-            dy == 0
+        !playerController_.moveBy(
+            dx,
+            dy
         )
     ) {
         return;
     }
-
-
-    const int destinationX =
-        player_.tile.x +
-        dx;
-
-    const int destinationY =
-        player_.tile.y +
-        dy;
-
-
-    const auto* destinationRegion =
-        regionAt(
-            destinationX,
-            destinationY
-        );
-
-
-    if (!destinationRegion) {
-        return;
-    }
-
-
-    const eld::world::TerrainLayerPosition
-        terrainPosition{
-            destinationX,
-            destinationY,
-            0
-        };
-
-
-    if (
-        !destinationRegion
-            ->terrain
-            .contains(
-                terrainPosition
-            )
-    ) {
-        return;
-    }
-
-
-    const eld::world::TilePosition
-        destination{
-            destinationX,
-            destinationY,
-            player_.tile.plane
-        };
-
-
-    if (
-        !canMoveWorld(
-            player_.tile,
-            destination
-        )
-    ) {
-        return;
-    }
-
-
-    const auto& destinationTile =
-        destinationRegion
-            ->terrain
-            .tile(
-                terrainPosition
-            );
-
-
-    if (
-        dx > 0 &&
-        dy > 0
-    ) {
-        player_.facing =
-            FacingDirection::NorthEast;
-    }
-    else if (
-        dx > 0 &&
-        dy < 0
-    ) {
-        player_.facing =
-            FacingDirection::SouthEast;
-    }
-    else if (
-        dx < 0 &&
-        dy > 0
-    ) {
-        player_.facing =
-            FacingDirection::NorthWest;
-    }
-    else if (
-        dx < 0 &&
-        dy < 0
-    ) {
-        player_.facing =
-            FacingDirection::SouthWest;
-    }
-    else if (dx > 0) {
-        player_.facing =
-            FacingDirection::East;
-    }
-    else if (dx < 0) {
-        player_.facing =
-            FacingDirection::West;
-    }
-    else if (dy > 0) {
-        player_.facing =
-            FacingDirection::North;
-    }
-    else {
-        player_.facing =
-            FacingDirection::South;
-    }
-
-
-    playerMoveStartTile_ =
-        player_.tile;
-
-
-    playerMoveDestinationTile_ = {
-        destinationX,
-        destinationY,
-        destinationTile.scenePlane
-    };
-
-
-    playerMoveElapsed_ =
-        0.0f;
-
-    playerMoving_ =
-        true;
 
 
     setPlayerWalking(
         true
     );
 
-
     syncPlayerRenderObject();
 }
-
-
 
 const eld::world::Region*
 Client::regionAt(
@@ -3408,20 +3067,6 @@ Client::regionAt(
             worldY,
             0
         });
-}
-
-
-
-bool Client::canMoveWorld(
-    const eld::world::TilePosition& from,
-    const eld::world::TilePosition& to
-) const
-{
-    return
-        world_.canMove(
-            from,
-            to
-        );
 }
 
 

@@ -2,6 +2,7 @@ add_executable(elclient
     main.cpp
     Client.cpp
     PlayerAppearanceBuilder.cpp
+    PlayerController.cpp
 )
 
 target_include_directories(elclient PRIVATE
