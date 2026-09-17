@@ -1,8 +1,8 @@
 add_executable(elserver
     main.cpp
 
-    ElServerApp.cpp
-    ServerRunLoop.cpp
+    app/ElServerApp.cpp
+    app/ServerRunLoop.cpp
 )
 
 target_include_directories(elserver PRIVATE
@@ -10,7 +10,7 @@ target_include_directories(elserver PRIVATE
 )
 
 target_link_libraries(elserver PRIVATE
-    Eldoria::Data
+    Eldoria::Assets
     Eldoria::Game
     Eldoria::Network
     Eldoria::World

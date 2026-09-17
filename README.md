@@ -1,135 +1,87 @@
 # Eldoria
 
-A C++ RuneScape-317 private server ecosystem. Purpose-built as a complete foundation for building and running custom RuneScape-like worlds.
+Eldoria is a C++20 RuneScape-317 game ecosystem built around three
+applications sharing one set of reusable modules:
 
-**Status: Foundation Phase** — Data loading and parsing infrastructure complete. Multi-application architecture established. Ready for gameplay systems.
-
----
-
-## What You're Building
-
-Eldoria is three tightly integrated C++ applications that share a unified codebase:
-
-- **ElForge** — Inspection and content creation tool for game assets and definitions
-- **ElClient** — Player-facing game client (C++, SDL3)  
-- **ElServer** — Authoritative gameplay server
-
-All three use the same data, world, networking, and rendering modules, eliminating duplication and keeping them synchronized.
-
----
-
-## What's Done
-
-### Data Layer (Complete)
-- **Cache system** — Full RS-317 cache reader supporting all indices (config, models, animations, MIDI, maps)
-- **Asset parsing** — Models, animations, textures, fonts, interfaces, sprites
-- **Definition tables** — Items, NPCs, floors, locations, sequences, spot animations, varps, varbits, parameters, messages
-- **Binary utilities** — Byte readers/writers with smart-int support, compression (BZIP2, ZLIB), JPEG decoding
-- **Index entry validation** — Sector chain following, file integrity checks
-
-### Application Skeletons (Complete)
-- Three standalone executables that build, launch, and shut down cleanly
-- CMake multi-application structure with shared module linking
-- SDL3 windowing (ElClient)
-
-### Shared Modules (In Progress)
-```
-data/      → Binary, cache, archive, definition, texture, model, image parsing
-world/     → Entity placement, navigation, coordinate systems
-game/      → Gameplay rules and mechanics
-net/       → Client-server communication
-render/    → Software rasterization, texture sampling
-graphics/  → Texture and graphics abstractions
-math/      → Vector/matrix utilities
-platform/  → OS integration
-```
-
----
+- **ElForge** — asset inspection/content tooling
+- **ElClient** — player-facing game client
+- **ElServer** — authoritative gameplay server
 
 ## Architecture
 
-```
-ElForge ─┐
-ElClient├─→ [data, world, game, net, render, graphics, math, platform]
-ElServer ┘
+```text
+data        static source content + decoding
+    |
+    +------> graphics -----> render
+    |
+    +------> audio
+    |
+    +------> world --------> game
+               |
+               +-----------> network
+
+platform     machine/library integration
+
+apps/
+    elforge
+    elclient
+    elserver
 ```
 
-Each application links the shared modules it needs. The data module is fully functional and can load, parse, and validate any RS-317 cache index. The other modules are placeholders awaiting gameplay implementation.
+### Module ownership
 
----
+| Module | Owns |
+|---|---|
+| `data` | Cache/archive access, source formats, decoded static assets |
+| `graphics` | Source visual assets -> normalized graphics resources |
+| `render` | Camera, scenes, rendering backends, pixels |
+| `audio` | Playback and runtime audio processing |
+| `world` | Shared spatial/world state |
+| `game` | Reusable gameplay rules |
+| `network` | Client/server communication contracts |
+| `math` | Shared mathematical primitives |
+| `platform` | SDL/OS/library integration |
+| `apps` | Application orchestration and presentation |
+
+Runtime applications may compose shared modules, but shared modules must not
+depend back on runnable apps.
+
+## Data status
+
+The production data layer handles the main 317 cache structures used by the
+game: cache storage, archives, definitions, models, animations, maps,
+interfaces, sprites/images/textures/fonts, and MIDI.
+
+Remaining legacy source-format work:
+
+- chat-filter (`wordenc`) data
+- classic sound effects
+- version/checksum manifest metadata
+
+Old reverse-engineering/reference implementations are deliberately not kept
+inside production `src/`; the production decoders are now the source of truth.
 
 ## Build
 
 ```bash
-# Configure
 cmake -B build
+cmake --build build -j"$(nproc)"
 
-# Build all
-cmake --build build
-
-# Or one app
-cmake --build build --target elforge
-cmake --build build --target elclient
-cmake --build build --target elserver
-
-# Run
 ./build/bin/elforge
 ./build/bin/elclient
 ./build/bin/elserver
 ```
 
-Expected output:
-```
-ElForge starting...
-ElForge shutdown.
+Individual targets:
 
-ElClient starting...
-ElClient screen: startup
-ElClient shutdown.
-
-ElServer starting...
-ElServer run loop tick.
-ElServer shutdown.
+```bash
+cmake --build build --target elforge
+cmake --build build --target elclient
+cmake --build build --target elserver
 ```
 
----
+## Development direction
 
-## Next Priorities
-
-1. **World foundation** — Tile grid, entity spawning, coordinate validation
-2. **Login flow** — ElClient → ElServer authentication and session handshake
-3. **Movement validation** — Server-authoritative pathfinding and collision
-4. **Rendering** — Convert cache models to drawable geometry, map rendering
-5. **Message protocol** — Structured packet definitions between client and server
-
----
-
-## Key Dependencies
-
-- **C++20** — Modern standard library features
-- **CMake 3.20+** — Multi-app build orchestration
-- **SDL3** — Window and input (ElClient)
-- **ZLIB, BZIP2, JPEG** — Compression and image codecs
-
----
-
-## Module Responsibilities
-
-| Module | Purpose |
-|--------|---------|
-| **data** | Load and parse RS-317 caches, assets, definitions |
-| **world** | Entity state, navigation, spatial queries |
-| **game** | Gameplay logic, rule enforcement |
-| **net** | Message framing, serialization, client-server protocol |
-| **render** | Rasterization, texture sampling, camera projection |
-| **graphics** | Texture management, shader abstraction |
-| **math** | Vectors, matrices, transforms |
-| **platform** | File I/O, threading, system integration |
-
----
-
-## Development
-
-- Feature branches from `dev`, merged via pull request
-- Issues track small implementation tasks
-- Milestone-driven development focused on completing each application phase before moving on
+The foundation is being frozen before substantial ElClient work begins.
+Architecture changes after that point should be driven by concrete
+client/server requirements rather than speculative reorganization.

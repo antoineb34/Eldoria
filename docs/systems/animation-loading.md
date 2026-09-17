@@ -82,10 +82,8 @@ Type 4 remains intentionally uninterpreted.
 ```text
 AnimationRepository
     -> cache Index 2
-    -> AnimationFileParser
-    -> AnimationFile (raw bytes + proven layout)
     -> AnimationDecoder
-    -> AnimationAsset (frames + skeleton)
+    -> Animation (frames + skeleton)
 ```
 
 Model deformation, playback, interpolation and ElForge animation UI are not

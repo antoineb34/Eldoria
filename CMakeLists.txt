@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(Eldoria VERSION 0.1.0 LANGUAGES CXX)
+project(Eldoria VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -15,30 +15,65 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(EldoriaTargets)
 
+include(FetchContent)
+
+# OpenGL 3.3 Core function loader.
+FetchContent_Declare(
+    glad
+    GIT_REPOSITORY https://github.com/Dav1dde/glad.git
+    GIT_TAG v2.0.8
+    SOURCE_SUBDIR cmake
+)
+
+FetchContent_MakeAvailable(glad)
+
+glad_add_library(eldoria_glad STATIC
+    REPRODUCIBLE
+    API gl:core=3.3
+)
+
+
+set(
+    BUILD_MIDILIBRARY_ONLY
+    ON
+    CACHE BOOL ""
+    FORCE
+)
+
+FetchContent_Declare(
+    midifile
+    GIT_REPOSITORY
+        https://github.com/craigsapp/midifile.git
+    GIT_TAG
+        98917df5b1bf0d6e8d4c0e5fff86d6b05343e793
+)
+
+set(
+    CMAKE_POLICY_VERSION_MINIMUM
+    3.5
+)
+
+FetchContent_MakeAvailable(midifile)
+
+
 find_package(ZLIB REQUIRED)
 find_package(SDL3 REQUIRED CONFIG)
 find_package(BZip2 REQUIRED)
-find_package(JPEG REQUIRED)
+find_package(OpenGL REQUIRED)
 
 # Shared modules.
-eldoria_add_module(data src/data)
-eldoria_add_module(world src/world)
-eldoria_add_module(game src/game)
-eldoria_add_module(network src/net)
-eldoria_add_module(platform src/platform)
-eldoria_add_module(render src/render)
+eldoria_add_module(binary src/binary)
+eldoria_add_module(storage src/storage)
+eldoria_add_module(assets src/assets)
+eldoria_add_module(host src/host)
+eldoria_add_module(runtime src/runtime)
 eldoria_add_module(graphics src/graphics)
-eldoria_add_module(math src/math)
 
-# Target Eldoria applications.
+# Eldoria applications.
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
-eldoria_add_app(interface_probe src/apps/interface_probe)
-eldoria_add_app(map_probe src/apps/map_probe)
 
-eldoria_add_app(animation_probe src/apps/animation_probe)
-eldoria_add_app(gpu_probe src/apps/gpu_probe)
 if(BUILD_TESTING)
-  add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()

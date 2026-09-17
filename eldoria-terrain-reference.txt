@@ -1,0 +1,1277 @@
+===== SHAPE BUILDER HEADER =====
+#pragma once
+
+#include <array>
+#include <cstdint>
+#include <vector>
+
+namespace eld::render::map {
+
+enum class TerrainSurface : std::uint8_t {
+    Underlay = 0,
+    Overlay = 1
+};
+
+struct TerrainCornerHeights {
+    int southwest = 0;
+    int southeast = 0;
+    int northeast = 0;
+    int northwest = 0;
+};
+
+struct TerrainCornerShades {
+    int southwest = 12345678;
+    int southeast = 12345678;
+    int northeast = 12345678;
+    int northwest = 12345678;
+};
+
+struct TerrainTileShades {
+    TerrainCornerShades underlay{};
+    TerrainCornerShades overlay{};
+};
+
+struct SceneTerrainVertex {
+    int x = 0;
+    int y = 0;
+    int z = 0;
+
+    // Classic raster values. For ordinary floors these are indices into the
+    // 65,536-entry HSL palette. For textured overlays they are the classic
+    // 0..127 texture-light scalars.
+    int underlayShade = 12345678;
+    int overlayShade = 12345678;
+};
+
+struct SceneTerrainUv {
+    float u = 0.0f;
+    float v = 0.0f;
+};
+
+struct SceneTerrainTriangle {
+    std::array<std::uint8_t, 3> indices{};
+    TerrainSurface surface = TerrainSurface::Underlay;
+
+    // Explicit texture coordinates are stored per triangle rather than per
+    // scene vertex because the classic client changes its texture-mapping
+    // basis for sloped shaped tiles. The same scene vertex can therefore
+    // legitimately have different texture coordinates in adjacent faces.
+    std::array<SceneTerrainUv, 3> textureUvs{};
+};
+
+struct SceneTileMesh {
+    std::vector<SceneTerrainVertex> vertices;
+    std::vector<SceneTerrainTriangle> triangles;
+};
+
+class SceneTerrainBuilder {
+public:
+    static constexpr int TileSize = 128;
+    static constexpr std::uint8_t SceneShapeCount = 13;
+
+    SceneTileMesh buildTile(
+        int tileX,
+        int tileZ,
+        std::uint8_t sceneShape,
+        std::uint8_t rotation,
+        const TerrainCornerHeights& heights,
+        const TerrainTileShades& shades = {}
+    ) const;
+};
+
+}
+
+===== SHAPE BUILDER IMPLEMENTATION =====
+#include "SceneTerrainBuilder.h"
+
+#include <array>
+#include <cmath>
+#include <stdexcept>
+#include <vector>
+
+namespace eld::render::map {
+namespace {
+
+const std::vector<std::vector<int>>& pointPatterns() {
+    static const std::vector<std::vector<int>> Patterns{
+        {1, 3, 5, 7},
+        {1, 3, 5, 7},
+        {1, 3, 5, 7},
+        {1, 3, 5, 7, 6},
+        {1, 3, 5, 7, 6},
+        {1, 3, 5, 7, 6},
+        {1, 3, 5, 7, 6},
+        {1, 3, 5, 7, 2, 6},
+        {1, 3, 5, 7, 2, 8},
+        {1, 3, 5, 7, 2, 8},
+        {1, 3, 5, 7, 11, 12},
+        {1, 3, 5, 7, 11, 12},
+        {1, 3, 5, 7, 13, 14}
+    };
+    return Patterns;
+}
+
+const std::vector<std::vector<int>>& elementPatterns() {
+    static const std::vector<std::vector<int>> Patterns{
+        {0,1,2,3, 0,0,1,3},
+        {1,1,2,3, 1,0,1,3},
+        {0,1,2,3, 1,0,1,3},
+        {0,0,1,2, 0,0,2,4, 1,0,4,3},
+        {0,0,1,4, 0,0,4,3, 1,1,2,4},
+        {0,0,4,3, 1,0,1,2, 1,0,2,4},
+        {0,1,2,4, 1,0,1,4, 1,0,4,3},
+        {0,4,1,2, 0,4,2,5, 1,0,4,5, 1,0,5,3},
+        {0,4,1,2, 0,4,2,3, 0,4,3,5, 1,0,4,5},
+        {0,0,4,5, 1,4,1,2, 1,4,2,3, 1,4,3,5},
+        {0,0,1,5, 0,1,4,5, 0,1,2,4, 1,0,5,3, 1,5,4,3, 1,4,2,3},
+        {1,0,1,5, 1,1,4,5, 1,1,2,4, 0,0,5,3, 0,5,4,3, 0,4,2,3},
+        {1,0,5,4, 1,0,1,5, 0,0,4,3, 0,4,5,3, 0,5,2,3, 0,1,2,5}
+    };
+    return Patterns;
+}
+
+
+std::array<SceneTerrainUv, 3> sharedTileTextureUvs(
+    const SceneTileMesh& mesh,
+    const std::array<std::uint8_t, 3>& indices
+) {
+    if (mesh.vertices.size() < 4) {
+        throw std::runtime_error(
+            "RuneScape shaped tile is missing corner vertices"
+        );
+    }
+
+    const SceneTerrainVertex& origin = mesh.vertices[0];
+    const SceneTerrainVertex& uPoint = mesh.vertices[1];
+    const SceneTerrainVertex& vPoint = mesh.vertices[3];
+
+    const double ux = static_cast<double>(uPoint.x - origin.x);
+    const double uz = static_cast<double>(uPoint.z - origin.z);
+    const double vx = static_cast<double>(vPoint.x - origin.x);
+    const double vz = static_cast<double>(vPoint.z - origin.z);
+
+    const double uu = ux * ux + uz * uz;
+    const double uv = ux * vx + uz * vz;
+    const double vv = vx * vx + vz * vz;
+    const double denominator = uu * vv - uv * uv;
+
+    if (std::abs(denominator) <= 0.000001) {
+        throw std::runtime_error(
+            "RuneScape shaped-tile texture basis is degenerate"
+        );
+    }
+
+    std::array<SceneTerrainUv, 3> result{};
+
+    for (std::size_t corner = 0; corner < 3; ++corner) {
+        const SceneTerrainVertex& point =
+            mesh.vertices[indices[corner]];
+
+        const double rx = static_cast<double>(point.x - origin.x);
+        const double rz = static_cast<double>(point.z - origin.z);
+        const double ru = rx * ux + rz * uz;
+        const double rv = rx * vx + rz * vz;
+
+        result[corner] = SceneTerrainUv{
+            static_cast<float>((vv * ru - uv * rv) / denominator),
+            static_cast<float>((uu * rv - uv * ru) / denominator)
+        };
+    }
+
+    return result;
+}
+
+std::array<SceneTerrainUv, 3> triangleTextureUvs() {
+    // The non-flat classic TileOverlay path uses the rendered triangle's
+    // own A/B/C vertices as the texture-mapping basis. In an explicit-UV
+    // renderer that maps directly to the canonical texture triangle.
+    return {
+        SceneTerrainUv{0.0f, 0.0f},
+        SceneTerrainUv{1.0f, 0.0f},
+        SceneTerrainUv{0.0f, 1.0f}
+    };
+}
+
+int rotateVertexType(
+    int type,
+    int rotation
+) {
+    if ((type & 1) == 0 && type <= 8) {
+        return ((type - rotation * 2 - 1) & 7) + 1;
+    }
+
+    if (type > 8 && type <= 12) {
+        return ((type - 9 - rotation) & 3) + 9;
+    }
+
+    if (type > 12 && type <= 16) {
+        return ((type - 13 - rotation) & 3) + 13;
+    }
+
+    return type;
+}
+
+SceneTerrainVertex vertexForType(
+    int type,
+    int baseX,
+    int baseZ,
+    const TerrainCornerHeights& h,
+    const TerrainTileShades& shades
+) {
+    constexpr int Half = SceneTerrainBuilder::TileSize / 2;
+    constexpr int Quarter = SceneTerrainBuilder::TileSize / 4;
+    constexpr int ThreeQuarter =
+        SceneTerrainBuilder::TileSize * 3 / 4;
+
+    const auto midpoint = [](int a, int b) {
+        return (a + b) >> 1;
+    };
+
+    const auto make = [&](
+        int x,
+        int y,
+        int z,
+        int underlay,
+        int overlay
+    ) {
+        return SceneTerrainVertex{
+            x,
+            y,
+            z,
+            underlay,
+            overlay
+        };
+    };
+
+    switch (type) {
+        case 1:
+            return make(
+                baseX,
+                h.southwest,
+                baseZ,
+                shades.underlay.southwest,
+                shades.overlay.southwest
+            );
+        case 2:
+            return make(
+                baseX + Half,
+                midpoint(h.southwest, h.southeast),
+                baseZ,
+                midpoint(
+                    shades.underlay.southwest,
+                    shades.underlay.southeast
+                ),
+                midpoint(
+                    shades.overlay.southwest,
+                    shades.overlay.southeast
+                )
+            );
+        case 3:
+            return make(
+                baseX + SceneTerrainBuilder::TileSize,
+                h.southeast,
+                baseZ,
+                shades.underlay.southeast,
+                shades.overlay.southeast
+            );
+        case 4:
+            return make(
+                baseX + SceneTerrainBuilder::TileSize,
+                midpoint(h.southeast, h.northeast),
+                baseZ + Half,
+                midpoint(
+                    shades.underlay.southeast,
+                    shades.underlay.northeast
+                ),
+                midpoint(
+                    shades.overlay.southeast,
+                    shades.overlay.northeast
+                )
+            );
+        case 5:
+            return make(
+                baseX + SceneTerrainBuilder::TileSize,
+                h.northeast,
+                baseZ + SceneTerrainBuilder::TileSize,
+                shades.underlay.northeast,
+                shades.overlay.northeast
+            );
+        case 6:
+            return make(
+                baseX + Half,
+                midpoint(h.northeast, h.northwest),
+                baseZ + SceneTerrainBuilder::TileSize,
+                midpoint(
+                    shades.underlay.northeast,
+                    shades.underlay.northwest
+                ),
+                midpoint(
+                    shades.overlay.northeast,
+                    shades.overlay.northwest
+                )
+            );
+        case 7:
+            return make(
+                baseX,
+                h.northwest,
+                baseZ + SceneTerrainBuilder::TileSize,
+                shades.underlay.northwest,
+                shades.overlay.northwest
+            );
+        case 8:
+            return make(
+                baseX,
+                midpoint(h.northwest, h.southwest),
+                baseZ + Half,
+                midpoint(
+                    shades.underlay.northwest,
+                    shades.underlay.southwest
+                ),
+                midpoint(
+                    shades.overlay.northwest,
+                    shades.overlay.southwest
+                )
+            );
+        case 9:
+            return make(
+                baseX + Half,
+                midpoint(h.southwest, h.southeast),
+                baseZ + Quarter,
+                midpoint(
+                    shades.underlay.southwest,
+                    shades.underlay.southeast
+                ),
+                midpoint(
+                    shades.overlay.southwest,
+                    shades.overlay.southeast
+                )
+            );
+        case 10:
+            return make(
+                baseX + ThreeQuarter,
+                midpoint(h.southeast, h.northeast),
+                baseZ + Half,
+                midpoint(
+                    shades.underlay.southeast,
+                    shades.underlay.northeast
+                ),
+                midpoint(
+                    shades.overlay.southeast,
+                    shades.overlay.northeast
+                )
+            );
+        case 11:
+            return make(
+                baseX + Half,
+                midpoint(h.northeast, h.northwest),
+                baseZ + ThreeQuarter,
+                midpoint(
+                    shades.underlay.northeast,
+                    shades.underlay.northwest
+                ),
+                midpoint(
+                    shades.overlay.northeast,
+                    shades.overlay.northwest
+                )
+            );
+        case 12:
+            return make(
+                baseX + Quarter,
+                midpoint(h.northwest, h.southwest),
+                baseZ + Half,
+                midpoint(
+                    shades.underlay.northwest,
+                    shades.underlay.southwest
+                ),
+                midpoint(
+                    shades.overlay.northwest,
+                    shades.overlay.southwest
+                )
+            );
+        case 13:
+            return make(
+                baseX + Quarter,
+                h.southwest,
+                baseZ + Quarter,
+                shades.underlay.southwest,
+                shades.overlay.southwest
+            );
+        case 14:
+            return make(
+                baseX + ThreeQuarter,
+                h.southeast,
+                baseZ + Quarter,
+                shades.underlay.southeast,
+                shades.overlay.southeast
+            );
+        case 15:
+            return make(
+                baseX + ThreeQuarter,
+                h.northeast,
+                baseZ + ThreeQuarter,
+                shades.underlay.northeast,
+                shades.overlay.northeast
+            );
+        case 16:
+            return make(
+                baseX + Quarter,
+                h.northwest,
+                baseZ + ThreeQuarter,
+                shades.underlay.northwest,
+                shades.overlay.northwest
+            );
+        default:
+            throw std::runtime_error(
+                "invalid RuneScape shaped-tile vertex type"
+            );
+    }
+}
+
+}
+
+SceneTileMesh SceneTerrainBuilder::buildTile(
+    int tileX,
+    int tileZ,
+    std::uint8_t sceneShape,
+    std::uint8_t rotation,
+    const TerrainCornerHeights& heights,
+    const TerrainTileShades& shades
+) const {
+    if (sceneShape >= SceneShapeCount) {
+        throw std::runtime_error(
+            "RuneScape scene tile shape must be 0..12"
+        );
+    }
+
+    rotation &= 3u;
+
+    // Scene shape 1 is represented by the classic TileUnderlay path. Its
+    // angle argument is ignored by the original scene implementation, so a
+    // full-tile overlay must keep the fixed SW/SE/NE/NW diagonal.
+    const std::uint8_t effectiveRotation =
+        sceneShape <= 1 ? 0u : rotation;
+
+    const auto& pointPattern =
+        pointPatterns()[sceneShape];
+    const auto& elementPattern =
+        elementPatterns()[sceneShape];
+
+    SceneTileMesh mesh;
+    mesh.vertices.reserve(pointPattern.size());
+    mesh.triangles.reserve(elementPattern.size() / 4);
+
+    const int baseX = tileX * TileSize;
+    const int baseZ = tileZ * TileSize;
+
+    for (int rawType : pointPattern) {
+        mesh.vertices.push_back(
+            vertexForType(
+                rotateVertexType(
+                    rawType,
+                    static_cast<int>(effectiveRotation)
+                ),
+                baseX,
+                baseZ,
+                heights,
+                shades
+            )
+        );
+    }
+
+    for (
+        std::size_t offset = 0;
+        offset < elementPattern.size();
+        offset += 4
+    ) {
+        const int layer = elementPattern[offset];
+        std::array<std::uint8_t, 3> indices{};
+
+        for (std::size_t i = 0; i < 3; ++i) {
+            int index = elementPattern[offset + 1 + i];
+
+            if (index < 4) {
+                index =
+                    (index - static_cast<int>(effectiveRotation)) & 3;
+            }
+
+            if (
+                index < 0 ||
+                index >= static_cast<int>(mesh.vertices.size())
+            ) {
+                throw std::runtime_error(
+                    "RuneScape shaped-tile triangle index is invalid"
+                );
+            }
+
+            indices[i] = static_cast<std::uint8_t>(index);
+        }
+
+        const TerrainSurface surface =
+            layer == 0
+                ? TerrainSurface::Underlay
+                : TerrainSurface::Overlay;
+
+        std::array<SceneTerrainUv, 3> textureUvs{};
+
+        if (surface == TerrainSurface::Overlay) {
+            const bool flat =
+                heights.southwest == heights.southeast &&
+                heights.southwest == heights.northeast &&
+                heights.southwest == heights.northwest;
+
+            if (sceneShape == 1 || flat) {
+                // TileUnderlay and flat TileOverlay rendering share one
+                // texture basis across the whole tile. For rotated shaped
+                // overlays vertices 0,1,3 are themselves rotated, exactly as
+                // in the original scene object, so this also rotates texture
+                // orientation with the overlay shape.
+                textureUvs = sharedTileTextureUvs(mesh, indices);
+            }
+            else {
+                textureUvs = triangleTextureUvs();
+            }
+        }
+
+        mesh.triangles.push_back({
+            indices,
+            surface,
+            textureUvs
+        });
+    }
+
+    return mesh;
+}
+
+}
+
+===== MAP RENDER MODEL BUILDER =====
+#pragma once
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
+#include "ClassicTerrainAppearance.h"
+#include "GraphicsResources.h"
+#include "SceneLocationModelBuilder.h"
+#include "floor/FloorLoader.h"
+#include "model/RenderModel.h"
+
+namespace eld::render::map {
+
+struct SceneTerrainRenderStats {
+  std::size_t tiles = 0;
+  std::size_t triangles = 0;
+  std::size_t texturedTriangles = 0;
+  std::size_t drawBuckets = 0;
+};
+
+struct SceneTerrainRenderBuildResult {
+  eld::render::RenderModel model;
+  SceneTerrainRenderStats stats;
+};
+
+struct SceneLocationCameraRenderVariant {
+  std::uint8_t scenePlane = 0;
+  std::uint8_t rotation = 0;
+  int sceneX = 0;
+  int sceneZ = 0;
+
+  eld::render::RenderModel insetModel;
+  eld::render::RenderModel outsetModel;
+};
+
+struct SceneLocationRenderStats {
+  std::size_t instances = 0;
+  std::size_t parts = 0;
+  std::size_t triangles = 0;
+  std::size_t staticDrawBuckets = 0;
+  std::size_t cameraDependentParts = 0;
+};
+
+struct SceneLocationRenderBuildResult {
+  std::array<eld::render::RenderModel, eld::map::PlaneCount> staticPlaneModels;
+  std::vector<SceneLocationCameraRenderVariant> cameraVariants;
+  SceneLocationRenderStats stats;
+};
+
+// Converts already-decoded/classified map graphics into generic RenderModel
+// resources. The output stays in classic scene units (128 units per tile), so
+// callers can place/chunk it with an ordinary render::Transform.
+class SceneMapRenderModelBuilder {
+public:
+  SceneTerrainRenderBuildResult
+  buildTerrainPlane(std::size_t scenePlane, const TerrainTileSampler &sample,
+                    const eld::floor::FloorLoader &floors,
+                    eld::render::GraphicsResources &resources) const;
+
+  SceneLocationRenderBuildResult
+  buildLocs(const SceneLocationModelBuildResult &locModels,
+            const std::vector<eld::render::ModelHandle> &variantHandles,
+            const eld::render::GraphicsResources &resources) const;
+};
+
+} // namespace eld::render::map
+#include "SceneMapRenderModelBuilder.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
+#include "ClassicTileRules.h"
+#include "SceneTerrainBuilder.h"
+
+namespace eld::render::map {
+namespace {
+
+constexpr float TwoPi = 6.28318530717958647692f;
+
+struct RenderBucket {
+  eld::render::RenderMaterial material;
+  float depthBias = 0.0f;
+  eld::render::RenderMesh mesh;
+};
+
+bool sameVec4(const eld::math::Vec4 &a, const eld::math::Vec4 &b) {
+  return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+}
+
+bool sameMaterial(const eld::render::RenderMaterial &a,
+                  const eld::render::RenderMaterial &b) {
+  return sameVec4(a.baseColor, b.baseColor) && a.texture == b.texture &&
+         a.sampler.filter == b.sampler.filter &&
+         a.sampler.addressU == b.sampler.addressU &&
+         a.sampler.addressV == b.sampler.addressV &&
+         a.alphaMode == b.alphaMode && a.doubleSided == b.doubleSided;
+}
+
+RenderBucket &findOrCreateBucket(std::vector<RenderBucket> &buckets,
+                                 const eld::render::RenderMaterial &material,
+                                 float depthBias) {
+  for (RenderBucket &bucket : buckets) {
+    if (bucket.depthBias == depthBias &&
+        sameMaterial(bucket.material, material)) {
+      return bucket;
+    }
+  }
+
+  buckets.push_back(RenderBucket{material, depthBias, {}});
+
+  return buckets.back();
+}
+
+void appendTriangle(RenderBucket &bucket, eld::render::RenderVertex a,
+                    eld::render::RenderVertex b, eld::render::RenderVertex c) {
+  const std::uint32_t first =
+      static_cast<std::uint32_t>(bucket.mesh.vertices.size());
+
+  bucket.mesh.vertices.push_back(std::move(a));
+  bucket.mesh.vertices.push_back(std::move(b));
+  bucket.mesh.vertices.push_back(std::move(c));
+
+  bucket.mesh.indices.push_back(first);
+  bucket.mesh.indices.push_back(first + 1u);
+  bucket.mesh.indices.push_back(first + 2u);
+}
+
+eld::render::RenderModel finishBuckets(std::vector<RenderBucket> buckets) {
+  eld::render::RenderModel model;
+  model.materials.reserve(buckets.size());
+  model.meshes.reserve(buckets.size());
+
+  for (RenderBucket &bucket : buckets) {
+    if (bucket.mesh.indices.empty()) {
+      continue;
+    }
+
+    const std::uint32_t materialIndex =
+        static_cast<std::uint32_t>(model.materials.size());
+
+    bucket.mesh.sections.push_back(
+        {0u, static_cast<std::uint32_t>(bucket.mesh.indices.size()),
+         materialIndex, bucket.depthBias});
+
+    model.materials.push_back(std::move(bucket.material));
+    model.meshes.push_back(std::move(bucket.mesh));
+  }
+
+  return model;
+}
+
+eld::math::Vec4 rgbColor(std::uint32_t rgb) {
+  constexpr float Scale = 1.0f / 255.0f;
+
+  return {static_cast<float>((rgb >> 16) & 0xFFu) * Scale,
+          static_cast<float>((rgb >> 8) & 0xFFu) * Scale,
+          static_cast<float>(rgb & 0xFFu) * Scale, 1.0f};
+}
+
+eld::math::Vec3 faceNormal(const eld::math::Vec3 &a, const eld::math::Vec3 &b,
+                           const eld::math::Vec3 &c) {
+  const eld::math::Vec3 normal = (b - a).cross(c - a);
+  const float length = normal.length();
+
+  if (length <= 0.000001f) {
+    return {0.0f, 1.0f, 0.0f};
+  }
+
+  return normal * (1.0f / length);
+}
+
+eld::render::RenderMaterial
+terrainMaterial(const std::optional<eld::render::TextureHandle> &texture) {
+  eld::render::RenderMaterial material;
+  material.texture = texture;
+  material.alphaMode = eld::render::AlphaMode::Opaque;
+
+  // Terrain triangles are authored using the classic shaped-tile winding.
+  // Keep them two-sided here; source-specific visibility/collision is not a
+  // hardware back-face rule, and the baked classic lighting is already in
+  // the vertex colors.
+  material.doubleSided = true;
+  material.sampler.filter = eld::render::TextureFilter::Nearest;
+  material.sampler.addressU = eld::render::TextureAddressMode::Clamp;
+  material.sampler.addressV = eld::render::TextureAddressMode::Clamp;
+  return material;
+}
+
+struct SceneLocationDrawTransform {
+  int sceneX = 0;
+  int sceneZ = 0;
+  int yaw = 0;
+};
+
+SceneLocationDrawTransform
+locDrawTransform(const SceneLocationModelInstance &instance,
+                 const SceneLocationModelPart &part, bool diagonalInset) {
+  SceneLocationDrawTransform result{instance.sceneX, instance.sceneZ,
+                                    part.sceneYaw};
+
+  if (part.drawMode == SceneLocationDrawMode::Standard) {
+    return result;
+  }
+
+  constexpr std::array<int, 4> InsetX{53, -53, -53, 53};
+  constexpr std::array<int, 4> InsetZ{-53, -53, 53, 53};
+  constexpr std::array<int, 4> OutsetX{-45, 45, 45, -45};
+  constexpr std::array<int, 4> OutsetZ{45, 45, -45, -45};
+
+  const int rotation = instance.rotation & 3;
+  bool useInset = part.drawMode == SceneLocationDrawMode::WallDecorationInset;
+
+  if (part.drawMode == SceneLocationDrawMode::WallDecorationDiagonalBoth) {
+    useInset = diagonalInset;
+  }
+
+  if (useInset) {
+    result.sceneX += InsetX[rotation];
+    result.sceneZ += InsetZ[rotation];
+    result.yaw = rotation * 512 + 256;
+  } else {
+    result.sceneX += OutsetX[rotation];
+    result.sceneZ += OutsetZ[rotation];
+    result.yaw = (rotation * 512 + 1280) & 0x7FF;
+  }
+
+  return result;
+}
+
+eld::math::Vec3 rotateYaw(const eld::math::Vec3 &value, int yaw) {
+  const float angle = static_cast<float>(yaw & 0x7FF) * TwoPi / 2048.0f;
+  const float sine = std::sin(angle);
+  const float cosine = std::cos(angle);
+
+  return {value.x * cosine + value.z * sine, value.y,
+          value.z * cosine - value.x * sine};
+}
+
+float contourDelta(const SceneLocationModelInstance &instance, float modelX,
+                   float modelZ) {
+  const int southwest = instance.cornerHeights[0];
+  const int southeast = instance.cornerHeights[1];
+  const int northeast = instance.cornerHeights[2];
+  const int northwest = instance.cornerHeights[3];
+
+  const int x = static_cast<int>(modelX);
+  const int z = static_cast<int>(modelZ);
+
+  const int south = southwest + (southeast - southwest) * (x + 64) / 128;
+  const int north = northwest + (northeast - northwest) * (x + 64) / 128;
+  const int height = south + (north - south) * (z + 64) / 128;
+
+  const int groundY = (southwest + southeast + northeast + northwest) / 4;
+
+  return static_cast<float>(height - groundY);
+}
+
+eld::render::RenderVertex
+transformLocVertex(eld::render::RenderVertex vertex,
+                   const SceneLocationModelInstance &instance,
+                   const SceneLocationDrawTransform &draw) {
+  eld::math::Vec3 local = vertex.position;
+
+  if (instance.contouredGround) {
+    // RenderModelAssembler already changed source Y into graphics -Y.
+    // Classic hillskew adds the terrain delta to source Y, so subtract it
+    // from graphics Y before the scene yaw is applied.
+    local.y -= contourDelta(instance, vertex.position.x, vertex.position.z);
+  }
+
+  local = rotateYaw(local, draw.yaw);
+
+  vertex.position = {static_cast<float>(draw.sceneX) + local.x,
+                     -static_cast<float>(instance.sceneY) + local.y,
+                     static_cast<float>(draw.sceneZ) + local.z};
+
+  vertex.normal = rotateYaw(vertex.normal, draw.yaw);
+  return vertex;
+}
+
+std::size_t
+appendLocPart(std::vector<RenderBucket> &buckets,
+              const SceneLocationModelInstance &instance,
+              const SceneLocationModelPart &part,
+              const SceneLocationDrawTransform &draw,
+              const std::vector<eld::render::ModelHandle> &variantHandles,
+              const eld::render::GraphicsResources &resources) {
+  if (part.variantIndex >= variantHandles.size()) {
+    return 0;
+  }
+
+  const eld::render::RenderModel &model =
+      resources.getModel(variantHandles[part.variantIndex]);
+
+  std::size_t triangles = 0;
+
+  for (const eld::render::RenderMesh &mesh : model.meshes) {
+    for (const eld::render::RenderMeshSection &section : mesh.sections) {
+      if (section.materialIndex >= model.materials.size() ||
+          section.firstIndex > mesh.indices.size() ||
+          section.indexCount > mesh.indices.size() - section.firstIndex) {
+        continue;
+      }
+
+      const eld::render::RenderMaterial &material =
+          model.materials[section.materialIndex];
+      RenderBucket &bucket =
+          findOrCreateBucket(buckets, material, section.depthBias);
+
+      const std::size_t end = static_cast<std::size_t>(section.firstIndex) +
+                              static_cast<std::size_t>(section.indexCount);
+
+      for (std::size_t index = section.firstIndex; index + 2 < end;
+           index += 3) {
+        const std::uint32_t ia = mesh.indices[index];
+        const std::uint32_t ib = mesh.indices[index + 1];
+        const std::uint32_t ic = mesh.indices[index + 2];
+
+        if (ia >= mesh.vertices.size() || ib >= mesh.vertices.size() ||
+            ic >= mesh.vertices.size()) {
+          continue;
+        }
+
+        appendTriangle(bucket,
+                       transformLocVertex(mesh.vertices[ia], instance, draw),
+                       transformLocVertex(mesh.vertices[ib], instance, draw),
+                       transformLocVertex(mesh.vertices[ic], instance, draw));
+
+        ++triangles;
+      }
+    }
+  }
+
+  return triangles;
+}
+
+} // namespace
+
+SceneTerrainRenderBuildResult SceneMapRenderModelBuilder::buildTerrainPlane(
+    std::size_t scenePlane, const TerrainTileSampler &sample,
+    const eld::floor::FloorLoader &floors,
+    eld::render::GraphicsResources &resources) const {
+  if (scenePlane >= eld::map::PlaneCount) {
+    throw std::out_of_range("scene terrain plane is outside 0..3");
+  }
+
+  SceneTerrainRenderBuildResult result;
+  std::vector<RenderBucket> buckets;
+  SceneTerrainBuilder terrainBuilder;
+  ClassicTerrainAppearanceBuilder appearanceBuilder;
+
+  const auto appendSourceTile = [&](std::size_t sourcePlane, int tileX,
+                                    int tileY) {
+    const eld::map::MapTile *sw = sample(sourcePlane, tileX, tileY);
+    const eld::map::MapTile *se = sample(sourcePlane, tileX + 1, tileY);
+    const eld::map::MapTile *ne = sample(sourcePlane, tileX + 1, tileY + 1);
+    const eld::map::MapTile *nw = sample(sourcePlane, tileX, tileY + 1);
+
+    if (sw == nullptr || se == nullptr || ne == nullptr || nw == nullptr) {
+      return;
+    }
+
+    const SceneTileAppearance appearance =
+        appearanceBuilder.build(sourcePlane, tileX, tileY, sample, floors);
+
+    if (!appearance.underlayVisible && !appearance.overlayVisible) {
+      return;
+    }
+
+    std::uint8_t sceneShape = 0;
+    std::uint8_t rotation = 0;
+
+    if (sw->overlayId != 0) {
+      if (sw->overlayShape >= 12) {
+        return;
+      }
+
+      sceneShape = static_cast<std::uint8_t>(sw->overlayShape + 1u);
+      rotation = static_cast<std::uint8_t>(sw->overlayRotation & 3u);
+    }
+
+    const SceneTileMesh tile = terrainBuilder.buildTile(
+        tileX, tileY, sceneShape, rotation,
+        TerrainCornerHeights{sw->height, se->height, ne->height, nw->height},
+        appearance.shades);
+
+    ++result.stats.tiles;
+
+    for (const SceneTerrainTriangle &triangle : tile.triangles) {
+      if (triangle.surface == TerrainSurface::Underlay &&
+          !appearance.underlayVisible) {
+        continue;
+      }
+
+      if (triangle.surface == TerrainSurface::Overlay &&
+          !appearance.overlayVisible) {
+        continue;
+      }
+
+      const bool textured = triangle.surface == TerrainSurface::Overlay &&
+                            appearance.textureId.has_value();
+
+      std::optional<eld::render::TextureHandle> texture;
+      if (textured) {
+        texture = resources.resolveTexture(
+            static_cast<std::uint16_t>(*appearance.textureId));
+      }
+
+      RenderBucket &bucket =
+          findOrCreateBucket(buckets, terrainMaterial(texture), 0.0f);
+
+      std::array<eld::render::RenderVertex, 3> vertices;
+
+      for (std::size_t corner = 0; corner < 3; ++corner) {
+        const std::uint8_t vertexIndex = triangle.indices[corner];
+        if (vertexIndex >= tile.vertices.size()) {
+          throw std::runtime_error("scene terrain triangle index is invalid");
+        }
+
+        const SceneTerrainVertex &source = tile.vertices[vertexIndex];
+        const int shade = triangle.surface == TerrainSurface::Overlay
+                              ? source.overlayShade
+                              : source.underlayShade;
+
+        const std::uint32_t rgb =
+            textured
+                ? ClassicTerrainAppearanceBuilder::textureModulationRgb(shade)
+                : ClassicTerrainAppearanceBuilder::paletteRgb(shade);
+
+        vertices[corner].position = {static_cast<float>(source.x),
+                                     -static_cast<float>(source.y),
+                                     static_cast<float>(source.z)};
+        vertices[corner].uv = {textured ? triangle.textureUvs[corner].u : 0.0f,
+                               textured ? triangle.textureUvs[corner].v : 0.0f};
+        vertices[corner].color = rgbColor(rgb);
+      }
+
+      const eld::math::Vec3 normal = faceNormal(
+          vertices[0].position, vertices[1].position, vertices[2].position);
+      vertices[0].normal = normal;
+      vertices[1].normal = normal;
+      vertices[2].normal = normal;
+
+      appendTriangle(bucket, vertices[0], vertices[1], vertices[2]);
+
+      ++result.stats.triangles;
+      if (textured) {
+        ++result.stats.texturedTriangles;
+      }
+    }
+  };
+
+  for (int x = 0; x < static_cast<int>(eld::map::RegionSize); ++x) {
+    for (int y = 0; y < static_cast<int>(eld::map::RegionSize); ++y) {
+      const eld::map::MapTile *levelOne = sample(1, x, y);
+      const std::uint8_t levelOneSettings =
+          levelOne == nullptr ? 0 : levelOne->settings;
+
+      if (ClassicTileRules::hasBridgeGround(scenePlane, levelOneSettings)) {
+        appendSourceTile(0, x, y);
+      }
+
+      const std::optional<std::size_t> sourcePlane =
+          ClassicTileRules::sourcePlaneForScenePlane(scenePlane,
+                                                     levelOneSettings);
+
+      if (sourcePlane.has_value()) {
+        appendSourceTile(*sourcePlane, x, y);
+      }
+    }
+  }
+
+  result.stats.drawBuckets = buckets.size();
+  result.model = finishBuckets(std::move(buckets));
+  return result;
+}
+
+SceneLocationRenderBuildResult SceneMapRenderModelBuilder::buildLocs(
+    const SceneLocationModelBuildResult &locModels,
+    const std::vector<eld::render::ModelHandle> &variantHandles,
+    const eld::render::GraphicsResources &resources) const {
+  SceneLocationRenderBuildResult result;
+  std::array<std::vector<RenderBucket>, eld::map::PlaneCount> planeBuckets;
+
+  result.cameraVariants.reserve(32);
+
+  for (const SceneLocationModelInstance &instance : locModels.instances) {
+    if (instance.scenePlane >= eld::map::PlaneCount) {
+      continue;
+    }
+
+    ++result.stats.instances;
+
+    for (const SceneLocationModelPart &part : instance.parts) {
+      ++result.stats.parts;
+
+      if (part.drawMode == SceneLocationDrawMode::WallDecorationDiagonalBoth) {
+        std::vector<RenderBucket> insetBuckets;
+        std::vector<RenderBucket> outsetBuckets;
+
+        result.stats.triangles += appendLocPart(
+            insetBuckets, instance, part,
+            locDrawTransform(instance, part, true), variantHandles, resources);
+
+        appendLocPart(outsetBuckets, instance, part,
+                      locDrawTransform(instance, part, false), variantHandles,
+                      resources);
+
+        SceneLocationCameraRenderVariant variant;
+        variant.scenePlane = instance.scenePlane;
+        variant.rotation = instance.rotation;
+        variant.sceneX = instance.sceneX;
+        variant.sceneZ = instance.sceneZ;
+        variant.insetModel = finishBuckets(std::move(insetBuckets));
+        variant.outsetModel = finishBuckets(std::move(outsetBuckets));
+
+        result.cameraVariants.push_back(std::move(variant));
+        ++result.stats.cameraDependentParts;
+        continue;
+      }
+
+      result.stats.triangles += appendLocPart(
+          planeBuckets[instance.scenePlane], instance, part,
+          locDrawTransform(instance, part, true), variantHandles, resources);
+    }
+  }
+
+  for (std::size_t plane = 0; plane < eld::map::PlaneCount; ++plane) {
+    result.stats.staticDrawBuckets += planeBuckets[plane].size();
+    result.staticPlaneModels[plane] =
+        finishBuckets(std::move(planeBuckets[plane]));
+  }
+
+  return result;
+}
+
+} // namespace eld::render::map
+
+===== CURRENT TERRAIN BUILDER =====
+#pragma once
+
+#include "render/model/RenderModel.h"
+#include "map/TerrainData.h"
+#include "floor/FloorLoader.h"
+
+namespace eld::graphics {
+
+class TerrainBuilder {
+public:
+    eld::render::RenderModel build(
+        const eld::map::TerrainData& terrain,
+        const eld::floor::FloorLoader& floors
+    ) const;
+};
+
+}#include "TerrainBuilder.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <utility>
+
+namespace eld::graphics {
+
+eld::render::RenderModel TerrainBuilder::build(
+    const eld::map::TerrainData& terrain,
+    const eld::floor::FloorLoader& floors
+) const {
+    eld::render::RenderModel model;
+    eld::render::RenderMesh mesh;
+
+    constexpr int sampleCount = 64;
+    constexpr int tileCount = sampleCount - 1;
+    constexpr float tileSize = 1.0f;
+    constexpr float heightScale = 1.0f / 128.0f;
+
+    mesh.vertices.reserve(tileCount * tileCount * 4);
+    mesh.indices.reserve(tileCount * tileCount * 6);
+
+    // Convert a packed 0xRRGGBB color into normalized RGB.
+    const auto unpackColor = [](std::uint32_t rgb) {
+        return eld::math::Vec4{
+            static_cast<float>((rgb >> 16) & 0xFF) / 255.0f,
+            static_cast<float>((rgb >> 8) & 0xFF) / 255.0f,
+            static_cast<float>(rgb & 0xFF) / 255.0f,
+            1.0f
+        };
+    };
+
+    const auto heightAt = [&](int x, int z) {
+        return static_cast<float>(
+            terrain.tile(0, x, z).height
+        ) * heightScale;
+    };
+
+    // Smooth normal from neighboring height samples.
+    const auto normalAt = [&](int x, int z) {
+        const int left = std::max(0, x - 1);
+        const int right = std::min(sampleCount - 1, x + 1);
+        const int back = std::max(0, z - 1);
+        const int front = std::min(sampleCount - 1, z + 1);
+
+        const float dx =
+            (heightAt(right, z) - heightAt(left, z)) /
+            (static_cast<float>(right - left) * tileSize);
+
+        const float dz =
+            (heightAt(x, front) - heightAt(x, back)) /
+            (static_cast<float>(front - back) * tileSize);
+
+        const float nx = -dx;
+        const float ny = 1.0f;
+        const float nz = -dz;
+
+        const float length = std::sqrt(
+            nx * nx + ny * ny + nz * nz
+        );
+
+        return eld::math::Vec3{
+            nx / length,
+            ny / length,
+            nz / length
+        };
+    };
+
+    // Add one corner of a tile.
+    const auto addVertex = [&](int x, int z,
+                               const eld::math::Vec4& color) {
+        eld::render::RenderVertex vertex{};
+
+        vertex.position = {
+            static_cast<float>(x) * tileSize,
+            heightAt(x, z),
+            static_cast<float>(z) * tileSize
+        };
+
+        vertex.normal = normalAt(x, z);
+
+        vertex.uv = {
+            static_cast<float>(x),
+            static_cast<float>(z)
+        };
+
+        vertex.color = color;
+
+        mesh.vertices.push_back(vertex);
+    };
+
+    // Each tile owns four vertices, allowing different floor colors.
+    for (int z = 0; z < tileCount; ++z) {
+        for (int x = 0; x < tileCount; ++x) {
+            const auto& tile = terrain.tile(0, x, z);
+
+            // Neutral fallback for tiles without a valid underlay.
+            eld::math::Vec4 color{
+                0.45f, 0.45f, 0.45f, 1.0f
+            };
+
+            if (tile.underlayId != 0) {
+                // Map IDs are one-based; floor definition IDs are zero-based.
+                const auto floorId = static_cast<std::uint16_t>(
+                    tile.underlayId - 1
+                );
+
+                const auto floor = floors.find(floorId);
+
+                if (floor && floor->rgb) {
+                    color = unpackColor(*floor->rgb);
+                }
+            }
+
+            const auto base = static_cast<std::uint32_t>(
+                mesh.vertices.size()
+            );
+
+            // Four corners of this tile.
+            addVertex(x,     z,     color); // 0
+            addVertex(x + 1, z,     color); // 1
+            addVertex(x,     z + 1, color); // 2
+            addVertex(x + 1, z + 1, color); // 3
+
+            // Two upward-facing triangles.
+            mesh.indices.push_back(base + 0);
+            mesh.indices.push_back(base + 2);
+            mesh.indices.push_back(base + 1);
+
+            mesh.indices.push_back(base + 1);
+            mesh.indices.push_back(base + 2);
+            mesh.indices.push_back(base + 3);
+        }
+    }
+
+    eld::render::RenderMeshSection section{};
+    section.firstIndex = 0;
+    section.indexCount = static_cast<std::uint32_t>(
+        mesh.indices.size()
+    );
+    section.materialIndex = 0;
+
+    mesh.sections.push_back(section);
+    model.meshes.push_back(std::move(mesh));
+    model.materials.emplace_back();
+
+    return model;
+}
+
+}
+
+===== GRAPHICS CMAKE =====
+add_library(eldoria_graphics STATIC
+    map/TerrainBuilder.cpp
+)
+
+add_library(Eldoria::Graphics ALIAS eldoria_graphics)
+
+target_include_directories(eldoria_graphics PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(eldoria_graphics PUBLIC
+    Eldoria::Assets
+    Eldoria::Render
+)

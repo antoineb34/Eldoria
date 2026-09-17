@@ -1,25 +1,46 @@
 add_executable(elforge
     main.cpp
 
-    AppShell.cpp
-    AnimationDump.cpp
-    AnimationRelations.cpp
-    CacheExplorer.cpp
-    CacheTreeBuilder.cpp
-    FontPreviewBuilder.cpp
-    IdentityKitPreviewBuilder.cpp
-    LocationPreviewBuilder.cpp
-    MapPreview.cpp
-    MapPreviewBuilder.cpp
-    MidiExport.cpp
-    NpcPreviewBuilder.cpp
-    ItemPreviewBuilder.cpp
-    SpotAnimationPreviewBuilder.cpp
+    app/ElForgeApp.cpp
+    ui/ElForgeTheme.cpp
+    ui/IconButton.cpp
+    ui/Carousel.cpp
+    dump/AssetDumpWriter.cpp
+    dump/AssetDumper.cpp
+    dump/AnimationDumper.cpp
+    export/AnimationExporter.cpp
+    inspection/AnimationInspector.cpp
+    explorer/CacheExplorer.cpp
+    explorer/CacheExplorerAnimation.cpp
+    explorer/CacheExplorerItem.cpp
+    explorer/CacheExplorerSelection.cpp
+    explorer/tree/CacheTreeBuilder.cpp
+    views/animation/AnimationViewPanel.cpp
+    views/floor/FloorView.cpp
+    views/font/FontView.cpp
+    views/identity_kit/IdentityKitView.cpp
+    inspection/InterfaceInspector.cpp
+    views/item/ItemAnimationPresets.cpp
+    views/item/ItemView.cpp
+    views/location/LocationView.cpp
+    views/map/MapViewState.cpp
+    views/map/MapView.cpp
+    views/map/MapViewPanel.cpp
+    views/midi/MidiView.cpp
+    views/midi/MidiViewPanel.cpp
+    export/MidiExporter.cpp
+    views/npc/NpcView.cpp
+    views/spot_animation/SpotAnimationView.cpp
 
-    panels/CacheInspectorPanel.cpp
-    panels/MapGpuViewportRenderer.cpp
-    panels/CacheTreePanel.cpp
-    panels/CacheViewportPanel.cpp
+    inspection/AssetDetailsPanel.cpp
+    explorer/tree/CacheTreePanel.cpp
+    viewport/ViewportPanel.cpp
+    viewport/ViewportSurface.cpp
+    views/interface/InterfaceViewPanel.cpp
+    views/map/MapViewSurface.cpp
+    views/model/ModelViewPanel.cpp
+    views/texture/TextureViewPanel.cpp
+    viewport/ViewportWorkspaceRouter.cpp
 )
 
 target_include_directories(elforge PRIVATE
@@ -27,10 +48,12 @@ target_include_directories(elforge PRIVATE
 )
 
 target_link_libraries(elforge PRIVATE
-    Eldoria::Data
-    Eldoria::Platform
-    Eldoria::PlatformImGui
+    Eldoria::Audio
+    Eldoria::Assets
+    Eldoria::Graphics
     Eldoria::Render
+    Eldoria::Host
+    Eldoria::HostImGui
 )
 
 set_target_properties(elforge PROPERTIES
