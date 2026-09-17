@@ -527,6 +527,12 @@ buildLocations(
             length;
 
 
+        location.solid =
+            definition &&
+            definition->solid &&
+            !definition->hollow;
+
+
         location.tile = {
             origin.x +
                 static_cast<int>(spawn.x),

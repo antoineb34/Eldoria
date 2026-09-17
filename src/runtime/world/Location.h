@@ -31,6 +31,10 @@ namespace eld::world
         int footprintWidth = 1;
         int footprintLength = 1;
 
+        // Whether this placed location contributes to
+        // walking collision.
+        bool solid = false;
+
         // Terrain underneath this location:
         //
         // SW, SE, NE, NW

@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include "CollisionBuilder.h"
 #include "Location.h"
 #include "Terrain.h"
 
@@ -18,6 +19,8 @@ namespace eld::world
 
         std::vector<Location> locations;
 
+        CollisionMap collision;
+
         Region(
             std::uint16_t regionId,
             Terrain regionTerrain,
@@ -26,7 +29,11 @@ namespace eld::world
               terrain(
                   std::move(regionTerrain)),
               locations(
-                  std::move(regionLocations))
+                  std::move(regionLocations)),
+              collision(
+                  CollisionBuilder::build(
+                      terrain,
+                      locations))
         {
         }
     };

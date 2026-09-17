@@ -1,3 +1,4 @@
+#include <queue>
 #include "Client.h"
 #include "render/camera/Projection.h"
 #include "render/animation/ModelAnimator.h"
@@ -2022,61 +2023,583 @@ void Client::walkPlayerTo(
     playerPath_.clear();
 
 
-    // If the player is already moving, start the new route
-    // from the tile that movement is committed to reaching.
-    auto current =
+    if (!region_.has_value()) {
+        return;
+    }
+
+
+    const auto source =
         playerMoving_
             ? playerMoveDestinationTile_
             : player_.tile;
 
 
-    if (destination.plane != current.plane) {
+    if (source.plane != destination.plane) {
+        return;
+    }
+
+
+    if (
+        source.x == destination.x &&
+        source.y == destination.y
+    ) {
+        return;
+    }
+
+
+    const auto& terrain =
+        region_->terrain;
+
+    const auto origin =
+        terrain.origin();
+
+
+    const int width =
+        static_cast<int>(
+            terrain.width()
+        );
+
+    const int height =
+        static_cast<int>(
+            terrain.height()
+        );
+
+
+    const int sourceX =
+        source.x -
+        origin.x;
+
+    const int sourceY =
+        source.y -
+        origin.y;
+
+    const int destinationX =
+        destination.x -
+        origin.x;
+
+    const int destinationY =
+        destination.y -
+        origin.y;
+
+
+    const auto inside =
+        [width, height](
+            int x,
+            int y
+        )
+        {
+            return
+                x >= 0 &&
+                y >= 0 &&
+                x < width &&
+                y < height;
+        };
+
+
+    if (
+        !inside(
+            sourceX,
+            sourceY
+        ) ||
+        !inside(
+            destinationX,
+            destinationY
+        )
+    ) {
+        return;
+    }
+
+
+    const auto tileIndex =
+        [width](
+            int x,
+            int y
+        )
+        {
+            return
+                y * width +
+                x;
+        };
+
+
+    const int sourceTile =
+        tileIndex(
+            sourceX,
+            sourceY
+        );
+
+    const int destinationTile =
+        tileIndex(
+            destinationX,
+            destinationY
+        );
+
+
+    // --------------------------------------------------------
+    // Search state
+    //
+    // We keep the direction used to ENTER a tile.
+    //
+    // This lets the pathfinder distinguish:
+    //
+    //     same tile, continuing straight
+    //
+    // from:
+    //
+    //     same tile, arriving from another direction
+    //
+    // Primary cost:
+    //     number of walking steps
+    //
+    // Secondary cost:
+    //     number of direction changes
+    //
+    // Therefore:
+    //
+    //     shortest route wins first
+    //     smoothest shortest route wins second
+    // --------------------------------------------------------
+
+    constexpr int DirectionCount =
+        8;
+
+    constexpr int StartDirection =
+        DirectionCount;
+
+    constexpr int DirectionStateCount =
+        DirectionCount + 1;
+
+
+    constexpr int directions[
+        DirectionCount
+    ][2] = {
+        { 1,  1},
+        { 1, -1},
+        {-1, -1},
+        {-1,  1},
+
+        { 1,  0},
+        {-1,  0},
+        { 0,  1},
+        { 0, -1}
+    };
+
+
+    const auto stateIndex =
+        [](
+            int tile,
+            int direction
+        )
+        {
+            return
+                tile *
+                    DirectionStateCount +
+                direction;
+        };
+
+
+    struct SearchNode
+    {
+        int tile = 0;
+        int direction = 0;
+
+        int steps = 0;
+        int turns = 0;
+    };
+
+
+    struct SearchNodeGreater
+    {
+        bool operator()(
+            const SearchNode& a,
+            const SearchNode& b
+        ) const
+        {
+            // Fewer steps always wins.
+            if (a.steps != b.steps) {
+                return
+                    a.steps >
+                    b.steps;
+            }
+
+            // Among equally short paths,
+            // fewer turns wins.
+            if (a.turns != b.turns) {
+                return
+                    a.turns >
+                    b.turns;
+            }
+
+            return
+                a.direction >
+                b.direction;
+        }
+    };
+
+
+    const int stateCount =
+        width *
+        height *
+        DirectionStateCount;
+
+
+    std::vector<int> bestSteps(
+        static_cast<std::size_t>(
+            stateCount
+        ),
+        -1
+    );
+
+    std::vector<int> bestTurns(
+        static_cast<std::size_t>(
+            stateCount
+        ),
+        -1
+    );
+
+    std::vector<int> parent(
+        static_cast<std::size_t>(
+            stateCount
+        ),
+        -1
+    );
+
+
+    std::priority_queue<
+        SearchNode,
+        std::vector<SearchNode>,
+        SearchNodeGreater
+    > open;
+
+
+    const int sourceState =
+        stateIndex(
+            sourceTile,
+            StartDirection
+        );
+
+
+    bestSteps[
+        static_cast<std::size_t>(
+            sourceState
+        )
+    ] = 0;
+
+    bestTurns[
+        static_cast<std::size_t>(
+            sourceState
+        )
+    ] = 0;
+
+
+    open.push({
+        sourceTile,
+        StartDirection,
+        0,
+        0
+    });
+
+
+    int destinationState =
+        -1;
+
+
+    while (!open.empty()) {
+        const SearchNode current =
+            open.top();
+
+        open.pop();
+
+
+        const int currentState =
+            stateIndex(
+                current.tile,
+                current.direction
+            );
+
+
+        if (
+            bestSteps[
+                static_cast<std::size_t>(
+                    currentState
+                )
+            ] != current.steps ||
+            bestTurns[
+                static_cast<std::size_t>(
+                    currentState
+                )
+            ] != current.turns
+        ) {
+            continue;
+        }
+
+
+        if (
+            current.tile ==
+            destinationTile
+        ) {
+            destinationState =
+                currentState;
+
+            break;
+        }
+
+
+        const int currentX =
+            current.tile %
+            width;
+
+        const int currentY =
+            current.tile /
+            width;
+
+
+        const eld::world::TilePosition
+            currentPosition{
+                origin.x +
+                    currentX,
+
+                origin.y +
+                    currentY,
+
+                source.plane
+            };
+
+
+        for (
+            int direction = 0;
+            direction < DirectionCount;
+            ++direction
+        ) {
+            const int dx =
+                directions[direction][0];
+
+            const int dy =
+                directions[direction][1];
+
+
+            const int nextX =
+                currentX + dx;
+
+            const int nextY =
+                currentY + dy;
+
+
+            if (
+                !inside(
+                    nextX,
+                    nextY
+                )
+            ) {
+                continue;
+            }
+
+
+            const eld::world::TilePosition
+                nextPosition{
+                    origin.x +
+                        nextX,
+
+                    origin.y +
+                        nextY,
+
+                    source.plane
+                };
+
+
+            if (
+                !region_->collision.canMove(
+                    currentPosition,
+                    nextPosition
+                )
+            ) {
+                continue;
+            }
+
+
+            const int nextTile =
+                tileIndex(
+                    nextX,
+                    nextY
+                );
+
+            const int nextState =
+                stateIndex(
+                    nextTile,
+                    direction
+                );
+
+
+            const int nextSteps =
+                current.steps + 1;
+
+
+            int nextTurns =
+                current.turns;
+
+
+            if (
+                current.direction !=
+                    StartDirection &&
+                current.direction !=
+                    direction
+            ) {
+                ++nextTurns;
+            }
+
+
+            const auto slot =
+                static_cast<std::size_t>(
+                    nextState
+                );
+
+
+            const bool better =
+                bestSteps[slot] == -1 ||
+                nextSteps <
+                    bestSteps[slot] ||
+                (
+                    nextSteps ==
+                        bestSteps[slot] &&
+                    nextTurns <
+                        bestTurns[slot]
+                );
+
+
+            if (!better) {
+                continue;
+            }
+
+
+            bestSteps[slot] =
+                nextSteps;
+
+            bestTurns[slot] =
+                nextTurns;
+
+            parent[slot] =
+                currentState;
+
+
+            open.push({
+                nextTile,
+                direction,
+                nextSteps,
+                nextTurns
+            });
+        }
+    }
+
+
+    if (destinationState < 0) {
+        std::cout
+            << "path not found | "
+            << source.x
+            << ","
+            << source.y
+            << " -> "
+            << destination.x
+            << ","
+            << destination.y
+            << "\n";
+
         return;
     }
 
 
     // --------------------------------------------------------
-    // Temporary 8-direction path.
-    //
-    // Change both axes on the same step whenever possible.
-    // This gives the shortest path on an obstacle-free grid.
-    //
-    // Collision/pathfinding comes next.
+    // Reconstruct destination -> source.
     // --------------------------------------------------------
 
+    std::vector<
+        eld::world::TilePosition
+    > reversedPath;
+
+
+    int currentState =
+        destinationState;
+
+
     while (
-        current.x != destination.x ||
-        current.y != destination.y
+        currentState !=
+        sourceState
     ) {
-        if (destination.x > current.x) {
-            ++current.x;
-        }
-        else if (destination.x < current.x) {
-            --current.x;
-        }
+        const int currentTile =
+            currentState /
+            DirectionStateCount;
 
 
-        if (destination.y > current.y) {
-            ++current.y;
-        }
-        else if (destination.y < current.y) {
-            --current.y;
-        }
+        const int localX =
+            currentTile %
+            width;
+
+        const int localY =
+            currentTile /
+            width;
 
 
+        reversedPath.push_back({
+            origin.x +
+                localX,
+
+            origin.y +
+                localY,
+
+            source.plane
+        });
+
+
+        currentState =
+            parent[
+                static_cast<std::size_t>(
+                    currentState
+                )
+            ];
+
+
+        if (currentState < 0) {
+            playerPath_.clear();
+
+            std::cout
+                << "broken path parent chain\n";
+
+            return;
+        }
+    }
+
+
+    for (
+        auto it =
+            reversedPath.rbegin();
+
+        it !=
+            reversedPath.rend();
+
+        ++it
+    ) {
         playerPath_.push_back(
-            current
+            *it
         );
     }
 
 
     std::cout
-        << "queued path | destination="
+        << "path | "
+        << source.x
+        << ","
+        << source.y
+        << " -> "
         << destination.x
         << ","
         << destination.y
         << " steps="
         << playerPath_.size()
+        << " turns="
+        << bestTurns[
+            static_cast<std::size_t>(
+                destinationState
+            )
+        ]
         << "\n";
 
 
