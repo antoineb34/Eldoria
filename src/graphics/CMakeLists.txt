@@ -5,6 +5,7 @@ add_library(eldoria_graphics STATIC
     map/ClassicTerrainLighting.cpp
     map/ClassicTerrainShape.cpp
     map/LocationBuilder.cpp
+    map/LocationBatchBuilder.cpp
     map/LocationModelBuilder.cpp
 
     model/ModelBuilder.cpp

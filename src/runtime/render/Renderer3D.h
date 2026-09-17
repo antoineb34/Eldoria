@@ -20,11 +20,27 @@ public:
 
     void toggleWireframe();
 
+    const opengl::SimpleRenderer::FrameStats&
+    stats() const {
+        return renderer_.stats();
+    }
+
+    std::uint64_t terrainDrawCalls() const {
+        return terrainDrawCalls_;
+    }
+
+    std::uint64_t locationDrawCalls() const {
+        return locationDrawCalls_;
+    }
+
 private:
     const ModelManager& models_;
 
     opengl::SimpleRenderer
         renderer_;
+
+    std::uint64_t terrainDrawCalls_ = 0;
+    std::uint64_t locationDrawCalls_ = 0;
 };
 
 }

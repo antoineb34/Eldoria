@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <glad/gl.h>
@@ -16,6 +17,24 @@ namespace eld::render::opengl {
 
 class SimpleRenderer {
 public:
+    struct FrameStats {
+        std::uint64_t objects = 0;
+        std::uint64_t meshes = 0;
+        std::uint64_t sections = 0;
+
+        std::uint64_t drawCalls = 0;
+        std::uint64_t triangles = 0;
+
+        std::uint64_t uniqueModels = 0;
+        std::uint64_t uniqueTextures = 0;
+
+        std::uint64_t textureBinds = 0;
+        std::uint64_t samplerUpdates = 0;
+
+        std::uint64_t modelUploads = 0;
+        std::uint64_t textureUploads = 0;
+    };
+
     explicit SimpleRenderer(
         const TextureManager& textures
     );
@@ -43,6 +62,10 @@ public:
     void endFrame();
 
     void toggleWireframe();
+
+    const FrameStats& stats() const {
+        return stats_;
+    }
 
 private:
     struct GpuMesh {
@@ -102,6 +125,14 @@ private:
     GLint unlitLocation_ = -1;
 
     bool wireframe_ = false;
+
+    FrameStats stats_{};
+
+    std::unordered_set<std::uint64_t>
+        frameModels_;
+
+    std::unordered_set<std::uint64_t>
+        frameTextures_;
 };
 
 }

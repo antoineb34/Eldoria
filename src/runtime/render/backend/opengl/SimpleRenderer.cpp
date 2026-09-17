@@ -452,6 +452,8 @@ namespace eld::render::opengl
             return existing->second;
         }
 
+        ++stats_.modelUploads;
+
         GpuModel gpuModel;
 
         gpuModel.meshes.reserve(
@@ -704,6 +706,8 @@ namespace eld::render::opengl
             GL_UNPACK_ALIGNMENT,
             1);
 
+        ++stats_.textureUploads;
+
         glTexImage2D(
             GL_TEXTURE_2D,
             0,
@@ -727,6 +731,9 @@ namespace eld::render::opengl
     void SimpleRenderer::beginFrame(
         const Camera &camera)
     {
+        stats_ = {};
+        frameModels_.clear();
+        frameTextures_.clear();
         if (
             camera.viewportWidth == 0 ||
             camera.viewportHeight == 0)
@@ -918,6 +925,15 @@ namespace eld::render::opengl
         const ModelResource &model,
         const Transform &transform)
     {
+        ++stats_.objects;
+
+        frameModels_.insert(
+            modelKey(handle)
+        );
+
+        stats_.uniqueModels =
+            frameModels_.size();
+
         const GpuModel &gpuModel =
             ensureModel(
                 handle,
@@ -944,6 +960,8 @@ namespace eld::render::opengl
             model.meshes.size();
             ++meshIndex)
         {
+            ++stats_.meshes;
+
             const RenderMesh &mesh =
                 model.meshes.at(
                     meshIndex);
@@ -976,6 +994,14 @@ namespace eld::render::opengl
                 glDepthMask(
                     GL_TRUE);
 
+                ++stats_.drawCalls;
+                stats_.triangles +=
+                    static_cast<std::uint64_t>(
+                        gpuMesh.indexCount
+                    ) / 3u;
+
+                ++stats_.textureBinds;
+
                 glDrawElements(
                     GL_TRIANGLES,
                     gpuMesh.indexCount,
@@ -990,6 +1016,8 @@ namespace eld::render::opengl
                     section :
                 mesh.sections)
             {
+                ++stats_.sections;
+
                 if (
                     section.firstIndex >
                         mesh.indices.size() ||
@@ -1021,8 +1049,19 @@ namespace eld::render::opengl
                         texture =
                             ensureTexture(
                                 *material->texture);
+
+                        frameTextures_.insert(
+                            textureKey(
+                                *material->texture
+                            )
+                        );
+
+                        stats_.uniqueTextures =
+                            frameTextures_.size();
                     }
                 }
+
+                ++stats_.textureBinds;
 
                 glBindTexture(
                     GL_TEXTURE_2D,
@@ -1066,6 +1105,8 @@ namespace eld::render::opengl
 
                     if (texture != 0)
                     {
+                        ++stats_.samplerUpdates;
+
                         const GLint filter =
                             material->sampler.filter ==
                                     TextureFilter::Linear
@@ -1124,6 +1165,13 @@ namespace eld::render::opengl
                             section.firstIndex) *
                         sizeof(
                             std::uint32_t);
+
+                ++stats_.drawCalls;
+
+                stats_.triangles +=
+                    static_cast<std::uint64_t>(
+                        section.indexCount
+                    ) / 3u;
 
                 glDrawElements(
                     GL_TRIANGLES,

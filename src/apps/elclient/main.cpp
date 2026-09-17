@@ -1,4 +1,5 @@
 #include "map/LocationBuilder.h"
+#include "map/LocationBatchBuilder.h"
 #include "model/ModelSystem.h"
 #include <array>
 #include <vector>
@@ -9,6 +10,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <utility>
 
@@ -142,10 +145,39 @@ eld::graphics::TerrainBuilder
         );
 
 
+    eld::graphics::LocationBatchBuilder
+        locationBatchBuilder;
+
+    auto locationBatchBuild =
+        locationBatchBuilder.build(
+            locationBuild.objects,
+            modelManager
+        );
+
+
+    for (
+        auto& batch :
+        locationBatchBuild.batches
+    ) {
+        const auto handle =
+            modelManager.create(
+                std::move(batch)
+            );
+
+        scene.objects.push_back({
+            handle,
+            {},
+            true
+        });
+    }
+
+
     scene.objects.insert(
         scene.objects.end(),
-        locationBuild.objects.begin(),
-        locationBuild.objects.end()
+        locationBatchBuild
+            .passthroughObjects.begin(),
+        locationBatchBuild
+            .passthroughObjects.end()
     );
 
 
@@ -168,6 +200,26 @@ eld::graphics::TerrainBuilder
         << "\n"
         << "missing models    = "
         << locationBuild.missingModels
+        << "\n\n";
+
+
+    std::cout
+        << "=== LOCATION BATCH BUILD ===\n"
+        << "source objects     = "
+        << locationBatchBuild.sourceObjects
+        << "\n"
+        << "batched objects    = "
+        << locationBatchBuild.batchedObjects
+        << "\n"
+        << "passthrough        = "
+        << locationBatchBuild
+            .passthroughObjects.size()
+        << "\n"
+        << "chunk models       = "
+        << locationBatchBuild.batches.size()
+        << "\n"
+        << "batch sections     = "
+        << locationBatchBuild.batchSections
         << "\n\n";
 
 
@@ -355,17 +407,50 @@ eld::graphics::TerrainBuilder
                 ) /
                 fpsElapsed;
 
-            const std::string title =
-                "Eldoria - " +
-                std::to_string(
-                    static_cast<int>(fps)
-                ) +
-                " FPS";
+            const auto& stats =
+                renderer.stats();
 
-            SDL_SetWindowTitle(
-                sdl.window(),
-                title.c_str()
-            );
+            std::ostringstream titleStream;
+
+            titleStream
+                << "Eldoria | "
+                << static_cast<int>(fps)
+                << " FPS | "
+                << std::fixed
+                << std::setprecision(2)
+                << (1000.0f / fps)
+                << " ms"
+                << " | obj "
+                << stats.objects
+                << " | draws "
+                << stats.drawCalls
+                << " | tris "
+                << stats.triangles
+                << " | models "
+                << stats.uniqueModels
+                << " | tex "
+                << stats.uniqueTextures
+                << " | sections "
+                << stats.sections
+                << " | binds "
+                << stats.textureBinds
+                << " | sampler "
+                << stats.samplerUpdates
+                << " | upload M/T "
+                << stats.modelUploads
+                << "/"
+                << stats.textureUploads
+                << " | terrain draws "
+                << renderer.terrainDrawCalls()
+                << " | location draws "
+                << renderer.locationDrawCalls();
+
+            const std::string title =
+                titleStream.str();
+
+            std::cout
+                << title
+                << '\n';
 
             fpsStart = fpsNow;
             fpsFrameCount = 0;

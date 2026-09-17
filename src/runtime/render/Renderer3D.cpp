@@ -20,11 +20,17 @@ void Renderer3D::render(
         scene.camera
     );
 
+    terrainDrawCalls_ = 0;
+    locationDrawCalls_ = 0;
+
+    std::size_t objectIndex = 0;
+
     for (
         const RenderObject& object :
         scene.objects
     ) {
         if (!object.visible) {
+            ++objectIndex;
             continue;
         }
 
@@ -33,6 +39,7 @@ void Renderer3D::render(
                 object.model
             )
         ) {
+            ++objectIndex;
             continue;
         }
 
@@ -41,11 +48,30 @@ void Renderer3D::render(
                 object.model
             );
 
+        const auto before =
+            renderer_.stats().drawCalls;
+
         renderer_.draw(
             object.model,
             model,
             object.transform
         );
+
+        const auto after =
+            renderer_.stats().drawCalls;
+
+        const auto objectDraws =
+            after - before;
+
+        if (objectIndex == 0) {
+            terrainDrawCalls_ =
+                objectDraws;
+        } else {
+            locationDrawCalls_ +=
+                objectDraws;
+        }
+
+        ++objectIndex;
     }
 
     renderer_.endFrame();
