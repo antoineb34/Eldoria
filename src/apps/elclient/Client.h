@@ -36,6 +36,18 @@ private:
 
     void syncCameraToPlayer();
 
+    std::optional<eld::world::TilePosition>
+    pickTerrainTile(
+        float mouseX,
+        float mouseY
+    ) const;
+
+    void selectTerrainTile(
+        const eld::world::TilePosition& tile
+    );
+
+    void updateMouseSelection();
+
     void buildPlayerIdleAnimation(
         const eld::model::ModelData& appearance
     );
@@ -110,6 +122,17 @@ private:
         playerMoveDestinationTile_{};
 
     float playerMoveElapsed_ = 0.0f;
+
+    std::optional<eld::world::TilePosition>
+        selectedTile_;
+
+    std::optional<std::size_t>
+        selectedTileObjectIndex_;
+
+    std::optional<eld::render::ModelHandle>
+        selectedTileModel_;
+
+    bool leftMouseWasDown_ = false;
 
     bool cameraLocked_ = true;
 

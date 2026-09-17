@@ -1,4 +1,5 @@
 #include "Client.h"
+#include "render/camera/Projection.h"
 #include "render/animation/ModelAnimator.h"
 #include "PlayerAppearanceBuilder.h"
 
@@ -542,6 +543,9 @@ void Client::processEvents(
     SDL_Event event;
 
     while (SDL_PollEvent(&event)) {
+
+
+
         if (
             event.type ==
             SDL_EVENT_QUIT
@@ -1175,6 +1179,662 @@ void Client::updatePlayerMovement(
 
 
 
+
+std::optional<eld::world::TilePosition>
+Client::pickTerrainTile(
+    float mouseX,
+    float mouseY
+) const
+{
+    if (
+        !region_.has_value() ||
+        scene_.camera.viewportWidth == 0 ||
+        scene_.camera.viewportHeight == 0
+    ) {
+        return std::nullopt;
+    }
+
+
+    const auto& terrain =
+        region_->terrain;
+
+
+    if (
+        terrain.width() == 0 ||
+        terrain.height() == 0
+    ) {
+        return std::nullopt;
+    }
+
+
+    // Convert SDL mouse coordinates into the screen-space
+    // convention used by projectPoint().
+    const float projectedMouseX =
+        static_cast<float>(
+            scene_.camera.viewportWidth
+        ) -
+        mouseX;
+
+    const float projectedMouseY =
+        static_cast<float>(
+            scene_.camera.viewportHeight
+        ) -
+        mouseY;
+
+
+    const auto view =
+        eld::render::buildViewMatrix(
+            scene_.camera
+        );
+
+
+    const auto projection =
+        eld::render::buildProjectionMatrix(
+            scene_.camera
+        );
+
+
+    const auto pointInTriangle =
+        [](
+            float px,
+            float py,
+            const eld::render::ScreenPoint& a,
+            const eld::render::ScreenPoint& b,
+            const eld::render::ScreenPoint& c
+        )
+        {
+            const float denominator =
+                (
+                    b.y - c.y
+                ) *
+                (
+                    a.x - c.x
+                ) +
+                (
+                    c.x - b.x
+                ) *
+                (
+                    a.y - c.y
+                );
+
+
+            if (
+                std::abs(
+                    denominator
+                ) <
+                0.00001f
+            ) {
+                return false;
+            }
+
+
+            const float alpha =
+                (
+                    (
+                        b.y - c.y
+                    ) *
+                    (
+                        px - c.x
+                    ) +
+                    (
+                        c.x - b.x
+                    ) *
+                    (
+                        py - c.y
+                    )
+                ) /
+                denominator;
+
+
+            const float beta =
+                (
+                    (
+                        c.y - a.y
+                    ) *
+                    (
+                        px - c.x
+                    ) +
+                    (
+                        a.x - c.x
+                    ) *
+                    (
+                        py - c.y
+                    )
+                ) /
+                denominator;
+
+
+            const float gamma =
+                1.0f -
+                alpha -
+                beta;
+
+
+            constexpr float epsilon =
+                -0.0001f;
+
+
+            return
+                alpha >= epsilon &&
+                beta >= epsilon &&
+                gamma >= epsilon;
+        };
+
+
+    std::optional<
+        eld::world::TilePosition
+    > result;
+
+
+    float bestDepth =
+        std::numeric_limits<float>::infinity();
+
+
+    for (
+        std::size_t localY = 0;
+        localY < terrain.height();
+        ++localY
+    ) {
+        for (
+            std::size_t localX = 0;
+            localX < terrain.width();
+            ++localX
+        ) {
+            const auto position =
+                terrain.layerPosition(
+                    0,
+                    localX,
+                    localY
+                );
+
+
+            const auto heights =
+                terrain.cornerHeights(
+                    position
+                );
+
+
+            const float x0 =
+                static_cast<float>(
+                    localX
+                );
+
+            const float x1 =
+                x0 + 1.0f;
+
+
+            const float z0 =
+                -static_cast<float>(
+                    localY
+                );
+
+            const float z1 =
+                -static_cast<float>(
+                    localY + 1
+                );
+
+
+            const auto sw =
+                eld::render::projectPoint(
+                    {
+                        x0,
+                        heights.southwest,
+                        z0
+                    },
+                    view,
+                    projection,
+                    scene_.camera
+                );
+
+
+            const auto se =
+                eld::render::projectPoint(
+                    {
+                        x1,
+                        heights.southeast,
+                        z0
+                    },
+                    view,
+                    projection,
+                    scene_.camera
+                );
+
+
+            const auto ne =
+                eld::render::projectPoint(
+                    {
+                        x1,
+                        heights.northeast,
+                        z1
+                    },
+                    view,
+                    projection,
+                    scene_.camera
+                );
+
+
+            const auto nw =
+                eld::render::projectPoint(
+                    {
+                        x0,
+                        heights.northwest,
+                        z1
+                    },
+                    view,
+                    projection,
+                    scene_.camera
+                );
+
+
+            const auto consider =
+                [&](
+                    const eld::render::ScreenPoint& a,
+                    const eld::render::ScreenPoint& b,
+                    const eld::render::ScreenPoint& c
+                )
+                {
+                    if (
+                        !std::isfinite(a.x) ||
+                        !std::isfinite(a.y) ||
+                        !std::isfinite(b.x) ||
+                        !std::isfinite(b.y) ||
+                        !std::isfinite(c.x) ||
+                        !std::isfinite(c.y)
+                    ) {
+                        return;
+                    }
+
+
+                    // Visible geometry in Eldoria is in
+                    // negative view-space Z.
+                    //
+                    // Reject triangles behind the camera or
+                    // crossing the near plane before doing the
+                    // screen-space containment test.
+                    if (
+                        a.depth > -scene_.camera.nearPlane ||
+                        b.depth > -scene_.camera.nearPlane ||
+                        c.depth > -scene_.camera.nearPlane
+                    ) {
+                        return;
+                    }
+
+
+                    if (
+                        a.depth < -scene_.camera.farPlane ||
+                        b.depth < -scene_.camera.farPlane ||
+                        c.depth < -scene_.camera.farPlane
+                    ) {
+                        return;
+                    }
+
+
+                    const float triangleDepth =
+                        -(
+                            a.depth +
+                            b.depth +
+                            c.depth
+                        ) /
+                        3.0f;
+
+
+                    if (
+                        !pointInTriangle(
+                            projectedMouseX,
+                            projectedMouseY,
+                            a,
+                            b,
+                            c
+                        )
+                    ) {
+                        return;
+                    }
+
+
+                    if (
+                        triangleDepth >=
+                        bestDepth
+                    ) {
+                        return;
+                    }
+
+
+                    bestDepth =
+                        triangleDepth;
+
+
+                    const auto& tile =
+                        terrain.tile(
+                            position
+                        );
+
+
+                    result =
+                        eld::world::TilePosition{
+                            position.x,
+                            position.y,
+                            tile.scenePlane
+                        };
+                };
+
+
+            // Tile quad:
+            //
+            // NW ------ NE
+            // |       / |
+            // |     /   |
+            // |   /     |
+            // SW ------ SE
+            //
+            consider(
+                sw,
+                se,
+                ne
+            );
+
+
+            consider(
+                sw,
+                ne,
+                nw
+            );
+        }
+    }
+
+
+    return result;
+}
+
+
+void Client::selectTerrainTile(
+    const eld::world::TilePosition& tile
+)
+{
+    if (!region_.has_value()) {
+        return;
+    }
+
+
+    auto& terrain =
+        region_->terrain;
+
+
+    const eld::world::TerrainLayerPosition
+        position{
+            tile.x,
+            tile.y,
+            0
+        };
+
+
+    if (!terrain.contains(position)) {
+        return;
+    }
+
+
+    const auto heights =
+        terrain.cornerHeights(
+            position
+        );
+
+
+    constexpr float highlightLift =
+        0.08f;
+
+
+    eld::render::ModelResource resource;
+
+
+    eld::render::RenderMaterial material;
+
+    // Debug selection color: deliberately obnoxious so
+    // there is zero ambiguity about which tile was picked.
+    material.baseColor = {
+        1.0f,
+        1.0f,
+        0.0f,
+        1.0f
+    };
+
+    material.alphaMode =
+        eld::render::AlphaMode::Opaque;
+
+    material.doubleSided =
+        true;
+
+    material.unlit =
+        true;
+
+
+    resource.materials.push_back(
+        material
+    );
+
+
+    eld::render::RenderMesh mesh;
+
+
+    const auto addVertex =
+        [&](
+            float x,
+            float y,
+            float z
+        )
+        {
+            eld::render::RenderVertex vertex{};
+
+            vertex.position = {
+                x,
+                y + highlightLift,
+                z
+            };
+
+            vertex.normal = {
+                0.0f,
+                1.0f,
+                0.0f
+            };
+
+            vertex.color = {
+                1.0f,
+                1.0f,
+                0.0f,
+                1.0f
+            };
+
+            mesh.vertices.push_back(
+                vertex
+            );
+        };
+
+
+    addVertex(
+        0.0f,
+        heights.southwest,
+        0.0f
+    );
+
+    addVertex(
+        1.0f,
+        heights.southeast,
+        0.0f
+    );
+
+    addVertex(
+        1.0f,
+        heights.northeast,
+        -1.0f
+    );
+
+    addVertex(
+        0.0f,
+        heights.northwest,
+        -1.0f
+    );
+
+
+    mesh.indices = {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+
+    eld::render::RenderMeshSection section;
+
+    section.firstIndex = 0;
+    section.indexCount = 6;
+    section.materialIndex = 0;
+    section.depthBias = -0.02f;
+
+
+    mesh.sections.push_back(
+        section
+    );
+
+
+    resource.meshes.push_back(
+        mesh
+    );
+
+
+    if (
+        selectedTileModel_.has_value() &&
+        modelManager_.isValid(
+            *selectedTileModel_
+        )
+    ) {
+        modelManager_.destroy(
+            *selectedTileModel_
+        );
+    }
+
+
+    selectedTileModel_ =
+        modelManager_.create(
+            resource
+        );
+
+
+    eld::render::RenderObject object;
+
+    object.model =
+        *selectedTileModel_;
+
+
+    const auto& origin =
+        terrain.origin();
+
+
+    object.transform.position = {
+        static_cast<float>(
+            tile.x -
+            origin.x
+        ),
+
+        0.0f,
+
+        -static_cast<float>(
+            tile.y -
+            origin.y
+        )
+    };
+
+
+    if (
+        selectedTileObjectIndex_.has_value() &&
+        *selectedTileObjectIndex_ <
+            scene_.objects.size()
+    ) {
+        scene_.objects[
+            *selectedTileObjectIndex_
+        ] = object;
+    }
+    else {
+        selectedTileObjectIndex_ =
+            scene_.objects.size();
+
+        scene_.objects.push_back(
+            object
+        );
+    }
+
+
+    selectedTile_ =
+        tile;
+
+
+    std::cout
+        << "clicked tile = "
+        << tile.x
+        << ", "
+        << tile.y
+        << ", plane "
+        << tile.plane
+        << "\n";
+}
+
+
+void Client::updateMouseSelection()
+{
+    float mouseX = 0.0f;
+    float mouseY = 0.0f;
+
+
+    const SDL_MouseButtonFlags buttons =
+        SDL_GetMouseState(
+            &mouseX,
+            &mouseY
+        );
+
+
+    const bool leftMouseDown =
+        (
+            buttons &
+            SDL_BUTTON_MASK(
+                SDL_BUTTON_LEFT
+            )
+        ) != 0;
+
+
+    if (
+        leftMouseDown &&
+        !leftMouseWasDown_
+    ) {
+        // SDL_GetMouseState already gives us coordinates
+        // relative to this window. Do not apply another
+        // window -> pixel scaling here.
+        std::cout
+            << "mouse click = "
+            << mouseX
+            << ", "
+            << mouseY
+            << "\n";
+
+
+        const auto pickedTile =
+            pickTerrainTile(
+                mouseX,
+                mouseY
+            );
+
+
+        if (pickedTile.has_value()) {
+            selectTerrainTile(
+                *pickedTile
+            );
+        }
+        else {
+            std::cout
+                << "clicked tile = none\n";
+        }
+    }
+
+
+    leftMouseWasDown_ =
+        leftMouseDown;
+}
+
+
 void Client::syncCameraToPlayer()
 {
     if (
@@ -1770,6 +2430,8 @@ int Client::run()
         );
 
         syncCameraToPlayer();
+
+        updateMouseSelection();
 
         render();
 
