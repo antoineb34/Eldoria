@@ -1,11 +1,13 @@
 #include <glad/gl.h>
 #include "Client.h"
+#include "DebugObjModelLoader.h"
+#include "render/camera/Projection.h"
+#include "network/ClientSession.h"
 #include <exception>
+#include <optional>
 #include "render/animation/ModelAnimator.h"
 #include "PlayerAppearanceBuilder.h"
 
-#include "map/LocationBuilder.h"
-#include "map/LocationBatchBuilder.h"
 #include "model/ModelSystem.h"
 #include <array>
 #include <vector>
@@ -25,7 +27,6 @@
 
 #include "assets/AssetManager.h"
 
-#include "map/TerrainBuilder.h"
 #include "texture/TextureSystem.h"
 
 #include "host/sdl/SdlOpenGLContext.h"
@@ -155,6 +156,40 @@ buildPlayerMarkerModel()
 
 constexpr float PlayerModelScale =
     1.0f / 128.0f;
+
+
+// === CRYSTAL SWORD ATTACK STATE ===
+//
+// Temporary client-side test state.
+// Sequence 390 = scimitar slash.
+std::vector<eld::render::ModelHandle>
+    crystalSwordAttackModels;
+
+std::vector<float>
+    crystalSwordAttackGroundOffsets;
+
+bool crystalSwordAttackActive =
+    false;
+
+
+// === SWORD COMPARISON STATE ===
+//
+// Two complete player appearances:
+//
+//   crystal = generated mesh rigged from Dragon longsword 564
+//   dragon  = untouched cache model 564
+//
+// Y swaps them. T plays the same animation on whichever
+// appearance is currently selected.
+std::optional<eld::model::ModelData>
+    debugCrystalSwordAppearance;
+
+std::optional<eld::model::ModelData>
+    debugDragonSwordAppearance;
+
+bool debugUsingCrystalSword =
+    true;
+
 
 
 constexpr std::uint16_t InitialRegionId =
@@ -343,8 +378,9 @@ float playerSupportHeight(
 }
 
 
-Client::Client()
-    : sdl_(
+Client::Client(ClientSession& server)
+    : server_(server),
+      sdl_(
           "Eldoria",
           1000,
           700
@@ -356,6 +392,14 @@ Client::Client()
       modelSystem_(
           assets_.models,
           textureSystem_,
+          modelManager_
+      ),
+      worldScene_(
+          assets_.floors,
+          assets_.locations,
+          assets_.models,
+          textureSystem_,
+          modelSystem_,
           modelManager_
       ),
       worldStreamer_(
@@ -378,6 +422,8 @@ Client::Client()
 
 void Client::buildWorld()
 {
+    worldScene_.reset();
+
     scene_.objects.clear();
 
     // --------------------------------------------------------
@@ -453,197 +499,23 @@ void Client::buildWorld()
 
 
     // --------------------------------------------------------
-    // Graphics builders
-    //
-    // These consume Regions owned by World.
-    // They do not own runtime map state.
+    // Runtime World -> RenderScene bridge
     // --------------------------------------------------------
 
-    eld::graphics::TerrainBuilder
-        terrainBuilder;
-
-    eld::graphics::LocationBuilder
-        locationBuilder;
-
-    eld::graphics::LocationBatchBuilder
-        locationBatchBuilder;
+    worldScene_.buildLoadedRegions(
+        world_,
+        sceneOrigin_,
+        scene_
+    );
 
 
     std::cout
-        << "\n=== WORLD SCENE BUILD ===\n";
-
-
-    for (
-        const auto id :
-        world_.loadedRegionIds()
-    ) {
-        const auto* region =
-            world_.region(
-                id
-            );
-
-
-        if (!region) {
-            continue;
-        }
-
-
-        const auto& origin =
-            region
-                ->terrain
-                .origin();
-
-
-        const float sceneOffsetX =
-            static_cast<float>(
-                origin.x -
-                sceneOrigin_.x
-            );
-
-        const float sceneOffsetZ =
-            -static_cast<float>(
-                origin.y -
-                sceneOrigin_.y
-            );
-
-
-        // ----------------------------------------------------
-        // Terrain
-        // ----------------------------------------------------
-
-        auto terrainModel =
-            terrainBuilder.build(
-                region->terrain,
-                0,
-                assets_.floors,
-                textureSystem_
-            );
-
-
-        const auto terrainHandle =
-            modelManager_.create(
-                std::move(
-                    terrainModel
-                )
-            );
-
-
-        eld::render::RenderObject
-            terrainObject;
-
-        terrainObject.model =
-            terrainHandle;
-
-        terrainObject.transform.position = {
-            sceneOffsetX,
-            0.0f,
-            sceneOffsetZ
-        };
-
-        terrainObject.visible =
-            true;
-
-
-        scene_.objects.push_back(
-            terrainObject
-        );
-
-
-        // ----------------------------------------------------
-        // Locations
-        // ----------------------------------------------------
-
-        auto locationBuild =
-            locationBuilder.build(
-                *region,
-                0,
-                assets_.locations,
-                assets_.models,
-                modelSystem_
-            );
-
-
-        auto locationBatchBuild =
-            locationBatchBuilder.build(
-                locationBuild.objects,
-                modelManager_
-            );
-
-
-        for (
-            auto& batch :
-            locationBatchBuild.batches
-        ) {
-            const auto handle =
-                modelManager_.create(
-                    std::move(
-                        batch
-                    )
-                );
-
-
-            eld::render::RenderObject
-                object;
-
-            object.model =
-                handle;
-
-            object.transform.position = {
-                sceneOffsetX,
-                0.0f,
-                sceneOffsetZ
-            };
-
-            object.visible =
-                true;
-
-
-            scene_.objects.push_back(
-                object
-            );
-        }
-
-
-        for (
-            auto object :
-            locationBatchBuild
-                .passthroughObjects
-        ) {
-            object.transform.position.x +=
-                sceneOffsetX;
-
-            object.transform.position.z +=
-                sceneOffsetZ;
-
-
-            scene_.objects.push_back(
-                std::move(
-                    object
-                )
-            );
-        }
-
-
-        std::cout
-            << "region "
-            << id
-            << " | origin="
-            << origin.x
-            << ","
-            << origin.y
-            << " | offset="
-            << sceneOffsetX
-            << ","
-            << sceneOffsetZ
-            << " | locations="
-            << region->locations.size()
-            << "\n";
-    }
-
-
-    std::cout
-        << "world regions = "
+        << "\n=== WORLD SCENE BUILD ===\n"
+        << "world regions        = "
         << world_.loadedRegionCount()
+        << "\n"
+        << "rendered regions     = "
+        << worldScene_.renderedRegionCount()
         << "\n"
         << "=========================\n\n";
 
@@ -744,6 +616,176 @@ void Client::processEvents(
                 );
                 break;
 
+
+            // === Y: SWITCH TEST SWORD ===
+            case SDL_SCANCODE_Y:
+            {
+                if (
+                    !debugCrystalSwordAppearance.has_value() ||
+                    !debugDragonSwordAppearance.has_value()
+                ) {
+                    std::cout
+                        << "Sword comparison unavailable\n";
+
+                    break;
+                }
+
+
+                debugUsingCrystalSword =
+                    !debugUsingCrystalSword;
+
+
+                const auto& selectedAppearance =
+                    debugUsingCrystalSword
+                        ? *debugCrystalSwordAppearance
+                        : *debugDragonSwordAppearance;
+
+
+                // Rebuild idle/walk/run/attack frames using
+                // the newly selected complete appearance.
+                buildPlayerIdleAnimation(
+                    selectedAppearance
+                );
+
+
+                if (
+                    playerObjectIndex_.has_value() &&
+                    *playerObjectIndex_ <
+                        scene_.objects.size() &&
+                    !playerAnimationModels_.empty()
+                ) {
+                    scene_.objects[
+                        *playerObjectIndex_
+                    ].model =
+                        playerAnimationModels_.front();
+
+
+                    if (
+                        !playerAnimationGroundOffsets_.empty()
+                    ) {
+                        playerGroundOffset_ =
+                            playerAnimationGroundOffsets_.front();
+                    }
+                    else {
+                        playerGroundOffset_ =
+                            playerGroundOffset(
+                                selectedAppearance
+                            );
+                    }
+
+
+                    syncPlayerRenderObject();
+                }
+
+
+                std::cout
+                    << "Sword = "
+                    << (
+                        debugUsingCrystalSword
+                            ? "MOONSTONE"
+                            : "NATIVE SCIMITAR"
+                    )
+                    << '\n';
+
+                break;
+            }
+
+
+            // === T: CRYSTAL SWORD ATTACK ===
+            case SDL_SCANCODE_T:
+            {
+                constexpr std::uint16_t
+                    attackSequenceId =
+                        390;
+
+                if (
+                    crystalSwordAttackModels.empty() ||
+                    crystalSwordAttackGroundOffsets.empty() ||
+                    !assets_.sequences.contains(
+                        attackSequenceId
+                    )
+                ) {
+                    std::cout
+                        << "Crystal attack unavailable\n";
+
+                    break;
+                }
+
+
+                crystalSwordAttackActive =
+                    true;
+
+                playerAnimation_.setSequence(
+                    assets_.sequences.resource(
+                        attackSequenceId
+                    )
+                );
+
+                // Play exactly once.
+                playerAnimation_.setLooping(
+                    false
+                );
+
+                playerAnimation_.restart();
+                playerAnimation_.play();
+
+                playerAnimationMillisecondRemainder_ =
+                    0.0;
+
+
+                if (
+                    playerObjectIndex_.has_value() &&
+                    *playerObjectIndex_ <
+                        scene_.objects.size()
+                ) {
+                    scene_.objects[
+                        *playerObjectIndex_
+                    ].model =
+                        crystalSwordAttackModels.front();
+
+                    playerGroundOffset_ =
+                        crystalSwordAttackGroundOffsets.front();
+
+                    syncPlayerRenderObject();
+                }
+
+
+                std::cout
+                    << "Crystal sword attack! "
+                    << "(sequence 390)\n";
+
+                break;
+            }
+
+
+            case SDL_SCANCODE_R:
+            {
+                const bool enabled =
+                    playerController_.toggleRunning();
+
+                std::cout
+                    << "run = "
+                    << (
+                        enabled
+                            ? "on"
+                            : "off"
+                    )
+                    << "\n";
+
+
+                // Refresh immediately when toggled during
+                // an active route.
+                if (
+                    playerController_.moving()
+                ) {
+                    setPlayerWalking(
+                        true
+                    );
+                }
+
+                break;
+            }
+
             default:
                 break;
             }
@@ -775,6 +817,14 @@ void Client::buildPlayerIdleAnimation(
 
     playerWalkAnimationModels_.clear();
     playerWalkAnimationGroundOffsets_.clear();
+
+    playerRunAnimationModels_.clear();
+
+    // === CLEAR CRYSTAL ATTACK ===
+    crystalSwordAttackModels.clear();
+    crystalSwordAttackGroundOffsets.clear();
+    crystalSwordAttackActive = false;
+    playerRunAnimationGroundOffsets_.clear();
 
     playerAnimationMillisecondRemainder_ =
         0.0;
@@ -889,6 +939,9 @@ void Client::buildPlayerIdleAnimation(
     constexpr std::uint16_t walkSequenceId =
         819;
 
+    constexpr std::uint16_t runSequenceId =
+        824;
+
 
     const bool idleReady =
         buildSequence(
@@ -907,7 +960,29 @@ void Client::buildPlayerIdleAnimation(
     );
 
 
+    buildSequence(
+        runSequenceId,
+        playerRunAnimationModels_,
+        playerRunAnimationGroundOffsets_,
+        "run"
+    );
+
+
+    // === BUILD CRYSTAL ATTACK ===
+    constexpr std::uint16_t
+        crystalSwordAttackSequenceId =
+            390;
+
+    buildSequence(
+        crystalSwordAttackSequenceId,
+        crystalSwordAttackModels,
+        crystalSwordAttackGroundOffsets,
+        "crystal attack"
+    );
+
+
     playerWalking_ = false;
+    playerRunningAnimationActive_ = false;
 
 
     if (idleReady) {
@@ -938,15 +1013,23 @@ void Client::updatePlayerAnimation(
 
 
     const auto& models =
-        playerWalking_
-            ? playerWalkAnimationModels_
-            : playerAnimationModels_;
+        crystalSwordAttackActive
+            ? crystalSwordAttackModels
+            : !playerWalking_
+                ? playerAnimationModels_
+                : playerRunning_
+                    ? playerRunAnimationModels_
+                    : playerWalkAnimationModels_;
 
 
     const auto& groundOffsets =
-        playerWalking_
-            ? playerWalkAnimationGroundOffsets_
-            : playerAnimationGroundOffsets_;
+        crystalSwordAttackActive
+            ? crystalSwordAttackGroundOffsets
+            : !playerWalking_
+                ? playerAnimationGroundOffsets_
+                : playerRunning_
+                    ? playerRunAnimationGroundOffsets_
+                    : playerWalkAnimationGroundOffsets_;
 
 
     if (models.empty()) {
@@ -954,9 +1037,21 @@ void Client::updatePlayerAnimation(
     }
 
 
+    // If sequence 824 is unavailable, running falls back
+    // to the walk animation at double playback speed.
+    const double animationSpeed =
+        !crystalSwordAttackActive &&
+        playerWalking_ &&
+        playerController_.running() &&
+        !playerRunningAnimationActive_
+            ? 2.0
+            : 1.0;
+
+
     playerAnimationMillisecondRemainder_ +=
         static_cast<double>(dt) *
-        1000.0;
+        1000.0 *
+        animationSpeed;
 
 
     const auto milliseconds =
@@ -976,11 +1071,44 @@ void Client::updatePlayerAnimation(
         );
 
 
-    if (
-        !playerAnimation_.update(
+    const bool frameChanged =
+        playerAnimation_.update(
             milliseconds
-        )
+        );
+
+
+    // === FINISH CRYSTAL ATTACK ===
+    if (
+        crystalSwordAttackActive &&
+        !playerAnimation_.isPlaying()
     ) {
+        crystalSwordAttackActive =
+            false;
+
+        const bool walking =
+            playerController_.moving();
+
+        const bool running =
+            walking &&
+            playerController_.running();
+
+        // Force setPlayerWalking() to refresh the sequence
+        // even when we were idle before attacking.
+        playerWalking_ =
+            !walking;
+
+        playerRunning_ =
+            !running;
+
+        setPlayerWalking(
+            walking
+        );
+
+        return;
+    }
+
+
+    if (!frameChanged) {
         return;
     }
 
@@ -1027,7 +1155,15 @@ void Client::setPlayerWalking(
     bool walking
 )
 {
-    if (walking == playerWalking_) {
+    const bool running =
+        walking &&
+        playerController_.running();
+
+
+    if (
+        walking == playerWalking_ &&
+        running == playerRunning_
+    ) {
         return;
     }
 
@@ -1038,31 +1174,37 @@ void Client::setPlayerWalking(
     constexpr std::uint16_t walkSequenceId =
         819;
 
-
-    const auto& models =
-        walking
-            ? playerWalkAnimationModels_
-            : playerAnimationModels_;
-
-
-    const auto& groundOffsets =
-        walking
-            ? playerWalkAnimationGroundOffsets_
-            : playerAnimationGroundOffsets_;
-
-
-    if (models.empty()) {
-        return;
-    }
+    constexpr std::uint16_t runSequenceId =
+        824;
 
 
     const std::uint16_t sequenceId =
-        walking
-            ? walkSequenceId
-            : idleSequenceId;
+        !walking
+            ? idleSequenceId
+            : running
+                ? runSequenceId
+                : walkSequenceId;
+
+
+    const auto& models =
+        !walking
+            ? playerAnimationModels_
+            : running
+                ? playerRunAnimationModels_
+                : playerWalkAnimationModels_;
+
+
+    const auto& groundOffsets =
+        !walking
+            ? playerAnimationGroundOffsets_
+            : running
+                ? playerRunAnimationGroundOffsets_
+                : playerWalkAnimationGroundOffsets_;
 
 
     if (
+        models.empty() ||
+        groundOffsets.empty() ||
         !assets_.sequences.contains(
             sequenceId
         )
@@ -1074,6 +1216,9 @@ void Client::setPlayerWalking(
     playerWalking_ =
         walking;
 
+    playerRunning_ =
+        running;
+
 
     playerAnimation_.setSequence(
         assets_.sequences.resource(
@@ -1081,14 +1226,12 @@ void Client::setPlayerWalking(
         )
     );
 
-
     playerAnimation_.setLooping(
         true
     );
 
     playerAnimation_.restart();
     playerAnimation_.play();
-
 
     playerAnimationMillisecondRemainder_ =
         0.0;
@@ -1107,6 +1250,69 @@ void Client::setPlayerWalking(
 
         playerGroundOffset_ =
             groundOffsets.front();
+
+
+        syncPlayerRenderObject();
+    }
+}
+
+
+void Client::reconcileServerPositions()
+{
+    const auto updates =
+        server_.takePositionUpdates();
+
+
+    for (
+        const auto& update :
+        updates
+    ) {
+        if (
+            update.kind ==
+            PositionUpdateKind::Confirmation
+        ) {
+            // The server confirmed a tile on our predicted route.
+            //
+            // Do not move the local player backward; prediction
+            // is intentionally allowed to remain visually ahead.
+            continue;
+        }
+
+
+        std::cout
+            << "prediction | correction"
+            << " | local="
+            << player_.tile.x
+            << ","
+            << player_.tile.y
+            << ","
+            << player_.tile.plane
+            << " | server="
+            << update.position.x
+            << ","
+            << update.position.y
+            << ","
+            << update.position.plane
+            << "\n";
+
+
+        if (
+            !playerController_.correctTo(
+                update.position
+            )
+        ) {
+            std::cout
+                << "prediction | correction failed"
+                << " | region unavailable"
+                << "\n";
+
+            continue;
+        }
+
+
+        setPlayerWalking(
+            false
+        );
 
 
         syncPlayerRenderObject();
@@ -1138,11 +1344,6 @@ void Client::updatePlayerMovement(
     }
 
 
-    setPlayerWalking(
-        false
-    );
-
-
     std::cout
         << "player tile = "
         << player_.tile.x
@@ -1153,15 +1354,23 @@ void Client::updatePlayerMovement(
         << "\n";
 
 
+    // Keep the current walk/run animation playing continuously
+    // while there are still queued path steps.
+    //
+    // Previously we switched to idle here and immediately back
+    // to walk/run, which restarted the animation every tile.
     if (
         playerController_.continuePath()
     ) {
-        setPlayerWalking(
-            true
-        );
-
         syncPlayerRenderObject();
+        return;
     }
+
+
+    // Only return to idle once the entire path is finished.
+    setPlayerWalking(
+        false
+    );
 }
 
 std::optional<eld::world::TilePosition>
@@ -1178,13 +1387,26 @@ Client::pickTerrainTile(
     }
 
 
-    // SDL mouse coordinates are window coordinates.
-    // Renderer viewport dimensions are framebuffer pixels.
+    const auto viewMatrix =
+        eld::render::buildViewMatrix(
+            scene_.camera
+        );
+
+
+    const auto projectionMatrix =
+        eld::render::buildProjectionMatrix(
+            scene_.camera
+        );
+
+    // RESTORED KNOWN-GOOD PICKER INPUT.
     //
-    // These are normally identical on the current machine but
-    // keeping the conversion makes picking correct on HiDPI.
-    int windowWidth = 0;
-    int windowHeight = 0;
+    // SDL mouse coordinates are window-relative.
+    // Scale them once into the render viewport.
+    int windowWidth =
+        0;
+
+    int windowHeight =
+        0;
 
 
     SDL_GetWindowSize(
@@ -1195,39 +1417,331 @@ Client::pickTerrainTile(
 
 
     if (
-        windowWidth <= 0 ||
-        windowHeight <= 0
+        windowWidth > 0 &&
+        windowHeight > 0
     ) {
+        mouseX *=
+            static_cast<float>(
+                scene_.camera.viewportWidth
+            ) /
+            static_cast<float>(
+                windowWidth
+            );
+
+        mouseY *=
+            static_cast<float>(
+                scene_.camera.viewportHeight
+            ) /
+            static_cast<float>(
+                windowHeight
+            );
+    }
+
+
+    // projectPoint() currently matches the scaled SDL
+    // coordinates directly. Do NOT mirror either axis.
+    const float projectedMouseX =
+        mouseX;
+
+    const float projectedMouseY =
+        mouseY;
+
+
+    const auto pointInTriangle =
+        [](
+            float px,
+            float py,
+            const eld::render::ScreenPoint& a,
+            const eld::render::ScreenPoint& b,
+            const eld::render::ScreenPoint& c
+        )
+        {
+            const auto edge =
+                [](
+                    float px,
+                    float py,
+                    const eld::render::ScreenPoint& p0,
+                    const eld::render::ScreenPoint& p1
+                )
+                {
+                    return
+                        (
+                            px - p1.x
+                        ) *
+                            (
+                                p0.y - p1.y
+                            ) -
+                        (
+                            p0.x - p1.x
+                        ) *
+                            (
+                                py - p1.y
+                            );
+                };
+
+
+            const float d1 =
+                edge(
+                    px,
+                    py,
+                    a,
+                    b
+                );
+
+            const float d2 =
+                edge(
+                    px,
+                    py,
+                    b,
+                    c
+                );
+
+            const float d3 =
+                edge(
+                    px,
+                    py,
+                    c,
+                    a
+                );
+
+
+            const bool hasNegative =
+                d1 < 0.0f ||
+                d2 < 0.0f ||
+                d3 < 0.0f;
+
+
+            const bool hasPositive =
+                d1 > 0.0f ||
+                d2 > 0.0f ||
+                d3 > 0.0f;
+
+
+            return !(
+                hasNegative &&
+                hasPositive
+            );
+        };
+
+
+    float bestDepth =
+        std::numeric_limits<
+            float
+        >::infinity();
+
+
+    std::optional<
+        eld::world::TilePosition
+    > result;
+
+
+    const auto& sceneOrigin =
+        sceneOrigin_;
+
+
+    const auto testTerrain =
+        [&](
+            const eld::world::Terrain& terrain
+        )
+        {
+            for (
+                std::size_t localY = 0;
+                localY <
+                    terrain.height();
+                ++localY
+            ) {
+                for (
+                    std::size_t localX = 0;
+                    localX <
+                        terrain.width();
+                    ++localX
+                ) {
+                    const auto position =
+                        terrain.layerPosition(
+                            0,
+                            localX,
+                            localY
+                        );
+
+
+                    const auto heights =
+                        terrain.cornerHeights(
+                            position
+                        );
+
+
+                    const float x0 =
+                        static_cast<float>(
+                            position.x -
+                            sceneOrigin.x
+                        );
+
+
+                    const float x1 =
+                        x0 +
+                        1.0f;
+
+
+                    const float z0 =
+                        -static_cast<float>(
+                            position.y -
+                            sceneOrigin.y
+                        );
+
+
+                    const float z1 =
+                        z0 -
+                        1.0f;
+
+
+                    const auto southwest =
+                        eld::render::projectPoint(
+                            {
+                                x0,
+                                heights.southwest,
+                                z0
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+
+                    const auto southeast =
+                        eld::render::projectPoint(
+                            {
+                                x1,
+                                heights.southeast,
+                                z0
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+
+                    const auto northeast =
+                        eld::render::projectPoint(
+                            {
+                                x1,
+                                heights.northeast,
+                                z1
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+
+                    const auto northwest =
+                        eld::render::projectPoint(
+                            {
+                                x0,
+                                heights.northwest,
+                                z1
+                            },
+                            viewMatrix,
+                            projectionMatrix,
+                            scene_.camera
+                        );
+
+
+                    const auto consider =
+                        [&](
+                            const eld::render::ScreenPoint& a,
+                            const eld::render::ScreenPoint& b,
+                            const eld::render::ScreenPoint& c
+                        )
+                        {
+                            if (
+                                !pointInTriangle(
+                                    projectedMouseX,
+                                    projectedMouseY,
+                                    a,
+                                    b,
+                                    c
+                                )
+                            ) {
+                                return;
+                            }
+
+
+                            const float depth =
+                                std::abs(
+                                    (
+                                        a.depth +
+                                        b.depth +
+                                        c.depth
+                                    ) /
+                                    3.0f
+                                );
+
+
+                            if (
+                                depth >=
+                                bestDepth
+                            ) {
+                                return;
+                            }
+
+
+                            bestDepth =
+                                depth;
+
+
+                            const auto& tile =
+                                terrain.tile(
+                                    position
+                                );
+
+
+                            result =
+                                eld::world::TilePosition{
+                                    position.x,
+                                    position.y,
+                                    tile.scenePlane
+                                };
+                        };
+
+
+                    consider(
+                        southwest,
+                        southeast,
+                        northeast
+                    );
+
+
+                    consider(
+                        southwest,
+                        northeast,
+                        northwest
+                    );
+                }
+            }
+        };
+
+
+    // Known-good checkpoint:
+    // terrain picking remains on the original center Region.
+    const auto* pickRegion =
+        world_.region(
+            InitialRegionId
+        );
+
+
+    if (!pickRegion) {
         return std::nullopt;
     }
 
 
-    mouseX *=
-        static_cast<float>(
-            scene_.camera.viewportWidth
-        ) /
-        static_cast<float>(
-            windowWidth
-        );
-
-
-    mouseY *=
-        static_cast<float>(
-            scene_.camera.viewportHeight
-        ) /
-        static_cast<float>(
-            windowHeight
-        );
-
-
-    return terrainPicker_.pick(
-        world_,
-        scene_.camera,
-        sceneOrigin_,
-        mouseX,
-        mouseY
+    testTerrain(
+        pickRegion->terrain
     );
+
+
+    return result;
 }
+
 
 const eld::world::Location*
 Client::findInteractableLocationAt(
@@ -1264,6 +1778,7 @@ Client::findInteractableLocationAt(
         const int minY =
             location.tile.y;
 
+
         const int maxX =
             minX +
             location.footprintWidth;
@@ -1286,6 +1801,7 @@ Client::findInteractableLocationAt(
 
     return nullptr;
 }
+
 
 void Client::selectTerrainTile(
     const eld::world::TilePosition& tile,
@@ -2283,8 +2799,18 @@ void Client::updateMouseSelection()
                     << "\n";
 
 
+                const bool running =
+                    SDL_GetKeyboardState(
+                        nullptr
+                    )[SDL_SCANCODE_LCTRL] ||
+                    SDL_GetKeyboardState(
+                        nullptr
+                    )[SDL_SCANCODE_RCTRL];
+
+
                 walkPlayerTo(
-                    *pickedTile
+                    *pickedTile,
+                    running
                 );
             }
         }
@@ -2477,9 +3003,15 @@ void Client::syncPlayerRenderObject()
 
 
 void Client::walkPlayerTo(
-    const eld::world::TilePosition& destination
+    const eld::world::TilePosition& destination,
+    bool running
 )
 {
+
+    playerController_.setRunning(
+        running
+    );
+
     const auto walk =
         playerController_.walkTo(
             destination
@@ -2495,6 +3027,32 @@ void Client::walkPlayerTo(
 
     switch (result.status) {
     case eld::world::PathStatus::Success:
+        std::cout
+            << "movement | dispatch WalkRequest"
+            << " | source="
+            << source.x
+            << ","
+            << source.y
+            << ","
+            << source.plane
+            << " | destination="
+            << destination.x
+            << ","
+            << destination.y
+            << ","
+            << destination.plane
+            << " | steps="
+            << result.tiles.size()
+            << "\n";
+
+
+        server_.sendWalkRequest(
+            source,
+            result.tiles,
+            running
+        );
+
+
         break;
 
 
@@ -2589,6 +3147,11 @@ void Client::movePlayer(
     int dy
 )
 {
+
+    playerController_.setRunning(
+        false
+    );
+
     if (
         !playerController_.moveBy(
             dx,
@@ -2692,7 +3255,7 @@ void Client::spawnPlayer()
     PlayerAppearanceBuilder
         appearanceBuilder;
 
-    const auto appearance =
+    auto appearance =
         appearanceBuilder.buildDefaultMale(
             assets_.identityKits,
             assets_.models
@@ -2708,6 +3271,276 @@ void Client::spawnPlayer()
 
 
     if (appearance.has_value()) {
+
+        // === SWORD COMPARISON SETUP ===
+        //
+        // Moonstone Scimitar experiment:
+        //
+        //   generated asset
+        //       vs
+        //   native worn scimitar model 490
+
+        try {
+            constexpr std::uint16_t
+                referenceSwordModelId =
+                    490;
+
+            const auto* referenceSword =
+                assets_.models.find(
+                    referenceSwordModelId
+                );
+
+            if (referenceSword == nullptr) {
+                std::cerr
+                    << "Scimitar comparison: model 490 "
+                    << "is missing\n";
+            }
+            else {
+                const eld::model::ModelData
+                    baseAppearance =
+                        *appearance;
+
+
+                // --------------------------------------------
+                // Native RuneScape scimitar
+                // --------------------------------------------
+
+                debugDragonSwordAppearance =
+                    baseAppearance;
+
+                eld::elclient::debug::appendModel(
+                    *debugDragonSwordAppearance,
+                    *referenceSword
+                );
+
+
+                // --------------------------------------------
+                // Generated Moonstone Scimitar
+                // --------------------------------------------
+
+                auto moonstoneScimitar =
+                    eld::elclient::debug::loadObj(
+                        "dataset/ml/"
+                        "generated_awakened_moonstone_scimitar/"
+                        "awakened_moonstone_scimitar.obj"
+                    );
+
+
+                // ============================================
+                // AWAKENED MOONSTONE FINAL WORN PLACEMENT
+                //
+                // Proven V3 placement grammar:
+                //
+                //   fit -> mirror Y profile
+                //       -> exact semantic grip
+                //       -> translate to native hand
+                //
+                // grip indices are generated from meta.json.
+                // ============================================
+
+                eld::elclient::debug::
+                    fitToWornReference(
+                        moonstoneScimitar,
+                        *referenceSword
+                    );
+
+
+                if (!moonstoneScimitar.vertices.empty()) {
+
+                    float minY =
+                        moonstoneScimitar.vertices.front().y;
+
+                    float maxY =
+                        minY;
+
+
+                    for (
+                        const auto& vertex :
+                        moonstoneScimitar.vertices
+                    ) {
+                        minY =
+                            std::min(
+                                minY,
+                                vertex.y
+                            );
+
+                        maxY =
+                            std::max(
+                                maxY,
+                                vertex.y
+                            );
+                    }
+
+
+                    const float centerY =
+                        (minY + maxY)
+                        * 0.5f;
+
+
+                    for (
+                        auto& vertex :
+                        moonstoneScimitar.vertices
+                    ) {
+                        vertex.y =
+                            centerY
+                            - (
+                                vertex.y
+                                - centerY
+                            );
+                    }
+
+
+                    constexpr std::size_t gripBegin =
+                        114;
+
+                    constexpr std::size_t gripEnd =
+                        146;
+
+
+                    if (
+                        moonstoneScimitar.vertices.size()
+                        >= gripEnd
+                    ) {
+                        float gripX = 0.0f;
+                        float gripY = 0.0f;
+                        float gripZ = 0.0f;
+
+
+                        for (
+                            std::size_t index =
+                                gripBegin;
+                            index < gripEnd;
+                            ++index
+                        ) {
+                            const auto& vertex =
+                                moonstoneScimitar.vertices[
+                                    index
+                                ];
+
+                            gripX += vertex.x;
+                            gripY += vertex.y;
+                            gripZ += vertex.z;
+                        }
+
+
+                        constexpr float gripCount =
+                            static_cast<float>(
+                                gripEnd
+                                - gripBegin
+                            );
+
+
+                        gripX /= gripCount;
+                        gripY /= gripCount;
+                        gripZ /= gripCount;
+
+
+                        constexpr float nativeGripX =
+                            -29.0f;
+
+                        constexpr float nativeGripY =
+                            -98.25f;
+
+                        constexpr float nativeGripZ =
+                            2.50f;
+
+
+                        const float dx =
+                            nativeGripX
+                            - gripX;
+
+                        const float dy =
+                            nativeGripY
+                            - gripY;
+
+                        const float dz =
+                            nativeGripZ
+                            - gripZ;
+
+
+                        for (
+                            auto& vertex :
+                            moonstoneScimitar.vertices
+                        ) {
+                            vertex.x += dx;
+                            vertex.y += dy;
+                            vertex.z += dz;
+                        }
+
+
+                        std::cout
+                            << "Awakened Moonstone profile Y = "
+                            << centerY
+                            << '\n'
+
+                            << "Awakened exact grip = "
+                            << gripX << ", "
+                            << gripY << ", "
+                            << gripZ << '\n'
+
+                            << "Awakened grip correction = "
+                            << dx << ", "
+                            << dy << ", "
+                            << dz << '\n'
+
+                            << "Awakened final grip = "
+                            << nativeGripX << ", "
+                            << nativeGripY << ", "
+                            << nativeGripZ << '\n';
+                    }
+                }
+
+
+                const auto generatedVertices =
+                    moonstoneScimitar.vertices.size();
+
+                const auto generatedFaces =
+                    moonstoneScimitar.faces.size();
+
+
+                debugCrystalSwordAppearance =
+                    baseAppearance;
+
+                eld::elclient::debug::appendModel(
+                    *debugCrystalSwordAppearance,
+                    moonstoneScimitar
+                );
+
+
+                // Start on our generated asset.
+                debugUsingCrystalSword =
+                    true;
+
+                *appearance =
+                    *debugCrystalSwordAppearance;
+
+
+                std::cout
+                    << "Moonstone Scimitar comparison ready\n"
+                    << "  Y = switch generated/native\n"
+                    << "  T = attack\n"
+                    << "  moonstone = "
+                    << generatedVertices
+                    << " vertices, "
+                    << generatedFaces
+                    << " faces\n"
+                    << "  native scimitar 490 = "
+                    << referenceSword->vertices.size()
+                    << " vertices, "
+                    << referenceSword->faces.size()
+                    << " faces\n";
+            }
+        }
+        catch (
+            const std::exception& error
+        ) {
+            std::cerr
+                << "Moonstone Scimitar setup failed: "
+                << error.what()
+                << '\n';
+        }
+
+
         playerGroundOffset_ =
             playerGroundOffset(
                 *appearance
@@ -2888,6 +3721,9 @@ int Client::run()
         );
 
 
+        reconcileServerPositions();
+
+
         updatePlayerMovement(
             dt
         );
@@ -2896,6 +3732,14 @@ int Client::run()
             worldStreamer_.update(
                 player_.tile
             );
+
+
+        worldScene_.applyStreaming(
+            world_,
+            streaming,
+            sceneOrigin_,
+            scene_
+        );
 
 
         for (
@@ -2953,6 +3797,9 @@ int Client::run()
                 << "\n"
                 << "world regions = "
                 << world_.loadedRegionCount()
+                << "\n"
+                << "render regions = "
+                << worldScene_.renderedRegionCount()
                 << "\n"
                 << "====================\n";
         }

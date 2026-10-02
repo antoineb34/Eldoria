@@ -56,10 +56,23 @@ namespace eld::client
         );
 
 
+        bool correctTo(
+            const eld::world::TilePosition& authoritative
+        );
+
+
         bool continuePath();
 
 
         bool moving() const noexcept;
+
+        bool running() const noexcept;
+
+        void setRunning(
+            bool running
+        ) noexcept;
+
+        bool toggleRunning() noexcept;
 
 
     private:
@@ -86,6 +99,9 @@ namespace eld::client
 
         bool moving_ =
             false;
+
+        bool running_ =
+            true;
 
 
         eld::world::TilePosition

@@ -10,6 +10,7 @@
 #include "CameraController.h"
 #include "Player.h"
 #include "PlayerController.h"
+#include "WorldScene.h"
 #include "model/ModelData.h"
 #include "world/Region.h"
 
@@ -30,9 +31,11 @@
 
 namespace eld::client {
 
+class ClientSession;
+
 class Client {
 public:
-    Client();
+    explicit Client(ClientSession& server);
 
     int run();
 
@@ -48,7 +51,8 @@ private:
     void movePlayer(int dx, int dy);
 
     void walkPlayerTo(
-        const eld::world::TilePosition& destination
+        const eld::world::TilePosition& destination,
+        bool running
     );
 
     void syncPlayerRenderObject();
@@ -82,9 +86,16 @@ private:
 
     void setPlayerWalking(bool walking);
     void updatePlayerMovement(float dt);
+
+
+    void reconcileServerPositions();
     void processEvents(bool& running);
     void update(float dt);
     void render();
+
+    ClientSession&
+        server_;
+
 
     // Order matters:
     // systems below hold references to objects declared above them.
@@ -106,6 +117,9 @@ private:
 
     eld::graphics::ModelSystem
         modelSystem_;
+
+    WorldScene
+        worldScene_;
 
     eld::world::World world_;
 
@@ -155,7 +169,20 @@ private:
     std::vector<float>
         playerWalkAnimationGroundOffsets_;
 
+    std::vector<eld::render::ModelHandle>
+        playerRunAnimationModels_;
+
+    std::vector<float>
+        playerRunAnimationGroundOffsets_;
+
     bool playerWalking_ = false;
+
+    bool playerRunning_ =
+        false;
+
+
+    bool playerRunningAnimationActive_ =
+        false;
 
     std::optional<eld::world::TilePosition>
         selectedTile_;

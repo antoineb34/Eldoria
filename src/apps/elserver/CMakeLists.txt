@@ -3,6 +3,8 @@ add_executable(elserver
 
     app/ElServerApp.cpp
     app/ServerRunLoop.cpp
+    session/Session.cpp
+    game/ServerWorld.cpp
 )
 
 target_include_directories(elserver PRIVATE
@@ -14,6 +16,7 @@ target_link_libraries(elserver PRIVATE
     Eldoria::Game
     Eldoria::Network
     Eldoria::World
+    Eldoria::MapRuntime
 )
 
 set_target_properties(elserver PROPERTIES

@@ -30,6 +30,30 @@ namespace eld::client
         return moving_;
     }
 
+    bool PlayerController::running() const noexcept
+    {
+        return running_;
+    }
+
+
+    void PlayerController::setRunning(
+        bool running
+    ) noexcept
+    {
+        running_ =
+            running;
+    }
+
+
+    bool PlayerController::toggleRunning() noexcept
+    {
+        running_ =
+            !running_;
+
+        return running_;
+    }
+
+
 
     PlayerWalkResult
     PlayerController::walkTo(
@@ -260,6 +284,58 @@ namespace eld::client
     }
 
 
+    bool PlayerController::correctTo(
+        const eld::world::TilePosition& authoritative
+    )
+    {
+        const auto* region =
+            world_.regionAt(
+                authoritative
+            );
+
+
+        if (!region) {
+            return false;
+        }
+
+
+        path_.clear();
+
+
+        moving_ =
+            false;
+
+        running_ =
+            false;
+
+
+
+        elapsed_ =
+            0.0f;
+
+
+        startTile_ =
+            authoritative;
+
+
+        destinationTile_ =
+            authoritative;
+
+
+        player_.tile =
+            authoritative;
+
+
+        player_.local = {
+            0.5f,
+            0.5f
+        };
+
+
+        return true;
+    }
+
+
     void PlayerController::setFacing(
         int dx,
         int dy
@@ -326,8 +402,10 @@ namespace eld::client
         }
 
 
-        constexpr float moveDuration =
-            0.6f;
+        const float moveDuration =
+            running_
+                ? 0.30f
+                : 0.60f;
 
 
         elapsed_ +=

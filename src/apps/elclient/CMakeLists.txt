@@ -1,9 +1,11 @@
 add_executable(elclient
     main.cpp
+    network/ClientSession.cpp
     CameraController.cpp
     Client.cpp
     PlayerAppearanceBuilder.cpp
     PlayerController.cpp
+    WorldScene.cpp
 )
 
 target_include_directories(elclient PRIVATE
@@ -16,6 +18,7 @@ target_link_libraries(elclient PRIVATE
     Eldoria::Assets
     Eldoria::Graphics
     Eldoria::MapRuntime
+    Eldoria::Network
 )
 
 set_target_properties(elclient PROPERTIES

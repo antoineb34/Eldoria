@@ -17,6 +17,62 @@ include(EldoriaTargets)
 
 include(FetchContent)
 
+
+# ------------------------------------------------------------
+# Standalone Asio
+# ------------------------------------------------------------
+
+find_package(Threads REQUIRED)
+
+FetchContent_Declare(
+    asio
+    GIT_REPOSITORY
+        https://github.com/chriskohlhoff/asio.git
+    GIT_TAG
+        asio-1-38-2
+)
+
+FetchContent_GetProperties(
+    asio
+)
+
+if(NOT asio_POPULATED)
+    FetchContent_Populate(
+        asio
+    )
+endif()
+
+add_library(
+    eldoria_asio
+    INTERFACE
+)
+
+add_library(
+    Eldoria::Asio
+    ALIAS eldoria_asio
+)
+
+target_include_directories(
+    eldoria_asio
+    SYSTEM
+    INTERFACE
+        ${asio_SOURCE_DIR}/asio/include
+)
+
+target_compile_definitions(
+    eldoria_asio
+    INTERFACE
+        ASIO_STANDALONE
+        ASIO_NO_DEPRECATED
+)
+
+target_link_libraries(
+    eldoria_asio
+    INTERFACE
+        Threads::Threads
+)
+
+
 # OpenGL 3.3 Core function loader.
 FetchContent_Declare(
     glad
@@ -73,6 +129,8 @@ eldoria_add_module(graphics src/graphics)
 eldoria_add_app(elforge src/apps/elforge)
 eldoria_add_app(elclient src/apps/elclient)
 eldoria_add_app(elserver src/apps/elserver)
+
+add_subdirectory(tools/dataset_builder)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)
